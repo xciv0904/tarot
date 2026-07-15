@@ -346,6 +346,8 @@ var state = {
   histSelected: null,
   mnOpen: false,
   mnTab: 'suit',
+  libQuiz: false,
+  quiz: null,
   copied: false,
 };
 
@@ -547,7 +549,7 @@ function renderMnemonic() {
   if (state.mnOpen) {
     h += '<div style="padding:0 15px 15px">';
     h += '<div style="display:flex;gap:7px">';
-    [['suit', '花色領域'], ['number', '數字公式'], ['court', '宮廷角色']].forEach(function (t) {
+    [['suit', '花色領域'], ['number', '數字公式'], ['court', '宮廷角色'], ['confuse', '易混淆']].forEach(function (t) {
       var active = state.mnTab === t[0];
       h += '<button onclick="mnSetTab(\'' + t[0] + '\')" style="flex:1;background:' + (active ? 'rgba(201,169,110,.18)' : 'transparent') + ';border:1px solid ' + (active ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.5)') + ';padding:7px 4px;border-radius:8px;cursor:pointer;font:500 12px \'Noto Sans TC\',sans-serif">' + t[1] + '</button>';
     });
@@ -571,6 +573,22 @@ function renderMnemonic() {
         h += '<div style="flex:none;width:34px;text-align:center;font:600 13px \'Noto Serif TC\',serif;color:#c9a96e;border:1px solid rgba(201,169,110,.35);border-radius:7px;padding:3px 0">' + d.num + '</div>';
         h += '<div style="flex:1;min-width:0"><div style="font:500 12.5px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + d.theme + '</div>';
         h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:2px;line-height:1.5">' + d.example + '</div></div>';
+        h += '</div>';
+      });
+      h += '</div>';
+    } else if (state.mnTab === 'confuse') {
+      h += '<div style="margin-top:12px">';
+      CONFUSE_DATA.forEach(function (g) {
+        h += '<div style="border:1px solid rgba(201,169,110,.25);border-radius:8px;padding:11px 13px;background:rgba(255,255,255,.02);margin-bottom:9px">';
+        h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e">' + g.common + '，差在哪?</div>';
+        g.cards.forEach(function (cc) {
+          var card = TAROT.find(function (x) { return x.id === cc.id; });
+          if (!card) return;
+          h += '<div style="display:flex;gap:9px;margin-top:8px;align-items:baseline">';
+          h += '<span onclick="openLibCard(\'' + card.id + '\')" style="flex:none;font:600 12px \'Noto Serif TC\',serif;color:#e6cd9a;cursor:pointer;border-bottom:1px dotted rgba(201,169,110,.4)">' + card.nameZh + '</span>';
+          h += '<span style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.65);line-height:1.6">' + cc.diff + '</span>';
+          h += '</div>';
+        });
         h += '</div>';
       });
       h += '</div>';
@@ -866,6 +884,265 @@ function reassignImages() {
   LENORMAND.forEach(function (c) { c.img = IMG['LEN-' + String(c.n).padStart(2, '0')] || null; });
 }
 
+/* ================= 學習系統:易混淆對比 / 抽認卡測驗 / 22天計畫 ================= */
+
+/* ---- 易混淆牌對比(記憶心法第四頁籤) ---- */
+var CONFUSE_DATA = [
+  { common: '都是「結束」', cards: [
+    { id: 'm13', diff: '漸進的轉化——一個階段自然走完，放下迎新' },
+    { id: 'm16', diff: '突然的崩塌——根基不穩的結構瞬間瓦解' },
+    { id: 'swords-10', diff: '谷底的終點——痛到底了，之後只會更好' },
+  ]},
+  { common: '都是「兩人關係」', cards: [
+    { id: 'm6', diff: '靈魂層面的契合與重大抉擇，關乎價值觀' },
+    { id: 'cups-2', diff: '日常層面的情感連結與相互吸引' },
+  ]},
+  { common: '都是「力量」', cards: [
+    { id: 'm8', diff: '向內的柔性力量——用耐心馴服，而非壓制' },
+    { id: 'm7', diff: '向外的意志推進——駕馭對立、衝向目標' },
+  ]},
+  { common: '都是「引導者」', cards: [
+    { id: 'm1', diff: '主動創造——整合手上資源實現目標' },
+    { id: 'm5', diff: '傳承指導——依循傳統與體制的智慧' },
+  ]},
+  { common: '都是「暫停」', cards: [
+    { id: 'm9', diff: '主動退隱——自己選擇獨處尋找答案' },
+    { id: 'm12', diff: '被動懸置——被迫停下，換個角度看世界' },
+  ]},
+  { common: '都在「夜空」', cards: [
+    { id: 'm17', diff: '希望——風暴後的平靜與療癒' },
+    { id: 'm18', diff: '迷霧——不安、幻象與模糊不清' },
+    { id: 'm19', diff: '明朗——一切清晰、成功與喜悅' },
+  ]},
+  { common: '都是「被困住」', cards: [
+    { id: 'swords-2', diff: '自己選擇不看——蒙眼迴避抉擇的僵局' },
+    { id: 'swords-8', diff: '自己以為出不去——其實束縛鬆綁就能走' },
+  ]},
+  { common: '都是「不滿足」', cards: [
+    { id: 'cups-4', diff: '麻木倦怠——遞到眼前的機會也提不起勁' },
+    { id: 'cups-7', diff: '幻想過多——選項太多反而抓不到重點' },
+  ]},
+  { common: '都是「擁有金錢」', cards: [
+    { id: 'pentacles-4', diff: '緊抓不放——守財帶來安全感也帶來僵化' },
+    { id: 'pentacles-9', diff: '豐盛獨立——靠自己掙來的餘裕與自在' },
+  ]},
+  { common: '都是「等待成果」', cards: [
+    { id: 'wands-3', diff: '遠眺已啟航的船——布局後的自信期待' },
+    { id: 'pentacles-7', diff: '凝視結果的藤——長期投入後的耐心評估' },
+  ]},
+];
+
+/* ---- 學習進度(掌握度)資料 ---- */
+var learnData = {};
+try { learnData = JSON.parse(localStorage.getItem('tl_learn') || '{}'); } catch (e) {}
+function learnSave() { try { localStorage.setItem('tl_learn', JSON.stringify(learnData)); } catch (e) {} }
+function learnScore(key) { return (learnData[key] && learnData[key].s) || 0; }
+function learnMark(key, correct) {
+  var d = learnData[key] || { s: 0, n: 0 };
+  d.n++;
+  d.s = correct ? d.s + 1 : Math.max(0, d.s - 1);
+  learnData[key] = d;
+  learnSave();
+}
+function isMastered(key) { return learnScore(key) >= 3; }
+function masteredCount(isTarot) {
+  var arr = isTarot ? TAROT : LENORMAND;
+  return arr.filter(function (c) { return isMastered(isTarot ? c.id : 'l' + c.n); }).length;
+}
+
+/* ---- 抽認卡測驗 ---- */
+function quizKey(c, isTarot) { return isTarot ? c.id : 'l' + c.n; }
+
+function quizPickCard(isTarot) {
+  var arr = isTarot ? TAROT : LENORMAND;
+  var lastKey = state.quiz && state.quiz.lastKey;
+  // 加權:掌握度越低,越常出現(間隔重複)
+  var pool = [];
+  arr.forEach(function (c) {
+    var key = quizKey(c, isTarot);
+    if (key === lastKey) return;
+    var w = Math.max(1, 5 - learnScore(key));
+    for (var i = 0; i < w; i++) pool.push(c);
+  });
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function quizMeaning(c, isTarot) {
+  if (isTarot) return c.rich ? c.rich.u : c.upZh;
+  var lr = LEN_RICH[c.n];
+  return lr ? lr.mean : c.mZh;
+}
+function quizKw(c, isTarot) {
+  if (isTarot) return (c.rich ? c.rich.ku : c.upZh.split('、')).slice(0, 3).join('、');
+  var lr = LEN_RICH[c.n];
+  return (lr ? lr.kw : c.mZh.split('、')).slice(0, 3).join('、');
+}
+
+function quizNext() {
+  var isTarot = state.libDeck === 'tarot';
+  var card = quizPickCard(isTarot);
+  var arr = isTarot ? TAROT : LENORMAND;
+  var types = ['img', 'meaning', 'kw'];
+  var type = types[Math.floor(Math.random() * types.length)];
+  if (type === 'img' && !card.img) type = 'kw';
+  // 三個干擾項
+  var others = arr.filter(function (c) { return c !== card; });
+  var distractors = [];
+  var used = {};
+  while (distractors.length < 3) {
+    var d = others[Math.floor(Math.random() * others.length)];
+    var k = quizKey(d, isTarot);
+    if (used[k]) continue;
+    used[k] = 1;
+    distractors.push(d);
+  }
+  var options = distractors.concat([card]);
+  // Fisher–Yates
+  for (var i = options.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var t = options[i]; options[i] = options[j]; options[j] = t;
+  }
+  var session = (state.quiz && state.quiz.session) || { n: 0, correct: 0, streak: 0 };
+  state.quiz = { card: card, type: type, options: options, answered: null, session: session, lastKey: quizKey(card, isTarot) };
+}
+
+function quizStart() {
+  state.libQuiz = true;
+  state.libSelected = null;
+  state.quiz = null;
+  quizNext();
+  render();
+  window.scrollTo(0, 0);
+}
+function quizExit() { state.libQuiz = false; state.quiz = null; render(); }
+function quizGoNext() { quizNext(); render(); window.scrollTo(0, 0); }
+
+function quizAnswer(i) {
+  var q = state.quiz;
+  if (!q || q.answered !== null) return;
+  var isTarot = state.libDeck === 'tarot';
+  q.answered = i;
+  var correct = q.options[i] === q.card;
+  q.session.n++;
+  if (correct) { q.session.correct++; q.session.streak++; fxFlip(); }
+  else { q.session.streak = 0; vibrate(60); }
+  learnMark(quizKey(q.card, isTarot), correct);
+  render();
+}
+
+function renderQuiz() {
+  var isTarot = state.libDeck === 'tarot';
+  var q = state.quiz;
+  var deckArr = isTarot ? TAROT : LENORMAND;
+  var h = '';
+  h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px">';
+  h += '<button onclick="quizExit()" style="background:none;border:1px solid rgba(201,169,110,.4);color:#c9a96e;font:400 12px \'Noto Sans TC\',sans-serif;padding:7px 16px;border-radius:16px;cursor:pointer">‹ 離開測驗</button>';
+  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">本回合 ' + q.session.n + ' 題 · 答對 ' + q.session.correct + (q.session.streak >= 3 ? ' · 🔥連對 ' + q.session.streak : '') + '</div>';
+  h += '</div>';
+  h += '<div style="text-align:center;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:8px">已掌握 ' + masteredCount(isTarot) + ' / ' + deckArr.length + ' 張 · 答錯的牌會更常出現</div>';
+
+  // 題目
+  var prompt = { img: '這張牌是?', meaning: '哪張牌的牌義是——', kw: '這些關鍵字屬於哪張牌?' }[q.type];
+  h += '<div style="text-align:center;margin-top:18px">';
+  h += '<div style="font:600 15px \'Noto Serif TC\',serif;color:#f0e9d8">' + prompt + '</div>';
+  if (q.type === 'img') {
+    h += '<div style="width:132px;margin:14px auto 0;aspect-ratio:150/230;border-radius:8px;border:1px solid #d8b96c;overflow:hidden;background:#f2e9d8;display:flex;flex-direction:column">' + cardImgHtml(q.card.img, '?') + '</div>';
+  } else if (q.type === 'meaning') {
+    h += '<div style="font:400 13px \'Noto Sans TC\',sans-serif;color:#e6cd9a;margin-top:12px;line-height:1.8;padding:0 8px">「' + esc(quizMeaning(q.card, isTarot)) + '」</div>';
+  } else {
+    h += '<div style="margin-top:12px">' + quizKw(q.card, isTarot).split('、').map(function (k) {
+      return '<span style="display:inline-block;font:500 13px \'Noto Sans TC\',sans-serif;border:1px solid rgba(201,169,110,.5);color:#e6cd9a;border-radius:14px;padding:5px 14px;margin:3px">' + esc(k) + '</span>';
+    }).join('') + '</div>';
+  }
+  h += '</div>';
+
+  // 選項
+  h += '<div style="display:flex;flex-direction:column;gap:9px;margin-top:18px">';
+  q.options.forEach(function (opt, i) {
+    var label = q.type === 'img' || q.type === 'kw'
+      ? opt.nameZh + ' <span style="font:italic 11px \'EB Garamond\',serif;opacity:.55">' + opt.nameEn + '</span>'
+      : opt.nameZh;
+    var border = 'rgba(201,169,110,.3)', bg = 'rgba(255,255,255,.02)', color = 'rgba(240,233,216,.8)';
+    if (q.answered !== null) {
+      if (opt === q.card) { border = '#9fce9f'; bg = 'rgba(159,206,159,.12)'; color = '#d8f0d8'; }
+      else if (i === q.answered) { border = '#d99b5f'; bg = 'rgba(217,155,95,.1)'; color = '#f0d8c0'; }
+      else { color = 'rgba(240,233,216,.35)'; }
+    }
+    h += '<button onclick="quizAnswer(' + i + ')" style="text-align:left;background:' + bg + ';border:1px solid ' + border + ';color:' + color + ';border-radius:10px;padding:12px 15px;cursor:pointer;font:500 13px \'Noto Sans TC\',sans-serif">' + label + '</button>';
+  });
+  h += '</div>';
+
+  // 答題後:解說 + 下一題
+  if (q.answered !== null) {
+    var right = q.options[q.answered] === q.card;
+    h += '<div style="border:1px solid ' + (right ? 'rgba(159,206,159,.4)' : 'rgba(217,155,95,.4)') + ';border-radius:10px;padding:13px 16px;margin-top:14px;background:rgba(255,255,255,.02)">';
+    h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;color:' + (right ? '#9fce9f' : '#d99b5f') + '">' + (right ? '✓ 答對了!' : '✗ 正確答案:' + q.card.nameZh) + (isMastered(quizKey(q.card, isTarot)) ? ' · 這張牌已掌握 ✦' : '') + '</div>';
+    h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.8);margin-top:6px;line-height:1.7">' + esc(q.card.nameZh) + ':' + esc(quizMeaning(q.card, isTarot)) + '</div>';
+    h += '<div style="margin-top:8px"><span onclick="openLibCard(\'' + quizKey(q.card, isTarot) + '\')" style="font:400 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;cursor:pointer;border-bottom:1px dotted rgba(201,169,110,.5)">查看完整牌義 →</span></div>';
+    h += '</div>';
+    h += '<div style="text-align:center;margin-top:16px"><button onclick="quizGoNext()" style="font:500 13px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;background:linear-gradient(120deg,#c9a96e,#e6cd9a);color:#1a1622;border:none;padding:11px 34px;border-radius:22px;cursor:pointer">下一題 →</button></div>';
+  }
+  return h;
+}
+
+/* ---- 22 天大牌學習計畫 ---- */
+var studyData = { start: null, done: {} };
+try { studyData = JSON.parse(localStorage.getItem('tl_study') || '{"start":null,"done":{}}'); } catch (e) {}
+function studySave() { try { localStorage.setItem('tl_study', JSON.stringify(studyData)); } catch (e) {} }
+function studyDay() {
+  if (!studyData.start) return 0;
+  var d = Math.floor((new Date().setHours(0, 0, 0, 0) - new Date(studyData.start + 'T00:00:00').getTime()) / 86400000) + 1;
+  return Math.max(1, Math.min(22, d));
+}
+function studyStart() {
+  studyData = { start: new Date().toISOString().slice(0, 10), done: {} };
+  studySave(); render();
+}
+function studyRestart() { studyStart(); }
+function studyMarkDone() {
+  studyData.done[studyDay()] = true;
+  studySave(); fxFlip(); render();
+}
+
+function renderStudyWidget() {
+  var h = '<div style="border:1px solid rgba(201,169,110,.3);border-radius:12px;padding:16px 18px;margin-top:24px;background:rgba(255,255,255,.02)">';
+  h += '<div style="display:flex;justify-content:space-between;align-items:baseline">';
+  h += '<div style="font:500 13px \'Noto Sans TC\',sans-serif;color:#e6cd9a">🎓 22 天大牌之旅</div>';
+  var doneN = Object.keys(studyData.done).length;
+  if (studyData.start) h += '<div style="font:italic 10px \'EB Garamond\',serif;color:rgba(240,233,216,.4)">' + doneN + ' / 22</div>';
+  h += '</div>';
+  if (!studyData.start) {
+    h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.6);margin-top:8px;line-height:1.7">每天認識一張大阿爾克那,22 天打好塔羅基本功。搭配牌義測驗效果更好。</div>';
+    h += '<div style="text-align:center;margin-top:12px"><button onclick="studyStart()" style="font:500 12px \'Noto Sans TC\',sans-serif;background:rgba(201,169,110,.15);border:1px solid #c9a96e;color:#f0e9d8;padding:9px 24px;border-radius:18px;cursor:pointer">開始學習計畫</button></div>';
+  } else {
+    var day = studyDay();
+    var allDone = doneN >= 22;
+    // 進度條
+    h += '<div style="height:4px;border-radius:2px;background:rgba(201,169,110,.15);margin-top:10px;overflow:hidden"><div style="width:' + Math.round(doneN / 22 * 100) + '%;height:100%;background:linear-gradient(90deg,#c9a96e,#e6cd9a)"></div></div>';
+    if (allDone) {
+      h += '<div style="font:500 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:12px;text-align:center">🎉 恭喜完成 22 張大牌!你已經打下扎實的基礎</div>';
+      h += '<div style="text-align:center;margin-top:10px"><button onclick="studyRestart()" style="font:400 11px \'Noto Sans TC\',sans-serif;background:none;border:1px solid rgba(201,169,110,.35);color:rgba(240,233,216,.6);padding:6px 16px;border-radius:14px;cursor:pointer">重新開始一輪</button></div>';
+    } else {
+      var todayCard = TAROT[day - 1];
+      var reviewCard = day > 1 ? TAROT[day - 2] : null;
+      var todayDone = !!studyData.done[day];
+      h += '<div style="display:flex;align-items:center;gap:12px;margin-top:12px">';
+      h += '<div onclick="openLibCard(\'' + todayCard.id + '\')" style="flex:none;width:52px;aspect-ratio:150/230;border-radius:6px;border:1px solid #d8b96c;overflow:hidden;background:#f2e9d8;display:flex;flex-direction:column;cursor:pointer">' + cardImgHtml(todayCard.img, todayCard.nameZh) + '</div>';
+      h += '<div style="flex:1;min-width:0">';
+      h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">第 ' + day + ' 天 · 今日學習</div>';
+      h += '<div onclick="openLibCard(\'' + todayCard.id + '\')" style="font:600 15px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:2px;cursor:pointer">' + todayCard.nameZh + ' <span style="font:italic 11px \'EB Garamond\',serif;color:rgba(240,233,216,.5)">' + todayCard.nameEn + '</span></div>';
+      if (reviewCard) h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-top:3px">複習昨日:<span onclick="openLibCard(\'' + reviewCard.id + '\')" style="color:#c9a96e;cursor:pointer;border-bottom:1px dotted rgba(201,169,110,.5)">' + reviewCard.nameZh + '</span></div>';
+      h += '</div>';
+      h += todayDone
+        ? '<div style="flex:none;font:500 11px \'Noto Sans TC\',sans-serif;color:#9fce9f">✓ 完成</div>'
+        : '<button onclick="studyMarkDone()" style="flex:none;font:500 11px \'Noto Sans TC\',sans-serif;background:rgba(201,169,110,.15);border:1px solid #c9a96e;color:#f0e9d8;padding:7px 13px;border-radius:14px;cursor:pointer">標記完成</button>';
+      h += '</div>';
+    }
+  }
+  h += '</div>';
+  return h;
+}
+
 /* ---------- views ---------- */
 
 function renderHome() {
@@ -896,6 +1173,7 @@ function renderHome() {
   h += '<button onclick="go(\'reading\',\'lenormand\')" style="font:500 15px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;background:rgba(201,169,110,.12);color:#f0e9d8;border:1px solid rgba(201,169,110,.5);padding:16px 20px;border-radius:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"><span>雷諾曼占卜 <span style="font:italic 11px \'EB Garamond\',serif;opacity:.6">Lenormand Reading</span></span><span>›</span></button>';
   h += '<button onclick="go(\'library\')" style="font:500 15px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;background:linear-gradient(160deg,#f2e9d8,#e6d9c0);color:#4a3826;border:1px solid #d8b96c;padding:16px 20px;border-radius:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"><span>塔羅百科 <span style="font:italic 11px \'EB Garamond\',serif;opacity:.6;color:#8a6f47">Encyclopedia</span></span><span>›</span></button>';
   h += '</div>';
+  h += renderStudyWidget();
   h += '<div style="text-align:center;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:18px;line-height:1.8;padding:0 10px">初次接觸塔羅嗎？建議先到「塔羅百科」認識大阿爾克那 22 張牌，<br>再回來開始占卜，解讀會更容易上手。</div>';
   h += '</div>';
   return h;
@@ -1038,6 +1316,7 @@ function updateQHint(v) {
 
 function openLibCard(key) {
   state.tab = 'library';
+  state.libQuiz = false;
   state.libDeck = /^l\d+$/.test(key) ? 'lenormand' : 'tarot';
   state.libSuit = 'all';
   state.libSelected = key;
@@ -1658,6 +1937,12 @@ function renderLibrary() {
   h += '<div style="font:600 18px \'Noto Serif TC\',serif;color:#f0e9d8;text-align:center">牌義典藏</div>';
   h += '<div style="font:italic 11px \'EB Garamond\',serif;color:rgba(240,233,216,.45);text-align:center;margin-top:2px">Card Meaning Library</div>';
 
+  if (state.libQuiz && state.quiz) {
+    h += renderQuiz();
+    h += '</div>';
+    return h;
+  }
+
   var data = libIsTarot ? TAROT : LENORMAND;
   var detail = null;
   if (state.libSelected) {
@@ -1769,6 +2054,15 @@ function renderLibrary() {
     });
     h += '</div>';
     if (libIsTarot) h += renderMnemonic();
+    // quiz + mastery progress
+    var mc = masteredCount(libIsTarot);
+    var deckTotal = libIsTarot ? TAROT.length : LENORMAND.length;
+    h += '<div style="display:flex;align-items:center;gap:12px;margin-top:12px;border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:11px 14px;background:rgba(255,255,255,.02)">';
+    h += '<button onclick="quizStart()" style="flex:none;font:500 12px \'Noto Sans TC\',sans-serif;background:linear-gradient(120deg,#c9a96e,#e6cd9a);color:#1a1622;border:none;padding:9px 18px;border-radius:16px;cursor:pointer">🎯 牌義測驗</button>';
+    h += '<div style="flex:1;min-width:0">';
+    h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">已掌握 ' + mc + ' / ' + deckTotal + ' 張</div>';
+    h += '<div style="height:4px;border-radius:2px;background:rgba(201,169,110,.15);margin-top:5px;overflow:hidden"><div style="width:' + Math.round(mc / deckTotal * 100) + '%;height:100%;background:linear-gradient(90deg,#c9a96e,#e6cd9a)"></div></div>';
+    h += '</div></div>';
     // suit pills
     var suits = libIsTarot ? LIB_SUITS : [{ key: 'all', zh: '全部' }];
     h += '<div style="display:flex;gap:8px;margin-top:14px;overflow-x:auto;padding-bottom:4px">';
@@ -1784,7 +2078,8 @@ function renderLibrary() {
     h += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px 10px;margin-top:18px">';
     filtered.forEach(function (c) {
       var key = libIsTarot ? c.id : ('l' + c.n);
-      h += '<div onclick="selectLibCard(\'' + key + '\')" style="cursor:pointer;display:flex;flex-direction:column;gap:5px">';
+      h += '<div onclick="selectLibCard(\'' + key + '\')" style="cursor:pointer;display:flex;flex-direction:column;gap:5px;position:relative">';
+      if (isMastered(key)) h += '<div style="position:absolute;top:-5px;right:-5px;width:17px;height:17px;border-radius:50%;background:#c9a96e;color:#1a1622;font:600 10px sans-serif;display:flex;align-items:center;justify-content:center;z-index:2">✓</div>';
       h += '<div style="width:100%;aspect-ratio:150/230;border-radius:6px;border:1px solid rgba(216,185,108,.5);overflow:hidden;background:#f2e9d8;display:flex;flex-direction:column">';
       if (c.img) {
         h += '<img src="' + c.img + '" alt="' + esc(c.nameZh) + '" loading="lazy" style="width:100%;height:100%;object-fit:contain;display:block">';
@@ -1905,6 +2200,7 @@ function resetReading() {
 function go(tab, deck) {
   state.tab = tab;
   state.histSelected = null;
+  state.libQuiz = false;
   if (deck) state.deck = deck;
   resetReading();
   render();
@@ -1913,7 +2209,7 @@ function go(tab, deck) {
 
 function selectSpread(sp) { state.spread = sp; resetReading(); render(); }
 function selectCategory(cat) { state.category = cat; resetReading(); render(); }
-function setLibDeck(d) { state.libDeck = d; state.libSuit = 'all'; state.libSelected = null; render(); }
+function setLibDeck(d) { state.libDeck = d; state.libSuit = 'all'; state.libSelected = null; state.libQuiz = false; render(); }
 function setLibSuit(su) { state.libSuit = su; state.libSelected = null; render(); }
 function selectLibCard(key) { state.libSelected = key; render(); window.scrollTo(0, 0); }
 function closeLibCard() { state.libSelected = null; render(); }
