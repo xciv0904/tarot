@@ -348,6 +348,10 @@ var state = {
   mnTab: 'suit',
   libQuiz: false,
   quiz: null,
+  mnTabLen: 'tone',
+  comboA: 1,
+  comboB: 24,
+  gtSig: 29,
   copied: false,
 };
 
@@ -772,7 +776,9 @@ function shareResultImage() {
     if (!drawn.length) return;
     var isTarot = state.deck === 'tarot';
     var W = 750, pad = 44, cw = 148, ch = 227;
-    var perRow = drawn.length >= 7 ? 4 : Math.min(drawn.length, 3);
+    var perRow = drawn.length >= 20 ? 6 : (drawn.length >= 7 ? 4 : Math.min(drawn.length, 3));
+    var _scale = drawn.length >= 20 ? 0.68 : 1;
+    cw = Math.round(cw * _scale); ch = Math.round(ch * _scale);
     var rows = Math.ceil(drawn.length / perRow);
     var gap = perRow > 1 ? (W - 2 * pad - perRow * cw) / (perRow - 1) : 0;
 
@@ -1143,6 +1149,255 @@ function renderStudyWidget() {
   return h;
 }
 
+/* ================= 雷諾曼強化:牌陣 / 組合速查 / 記憶心法 / 大牌陣 ================= */
+
+/* ---- 雷諾曼專屬牌陣(執行期擴充) ---- */
+LENORMAND_SPREADS.line5 = { zh: '五張直線', en: 'Line of Five', positions: [
+  { zh: '起因', en: 'Origin' }, { zh: '過去', en: 'Past' }, { zh: '現況', en: 'Present' },
+  { zh: '發展', en: 'Development' }, { zh: '結果', en: 'Outcome' },
+]};
+LENORMAND_SPREADS.box9 = { zh: '九宮格', en: 'Nine Box', positions: [
+  { zh: '過去的影響', en: 'Past Above' }, { zh: '心中所想', en: 'Mind' }, { zh: '未來的影響', en: 'Future Above' },
+  { zh: '過去', en: 'Past' }, { zh: '核心主題', en: 'Core' }, { zh: '未來', en: 'Future' },
+  { zh: '過去的根基', en: 'Past Base' }, { zh: '潛藏因素', en: 'Hidden' }, { zh: '發展的結果', en: 'Result' },
+]};
+LENORMAND_SPREADS.grand = { zh: '大牌陣', en: 'Grand Tableau', positions: (function () {
+  var arr = [];
+  for (var i = 1; i <= 36; i++) arr.push({ zh: '第' + i + '宮', en: 'House ' + i });
+  return arr;
+})()};
+
+SPREAD_DESC.line5 = '經典的五張敘事線，從起因一路讀到結果。';
+SPREAD_DESC.box9 = '3×3 方陣，行、列、對角線交叉解讀核心主題。';
+SPREAD_DESC.grand = '36 張全展的雷諾曼招牌玩法，找到代表自己的牌，讀它的四鄰與全局。';
+
+var LEN_RECOMMENDATIONS = {
+  love: ['box9', 'three-time', 'line5', 'grand', 'single'],
+  career: ['box9', 'three-issue', 'line5', 'grand', 'single'],
+  family: ['three-issue', 'box9', 'line5', 'single'],
+  health: ['three-mbs', 'line5', 'box9', 'single'],
+  wealth: ['three-issue', 'line5', 'box9', 'single'],
+  social: ['box9', 'three-time', 'line5', 'single'],
+  general: ['grand', 'box9', 'line5', 'three-time', 'single'],
+};
+
+/* ---- 組合速查器 ---- */
+function comboSet(which, val) {
+  if (which === 'a') state.comboA = parseInt(val, 10);
+  else state.comboB = parseInt(val, 10);
+  render();
+}
+function comboSwap() { var t = state.comboA; state.comboA = state.comboB; state.comboB = t; render(); }
+
+function renderComboLookup() {
+  var a = LENORMAND.find(function (c) { return c.n === state.comboA; });
+  var b = LENORMAND.find(function (c) { return c.n === state.comboB; });
+  var selStyle = 'flex:1;background:#241f2e;border:1px solid rgba(201,169,110,.4);color:#f0e9d8;border-radius:8px;padding:9px 8px;font:500 13px \'Noto Sans TC\',sans-serif;outline:none';
+  function options(sel) {
+    return LENORMAND.map(function (c) {
+      return '<option value="' + c.n + '"' + (c.n === sel ? ' selected' : '') + '>' + c.n + '. ' + c.nameZh + '</option>';
+    }).join('');
+  }
+  var h = '<div style="border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:13px 14px;margin-top:12px;background:rgba(255,255,255,.02)">';
+  h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;color:#e6cd9a">🔍 組合速查 <span style="font:italic 10px \'EB Garamond\',serif;color:rgba(240,233,216,.4)">Pair Lookup</span></div>';
+  h += '<div style="display:flex;gap:8px;align-items:center;margin-top:10px">';
+  h += '<select onchange="comboSet(\'a\', this.value)" style="' + selStyle + '">' + options(state.comboA) + '</select>';
+  h += '<button onclick="comboSwap()" style="flex:none;background:none;border:1px solid rgba(201,169,110,.4);color:#c9a96e;border-radius:8px;padding:8px 10px;cursor:pointer;font-size:12px" title="交換順序">⇄</button>';
+  h += '<select onchange="comboSet(\'b\', this.value)" style="' + selStyle + '">' + options(state.comboB) + '</select>';
+  h += '</div>';
+  if (a && b && a.n !== b.n) {
+    h += '<div style="border:1px solid rgba(201,169,110,.35);border-radius:8px;padding:11px 13px;margin-top:10px;background:rgba(201,169,110,.07)">';
+    h += '<div style="font:600 13px \'Noto Serif TC\',serif;color:#f0e9d8">「' + a.nameZh + ' ＋ ' + b.nameZh + '」</div>';
+    h += '<div style="font:400 13px \'Noto Sans TC\',sans-serif;color:#e6cd9a;margin-top:5px;line-height:1.7">' + esc(lenPairText(a, b)) + '</div>';
+    h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-top:7px">反過來讀:「' + b.nameZh + ' ＋ ' + a.nameZh + '」＝' + esc(lenPairText(b, a)) + '</div>';
+    h += '</div>';
+    h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:8px;line-height:1.6">讀法:第一張是主題，第二張為它上色。順序不同，意義也不同。</div>';
+  } else if (a && b) {
+    h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-top:10px;text-align:center">請選兩張不同的牌</div>';
+  }
+  h += '</div>';
+  return h;
+}
+
+/* ---- 雷諾曼記憶心法 ---- */
+var LEN_THEME_GROUPS = [
+  { label: '問愛情看這些', hint: '感情議題的核心指標牌', ns: [24, 25, 9, 18, 28, 29] },
+  { label: '問工作事業看這些', hint: '職場與成就的指標牌', ns: [14, 19, 35, 31, 15, 33] },
+  { label: '問金錢看這些', hint: '財務與資源的指標牌', ns: [34, 15, 2, 23, 4] },
+  { label: '訊息與溝通', hint: '消息、文件與言語往來', ns: [1, 27, 26, 12] },
+  { label: '人物牌', hint: '代表具體的人', ns: [28, 29, 13, 18, 15] },
+  { label: '時間感', hint: '事情的快慢節奏', ns: [1, 10, 8, 5, 35, 21] },
+];
+var LEN_CONFUSE_DATA = [
+  { common: '都是「阻礙」', items: [
+    { n: 6, diff: '迷霧般的混亂——看不清，但會散去' },
+    { n: 21, diff: '實體的高牆——存在已久，需要翻越或繞行' },
+  ]},
+  { common: '都「不懷好意」', items: [
+    { n: 7, diff: '誘惑與糾纏——彎彎曲曲的複雜關係' },
+    { n: 14, diff: '算計與謀生——聰明但為自己打算的人' },
+  ]},
+  { common: '都是「結束與痛」', items: [
+    { n: 8, diff: '自然的落幕——一個階段完整結束' },
+    { n: 10, diff: '突然的切斷——快而不可逆的決定' },
+    { n: 36, diff: '沉重的考驗——必須背起來走一段的負擔' },
+  ]},
+  { common: '都是「光亮」', items: [
+    { n: 31, diff: '當下的成功——已經照在身上的光' },
+    { n: 16, diff: '遠方的希望——指引方向的星光' },
+    { n: 32, diff: '被看見的光——名聲、榮譽與情緒' },
+  ]},
+  { common: '都與「愛」有關', items: [
+    { n: 24, diff: '感受層面的愛——心動與真情' },
+    { n: 25, diff: '承諾層面的愛——約定、契約與婚姻' },
+  ]},
+  { common: '都是「資訊」', items: [
+    { n: 26, diff: '蓋著的書——祕密、未知、需要學習' },
+    { n: 27, diff: '打開的信——明文的訊息與文件' },
+  ]},
+  { common: '都是「建築」', items: [
+    { n: 4, diff: '溫暖的家——歸屬感與私領域' },
+    { n: 19, diff: '冰冷的塔——體制、官方與孤高' },
+  ]},
+  { common: '都是「移動」', items: [
+    { n: 17, diff: '狀態的改變——升遷、搬家、蛻變' },
+    { n: 3, diff: '空間的移動——旅行、遠方、貿易' },
+  ]},
+];
+
+function renderLenMnemonic() {
+  var h = '<div style="border:1px solid rgba(201,169,110,.3);border-radius:10px;margin-top:14px;background:rgba(255,255,255,.02);overflow:hidden">';
+  h += '<button onclick="mnToggle()" style="width:100%;background:none;border:none;padding:12px 15px;cursor:pointer;display:flex;justify-content:space-between;align-items:center">';
+  h += '<span style="font:500 13px \'Noto Sans TC\',sans-serif;color:#e6cd9a">🧠 記憶心法 <span style="font:italic 10px \'EB Garamond\',serif;color:rgba(240,233,216,.4)">Mnemonics</span></span>';
+  h += '<span style="color:#c9a96e;font-size:11px">' + (state.mnOpen ? '▲ 收起' : '▼ 展開') + '</span>';
+  h += '</button>';
+  if (state.mnOpen) {
+    h += '<div style="padding:0 15px 15px">';
+    h += '<div style="display:flex;gap:7px">';
+    [['tone', '吉凶速覽'], ['theme', '主題牌組'], ['confuse', '易混淆']].forEach(function (t) {
+      var active = state.mnTabLen === t[0];
+      h += '<button onclick="mnSetTabLen(\'' + t[0] + '\')" style="flex:1;background:' + (active ? 'rgba(201,169,110,.18)' : 'transparent') + ';border:1px solid ' + (active ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.5)') + ';padding:7px 4px;border-radius:8px;cursor:pointer;font:500 12px \'Noto Sans TC\',sans-serif">' + t[1] + '</button>';
+    });
+    h += '</div>';
+    function chip(n, color) {
+      var c = LENORMAND.find(function (x) { return x.n === n; });
+      return '<span onclick="openLibCard(\'l' + n + '\')" style="display:inline-block;font:400 11px \'Noto Sans TC\',sans-serif;border:1px solid ' + color + ';color:' + color + ';border-radius:11px;padding:3px 9px;margin:3px 3px 0 0;cursor:pointer">' + n + ' ' + c.nameZh + '</span>';
+    }
+    if (state.mnTabLen === 'tone') {
+      [['吉', '#9fce9f', '順著用，是好訊號'], ['中性', 'rgba(240,233,216,.6)', '看前後牌決定方向'], ['凶', '#d99b5f', '提醒與警訊,搭配建議讀']].forEach(function (g) {
+        var ns = [];
+        for (var n = 1; n <= 36; n++) if (LEN_RICH[n] && LEN_RICH[n].tone === g[0]) ns.push(n);
+        h += '<div style="margin-top:12px">';
+        h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;color:' + g[1] + '">' + g[0] + '（' + ns.length + ' 張）<span style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-left:6px">' + g[2] + '</span></div>';
+        h += '<div style="margin-top:4px">' + ns.map(function (n) { return chip(n, g[1]); }).join('') + '</div>';
+        h += '</div>';
+      });
+    } else if (state.mnTabLen === 'theme') {
+      LEN_THEME_GROUPS.forEach(function (g) {
+        h += '<div style="margin-top:12px">';
+        h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;color:#c9a96e">' + g.label + '<span style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-left:6px">' + g.hint + '</span></div>';
+        h += '<div style="margin-top:4px">' + g.ns.map(function (n) { return chip(n, '#e6cd9a'); }).join('') + '</div>';
+        h += '</div>';
+      });
+    } else {
+      LEN_CONFUSE_DATA.forEach(function (g) {
+        h += '<div style="border:1px solid rgba(201,169,110,.25);border-radius:8px;padding:11px 13px;background:rgba(255,255,255,.02);margin-top:9px">';
+        h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e">' + g.common + '，差在哪?</div>';
+        g.items.forEach(function (it) {
+          var c = LENORMAND.find(function (x) { return x.n === it.n; });
+          h += '<div style="display:flex;gap:9px;margin-top:8px;align-items:baseline">';
+          h += '<span onclick="openLibCard(\'l' + it.n + '\')" style="flex:none;font:600 12px \'Noto Serif TC\',serif;color:#e6cd9a;cursor:pointer;border-bottom:1px dotted rgba(201,169,110,.4)">' + c.nameZh + '</span>';
+          h += '<span style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.65);line-height:1.6">' + it.diff + '</span>';
+          h += '</div>';
+        });
+        h += '</div>';
+      });
+    }
+    h += '</div>';
+  }
+  h += '</div>';
+  return h;
+}
+function mnSetTabLen(k) { state.mnTabLen = k; render(); }
+
+/* ---- 大牌陣 Grand Tableau ---- */
+function gtSetSig(n) { state.gtSig = n; render(); }
+
+function renderGrandTableau() {
+  var h = '<div style="margin-top:18px">';
+  h += '<div style="display:grid;grid-template-columns:repeat(9,1fr);gap:4px">';
+  state.drawn.forEach(function (d, i) {
+    var isSig = d.card.n === state.gtSig;
+    h += '<div onclick="openLibCard(\'l' + d.card.n + '\')" style="cursor:pointer;animation:cardIn .4s ease both;animation-delay:' + (i * 0.025) + 's;position:relative">';
+    h += '<div style="width:100%;aspect-ratio:150/230;border-radius:4px;border:' + (isSig ? '2px solid #e6cd9a;box-shadow:0 0 10px rgba(230,205,154,.6)' : '1px solid rgba(216,185,108,.45)') + ';overflow:hidden;background:#f2e9d8;display:flex;flex-direction:column">';
+    h += d.card.img ? '<img src="' + d.card.img + '" alt="' + esc(d.card.nameZh) + '" style="width:100%;height:100%;object-fit:contain;display:block">' : '';
+    h += '</div>';
+    h += '<div style="text-align:center;font:400 8px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,' + (isSig ? '.95' : '.45') + ');margin-top:2px;line-height:1.2">' + d.card.nameZh + '</div>';
+    h += '</div>';
+  });
+  h += '</div>';
+  h += '<div style="display:flex;justify-content:center;gap:8px;margin-top:14px">';
+  [[28, '以「男士」為代表'], [29, '以「女士」為代表']].forEach(function (p) {
+    var active = state.gtSig === p[0];
+    h += '<button onclick="gtSetSig(' + p[0] + ')" style="background:' + (active ? 'rgba(201,169,110,.18)' : 'transparent') + ';border:1px solid ' + (active ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.5)') + ';padding:7px 14px;border-radius:14px;cursor:pointer;font:500 11px \'Noto Sans TC\',sans-serif">' + p[1] + '</button>';
+  });
+  h += '</div>';
+  h += '<div style="text-align:center;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:8px">點任一張牌可查看牌義 · 完整解讀在下方摘要</div>';
+  h += '</div>';
+  return h;
+}
+
+function grandPanel() {
+  var cards = state.drawn.map(function (d) { return d.card; });
+  var h = '<div style="border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:15px 17px;background:rgba(255,255,255,.02);margin-top:12px">';
+  h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:#c9a96e;text-transform:uppercase">✧ 大牌陣解讀 Grand Tableau</div>';
+  function line(label, txt) {
+    return '<div style="margin-top:10px"><span style="font:500 12px \'Noto Sans TC\',sans-serif;color:#e6cd9a">' + label + '</span><div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.85);margin-top:3px;line-height:1.8">' + txt + '</div></div>';
+  }
+  // 主基調:前三張
+  h += line('開場基調（前三張）', '「' + cards[0].nameZh + '＋' + cards[1].nameZh + '」：' + esc(lenPairText(cards[0], cards[1])) + '；「' + cards[1].nameZh + '＋' + cards[2].nameZh + '」：' + esc(lenPairText(cards[1], cards[2])));
+  // 代表牌
+  var si = cards.findIndex(function (c) { return c.n === state.gtSig; });
+  var sig = cards[si];
+  var row = Math.floor(si / 9), col = si % 9;
+  var houseCard = LENORMAND[si];
+  h += line('你的代表牌「' + sig.nameZh + '」', '落在第 ' + (si + 1) + ' 宮（' + houseCard.nameZh + '宮）——整體處境圍繞著「' + esc(LEN_COMBI[houseCard.n].n) + '」的課題。');
+  // 四鄰
+  var dirs = [];
+  if (col > 0) dirs.push('身後（已經歷）：' + cards[si - 1].nameZh + '——' + esc(LEN_COMBI[cards[si - 1].n].n));
+  if (col < 8) dirs.push('面前（即將面對）：' + cards[si + 1].nameZh + '——' + esc(LEN_COMBI[cards[si + 1].n].n));
+  if (row > 0) dirs.push('頭頂（心之所想）：' + cards[si - 9].nameZh + '——' + esc(LEN_COMBI[cards[si - 9].n].n));
+  if (row < 3) dirs.push('腳下（已掌握的根基）：' + cards[si + 9].nameZh + '——' + esc(LEN_COMBI[cards[si + 9].n].n));
+  h += line('代表牌的四鄰', dirs.join('<br>'));
+  // 四角
+  var corners = [cards[0], cards[8], cards[27], cards[35]];
+  h += line('框住全局的四角', corners.map(function (c) { return c.nameZh; }).join('、') + '——' + corners.map(function (c) { return esc(LEN_COMBI[c.n].n); }).join('；'));
+  h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:11px;line-height:1.6">提示:大牌陣裡,離代表牌越近的牌影響越強;可以用上方「組合速查」深入任兩張相鄰的牌。</div>';
+  h += '</div>';
+  return h;
+}
+
+/* ---- 九宮格交叉解讀 ---- */
+function box9Panel() {
+  var c = state.drawn.map(function (d) { return d.card; });
+  if (c.length !== 9) return '';
+  function chain(a, b, d2) {
+    return '「' + a.nameZh + '＋' + b.nameZh + '」：' + esc(lenPairText(a, b)) + '；「' + b.nameZh + '＋' + d2.nameZh + '」：' + esc(lenPairText(b, d2));
+  }
+  var h = '<div style="border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:15px 17px;background:rgba(255,255,255,.02);margin-top:12px">';
+  h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:#c9a96e;text-transform:uppercase">✧ 九宮格交叉解讀 Nine Box</div>';
+  function line(label, txt) {
+    return '<div style="margin-top:10px"><span style="font:500 12px \'Noto Sans TC\',sans-serif;color:#e6cd9a">' + label + '</span><div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.85);margin-top:3px;line-height:1.8">' + txt + '</div></div>';
+  }
+  h += line('核心主題', '「' + c[4].nameZh + '」——' + esc(LEN_RICH[c[4].n] ? LEN_RICH[c[4].n].mean : c[4].mZh));
+  h += line('時間軸（中排：過去→現在→未來）', chain(c[3], c[4], c[5]));
+  h += line('意識層（上排：想法與影響）', chain(c[0], c[1], c[2]));
+  h += line('根基層（下排：底層的暗流）', chain(c[6], c[7], c[8]));
+  h += line('對角線（穿越核心的力量）', '「' + c[0].nameZh + '＋' + c[4].nameZh + '＋' + c[8].nameZh + '」與「' + c[2].nameZh + '＋' + c[4].nameZh + '＋' + c[6].nameZh + '」交會於核心——' + esc(lenPairText(c[0], c[8])) + '；' + esc(lenPairText(c[2], c[6])));
+  h += '</div>';
+  return h;
+}
+
 /* ---------- views ---------- */
 
 function renderHome() {
@@ -1223,7 +1478,8 @@ function renderWizard(spreads, isTarot) {
 
   } else if (state.wizardStep === 2) {
     h += '<div style="font:600 15px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:6px">推薦適合這類問題的牌陣</div>';
-    var recs = (RECOMMENDATIONS[state.category] || []).filter(function (k) { return !!spreads[k]; });
+    var recSrc = state.deck === 'lenormand' ? LEN_RECOMMENDATIONS : RECOMMENDATIONS;
+    var recs = (recSrc[state.category] || []).filter(function (k) { return !!spreads[k]; });
     if (!recs.length) recs = Object.keys(spreads);
     h += '<div style="display:flex;flex-direction:column;gap:9px;margin-top:14px">';
     recs.forEach(function (key) {
@@ -1400,7 +1656,9 @@ function renderReading() {
     if (qEcho) h += '<div style="font:italic 12px \'EB Garamond\',serif;color:rgba(240,233,216,.55);margin-top:8px">' + qEcho + '</div>';
     h += '</div>';
 
-    if (isTarot && state.spread === 'celtic') {
+    if (!isTarot && state.spread === 'grand') {
+      h += renderGrandTableau();
+    } else if (isTarot && state.spread === 'celtic') {
       h += renderCelticCross();
     } else {
     var cardW = state.drawn.length >= 7 ? '26%' : (state.drawn.length >= 3 ? '30%' : '46%');
@@ -1443,7 +1701,13 @@ function renderReading() {
     h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:#e6cd9a;text-transform:uppercase">✦ 綜合解讀 Overall Reading</div>';
     h += '<div style="font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:8px;line-height:1.9;text-align:justify">' + esc(overallReading()) + '</div>';
     h += '</div>';
-    if (!isTarot && state.drawn.length >= 2) {
+    if (!isTarot && state.spread === 'grand') {
+      h += grandPanel();
+    }
+    if (!isTarot && state.spread === 'box9') {
+      h += box9Panel();
+    }
+    if (!isTarot && state.drawn.length >= 2 && state.spread !== 'grand' && state.spread !== 'box9') {
       var lp = lenPairs(state.drawn);
       h += '<div style="border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:15px 17px;background:rgba(255,255,255,.02);margin-top:12px">';
       h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:#c9a96e;text-transform:uppercase">✧ 組牌解讀 Pair Reading</div>';
@@ -1461,6 +1725,7 @@ function renderReading() {
       });
       h += '</div>';
     }
+    if (state.spread !== 'grand') {
     h += '<div style="display:flex;flex-direction:column;gap:12px;margin-top:16px">';
     state.drawn.forEach(function (d) {
       var c = d.card;
@@ -1478,7 +1743,9 @@ function renderReading() {
       h += '<div style="margin-top:8px"><span onclick="openLibCard(\'' + libKey + '\')" style="font:400 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;cursor:pointer;border-bottom:1px dotted rgba(201,169,110,.5)">在牌典查看這張牌 →</span></div>';
       h += '</div>';
     });
-    h += '</div></div>';
+    h += '</div>';
+    }
+    h += '</div>';
     h += '<div style="text-align:center;margin-top:26px"><button onclick="wizRestart()" style="background:none;border:none;color:rgba(240,233,216,.5);font:400 12px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.4);padding:0 0 2px">← 重新提問，再抽一次</button></div>';
   }
   h += '</div>';
@@ -1746,6 +2013,12 @@ function startReading() {
     render();
     _shuffleTimer = setTimeout(function () {
       state.pickOrder = shuffledIndices(data.length, data.length);
+      if (state.deck === 'lenormand' && state.spread === 'grand') {
+        // 大牌陣:36 張全發,直接面朝上展開
+        state.picked = state.pickOrder.map(function (_, i) { return i; });
+        buildDrawn();
+        return;
+      }
       state.phase = 'picking';
       render();
     }, 2400);
@@ -1777,7 +2050,7 @@ function buildDrawn() {
   var spreads = currentSpreads();
   var positions = spreads[state.spread].positions;
   state.drawn = state.picked.map(function (j, i) {
-    return { card: data[state.pickOrder[j]], reversed: isTarot ? Math.random() < 0.5 : false, flipped: false, pos: positions[i] };
+    return { card: data[state.pickOrder[j]], reversed: isTarot ? Math.random() < 0.5 : false, flipped: state.spread === 'grand', pos: positions[i] };
   });
   state.phase = 'result';
   var cat = CATEGORIES.find(function (x) { return x.key === state.category; });
@@ -1797,7 +2070,7 @@ function buildDrawn() {
       deck: state.deck,
       overall: overallReading(),
       analysis: analyzeSpread(state.drawn, isTarot),
-      pairs: isTarot ? [] : lenPairs(state.drawn),
+      pairs: (isTarot || state.spread === 'grand' || state.spread === 'box9') ? [] : lenPairs(state.drawn),
       cards: state.drawn.map(function (d) {
         return { name: d.card.nameZh, nameEn: d.card.nameEn, pos: d.pos.zh, rev: isTarot ? d.reversed : null, text: cardPosText(d, isTarot) };
       }),
@@ -2054,6 +2327,7 @@ function renderLibrary() {
     });
     h += '</div>';
     if (libIsTarot) h += renderMnemonic();
+    else { h += renderLenMnemonic(); h += renderComboLookup(); }
     // quiz + mastery progress
     var mc = masteredCount(libIsTarot);
     var deckTotal = libIsTarot ? TAROT.length : LENORMAND.length;
