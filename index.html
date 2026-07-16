@@ -1525,7 +1525,10 @@ function renderWizard(spreads, isTarot) {
       h += '<button onclick="wizSetSpread(\'' + key + '\')" style="text-align:left;background:' + (active ? 'rgba(201,169,110,.15)' : 'rgba(255,255,255,.02)') + ';border:1px solid ' + (active ? '#c9a96e' : 'rgba(201,169,110,.25)') + ';border-radius:10px;padding:12px 14px;cursor:pointer">';
       h += '<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:500 13px \'Noto Sans TC\',sans-serif;color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.8)') + '">' + sp.zh + '</span><span style="font:italic 10px \'EB Garamond\',serif;color:#c9a96e">' + sp.positions.length + ' 張牌</span></div>';
       h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);margin-top:4px;line-height:1.5">' + (SPREAD_DESC[key] || '') + '</div>';
-      h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:3px">' + sp.positions.map(function (p2) { return p2.zh; }).join(' · ') + '</div>';
+      var posLine = sp.positions.length > 10
+        ? '免選牌 · 洗牌後 36 張自動排成 9×4 陣 · 找到代表你的牌，讀它的四鄰與全局'
+        : sp.positions.map(function (p2) { return p2.zh; }).join(' · ');
+      h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:3px">' + posLine + '</div>';
       h += '</button>';
     });
     h += '</div>';
