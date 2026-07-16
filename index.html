@@ -279,7 +279,7 @@ var CATEGORIES = [
 
 /* per-category spread recommendations (question_flow) */
 var RECOMMENDATIONS = {
-  love: ['relationship', 'crosslove', 'three-time', 'single'],
+  love: ['relationship', 'crush', 'peach', 'crosslove', 'three-time', 'single'],
   career: ['three-issue', 'celtic', 'horseshoe', 'timeline', 'single'],
   family: ['three-issue', 'relationship', 'three-time', 'single'],
   health: ['three-mbs', 'three-issue', 'timeline', 'single'],
@@ -302,7 +302,7 @@ var SPREAD_DESC = {
 };
 
 var QUESTION_TEMPLATES = {
-  love: { placeholder: '例如：我和交往中的對象，這段關係接下來三個月會如何發展？', chips: ['我和對方的關係現在適合更進一步嗎？', '這段感情該繼續投入還是放手？', '對方對我的真實想法是什麼？'] },
+  love: { placeholder: '例如：我和交往中的對象，這段關係接下來三個月會如何發展？', chips: ['我和對方的關係現在適合更進一步嗎？', '這段感情該繼續投入還是放手？', '我暗戀的人對我是什麼感覺？', '我的下一段緣分什麼時候出現？'] },
   career: { placeholder: '例如：這次面試（公司名稱）的結果傾向如何？', chips: ['這次面試結果會如何？', '我該接受這個工作機會嗎？', '現在的工作是否該考慮轉職？'] },
   family: { placeholder: '例如：最近和家人在某件事上意見不合，該如何相處？', chips: ['我該如何和家人溝通這件事？', '這段家庭關係接下來會如何發展？', '我該如何拿捏和家人相處的界線？'] },
   health: { placeholder: '例如：最近身體／心理狀況不佳，調養方向該注意什麼？', chips: ['我目前的身心狀態該注意什麼？', '這個調養方式適合我嗎？', '接下來一段時間健康狀況的趨勢如何？'] },
@@ -357,7 +357,7 @@ var state = {
 
 var SPREAD_GROUPS = [
   { label: '基礎入門 Basics', keys: ['single', 'three-time', 'three-issue', 'three-mbs'] },
-  { label: '感情 Love', keys: ['relationship', 'crosslove'] },
+  { label: '感情 Love', keys: ['relationship', 'crush', 'peach', 'crosslove'] },
   { label: '進階綜合 Advanced', keys: ['celtic', 'horseshoe'] },
   { label: '職涯・決策 Career & Decisions', keys: ['fork', 'timeline'] },
 ];
@@ -1167,6 +1167,20 @@ LENORMAND_SPREADS.grand = { zh: '大牌陣', en: 'Grand Tableau', positions: (fu
   return arr;
 })()};
 
+/* ---- 感情:暗戀與單身桃花牌陣(塔羅) ---- */
+TAROT_SPREADS.crush = { zh: '暗戀牌陣', en: 'Secret Crush', positions: [
+  { zh: '你的心意', en: 'Your Heart' }, { zh: '對方眼中的你', en: 'In Their Eyes' },
+  { zh: '目前的距離', en: 'The Gap' }, { zh: '潛在的阻礙', en: 'Obstacle' },
+  { zh: '未來的發展', en: 'Potential' },
+]};
+TAROT_SPREADS.peach = { zh: '單身桃花牌陣', en: 'New Love', positions: [
+  { zh: '現在的你', en: 'Present You' }, { zh: '阻礙桃花的原因', en: 'The Block' },
+  { zh: '提升魅力的建議', en: 'Advice' }, { zh: '緣分的走向', en: 'Where It Leads' },
+  { zh: '即將出現的對象', en: 'The One Coming' },
+]};
+SPREAD_DESC.crush = '還沒說出口的心意——看清對方的想法與告白的可能。';
+SPREAD_DESC.peach = '單身者專用——找出桃花卡住的原因與緣分的方向。';
+
 SPREAD_DESC.line5 = '經典的五張敘事線，從起因一路讀到結果。';
 SPREAD_DESC.box9 = '3×3 方陣，行、列、對角線交叉解讀核心主題。';
 SPREAD_DESC.grand = '36 張全展的雷諾曼招牌玩法，找到代表自己的牌，讀它的四鄰與全局。';
@@ -1794,7 +1808,7 @@ function posRole(zh) {
   if (/阻礙|挑戰/.test(zh)) return 'obstacle';
   if (/建議|指引/.test(zh)) return 'advice';
   if (/過去/.test(zh)) return 'past';
-  if (/未來|結果|走向|個月/.test(zh)) return 'future';
+  if (/未來|結果|走向|個月|發展/.test(zh)) return 'future';
   if (/潛意識|根源/.test(zh)) return 'root';
   if (/對方|外在|環境/.test(zh)) return 'other';
   if (/你的|自身|顯意識|感受|立場|需求|態度/.test(zh)) return 'self';
