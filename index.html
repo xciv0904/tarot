@@ -962,15 +962,25 @@ function quizKey(c, isTarot) { return isTarot ? c.id : 'l' + c.n; }
 
 function quizPickCard(isTarot) {
   var arr = isTarot ? TAROT : LENORMAND;
-  var lastKey = state.quiz && state.quiz.lastKey;
-  // 加權:掌握度越低,越常出現(間隔重複)
-  var pool = [];
-  arr.forEach(function (c) {
-    var key = quizKey(c, isTarot);
-    if (key === lastKey) return;
-    var w = Math.max(1, 5 - learnScore(key));
-    for (var i = 0; i < w; i++) pool.push(c);
-  });
+  var session = state.quiz && state.quiz.session;
+  var recent = (session && session.recent) || [];
+  var okKeys = (session && session.okKeys) || {};
+  // 三層防重複:1) 最近出過的題不重複 2) 本回合答對的牌先不再出
+  // 3) 掌握度越低,權重越高(間隔重複)
+  function buildPool(skipRecent, skipOk) {
+    var pool = [];
+    arr.forEach(function (c) {
+      var key = quizKey(c, isTarot);
+      if (skipRecent && recent.indexOf(key) !== -1) return;
+      if (skipOk && okKeys[key]) return;
+      var w = isMastered(key) ? 1 : Math.max(2, 8 - learnScore(key) * 3);
+      for (var i = 0; i < w; i++) pool.push(c);
+    });
+    return pool;
+  }
+  var pool = buildPool(true, true);
+  if (!pool.length) pool = buildPool(true, false);
+  if (!pool.length) pool = buildPool(false, false);
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
@@ -1010,7 +1020,13 @@ function quizNext() {
     var t = options[i]; options[i] = options[j]; options[j] = t;
   }
   var session = (state.quiz && state.quiz.session) || { n: 0, correct: 0, streak: 0 };
-  state.quiz = { card: card, type: type, options: options, answered: null, session: session, lastKey: quizKey(card, isTarot) };
+  session.recent = session.recent || [];
+  session.okKeys = session.okKeys || {};
+  var newKey = quizKey(card, isTarot);
+  session.recent.push(newKey);
+  var recentCap = Math.min(isTarot ? 12 : 10, arr.length - 4);
+  while (session.recent.length > recentCap) session.recent.shift();
+  state.quiz = { card: card, type: type, options: options, answered: null, session: session, lastKey: newKey };
 }
 
 function quizStart() {
@@ -1031,8 +1047,12 @@ function quizAnswer(i) {
   q.answered = i;
   var correct = q.options[i] === q.card;
   q.session.n++;
-  if (correct) { q.session.correct++; q.session.streak++; fxFlip(); }
-  else { q.session.streak = 0; vibrate(60); }
+  if (correct) {
+    q.session.correct++; q.session.streak++;
+    q.session.okKeys = q.session.okKeys || {};
+    q.session.okKeys[quizKey(q.card, isTarot)] = true;
+    fxFlip();
+  } else { q.session.streak = 0; vibrate(60); }
   learnMark(quizKey(q.card, isTarot), correct);
   render();
 }
