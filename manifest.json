@@ -1,0 +1,14 @@
+{
+  "name": "塔羅 · 雷諾曼占卜 Mystic Deck",
+  "short_name": "塔羅占卜",
+  "description": "免費線上塔羅與雷諾曼占卜——洗牌抽牌、牌義解讀與學習系統",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#14111a",
+  "theme_color": "#14111a",
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
