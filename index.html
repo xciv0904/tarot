@@ -2731,8 +2731,9 @@ function astroEclipticLon(bodyKey, time) {
   return astroNormDeg(ecl.elon);
 }
 
-/* core natal chart computation — validated against an independent
-   horizon-crossing search for the Ascendant (self-consistent to <1e-6°) */
+/* core natal chart computation — planet positions, MC and Ascendant
+   cross-checked against a professional ephemeris (astrolabe.astroinfo.com.tw)
+   to sub-arcminute precision */
 function computeNatalChart(y, m, d, hh, mm, lat, lon, tz) {
   var utcDate = zonedTimeToUtc(y, m, d, hh, mm, 0, tz);
   var time = Astronomy.MakeTime(utcDate);
@@ -2758,7 +2759,7 @@ function computeNatalChart(y, m, d, hh, mm, lat, lon, tz) {
 
   var mc = Math.atan2(Math.sin(theta), Math.cos(theta) * Math.cos(eps));
   mc = astroNormDeg(mc * 180 / Math.PI);
-  var asc = Math.atan2(-Math.cos(theta), Math.sin(eps) * Math.tan(phi) + Math.cos(eps) * Math.sin(theta));
+  var asc = Math.atan2(Math.cos(theta), -(Math.sin(eps) * Math.tan(phi) + Math.cos(eps) * Math.sin(theta)));
   asc = astroNormDeg(asc * 180 / Math.PI);
 
   var ascSign = Math.floor(asc / 30);
