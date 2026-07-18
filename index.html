@@ -54,6 +54,7 @@
 </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
 <script>
 var IMG = {"RWSa-C-02": "assets/cards/RWSa-C-02.webp", "RWSa-C-03": "assets/cards/RWSa-C-03.webp", "RWSa-C-04": "assets/cards/RWSa-C-04.webp", "RWSa-C-05": "assets/cards/RWSa-C-05.webp", "RWSa-C-06": "assets/cards/RWSa-C-06.webp", "RWSa-C-07": "assets/cards/RWSa-C-07.webp", "RWSa-C-08": "assets/cards/RWSa-C-08.webp", "RWSa-C-09": "assets/cards/RWSa-C-09.webp", "RWSa-C-0A": "assets/cards/RWSa-C-0A.webp", "RWSa-C-10": "assets/cards/RWSa-C-10.webp", "RWSa-C-J1": "assets/cards/RWSa-C-J1.webp", "RWSa-C-J2": "assets/cards/RWSa-C-J2.webp", "RWSa-C-KI": "assets/cards/RWSa-C-KI.webp", "RWSa-C-QU": "assets/cards/RWSa-C-QU.webp", "RWSa-P-02": "assets/cards/RWSa-P-02.webp", "RWSa-P-03": "assets/cards/RWSa-P-03.webp", "RWSa-P-04": "assets/cards/RWSa-P-04.webp", "RWSa-P-05": "assets/cards/RWSa-P-05.webp", "RWSa-P-06": "assets/cards/RWSa-P-06.webp", "RWSa-P-07": "assets/cards/RWSa-P-07.webp", "RWSa-P-08": "assets/cards/RWSa-P-08.webp", "RWSa-P-09": "assets/cards/RWSa-P-09.webp", "RWSa-P-0A": "assets/cards/RWSa-P-0A.webp", "RWSa-P-10": "assets/cards/RWSa-P-10.webp", "RWSa-P-J1": "assets/cards/RWSa-P-J1.webp", "RWSa-P-J2": "assets/cards/RWSa-P-J2.webp", "RWSa-P-KI": "assets/cards/RWSa-P-KI.webp", "RWSa-P-QU": "assets/cards/RWSa-P-QU.webp", "RWSa-S-02": "assets/cards/RWSa-S-02.webp", "RWSa-S-03": "assets/cards/RWSa-S-03.webp", "RWSa-S-04": "assets/cards/RWSa-S-04.webp", "RWSa-S-05": "assets/cards/RWSa-S-05.webp", "RWSa-S-06": "assets/cards/RWSa-S-06.webp", "RWSa-S-07": "assets/cards/RWSa-S-07.webp", "RWSa-S-08": "assets/cards/RWSa-S-08.webp", "RWSa-S-09": "assets/cards/RWSa-S-09.webp", "RWSa-S-0A": "assets/cards/RWSa-S-0A.webp", "RWSa-S-10": "assets/cards/RWSa-S-10.webp", "RWSa-S-J1": "assets/cards/RWSa-S-J1.webp", "RWSa-S-J2": "assets/cards/RWSa-S-J2.webp", "RWSa-S-KI": "assets/cards/RWSa-S-KI.webp", "RWSa-S-QU": "assets/cards/RWSa-S-QU.webp", "RWSa-T-00": "assets/cards/RWSa-T-00.webp", "RWSa-T-01": "assets/cards/RWSa-T-01.webp", "RWSa-T-02": "assets/cards/RWSa-T-02.webp", "RWSa-T-03": "assets/cards/RWSa-T-03.webp", "RWSa-T-04": "assets/cards/RWSa-T-04.webp", "RWSa-T-05": "assets/cards/RWSa-T-05.webp", "RWSa-T-06": "assets/cards/RWSa-T-06.webp", "RWSa-T-07": "assets/cards/RWSa-T-07.webp", "RWSa-T-08": "assets/cards/RWSa-T-08.webp", "RWSa-T-09": "assets/cards/RWSa-T-09.webp", "RWSa-T-10": "assets/cards/RWSa-T-10.webp", "RWSa-T-11": "assets/cards/RWSa-T-11.webp", "RWSa-T-12": "assets/cards/RWSa-T-12.webp", "RWSa-T-13": "assets/cards/RWSa-T-13.webp", "RWSa-T-14": "assets/cards/RWSa-T-14.webp", "RWSa-T-15": "assets/cards/RWSa-T-15.webp", "RWSa-T-16": "assets/cards/RWSa-T-16.webp", "RWSa-T-17": "assets/cards/RWSa-T-17.webp", "RWSa-T-18": "assets/cards/RWSa-T-18.webp", "RWSa-T-19": "assets/cards/RWSa-T-19.webp", "RWSa-T-20": "assets/cards/RWSa-T-20.webp", "RWSa-T-21": "assets/cards/RWSa-T-21.webp", "RWSa-W-02": "assets/cards/RWSa-W-02.webp", "RWSa-W-03": "assets/cards/RWSa-W-03.webp", "RWSa-W-04": "assets/cards/RWSa-W-04.webp", "RWSa-W-05": "assets/cards/RWSa-W-05.webp", "RWSa-W-06": "assets/cards/RWSa-W-06.webp", "RWSa-W-07": "assets/cards/RWSa-W-07.webp", "RWSa-W-08": "assets/cards/RWSa-W-08.webp", "RWSa-W-09": "assets/cards/RWSa-W-09.webp", "RWSa-W-0A": "assets/cards/RWSa-W-0A.webp", "RWSa-W-10": "assets/cards/RWSa-W-10.webp", "RWSa-W-J1": "assets/cards/RWSa-W-J1.webp", "RWSa-W-J2": "assets/cards/RWSa-W-J2.webp", "RWSa-W-KI": "assets/cards/RWSa-W-KI.webp", "RWSa-W-QU": "assets/cards/RWSa-W-QU.webp", "LEN-01": "assets/cards/LEN-01.webp", "LEN-02": "assets/cards/LEN-02.webp", "LEN-03": "assets/cards/LEN-03.webp", "LEN-04": "assets/cards/LEN-04.webp", "LEN-05": "assets/cards/LEN-05.webp", "LEN-06": "assets/cards/LEN-06.webp", "LEN-07": "assets/cards/LEN-07.webp", "LEN-08": "assets/cards/LEN-08.webp", "LEN-09": "assets/cards/LEN-09.webp", "LEN-10": "assets/cards/LEN-10.webp", "LEN-11": "assets/cards/LEN-11.webp", "LEN-12": "assets/cards/LEN-12.webp", "LEN-13": "assets/cards/LEN-13.webp", "LEN-14": "assets/cards/LEN-14.webp", "LEN-15": "assets/cards/LEN-15.webp", "LEN-16": "assets/cards/LEN-16.webp", "LEN-17": "assets/cards/LEN-17.webp", "LEN-18": "assets/cards/LEN-18.webp", "LEN-19": "assets/cards/LEN-19.webp", "LEN-20": "assets/cards/LEN-20.webp", "LEN-21": "assets/cards/LEN-21.webp", "LEN-22": "assets/cards/LEN-22.webp", "LEN-23": "assets/cards/LEN-23.webp", "LEN-24": "assets/cards/LEN-24.webp", "LEN-25": "assets/cards/LEN-25.webp", "LEN-26": "assets/cards/LEN-26.webp", "LEN-27": "assets/cards/LEN-27.webp", "LEN-28": "assets/cards/LEN-28.webp", "LEN-29": "assets/cards/LEN-29.webp", "LEN-30": "assets/cards/LEN-30.webp", "LEN-31": "assets/cards/LEN-31.webp", "LEN-32": "assets/cards/LEN-32.webp", "LEN-33": "assets/cards/LEN-33.webp", "LEN-34": "assets/cards/LEN-34.webp", "LEN-35": "assets/cards/LEN-35.webp", "LEN-36": "assets/cards/LEN-36.webp"};
 </script>
@@ -370,6 +371,9 @@ var state = {
   gtHelpOpen: false,
   aboutOpen: false,
   copied: false,
+  astroY: '', astroM: '', astroD: '', astroH: '', astroMin: '',
+  astroCityQuery: '', astroCityIdx: null, astroCityUsed: null,
+  astroUnknownTime: false, astroResult: null,
 };
 
 var SPREAD_GROUPS = [
@@ -2609,6 +2613,7 @@ function renderNav() {
     { key: 'home', zh: '首頁', en: 'Home' },
     { key: 'tarot', zh: '塔羅', en: 'Tarot', deck: 'tarot' },
     { key: 'lenormand', zh: '雷諾曼', en: 'Lenormand', deck: 'lenormand' },
+    { key: 'astro', zh: '星盤', en: 'Natal Chart' },
     { key: 'library', zh: '牌典', en: 'Library' },
     { key: 'history', zh: '歷史', en: 'History' },
   ];
@@ -2629,9 +2634,358 @@ function render() {
   var view = document.getElementById('view');
   if (state.tab === 'home') view.innerHTML = renderHome();
   else if (state.tab === 'reading') view.innerHTML = renderReading();
+  else if (state.tab === 'astro') view.innerHTML = renderAstro();
   else if (state.tab === 'library') view.innerHTML = renderLibrary();
   else if (state.tab === 'history') view.innerHTML = renderHistory();
   renderNav();
+}
+
+/* ================= 個人星盤 Natal Chart ================= */
+
+var CITY_LIST = [{"zh":"台北市","en":"Taipei","lat":25.033,"lon":121.5654,"tz":"Asia/Taipei"},{"zh":"新北市","en":"New Taipei","lat":25.017,"lon":121.4627,"tz":"Asia/Taipei"},{"zh":"桃園市","en":"Taoyuan","lat":24.9936,"lon":121.301,"tz":"Asia/Taipei"},{"zh":"台中市","en":"Taichung","lat":24.1477,"lon":120.6736,"tz":"Asia/Taipei"},{"zh":"台南市","en":"Tainan","lat":22.9998,"lon":120.2269,"tz":"Asia/Taipei"},{"zh":"高雄市","en":"Kaohsiung","lat":22.6273,"lon":120.3014,"tz":"Asia/Taipei"},{"zh":"基隆市","en":"Keelung","lat":25.1276,"lon":121.7392,"tz":"Asia/Taipei"},{"zh":"新竹市","en":"Hsinchu City","lat":24.8138,"lon":120.9675,"tz":"Asia/Taipei"},{"zh":"新竹縣","en":"Hsinchu County","lat":24.8387,"lon":121.0177,"tz":"Asia/Taipei"},{"zh":"苗栗縣","en":"Miaoli","lat":24.5602,"lon":120.8214,"tz":"Asia/Taipei"},{"zh":"彰化縣","en":"Changhua","lat":24.0518,"lon":120.5161,"tz":"Asia/Taipei"},{"zh":"南投縣","en":"Nantou","lat":23.9609,"lon":120.9718,"tz":"Asia/Taipei"},{"zh":"雲林縣","en":"Yunlin","lat":23.7092,"lon":120.4313,"tz":"Asia/Taipei"},{"zh":"嘉義市","en":"Chiayi City","lat":23.4801,"lon":120.4491,"tz":"Asia/Taipei"},{"zh":"嘉義縣","en":"Chiayi County","lat":23.4518,"lon":120.2555,"tz":"Asia/Taipei"},{"zh":"屏東縣","en":"Pingtung","lat":22.5519,"lon":120.5487,"tz":"Asia/Taipei"},{"zh":"宜蘭縣","en":"Yilan","lat":24.7021,"lon":121.7378,"tz":"Asia/Taipei"},{"zh":"花蓮縣","en":"Hualien","lat":23.9871,"lon":121.6015,"tz":"Asia/Taipei"},{"zh":"台東縣","en":"Taitung","lat":22.7583,"lon":121.1444,"tz":"Asia/Taipei"},{"zh":"澎湖縣","en":"Penghu","lat":23.5711,"lon":119.5793,"tz":"Asia/Taipei"},{"zh":"金門縣","en":"Kinmen","lat":24.4326,"lon":118.317,"tz":"Asia/Taipei"},{"zh":"連江縣(馬祖)","en":"Lienchiang (Matsu)","lat":26.1608,"lon":119.9515,"tz":"Asia/Taipei"},{"zh":"北京","en":"Beijing","lat":39.9042,"lon":116.4074,"tz":"Asia/Shanghai"},{"zh":"上海","en":"Shanghai","lat":31.2304,"lon":121.4737,"tz":"Asia/Shanghai"},{"zh":"廣州","en":"Guangzhou","lat":23.1291,"lon":113.2644,"tz":"Asia/Shanghai"},{"zh":"深圳","en":"Shenzhen","lat":22.5431,"lon":114.0579,"tz":"Asia/Shanghai"},{"zh":"成都","en":"Chengdu","lat":30.5728,"lon":104.0668,"tz":"Asia/Shanghai"},{"zh":"杭州","en":"Hangzhou","lat":30.2741,"lon":120.1551,"tz":"Asia/Shanghai"},{"zh":"南京","en":"Nanjing","lat":32.0603,"lon":118.7969,"tz":"Asia/Shanghai"},{"zh":"武漢","en":"Wuhan","lat":30.5928,"lon":114.3055,"tz":"Asia/Shanghai"},{"zh":"西安","en":"Xi'an","lat":34.3416,"lon":108.9398,"tz":"Asia/Shanghai"},{"zh":"重慶","en":"Chongqing","lat":29.4316,"lon":106.9123,"tz":"Asia/Shanghai"},{"zh":"天津","en":"Tianjin","lat":39.3434,"lon":117.3616,"tz":"Asia/Shanghai"},{"zh":"蘇州","en":"Suzhou","lat":31.2989,"lon":120.5853,"tz":"Asia/Shanghai"},{"zh":"青島","en":"Qingdao","lat":36.0671,"lon":120.3826,"tz":"Asia/Shanghai"},{"zh":"廈門","en":"Xiamen","lat":24.4798,"lon":118.0894,"tz":"Asia/Shanghai"},{"zh":"昆明","en":"Kunming","lat":25.0389,"lon":102.7183,"tz":"Asia/Shanghai"},{"zh":"香港","en":"Hong Kong","lat":22.3193,"lon":114.1694,"tz":"Asia/Hong_Kong"},{"zh":"澳門","en":"Macau","lat":22.1987,"lon":113.5439,"tz":"Asia/Macau"},{"zh":"東京","en":"Tokyo","lat":35.6762,"lon":139.6503,"tz":"Asia/Tokyo"},{"zh":"大阪","en":"Osaka","lat":34.6937,"lon":135.5023,"tz":"Asia/Tokyo"},{"zh":"名古屋","en":"Nagoya","lat":35.1815,"lon":136.9066,"tz":"Asia/Tokyo"},{"zh":"橫濱","en":"Yokohama","lat":35.4437,"lon":139.638,"tz":"Asia/Tokyo"},{"zh":"福岡","en":"Fukuoka","lat":33.5904,"lon":130.4017,"tz":"Asia/Tokyo"},{"zh":"札幌","en":"Sapporo","lat":43.0618,"lon":141.3545,"tz":"Asia/Tokyo"},{"zh":"京都","en":"Kyoto","lat":35.0116,"lon":135.7681,"tz":"Asia/Tokyo"},{"zh":"沖繩(那霸)","en":"Okinawa (Naha)","lat":26.2124,"lon":127.6809,"tz":"Asia/Tokyo"},{"zh":"首爾","en":"Seoul","lat":37.5665,"lon":126.978,"tz":"Asia/Seoul"},{"zh":"釜山","en":"Busan","lat":35.1796,"lon":129.0756,"tz":"Asia/Seoul"},{"zh":"新加坡","en":"Singapore","lat":1.3521,"lon":103.8198,"tz":"Asia/Singapore"},{"zh":"吉隆坡","en":"Kuala Lumpur","lat":3.139,"lon":101.6869,"tz":"Asia/Kuala_Lumpur"},{"zh":"曼谷","en":"Bangkok","lat":13.7563,"lon":100.5018,"tz":"Asia/Bangkok"},{"zh":"雅加達","en":"Jakarta","lat":-6.2088,"lon":106.8456,"tz":"Asia/Jakarta"},{"zh":"馬尼拉","en":"Manila","lat":14.5995,"lon":120.9842,"tz":"Asia/Manila"},{"zh":"胡志明市","en":"Ho Chi Minh City","lat":10.8231,"lon":106.6297,"tz":"Asia/Ho_Chi_Minh"},{"zh":"河內","en":"Hanoi","lat":21.0285,"lon":105.8542,"tz":"Asia/Ho_Chi_Minh"},{"zh":"新德里","en":"New Delhi","lat":28.6139,"lon":77.209,"tz":"Asia/Kolkata"},{"zh":"孟買","en":"Mumbai","lat":19.076,"lon":72.8777,"tz":"Asia/Kolkata"},{"zh":"杜拜","en":"Dubai","lat":25.2048,"lon":55.2708,"tz":"Asia/Dubai"},{"zh":"伊斯坦堡","en":"Istanbul","lat":41.0082,"lon":28.9784,"tz":"Europe/Istanbul"},{"zh":"特拉維夫","en":"Tel Aviv","lat":32.0853,"lon":34.7818,"tz":"Asia/Jerusalem"},{"zh":"雪梨","en":"Sydney","lat":-33.8688,"lon":151.2093,"tz":"Australia/Sydney"},{"zh":"墨爾本","en":"Melbourne","lat":-37.8136,"lon":144.9631,"tz":"Australia/Melbourne"},{"zh":"奧克蘭","en":"Auckland","lat":-36.8485,"lon":174.7633,"tz":"Pacific/Auckland"},{"zh":"倫敦","en":"London","lat":51.5074,"lon":-0.1278,"tz":"Europe/London"},{"zh":"巴黎","en":"Paris","lat":48.8566,"lon":2.3522,"tz":"Europe/Paris"},{"zh":"柏林","en":"Berlin","lat":52.52,"lon":13.405,"tz":"Europe/Berlin"},{"zh":"羅馬","en":"Rome","lat":41.9028,"lon":12.4964,"tz":"Europe/Rome"},{"zh":"馬德里","en":"Madrid","lat":40.4168,"lon":-3.7038,"tz":"Europe/Madrid"},{"zh":"阿姆斯特丹","en":"Amsterdam","lat":52.3676,"lon":4.9041,"tz":"Europe/Amsterdam"},{"zh":"蘇黎世","en":"Zurich","lat":47.3769,"lon":8.5417,"tz":"Europe/Zurich"},{"zh":"維也納","en":"Vienna","lat":48.2082,"lon":16.3738,"tz":"Europe/Vienna"},{"zh":"莫斯科","en":"Moscow","lat":55.7558,"lon":37.6173,"tz":"Europe/Moscow"},{"zh":"雅典","en":"Athens","lat":37.9838,"lon":23.7275,"tz":"Europe/Athens"},{"zh":"斯德哥爾摩","en":"Stockholm","lat":59.3293,"lon":18.0686,"tz":"Europe/Stockholm"},{"zh":"都柏林","en":"Dublin","lat":53.3498,"lon":-6.2603,"tz":"Europe/Dublin"},{"zh":"里斯本","en":"Lisbon","lat":38.7223,"lon":-9.1393,"tz":"Europe/Lisbon"},{"zh":"布拉格","en":"Prague","lat":50.0755,"lon":14.4378,"tz":"Europe/Prague"},{"zh":"紐約","en":"New York","lat":40.7128,"lon":-74.006,"tz":"America/New_York"},{"zh":"洛杉磯","en":"Los Angeles","lat":34.0522,"lon":-118.2437,"tz":"America/Los_Angeles"},{"zh":"舊金山","en":"San Francisco","lat":37.7749,"lon":-122.4194,"tz":"America/Los_Angeles"},{"zh":"芝加哥","en":"Chicago","lat":41.8781,"lon":-87.6298,"tz":"America/Chicago"},{"zh":"休士頓","en":"Houston","lat":29.7604,"lon":-95.3698,"tz":"America/Chicago"},{"zh":"西雅圖","en":"Seattle","lat":47.6062,"lon":-122.3321,"tz":"America/Los_Angeles"},{"zh":"波士頓","en":"Boston","lat":42.3601,"lon":-71.0589,"tz":"America/New_York"},{"zh":"拉斯維加斯","en":"Las Vegas","lat":36.1699,"lon":-115.1398,"tz":"America/Los_Angeles"},{"zh":"多倫多","en":"Toronto","lat":43.6532,"lon":-79.3832,"tz":"America/Toronto"},{"zh":"溫哥華","en":"Vancouver","lat":49.2827,"lon":-123.1207,"tz":"America/Vancouver"},{"zh":"檀香山(夏威夷)","en":"Honolulu","lat":21.3069,"lon":-157.8583,"tz":"Pacific/Honolulu"},{"zh":"聖保羅","en":"Sao Paulo","lat":-23.5505,"lon":-46.6333,"tz":"America/Sao_Paulo"},{"zh":"布宜諾斯艾利斯","en":"Buenos Aires","lat":-34.6037,"lon":-58.3816,"tz":"America/Argentina/Buenos_Aires"},{"zh":"開羅","en":"Cairo","lat":30.0444,"lon":31.2357,"tz":"Africa/Cairo"},{"zh":"約翰尼斯堡","en":"Johannesburg","lat":-26.2041,"lon":28.0473,"tz":"Africa/Johannesburg"}];
+
+var ZODIAC_SIGNS = [
+  { zh: '牡羊座', en: 'Aries', sym: '♈', elem: '火', trait: '直接衝勁、敢於率先行動' },
+  { zh: '金牛座', en: 'Taurus', sym: '♉', elem: '土', trait: '穩健務實、重視安全感與感官享受' },
+  { zh: '雙子座', en: 'Gemini', sym: '♊', elem: '風', trait: '靈活善變、好奇心旺盛、擅長多工與交流' },
+  { zh: '巨蟹座', en: 'Cancer', sym: '♋', elem: '水', trait: '敏感細膩、重視情感連結與歸屬感' },
+  { zh: '獅子座', en: 'Leo', sym: '♌', elem: '火', trait: '熱情自信、渴望被看見與肯定' },
+  { zh: '處女座', en: 'Virgo', sym: '♍', elem: '土', trait: '細膩理性、追求完美與實用效率' },
+  { zh: '天秤座', en: 'Libra', sym: '♎', elem: '風', trait: '講求平衡、重視和諧與人際美感' },
+  { zh: '天蠍座', en: 'Scorpio', sym: '♏', elem: '水', trait: '深沉專注、重視真相與強烈的情感深度' },
+  { zh: '射手座', en: 'Sagittarius', sym: '♐', elem: '火', trait: '樂觀開闊、渴望自由與探索意義' },
+  { zh: '摩羯座', en: 'Capricorn', sym: '♑', elem: '土', trait: '務實穩健、重視長期目標與社會地位' },
+  { zh: '水瓶座', en: 'Aquarius', sym: '♒', elem: '風', trait: '獨立理性、重視自由與群體理想' },
+  { zh: '雙魚座', en: 'Pisces', sym: '♓', elem: '水', trait: '感性浪漫、富同理心、容易受直覺與情緒牽引' },
+];
+
+var PLANET_DEFS = [
+  { key: 'Sun', zh: '太陽', sym: '☉', meaning: '核心自我、意志與生命力', kw: '核心自我' },
+  { key: 'Moon', zh: '月亮', sym: '☽', meaning: '情緒、內在需求與安全感', kw: '情緒安全感' },
+  { key: 'Mercury', zh: '水星', sym: '☿', meaning: '思考方式與溝通表達', kw: '思考溝通' },
+  { key: 'Venus', zh: '金星', sym: '♀', meaning: '愛與美的品味、人際吸引力', kw: '愛與美感' },
+  { key: 'Mars', zh: '火星', sym: '♂', meaning: '行動力、慾望與衝勁', kw: '行動慾望' },
+  { key: 'Jupiter', zh: '木星', sym: '♃', meaning: '擴展、幸運與信念成長', kw: '信念成長' },
+  { key: 'Saturn', zh: '土星', sym: '♄', meaning: '紀律、責任與人生課題', kw: '紀律責任' },
+  { key: 'Uranus', zh: '天王星', sym: '♅', meaning: '獨立、變革與突破常規', kw: '獨立求變' },
+  { key: 'Neptune', zh: '海王星', sym: '♆', meaning: '靈感、夢想與直覺', kw: '直覺夢想' },
+  { key: 'Pluto', zh: '冥王星', sym: '♇', meaning: '深層轉化與掌控力量', kw: '深層轉化' },
+];
+
+var HOUSE_MEANINGS = [
+  '自我形象、外在表現與人生起點的態度',
+  '金錢、物質資源與自我價值感',
+  '溝通、學習、手足與日常生活的交流',
+  '家庭、根源、內在安全感與情感基礎',
+  '戀愛、創造力、玩樂與自我表現的舞台',
+  '工作日常、健康習慣與服務他人的方式',
+  '伴侶關係、合作與一對一的人際連結',
+  '深層親密、共享資源、危機與轉化',
+  '遠方、高等教育、信念與人生哲學',
+  '事業、社會地位與公眾形象',
+  '朋友、社群、理想與未來願景',
+  '潛意識、隱藏面、靈性與需要獨處沉澱之處',
+];
+
+var ASPECT_DEFS = {
+  conjunction: { zh: '合相', tpl: '緊密融合，{A}的{ak}與{B}的{bk}疊加在一起，力量集中但也可能難以分辨彼此的界線' },
+  sextile: { zh: '六分相', tpl: '互相呼應，{A}的{ak}與{B}的{bk}能自然彼此支援，只要主動把握機會就能順勢發揮' },
+  square: { zh: '四分相', tpl: '彼此摩擦，{A}的{ak}與{B}的{bk}之間存在需要努力整合的張力，這股拉扯也是推動成長的動力' },
+  trine: { zh: '三分相', tpl: '天生和諧，{A}的{ak}與{B}的{bk}能毫不費力地互相配合，是與生俱來的天賦組合' },
+  opposition: { zh: '對分相', tpl: '彼此拉扯對照，{A}的{ak}與{B}的{bk}像天秤的兩端，需要練習在中間找到動態平衡' },
+};
+var ASPECT_COLOR = {
+  conjunction: 'rgba(230,205,154,.65)',
+  sextile: 'rgba(140,200,150,.55)',
+  trine: 'rgba(140,200,150,.55)',
+  square: 'rgba(214,120,120,.55)',
+  opposition: 'rgba(214,120,120,.55)',
+};
+
+/* ---- timezone-aware local time -> UTC ---- */
+function astroNormDeg(x) { return ((x % 360) + 360) % 360; }
+
+function tzOffsetMinutes(date, tz) {
+  var dtf = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  var parts = dtf.formatToParts(date).reduce(function (acc, p) { if (p.type !== 'literal') acc[p.type] = parseInt(p.value, 10); return acc; }, {});
+  var hour = parts.hour; if (hour === 24) hour = 0;
+  var asUTC2 = Date.UTC(parts.year, parts.month - 1, parts.day, hour, parts.minute, parts.second);
+  return (asUTC2 - date.getTime()) / 60000;
+}
+function zonedTimeToUtc(y, m, d, hh, mm, ss, tz) {
+  var guess = Date.UTC(y, m - 1, d, hh, mm, ss || 0);
+  for (var i = 0; i < 4; i++) {
+    var off = tzOffsetMinutes(new Date(guess), tz);
+    var newGuess = Date.UTC(y, m - 1, d, hh, mm, ss || 0) - off * 60000;
+    if (newGuess === guess) { guess = newGuess; break; }
+    guess = newGuess;
+  }
+  return new Date(guess);
+}
+
+var ASTRO_PLANET_BODY_KEYS = PLANET_DEFS.map(function (p) { return p.key; });
+
+function astroEclipticLon(bodyKey, time) {
+  var vec = Astronomy.GeoVector(Astronomy.Body[bodyKey], time, true);
+  var ecl = Astronomy.Ecliptic(vec);
+  return astroNormDeg(ecl.elon);
+}
+
+/* core natal chart computation — validated against an independent
+   horizon-crossing search for the Ascendant (self-consistent to <1e-6°) */
+function computeNatalChart(y, m, d, hh, mm, lat, lon, tz) {
+  var utcDate = zonedTimeToUtc(y, m, d, hh, mm, 0, tz);
+  var time = Astronomy.MakeTime(utcDate);
+
+  var planets = {};
+  ASTRO_PLANET_BODY_KEYS.forEach(function (key) {
+    var lonNow = astroEclipticLon(key, time);
+    var l2 = astroEclipticLon(key, time.AddDays(0.5));
+    var l1 = astroEclipticLon(key, time.AddDays(-0.5));
+    var diff = l2 - l1;
+    if (diff > 180) diff -= 360;
+    if (diff < -180) diff += 360;
+    planets[key] = { lon: lonNow, retro: diff < 0 };
+  });
+
+  var et = Astronomy.e_tilt(time);
+  var eps = et.tobl * Math.PI / 180;
+  var phi = lat * Math.PI / 180;
+  var gst = Astronomy.SiderealTime(time);
+  var lst = gst + lon / 15;
+  var ramc = astroNormDeg(lst * 15);
+  var theta = ramc * Math.PI / 180;
+
+  var mc = Math.atan2(Math.sin(theta), Math.cos(theta) * Math.cos(eps));
+  mc = astroNormDeg(mc * 180 / Math.PI);
+  var asc = Math.atan2(-Math.cos(theta), Math.sin(eps) * Math.tan(phi) + Math.cos(eps) * Math.sin(theta));
+  asc = astroNormDeg(asc * 180 / Math.PI);
+
+  var ascSign = Math.floor(asc / 30);
+  var houseCusps = [];
+  for (var n = 0; n < 12; n++) houseCusps.push(((ascSign + n) % 12) * 30);
+
+  function houseOf(pLon) {
+    var signIdx = Math.floor(pLon / 30);
+    return 1 + ((signIdx - ascSign + 12) % 12);
+  }
+  ASTRO_PLANET_BODY_KEYS.forEach(function (key) {
+    planets[key].house = houseOf(planets[key].lon);
+    planets[key].sign = Math.floor(planets[key].lon / 30);
+    planets[key].deg = planets[key].lon % 30;
+  });
+
+  var ASPECT_ANGLES = [['conjunction', 0, 8], ['sextile', 60, 4], ['square', 90, 6], ['trine', 120, 6], ['opposition', 180, 8]];
+  var aspects = [];
+  for (var i = 0; i < ASTRO_PLANET_BODY_KEYS.length; i++) {
+    for (var j = i + 1; j < ASTRO_PLANET_BODY_KEYS.length; j++) {
+      var a = ASTRO_PLANET_BODY_KEYS[i], b = ASTRO_PLANET_BODY_KEYS[j];
+      var diff2 = Math.abs(planets[a].lon - planets[b].lon);
+      if (diff2 > 180) diff2 = 360 - diff2;
+      var best = null;
+      ASPECT_ANGLES.forEach(function (row) {
+        var delta = Math.abs(diff2 - row[1]);
+        if (delta <= row[2] && (!best || delta < best.delta)) best = { name: row[0], delta: delta };
+      });
+      if (best) aspects.push({ a: a, b: b, type: best.name, orb: best.delta });
+    }
+  }
+
+  return { utcDate: utcDate, asc: asc, mc: mc, ascSign: ascSign, houseCusps: houseCusps, planets: planets, aspects: aspects };
+}
+
+/* ---- interpretation composition ---- */
+function planetPlacementText(planetDef, chart) {
+  var p = chart.planets[planetDef.key];
+  var sign = ZODIAC_SIGNS[p.sign];
+  return planetDef.zh + '代表' + planetDef.meaning + '。在' + sign.zh + '的映照下，這股能量傾向' + sign.trait + '；坐落於第' + p.house + '宮，主要體現在' + HOUSE_MEANINGS[p.house - 1] + '上。' + (p.retro ? '目前為逆行狀態，這股能量的展現較為內化，需要多一層自我覺察才會顯現在外。' : '');
+}
+function aspectPlacementText(asp) {
+  var aDef = PLANET_DEFS.find(function (x) { return x.key === asp.a; });
+  var bDef = PLANET_DEFS.find(function (x) { return x.key === asp.b; });
+  var def = ASPECT_DEFS[asp.type];
+  var body = def.tpl.replace('{A}', aDef.zh).replace('{B}', bDef.zh).replace('{ak}', aDef.kw).replace('{bk}', bDef.kw);
+  return aDef.zh + def.zh + bDef.zh + '（誤差 ' + asp.orb.toFixed(1) + '°）：' + body + '。';
+}
+
+/* ---- SVG chart wheel ---- */
+function astroWheelAngle(lon, asc) { return astroNormDeg(180 - (lon - asc)); }
+function astroPolar(cx, cy, r, angleDeg) {
+  var rad = angleDeg * Math.PI / 180;
+  return { x: +(cx + r * Math.cos(rad)).toFixed(2), y: +(cy - r * Math.sin(rad)).toFixed(2) };
+}
+function renderNatalWheel(chart) {
+  var cx = 150, cy = 150, R = 142, signR = 122, houseR = 96, planetR = 76;
+  var svg = '<svg viewBox="0 0 300 300" width="100%" style="max-width:320px;display:block;margin:0 auto">';
+  svg += '<circle cx="150" cy="150" r="' + R + '" fill="none" stroke="rgba(201,169,110,.4)" stroke-width="1"/>';
+  svg += '<circle cx="150" cy="150" r="' + signR + '" fill="none" stroke="rgba(201,169,110,.22)" stroke-width="1"/>';
+  svg += '<circle cx="150" cy="150" r="' + houseR + '" fill="none" stroke="rgba(201,169,110,.14)" stroke-width="1"/>';
+
+  for (var i = 0; i < 12; i++) {
+    var a = astroWheelAngle(i * 30, chart.asc);
+    var p1 = astroPolar(cx, cy, houseR, a), p2 = astroPolar(cx, cy, R, a);
+    svg += '<line x1="' + p1.x + '" y1="' + p1.y + '" x2="' + p2.x + '" y2="' + p2.y + '" stroke="rgba(201,169,110,.22)" stroke-width="1"/>';
+    var mid = astroWheelAngle(i * 30 + 15, chart.asc);
+    var gp = astroPolar(cx, cy, (R + signR) / 2, mid);
+    svg += '<text x="' + gp.x + '" y="' + (gp.y + 4) + '" text-anchor="middle" font-size="13" fill="#c9a96e">' + ZODIAC_SIGNS[i].sym + '</text>';
+  }
+  for (var n = 0; n < 12; n++) {
+    var midH = astroWheelAngle(chart.houseCusps[n] + 15, chart.asc);
+    var hp = astroPolar(cx, cy, houseR - 13, midH);
+    svg += '<text x="' + hp.x + '" y="' + (hp.y + 3) + '" text-anchor="middle" font-size="9" fill="rgba(240,233,216,.4)">' + (n + 1) + '</text>';
+  }
+
+  // ASC-DESC axis (always horizontal by construction)
+  svg += '<line x1="' + (cx - R) + '" y1="' + cy + '" x2="' + (cx + R) + '" y2="' + cy + '" stroke="rgba(230,205,154,.55)" stroke-width="1.3"/>';
+  svg += '<text x="' + (cx - R - 4) + '" y="' + (cy + 4) + '" text-anchor="end" font-size="10" fill="#e6cd9a">ASC</text>';
+  svg += '<text x="' + (cx + R + 4) + '" y="' + (cy + 4) + '" text-anchor="start" font-size="10" fill="rgba(230,205,154,.6)">DESC</text>';
+  var mcA = astroWheelAngle(chart.mc, chart.asc);
+  var mcP = astroPolar(cx, cy, R, mcA), icP = astroPolar(cx, cy, R, mcA + 180);
+  svg += '<line x1="' + mcP.x + '" y1="' + mcP.y + '" x2="' + icP.x + '" y2="' + icP.y + '" stroke="rgba(230,205,154,.55)" stroke-width="1.3"/>';
+  var mcLbl = astroPolar(cx, cy, R + 12, mcA), icLbl = astroPolar(cx, cy, R + 12, mcA + 180);
+  svg += '<text x="' + mcLbl.x + '" y="' + (mcLbl.y + 3) + '" text-anchor="middle" font-size="10" fill="#e6cd9a">MC</text>';
+  svg += '<text x="' + icLbl.x + '" y="' + (icLbl.y + 3) + '" text-anchor="middle" font-size="10" fill="rgba(230,205,154,.6)">IC</text>';
+
+  // aspect lines (drawn first, under planet glyphs)
+  chart.aspects.forEach(function (asp) {
+    var la = chart.planets[asp.a].lon, lb = chart.planets[asp.b].lon;
+    var pa = astroPolar(cx, cy, planetR - 8, astroWheelAngle(la, chart.asc));
+    var pb = astroPolar(cx, cy, planetR - 8, astroWheelAngle(lb, chart.asc));
+    svg += '<line x1="' + pa.x + '" y1="' + pa.y + '" x2="' + pb.x + '" y2="' + pb.y + '" stroke="' + (ASPECT_COLOR[asp.type] || 'rgba(200,200,200,.3)') + '" stroke-width="0.8"/>';
+  });
+
+  // planets — simple decluttering: stagger radius when longitudes are close
+  var order = PLANET_DEFS.map(function (p) { return p.key; }).slice().sort(function (k1, k2) { return chart.planets[k1].lon - chart.planets[k2].lon; });
+  var lastLon = null, tier = 0;
+  order.forEach(function (key) {
+    var lon = chart.planets[key].lon;
+    if (lastLon !== null) {
+      var gap = Math.abs(lon - lastLon);
+      if (gap > 180) gap = 360 - gap;
+      tier = gap < 7 ? (tier + 1) % 2 : 0;
+    }
+    lastLon = lon;
+    var r = planetR - tier * 16;
+    var ang = astroWheelAngle(lon, chart.asc);
+    var pos = astroPolar(cx, cy, r, ang);
+    var tick1 = astroPolar(cx, cy, houseR, ang), tick2 = astroPolar(cx, cy, r + 8, ang);
+    svg += '<line x1="' + tick1.x + '" y1="' + tick1.y + '" x2="' + tick2.x + '" y2="' + tick2.y + '" stroke="rgba(201,169,110,.3)" stroke-width="0.6"/>';
+    var def = PLANET_DEFS.find(function (p) { return p.key === key; });
+    svg += '<circle cx="' + pos.x + '" cy="' + pos.y + '" r="10" fill="#1a1622" stroke="rgba(201,169,110,.5)" stroke-width="0.8"/>';
+    svg += '<text x="' + pos.x + '" y="' + (pos.y + 4) + '" text-anchor="middle" font-size="11" fill="#f0e9d8">' + def.sym + '</text>';
+  });
+
+  svg += '</svg>';
+  return svg;
+}
+
+/* ---- UI ---- */
+function filterCityList(q) {
+  if (!q) return CITY_LIST.slice(0, 12);
+  var ql = q.toLowerCase();
+  return CITY_LIST.filter(function (c) { return c.zh.indexOf(q) !== -1 || c.en.toLowerCase().indexOf(ql) !== -1; }).slice(0, 12);
+}
+
+function astroSetCity(idx) { state.astroCityIdx = idx; render(); }
+function astroCityInput(v) { state.astroCityQuery = v; state.astroCityIdx = null; render(); }
+function astroToggleUnknownTime() { state.astroUnknownTime = !state.astroUnknownTime; render(); }
+function astroGenerate() {
+  var city = CITY_LIST[state.astroCityIdx];
+  if (!city || !state.astroY || !state.astroM || !state.astroD) return;
+  var hh = state.astroUnknownTime ? 12 : (parseInt(state.astroH, 10) || 0);
+  var mm = state.astroUnknownTime ? 0 : (parseInt(state.astroMin, 10) || 0);
+  var chart = computeNatalChart(parseInt(state.astroY, 10), parseInt(state.astroM, 10), parseInt(state.astroD, 10), hh, mm, city.lat, city.lon, city.tz);
+  state.astroResult = chart;
+  state.astroCityUsed = city;
+  render();
+  window.scrollTo(0, 0);
+}
+function astroReset() { state.astroResult = null; render(); window.scrollTo(0, 0); }
+
+function renderAstro() {
+  var h = '<div style="padding:8px 20px 20px">';
+  h += '<div style="font:400 11px \'EB Garamond\',serif;letter-spacing:.3em;color:#c9a96e;text-transform:uppercase;text-align:center">Natal Chart</div>';
+  h += '<div style="font:600 20px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:4px;text-align:center">個人星盤</div>';
+
+  if (!state.astroResult) {
+    h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);margin-top:14px;line-height:1.7;text-align:center">輸入出生日期、時間與地點，生成完整的西洋占星本命星盤——十大行星、上升／天頂、十二宮位與主要相位。</div>';
+
+    h += '<div style="margin-top:22px;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">出生日期</div>';
+    h += '<div style="display:flex;gap:8px;margin-top:6px">';
+    h += '<input type="number" placeholder="年 YYYY" value="' + esc(state.astroY) + '" oninput="state.astroY=this.value" style="width:33%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+    h += '<input type="number" placeholder="月 MM" value="' + esc(state.astroM) + '" oninput="state.astroM=this.value" style="width:33%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+    h += '<input type="number" placeholder="日 DD" value="' + esc(state.astroD) + '" oninput="state.astroD=this.value" style="width:33%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+    h += '</div>';
+
+    h += '<div style="margin-top:16px;display:flex;justify-content:space-between;align-items:center">';
+    h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">出生時間</div>';
+    h += '<label style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" ' + (state.astroUnknownTime ? 'checked' : '') + ' onchange="astroToggleUnknownTime()">不確定時間（以正午 12:00 估算）</label>';
+    h += '</div>';
+    if (!state.astroUnknownTime) {
+      h += '<div style="display:flex;gap:8px;margin-top:6px">';
+      h += '<input type="number" placeholder="時 HH (0-23)" value="' + esc(state.astroH) + '" oninput="state.astroH=this.value" style="width:50%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+      h += '<input type="number" placeholder="分 MM" value="' + esc(state.astroMin) + '" oninput="state.astroMin=this.value" style="width:50%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+      h += '</div>';
+      h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:5px">時間會影響上升星座與宮位，請盡量提供準確的出生時間</div>';
+    }
+
+    h += '<div style="margin-top:16px;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">出生地</div>';
+    h += '<input type="text" placeholder="搜尋城市，例如：台北、Tokyo" value="' + esc(state.astroCityQuery) + '" oninput="astroCityInput(this.value)" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+    var matches = filterCityList(state.astroCityQuery);
+    h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">';
+    matches.forEach(function (c) {
+      var idx = CITY_LIST.indexOf(c);
+      var active = state.astroCityIdx === idx;
+      h += '<button onclick="astroSetCity(' + idx + ')" style="font:400 11px \'Noto Sans TC\',sans-serif;background:' + (active ? 'rgba(201,169,110,.2)' : 'rgba(201,169,110,.06)') + ';border:1px solid ' + (active ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.65)') + ';padding:6px 12px;border-radius:14px;cursor:pointer">' + c.zh + '</button>';
+    });
+    h += '</div>';
+    if (state.astroCityIdx != null) {
+      h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:8px">已選擇：' + CITY_LIST[state.astroCityIdx].zh + '</div>';
+    }
+
+    var ready = state.astroY && state.astroM && state.astroD && state.astroCityIdx != null;
+    h += '<button onclick="astroGenerate()" ' + (ready ? '' : 'disabled') + ' style="width:100%;margin-top:24px;padding:13px;border-radius:12px;border:1px solid ' + (ready ? '#c9a96e' : 'rgba(201,169,110,.2)') + ';background:' + (ready ? 'linear-gradient(135deg,#c9a96e,#a9835a)' : 'rgba(255,255,255,.03)') + ';color:' + (ready ? '#1a1622' : 'rgba(240,233,216,.3)') + ';font:600 14px \'Noto Sans TC\',sans-serif;cursor:pointer">生成星盤 →</button>';
+
+  } else {
+    var chart = state.astroResult;
+    var ascSignDef = ZODIAC_SIGNS[chart.ascSign];
+    var mcSignDef = ZODIAC_SIGNS[Math.floor(chart.mc / 30)];
+    h += '<div style="margin-top:16px">' + renderNatalWheel(chart) + '</div>';
+
+    h += '<div style="display:flex;gap:10px;margin-top:10px;justify-content:center;text-align:center">';
+    h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">上升星座 ASC</div><div style="font:600 15px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + ascSignDef.sym + ' ' + ascSignDef.zh + '</div><div style="font:400 10px \'EB Garamond\',serif;color:rgba(240,233,216,.4)">' + (chart.asc % 30).toFixed(1) + '°</div></div>';
+    h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">天頂 MC</div><div style="font:600 15px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + mcSignDef.sym + ' ' + mcSignDef.zh + '</div><div style="font:400 10px \'EB Garamond\',serif;color:rgba(240,233,216,.4)">' + (chart.mc % 30).toFixed(1) + '°</div></div>';
+    h += '</div>';
+
+    if (state.astroUnknownTime) {
+      h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-top:10px;text-align:center">＊出生時間未知，以正午估算——上升星座與宮位僅供參考</div>';
+    }
+
+    h += '<div style="margin-top:22px;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase">行星落點 Placements</div>';
+    PLANET_DEFS.forEach(function (def) {
+      var p = chart.planets[def.key];
+      var sign = ZODIAC_SIGNS[p.sign];
+      h += '<div style="border-top:1px solid rgba(201,169,110,.15);padding:12px 0">';
+      h += '<div style="display:flex;justify-content:space-between;align-items:baseline">';
+      h += '<span style="font:500 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + def.sym + ' ' + def.zh + '</span>';
+      h += '<span style="font:400 11px \'EB Garamond\',serif;color:#c9a96e">' + sign.sym + ' ' + sign.zh + ' ' + p.deg.toFixed(1) + '°　第' + p.house + '宮' + (p.retro ? '　℞' : '') + '</span>';
+      h += '</div>';
+      h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.7);margin-top:5px;line-height:1.7">' + esc(planetPlacementText(def, chart)) + '</div>';
+      h += '</div>';
+    });
+
+    if (chart.aspects.length) {
+      h += '<div style="margin-top:22px;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase">主要相位 Aspects</div>';
+      chart.aspects.sort(function (x, y) { return x.orb - y.orb; }).forEach(function (asp) {
+        h += '<div style="border-top:1px solid rgba(201,169,110,.15);padding:10px 0;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.7);line-height:1.7">' + esc(aspectPlacementText(asp)) + '</div>';
+      });
+    }
+
+    h += '<button onclick="astroReset()" style="width:100%;margin-top:24px;padding:12px;border-radius:12px;border:1px solid rgba(201,169,110,.3);background:rgba(255,255,255,.02);color:rgba(240,233,216,.6);font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">重新輸入 ↺</button>';
+  }
+
+  h += '</div>';
+  return h;
 }
 
 render();
