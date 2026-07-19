@@ -374,6 +374,7 @@ var state = {
   astroY: '', astroM: '', astroD: '', astroH: '', astroMin: '',
   astroCityQuery: '', astroCityIdx: null, astroCityUsed: null,
   astroUnknownTime: false, astroResult: null, astroView: 'chart',
+  horoDateStr: null,
 };
 
 var SPREAD_GROUPS = [
@@ -3091,18 +3092,18 @@ var HOROSCOPE_ASPECT_ANGLES = [['conjunction', 0], ['sextile', 60], ['square', 9
 var ASTRO_BENEFIC = ['Venus', 'Jupiter', 'Sun', 'Moon'];
 var ASTRO_MALEFIC = ['Mars', 'Saturn'];
 function astroAspectPoints(type, transitKey) {
-  if (type === 'trine') return 16;
-  if (type === 'sextile') return 11;
-  if (type === 'square') return -13;
-  if (type === 'opposition') return -15;
-  if (ASTRO_BENEFIC.indexOf(transitKey) >= 0) return 12;
-  if (ASTRO_MALEFIC.indexOf(transitKey) >= 0) return -9;
-  return 5;
+  if (type === 'trine') return 22;
+  if (type === 'sextile') return 15;
+  if (type === 'square') return -19;
+  if (type === 'opposition') return -21;
+  if (ASTRO_BENEFIC.indexOf(transitKey) >= 0) return 17;
+  if (ASTRO_MALEFIC.indexOf(transitKey) >= 0) return -13;
+  return 7;
 }
 
 function astroCategoryScore(catKey, periodCfg, natalChart, transitPlanets) {
   var natalKeys = ASTRO_CATEGORY_RULERS[catKey];
-  var score = 62;
+  var score = 60;
   periodCfg.transits.forEach(function (tc) {
     var tKey = tc[0], orbLimit = tc[1];
     var tLon = transitPlanets[tKey];
@@ -3118,7 +3119,114 @@ function astroCategoryScore(catKey, periodCfg, natalChart, transitPlanets) {
       });
     });
   });
-  return Math.max(25, Math.min(95, Math.round(score)));
+  return Math.max(15, Math.min(98, Math.round(score)));
+}
+
+/* ================= 太陽回歸 Solar Return／月亮回歸 Lunar Return ================= */
+/* 用牛頓法在黃經上解出「行運行星回到本命度數」的精確時刻，
+   太陽回歸＝流年主軸（一年一次），月亮回歸＝流月主軸（約 27.3 天一次）。
+   回歸盤的宮位以出生地估算（若未來要追蹤現居地，可在此替換經緯度）。 */
+var SOLAR_YEAR_DAYS = 365.2422;
+var LUNAR_MONTH_DAYS = 27.321661;
+
+function solveBodyReturn(bodyKey, targetLon, guessTime) {
+  var t = guessTime;
+  for (var i = 0; i < 14; i++) {
+    var lon = astroEclipticLon(bodyKey, t);
+    var diff = lon - targetLon;
+    diff = ((diff + 180) % 360 + 360) % 360 - 180;
+    if (Math.abs(diff) < 0.0003) break;
+    var lonFwd = astroEclipticLon(bodyKey, t.AddDays(0.5));
+    var rate = lonFwd - lon;
+    rate = ((rate + 180) % 360 + 360) % 360 - 180;
+    rate = rate / 0.5;
+    if (Math.abs(rate) < 1e-6) break;
+    t = t.AddDays(-diff / rate);
+  }
+  return t;
+}
+/* 找出「在 targetTime 當下或之前」最近一次回歸——回歸盤是持續生效到下一次回歸為止的 */
+function findPrecedingReturn(bodyKey, targetLon, targetTime, periodDays) {
+  var t = solveBodyReturn(bodyKey, targetLon, targetTime);
+  if (t.date.getTime() > targetTime.date.getTime()) {
+    t = solveBodyReturn(bodyKey, targetLon, t.AddDays(-periodDays));
+  }
+  return t;
+}
+
+function computeReturnChart(returnTime, lat, lon, natalChart) {
+  var planets = {};
+  ASTRO_PLANET_BODY_KEYS.forEach(function (key) {
+    planets[key] = { lon: astroEclipticLon(key, returnTime) };
+  });
+  var et = Astronomy.e_tilt(returnTime);
+  var eps = et.tobl * Math.PI / 180;
+  var phi = lat * Math.PI / 180;
+  var gst = Astronomy.SiderealTime(returnTime);
+  var lst = gst + lon / 15;
+  var ramc = astroNormDeg(lst * 15);
+  var theta = ramc * Math.PI / 180;
+  var mc = astroNormDeg(Math.atan2(Math.sin(theta), Math.cos(theta) * Math.cos(eps)) * 180 / Math.PI);
+  var asc = astroNormDeg(Math.atan2(Math.cos(theta), -(Math.sin(eps) * Math.tan(phi) + Math.cos(eps) * Math.sin(theta))) * 180 / Math.PI);
+  var houseCusps = placidusCusps(ramc, eps, phi, asc, mc);
+  function natalHouseOf(pLon) {
+    for (var i = 0; i < 12; i++) {
+      var start = natalChart.houseCusps[i], end = natalChart.houseCusps[(i + 1) % 12];
+      var arc = astroNormDeg(end - start); if (arc === 0) arc = 360;
+      var rel = astroNormDeg(pLon - start);
+      if (rel < arc) return i + 1;
+    }
+    return 12;
+  }
+  ASTRO_PLANET_BODY_KEYS.forEach(function (key) {
+    planets[key].sign = Math.floor(planets[key].lon / 30);
+    planets[key].natalHouse = natalHouseOf(planets[key].lon);
+  });
+  return { time: returnTime, asc: asc, mc: mc, ascSign: Math.floor(asc / 30), mcSign: Math.floor(mc / 30), houseCusps: houseCusps, planets: planets };
+}
+
+function findSolarReturnChart(natalChart, targetTime, lat, lon) {
+  var t = findPrecedingReturn('Sun', natalChart.planets.Sun.lon, targetTime, SOLAR_YEAR_DAYS);
+  return computeReturnChart(t, lat, lon, natalChart);
+}
+function findLunarReturnChart(natalChart, targetTime, lat, lon) {
+  var t = findPrecedingReturn('Moon', natalChart.planets.Moon.lon, targetTime, LUNAR_MONTH_DAYS);
+  return computeReturnChart(t, lat, lon, natalChart);
+}
+
+/* 本命宮位 → 分類的對應（返照行星「啟動」了哪個生活舞台） */
+var HOUSE_CATEGORY_MAP = { 1: 'general', 2: 'wealth', 3: 'study', 4: 'family', 5: 'love', 6: 'health', 7: 'love', 8: 'wealth', 9: 'study', 10: 'career', 11: 'social', 12: 'general' };
+var RETURN_PLANET_WEIGHT = { Sun: 14, Moon: 14, Mercury: 8, Venus: 8, Mars: 8, Jupiter: 6, Saturn: 6, Uranus: 5, Neptune: 5, Pluto: 5 };
+function houseActivationBonus(catKey, returnChart) {
+  var bonus = 0;
+  ASTRO_PLANET_BODY_KEYS.forEach(function (key) {
+    if (HOUSE_CATEGORY_MAP[returnChart.planets[key].natalHouse] === catKey) bonus += RETURN_PLANET_WEIGHT[key];
+  });
+  return bonus;
+}
+var SOLAR_RETURN_ASPECT_CFG = [['Sun', 6], ['Moon', 6], ['Mercury', 5], ['Venus', 5], ['Mars', 5], ['Jupiter', 5], ['Saturn', 5], ['Uranus', 4], ['Neptune', 4], ['Pluto', 4]];
+var LUNAR_RETURN_ASPECT_CFG = [['Sun', 5], ['Moon', 6], ['Mercury', 5], ['Venus', 5], ['Mars', 5], ['Jupiter', 4], ['Saturn', 4]];
+
+function astroReturnCategoryScore(catKey, natalChart, returnChart, aspectCfg) {
+  var natalKeys = ASTRO_CATEGORY_RULERS[catKey];
+  var score = 52;
+  aspectCfg.forEach(function (tc) {
+    var tKey = tc[0], orbLimit = tc[1];
+    var tLon = returnChart.planets[tKey].lon;
+    natalKeys.forEach(function (nKey) {
+      var nLon = natalChart.planets[nKey].lon;
+      var diff = astroAngleDiff(tLon, nLon);
+      HOROSCOPE_ASPECT_ANGLES.forEach(function (pair) {
+        var delta = Math.abs(diff - pair[1]);
+        if (delta <= orbLimit) {
+          var strength = 1 - delta / orbLimit;
+          score += astroAspectPoints(pair[0], tKey) * strength;
+        }
+      });
+    });
+  });
+  score += houseActivationBonus(catKey, returnChart);
+  return Math.max(15, Math.min(98, Math.round(score)));
 }
 
 /* ---- seeded pseudo-random (per day/period + personal chart, stable on reload) ---- */
@@ -3375,21 +3483,53 @@ var PERIOD_CATEGORY_TEXT = {
   },
 };
 
-function renderPeriodDashboard(chart, transitPlanets, periodKey, periodCfg, now) {
-  var scores = computeCategoryScores(periodCfg, chart, transitPlanets);
+var RETURN_HIGHLIGHT_LABEL = { wealth: '財運', love: '感情', career: '事業／工作', family: '家庭', health: '健康', social: '人際', study: '學業／學習', general: '自我狀態' };
+
+function renderReturnHighlight(returnChart, kindLabel, dateLabel, topCatKey) {
+  var ascDef = ZODIAC_SIGNS[returnChart.ascSign], mcDef = ZODIAC_SIGNS[returnChart.mcSign];
+  var h = '<div style="margin-top:14px;border:1px solid rgba(201,169,110,.25);border-radius:12px;padding:12px 14px;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.65);line-height:1.8">';
+  h += '<span style="color:#e6cd9a;font-weight:600">' + kindLabel + '</span>　' + dateLabel + '　上升 ' + ascDef.sym + ascDef.zh + '　天頂 ' + mcDef.sym + mcDef.zh;
+  h += '<br>這段時間反覆被強化的舞台：<span style="color:#e6cd9a">' + RETURN_HIGHLIGHT_LABEL[topCatKey] + '</span>';
+  h += '</div>';
+  return h;
+}
+
+function renderPeriodDashboard(chart, transitPlanets, periodKey, periodCfg, now, city) {
+  var scores, returnChart = null, kindLabel = '', returnDateLabel = '';
+
+  if (periodKey === 'weekly') {
+    scores = computeCategoryScores(periodCfg, chart, transitPlanets);
+  } else if (periodKey === 'monthly') {
+    returnChart = findLunarReturnChart(chart, Astronomy.MakeTime(now), city.lat, city.lon);
+    scores = {};
+    HOROSCOPE_SCORE_CATS.forEach(function (cat) { scores[cat.key] = astroReturnCategoryScore(cat.key, chart, returnChart, LUNAR_RETURN_ASPECT_CFG); });
+    kindLabel = '月亮回歸 Lunar Return';
+    var lrd = returnChart.time.date;
+    returnDateLabel = lrd.getFullYear() + '/' + pad2(lrd.getMonth() + 1) + '/' + pad2(lrd.getDate());
+  } else {
+    returnChart = findSolarReturnChart(chart, Astronomy.MakeTime(now), city.lat, city.lon);
+    scores = {};
+    HOROSCOPE_SCORE_CATS.forEach(function (cat) { scores[cat.key] = astroReturnCategoryScore(cat.key, chart, returnChart, SOLAR_RETURN_ASPECT_CFG); });
+    kindLabel = '太陽回歸 Solar Return';
+    var srd = returnChart.time.date;
+    returnDateLabel = srd.getFullYear() + '/' + pad2(srd.getMonth() + 1) + '/' + pad2(srd.getDate());
+  }
+
   var keys = HOROSCOPE_SCORE_CATS.map(function (c) { return c.key; });
   var overall = Math.round(keys.reduce(function (s, k) { return s + scores[k]; }, 0) / keys.length);
   var overallLabel = periodKey === 'weekly' ? '本週綜合分數' : periodKey === 'monthly' ? '本月綜合分數' : '本年綜合分數';
+  var topCatKey = keys.reduce(function (best, k) { return scores[k] > scores[best] ? k : best; }, keys[0]);
 
   var bucketId;
   if (periodKey === 'weekly') { var wi = isoWeekInfo(now); bucketId = 'W' + wi.year + '-' + wi.week; }
-  else if (periodKey === 'monthly') { bucketId = 'M' + now.getFullYear() + '-' + (now.getMonth() + 1); }
-  else { bucketId = 'Y' + now.getFullYear(); }
+  else if (periodKey === 'monthly') { bucketId = 'M' + returnDateLabel; }
+  else { bucketId = 'Y' + returnDateLabel; }
   var rng = astroMulberry32(astroHashSeed(bucketId + '_' + Math.round(chart.asc * 100) + '_' + periodKey));
 
   var h = '';
   h += renderOverallScoreBlock(overall, overallLabel);
   h += renderCategoryScoreBars(scores);
+  if (returnChart) h += renderReturnHighlight(returnChart, kindLabel, returnDateLabel, topCatKey);
   h += '<div style="margin-top:18px">' + renderLuckyMini(rng) + '</div>';
 
   h += '<div style="margin-top:22px;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;text-align:center">分項解讀</div>';
@@ -3410,10 +3550,15 @@ function renderPeriodDashboard(chart, transitPlanets, periodKey, periodCfg, now)
   return h;
 }
 
+function isoDateStr(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+function astroSetHoroDate(v) { state.horoDateStr = v || null; render(); }
+function astroResetHoroDate() { state.horoDateStr = null; render(); window.scrollTo(0, 0); }
+
 function renderHoroscope(periodKey) {
   var chart = state.astroResult;
+  var city = state.astroCityUsed || CITY_LIST[state.astroCityIdx];
   var periodCfg = HOROSCOPE_PERIODS[periodKey];
-  var now = new Date();
+  var now = state.horoDateStr ? new Date(state.horoDateStr + 'T12:00:00') : new Date();
   var transitPlanets = computeTransitPlanets(now);
   var h = '';
   h += '<div style="font:600 16px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:14px;text-align:center">' + periodCfg.zh + '</div>';
@@ -3421,10 +3566,15 @@ function renderHoroscope(periodKey) {
   h += '<div style="font:400 11px \'EB Garamond\',serif;color:rgba(240,233,216,.4);text-align:center;margin-top:2px">' + dateLabel + '</div>';
   h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);text-align:center;margin-top:8px;line-height:1.6">根據目前的行運與你的本命星盤比對而成，僅供參考</div>';
 
+  h += '<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px">';
+  h += '<input type="date" value="' + isoDateStr(now) + '" onchange="astroSetHoroDate(this.value)" style="color-scheme:dark;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:6px 10px;font:400 12px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+  if (state.horoDateStr) h += '<button onclick="astroResetHoroDate()" style="font:400 11px \'Noto Sans TC\',sans-serif;background:rgba(201,169,110,.12);border:1px solid rgba(201,169,110,.3);color:#e6cd9a;padding:6px 12px;border-radius:14px;cursor:pointer">回到今天</button>';
+  h += '</div>';
+
   if (periodKey === 'daily') {
     h += renderDailyHoroscope(chart, transitPlanets, periodCfg, now);
   } else {
-    h += renderPeriodDashboard(chart, transitPlanets, periodKey, periodCfg, now);
+    h += renderPeriodDashboard(chart, transitPlanets, periodKey, periodCfg, now, city);
   }
 
   h += '<button onclick="astroSetView(\'chart\')" style="width:100%;margin-top:20px;padding:12px;border-radius:12px;border:1px solid rgba(201,169,110,.3);background:rgba(255,255,255,.02);color:rgba(240,233,216,.6);font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">← 回到本命星盤</button>';
