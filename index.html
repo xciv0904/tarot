@@ -8,18 +8,18 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="塔羅占卜">
-<meta name="description" content="免費線上塔羅與雷諾曼占卜——洗牌抽牌、十三種牌陣、78+36 張完整牌典與牌義學習系統。">
+<meta name="description" content="免費線上塔羅與雷諾曼占卜，以及完整西洋占星本命星盤——十大行星、上升／宮位、每日／週／月／年運勢、合盤配對與二次推運。">
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
 <meta property="og:type" content="website">
-<meta property="og:title" content="塔羅 · 雷諾曼占卜 | Mystic Deck">
-<meta property="og:description" content="免費線上占卜 × 完整牌義學習——洗牌抽牌、十三種牌陣、牌義測驗與 22 天學習計畫。">
-<meta property="og:image" content="https://xciv0904.github.io/tarot/assets/og.png">
-<meta property="og:url" content="https://xciv0904.github.io/tarot/">
+<meta property="og:title" content="塔羅 · 占星 | Mystic Deck">
+<meta property="og:description" content="免費線上塔羅／雷諾曼占卜 × 完整西洋占星——本命星盤、每日運勢、合盤配對、二次推運，一站可以看到底。">
+<meta property="og:image" content="https://xciv0904.github.io/assets/og.png">
+<meta property="og:url" content="https://xciv0904.github.io/">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://xciv0904.github.io/tarot/assets/og.png">
-<title>塔羅 · 雷諾曼 占卜</title>
+<meta name="twitter:image" content="https://xciv0904.github.io/assets/og.png">
+<title>塔羅 · 占星 | Mystic Deck</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;600&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,500&family=EB+Garamond:ital@0;1&display=swap" rel="stylesheet">
 <style>
@@ -373,9 +373,9 @@ var state = {
   copied: false,
   astroY: '', astroM: '', astroD: '', astroH: '', astroMin: '',
   astroCityQuery: '', astroCityIdx: null, astroCityUsed: null,
-  astroUnknownTime: false, astroResult: null, astroView: 'chart',
+  astroUnknownTime: false, astroResult: null, astroView: 'chart', astroGenerating: false, astroTourDismissed: false,
   horoDayAnchor: null, horoWeekOffset: 0, horoMonthOffset: 0, horoYearOffset: 0,
-  synY: '', synM: '', synD: '', synH: '', synMin: '',
+  synY: '', synM: '', synD: '', synH: '', synMin: '', synGenerating: false,
   synCityQuery: '', synCityIdx: null, synCityUsed: null,
   synUnknownTime: false, synResult: null,
 };
@@ -3192,7 +3192,9 @@ function renderCityLiveBlock(prefix, genFnName) {
   h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.3);margin-top:16px;line-height:1.7">🔒 出生資料只會儲存在你自己的裝置（瀏覽器）中，不會上傳到任何伺服器' + (prefix === 'astro' ? '；你也可以隨時在生成星盤後按「清除已儲存的星盤資料」完全刪除。' : '。') + '</div>';
   var birthErr = validateBirthDate(state[prefix + 'Y'], state[prefix + 'M'], state[prefix + 'D'], state[prefix + 'H'], state[prefix + 'Min'], state[prefix + 'UnknownTime']);
   var ready = state[prefix + 'Y'] && state[prefix + 'M'] && state[prefix + 'D'] && state[prefix + 'CityIdx'] != null && !birthErr;
-  h += '<button onclick="' + genFnName + '()" ' + (ready ? '' : 'disabled') + ' style="width:100%;margin-top:14px;padding:13px;border-radius:12px;border:1px solid ' + (ready ? '#c9a96e' : 'rgba(201,169,110,.2)') + ';background:' + (ready ? 'linear-gradient(135deg,#c9a96e,#a9835a)' : 'rgba(255,255,255,.03)') + ';color:' + (ready ? '#1a1622' : 'rgba(240,233,216,.3)') + ';font:600 14px \'Noto Sans TC\',sans-serif;cursor:pointer">生成星盤 →</button>';
+  var generating = !!state[prefix + 'Generating'];
+  var btnLabel = generating ? '計算中…' : '生成星盤 →';
+  h += '<button onclick="' + genFnName + '()" ' + (ready && !generating ? '' : 'disabled') + ' style="width:100%;margin-top:14px;padding:13px;border-radius:12px;border:1px solid ' + (ready ? '#c9a96e' : 'rgba(201,169,110,.2)') + ';background:' + (ready ? 'linear-gradient(135deg,#c9a96e,#a9835a)' : 'rgba(255,255,255,.03)') + ';color:' + (ready ? '#1a1622' : 'rgba(240,233,216,.3)') + ';font:600 14px \'Noto Sans TC\',sans-serif;cursor:pointer">' + btnLabel + '</button>';
   return h;
 }
 function updateCityLiveBlock(prefix, genFnName) {
@@ -3255,6 +3257,54 @@ function astroLoadProfile() {
     }
   } catch (e) {}
 }
+/* 匯出／匯入星盤資料——換手機或換瀏覽器時，本命點資料（存在 localStorage）不會跟著走，
+   這裡讓使用者自己存一份 JSON 小檔案備份，之後在新裝置上匯入就能還原，不用重新輸入。 */
+function astroExportProfile() {
+  var city = CITY_LIST[state.astroCityIdx];
+  var data = {
+    type: 'mystic-deck-natal-profile', version: 1,
+    y: state.astroY, m: state.astroM, d: state.astroD, h: state.astroH, min: state.astroMin,
+    unknownTime: state.astroUnknownTime,
+    cityZh: city ? city.zh : null, cityEn: city ? city.en : null,
+  };
+  try {
+    var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = '我的星盤資料.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  } catch (e) { alert('匯出失敗，你的瀏覽器可能不支援檔案下載'); }
+}
+function astroImportProfileFile(fileInput) {
+  var file = fileInput.files && fileInput.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function (e) {
+    var data;
+    try { data = JSON.parse(e.target.result); } catch (e2) { alert('匯入失敗，檔案格式不正確'); return; }
+    if (!data || data.type !== 'mystic-deck-natal-profile') { alert('這不是本站匯出的星盤資料檔案'); return; }
+    var err = validateBirthDate(data.y, data.m, data.d, data.h, data.min, !!data.unknownTime);
+    if (err) { alert('匯入的資料有問題：' + err); return; }
+    var cityIdx = null;
+    if (data.cityZh) {
+      var found = CITY_LIST.findIndex(function (c) { return c.zh === data.cityZh; });
+      if (found >= 0) cityIdx = found;
+    }
+    state.astroY = data.y; state.astroM = data.m; state.astroD = data.d;
+    state.astroH = data.h; state.astroMin = data.min;
+    state.astroUnknownTime = !!data.unknownTime;
+    state.astroCityIdx = cityIdx;
+    if (cityIdx != null) {
+      astroGenerate();
+    } else {
+      alert('匯入成功，但找不到對應的城市，請重新選擇出生地後按「生成星盤」');
+      render();
+    }
+  };
+  reader.readAsText(file);
+  fileInput.value = '';
+}
 function astroForget() {
   try { localStorage.removeItem('tl_astro_profile'); } catch (e) {}
   state.astroY = ''; state.astroM = ''; state.astroD = ''; state.astroH = ''; state.astroMin = '';
@@ -3266,14 +3316,22 @@ function astroGenerate() {
   var city = CITY_LIST[state.astroCityIdx];
   if (!city || !state.astroY || !state.astroM || !state.astroD) return;
   if (validateBirthDate(state.astroY, state.astroM, state.astroD, state.astroH, state.astroMin, state.astroUnknownTime)) { render(); return; }
-  var hh = state.astroUnknownTime ? 12 : (parseInt(state.astroH, 10) || 0);
-  var mm = state.astroUnknownTime ? 0 : (parseInt(state.astroMin, 10) || 0);
-  var chart = computeNatalChart(parseInt(state.astroY, 10), parseInt(state.astroM, 10), parseInt(state.astroD, 10), hh, mm, city.lat, city.lon, city.tz);
-  state.astroResult = chart;
-  state.astroCityUsed = city;
-  astroSaveProfile();
+  /* 星盤運算（10大行星＋凱龍星軌道解算＋宮位）在舊手機上可能會有感卡頓，
+     先顯示「計算中」讓畫面更新一次，下一個 tick 才真正跑運算，避免按下去畫面
+     整個凍住、使用者以為沒反應而重複點擊。 */
+  state.astroGenerating = true;
   render();
-  window.scrollTo(0, 0);
+  setTimeout(function () {
+    var hh = state.astroUnknownTime ? 12 : (parseInt(state.astroH, 10) || 0);
+    var mm = state.astroUnknownTime ? 0 : (parseInt(state.astroMin, 10) || 0);
+    var chart = computeNatalChart(parseInt(state.astroY, 10), parseInt(state.astroM, 10), parseInt(state.astroD, 10), hh, mm, city.lat, city.lon, city.tz);
+    state.astroResult = chart;
+    state.astroCityUsed = city;
+    state.astroGenerating = false;
+    astroSaveProfile();
+    render();
+    window.scrollTo(0, 0);
+  }, 30);
 }
 function astroReset() { state.astroResult = null; render(); window.scrollTo(0, 0); }
 
@@ -3319,12 +3377,17 @@ function synGenerate() {
   var city = CITY_LIST[state.synCityIdx];
   if (!city || !state.synY || !state.synM || !state.synD) return;
   if (validateBirthDate(state.synY, state.synM, state.synD, state.synH, state.synMin, state.synUnknownTime)) { render(); return; }
-  var hh = state.synUnknownTime ? 12 : (parseInt(state.synH, 10) || 0);
-  var mm = state.synUnknownTime ? 0 : (parseInt(state.synMin, 10) || 0);
-  state.synResult = computeNatalChart(parseInt(state.synY, 10), parseInt(state.synM, 10), parseInt(state.synD, 10), hh, mm, city.lat, city.lon, city.tz);
-  state.synCityUsed = city;
+  state.synGenerating = true;
   render();
-  window.scrollTo(0, 0);
+  setTimeout(function () {
+    var hh = state.synUnknownTime ? 12 : (parseInt(state.synH, 10) || 0);
+    var mm = state.synUnknownTime ? 0 : (parseInt(state.synMin, 10) || 0);
+    state.synResult = computeNatalChart(parseInt(state.synY, 10), parseInt(state.synM, 10), parseInt(state.synD, 10), hh, mm, city.lat, city.lon, city.tz);
+    state.synCityUsed = city;
+    state.synGenerating = false;
+    render();
+    window.scrollTo(0, 0);
+  }, 30);
 }
 function synReset() { state.synResult = null; render(); window.scrollTo(0, 0); }
 
@@ -3926,6 +3989,32 @@ function renderLuckyGrid(rng) {
 }
 
 function astroSetView(v) { state.astroView = v; render(); window.scrollTo(0, 0); }
+function astroDismissTour() {
+  state.astroTourDismissed = true;
+  try { localStorage.setItem('tl_astro_tour_seen', '1'); } catch (e) {}
+  render();
+}
+/* 星盤功能現在有 7 個子頁面，第一次生成星盤時用一張小卡簡短導覽，避免新用戶
+   不知道除了本命盤之外還有這些功能；只顯示一次，關掉後記在 localStorage 不會再跳出來 */
+function renderAstroTourCard() {
+  var items = [
+    ['本命星盤', '十大行星、上升／宮位、相位、元素比例的完整分析'],
+    ['每日／週／月／年', '依真實行運與太陽／月亮回歸算出的評分與解讀，可切換日期'],
+    ['合盤', '輸入另一人的資料，比對兩人的星盤相性'],
+    ['推運', '用「一天等於一年」技法看你現在的心境演變'],
+  ];
+  var h = '<div style="margin-top:16px;border:1px solid rgba(201,169,110,.3);border-radius:12px;padding:14px 16px;background:rgba(201,169,110,.05)">';
+  h += '<div style="display:flex;justify-content:space-between;align-items:center">';
+  h += '<div style="font:600 12px \'Noto Sans TC\',sans-serif;color:#e6cd9a">星盤功能小導覽</div>';
+  h += '<button onclick="astroDismissTour()" style="background:none;border:none;color:rgba(240,233,216,.4);font:400 18px sans-serif;cursor:pointer;line-height:1;padding:0">×</button>';
+  h += '</div>';
+  items.forEach(function (it) {
+    h += '<div style="margin-top:8px;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.7);line-height:1.6"><span style="color:#c9a96e;font-weight:600">' + it[0] + '</span>　' + it[1] + '</div>';
+  });
+  h += '<div style="text-align:center;margin-top:10px"><button onclick="astroDismissTour()" style="background:none;border:none;color:rgba(240,233,216,.4);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">我知道了，不用再顯示</button></div>';
+  h += '</div>';
+  return h;
+}
 
 /* ---- shared score-dashboard pieces (used by daily + week/month/year) ---- */
 function computeCategoryScores(periodCfg, chart, transitPlanets) {
@@ -4324,6 +4413,9 @@ function renderAstro() {
 
   if (!state.astroResult) {
     h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);margin-top:14px;line-height:1.7;text-align:center">輸入出生日期、時間與地點，生成完整的西洋占星本命星盤——十大行星、上升／天頂、十二宮位與主要相位。</div>';
+    h += '<div style="text-align:center;margin-top:10px">';
+    h += '<label style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">換新裝置了嗎？點此匯入之前備份的星盤資料<input type="file" accept="application/json,.json" onchange="astroImportProfileFile(this)" style="display:none"></label>';
+    h += '</div>';
 
     h += '<div style="margin-top:22px;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">出生日期</div>';
     h += '<div style="display:flex;gap:8px;margin-top:6px">';
@@ -4360,6 +4452,7 @@ function renderAstro() {
       h += '<button onclick="astroSetView(\'' + vt[0] + '\')" style="font:500 11px \'Noto Sans TC\',sans-serif;background:' + (on ? 'rgba(201,169,110,.2)' : 'rgba(255,255,255,.03)') + ';border:1px solid ' + (on ? '#c9a96e' : 'rgba(201,169,110,.25)') + ';color:' + (on ? '#f0e9d8' : 'rgba(240,233,216,.55)') + ';padding:6px 13px;border-radius:14px;cursor:pointer">' + vt[1] + '</button>';
     });
     h += '</div>';
+    if (!state.astroTourDismissed) h += renderAstroTourCard();
 
     if (state.astroView === 'synastry') {
       h += renderSynastry();
@@ -4420,7 +4513,7 @@ function renderAstro() {
       h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.7);margin-top:5px;line-height:1.7">' + esc(pointPlacementText(def, chart)) + '</div>';
       h += '</div>';
     });
-    h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.3);margin-top:8px">＊凱龍星座標為簡化軌道模型估算，精度約在 0.2° 以內；莉莉絲／福點／交點採用平均點（mean）算法，屬主流占星軟體常見標準之一。</div>';
+    h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.3);margin-top:8px">＊凱龍星座標為簡化軌道模型估算，精度約在 0.2° 以內；莉莉絲／福點／交點採用平均點（mean）算法，屬主流占星軟體常見標準之一；出生地與時間的時區換算已自動套用當地歷史上的日光節約時間規則（例如台灣 1945–1961 年間、以及歐美許多地區實施夏令時的年份），不需要自行手動校正。</div>';
 
     if (chart.aspects.length) {
       h += '<div style="margin-top:22px;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase">相位總表 Aspect Grid</div>';
@@ -4433,7 +4526,10 @@ function renderAstro() {
 
     h += '<button id="astro-copy-btn" onclick="astroCopyForAI()" style="width:100%;margin-top:24px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製給 AI 解讀 Copy for AI</button>';
     h += '<button onclick="astroReset()" style="width:100%;margin-top:10px;padding:12px;border-radius:12px;border:1px solid rgba(201,169,110,.3);background:rgba(255,255,255,.02);color:rgba(240,233,216,.6);font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">重新輸入 ↺</button>';
-    h += '<div style="text-align:center;margin-top:10px"><button onclick="astroForget()" style="background:none;border:none;color:rgba(240,233,216,.3);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">清除已儲存的星盤資料</button></div>';
+    h += '<div style="text-align:center;margin-top:10px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap">';
+    h += '<button onclick="astroExportProfile()" style="background:none;border:none;color:rgba(240,233,216,.3);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">匯出星盤資料備份</button>';
+    h += '<button onclick="astroForget()" style="background:none;border:none;color:rgba(240,233,216,.3);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">清除已儲存的星盤資料</button>';
+    h += '</div>';
   }
 
   h += '</div>';
@@ -4441,6 +4537,7 @@ function renderAstro() {
 }
 
 astroLoadProfile();
+try { state.astroTourDismissed = localStorage.getItem('tl_astro_tour_seen') === '1'; } catch (e) {}
 
 render();
 
