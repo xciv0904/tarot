@@ -3063,15 +3063,15 @@ var ASTRO_CATEGORY_RULERS = {
   study: ['Mercury', 'Jupiter'],
   general: ['Sun', 'Moon'],
 };
-var CATEGORY_STEADY_TEXT = {
-  love: '目前沒有明顯的感情行運被觸發，關係維持平常的步調，適合單純享受當下的相處，不必刻意找話題或製造變化。',
-  career: '工作上沒有特別強的行運訊號，適合穩紮穩打、按表操課，把手邊的事做好即可，不需躁進。',
-  family: '家庭關係平穩，沒有特別的行運被觸發，適合維持現有的相處模式，不必刻意處理陳年議題。',
-  health: '身心狀態平穩，沒有明顯的健康行運，維持規律作息即可，是適合休養、儲備體力的時期。',
-  wealth: '財務運勢平穩，沒有特別的波動，適合維持現有的理財節奏，不宜也不需要做重大變動。',
-  social: '人際關係平穩，沒有特別的社交行運，適合維持現有的互動節奏，不必勉強自己社交或迴避。',
-  study: '學業或學習運勢平穩，沒有特別強的行運，適合按部就班累積，扎實比衝刺更划算。',
-  general: '整體運勢平穩，沒有特別突出的行運，是適合休養生息、按計畫前進的一段時間。',
+var HOROSCOPE_SCORE_CATS = CATEGORIES.filter(function (c) { return c.key !== 'general'; });
+var CATEGORY_COLOR = {
+  love: ['#f2a4c1', '#c94f7c'],
+  career: ['#8fc7f4', '#3f7ab8'],
+  family: ['#a8dfc9', '#4f9c76'],
+  health: ['#9fe3e0', '#3f9c9b'],
+  wealth: ['#f4d37a', '#c99a3b'],
+  social: ['#c9a8f0', '#8b5fc9'],
+  study: ['#f4b98a', '#c97a3f'],
 };
 var HOROSCOPE_PERIODS = {
   daily: { zh: '每日運勢', en: 'Daily', transits: [['Moon', 6], ['Sun', 2], ['Mercury', 2], ['Venus', 2], ['Mars', 2]] },
@@ -3088,6 +3088,17 @@ function computeTransitPlanets(dateObj) {
 }
 function astroAngleDiff(a, b) { var d = Math.abs(a - b); if (d > 180) d = 360 - d; return d; }
 var HOROSCOPE_ASPECT_ANGLES = [['conjunction', 0], ['sextile', 60], ['square', 90], ['trine', 120], ['opposition', 180]];
+var ASTRO_BENEFIC = ['Venus', 'Jupiter', 'Sun', 'Moon'];
+var ASTRO_MALEFIC = ['Mars', 'Saturn'];
+function astroAspectPoints(type, transitKey) {
+  if (type === 'trine') return 16;
+  if (type === 'sextile') return 11;
+  if (type === 'square') return -13;
+  if (type === 'opposition') return -15;
+  if (ASTRO_BENEFIC.indexOf(transitKey) >= 0) return 12;
+  if (ASTRO_MALEFIC.indexOf(transitKey) >= 0) return -9;
+  return 5;
+}
 
 function findBestTransitAspect(natalChart, transitPlanets, transitConfigs, natalKeys) {
   var best = null;
@@ -3107,19 +3118,268 @@ function findBestTransitAspect(natalChart, transitPlanets, transitConfigs, natal
   });
   return best;
 }
-function composeHoroscopeCategoryText(catKey, periodKey, natalChart, transitPlanets) {
+
+function astroCategoryScore(catKey, periodCfg, natalChart, transitPlanets) {
   var natalKeys = ASTRO_CATEGORY_RULERS[catKey];
-  var periodCfg = HOROSCOPE_PERIODS[periodKey];
-  var best = findBestTransitAspect(natalChart, transitPlanets, periodCfg.transits, natalKeys);
-  if (!best) return CATEGORY_STEADY_TEXT[catKey];
-  var tDef = PLANET_DEFS.find(function (p) { return p.key === best.transitKey; });
-  var nDef = PLANET_DEFS.find(function (p) { return p.key === best.natalKey; });
-  var aDef = ASPECT_DEFS[best.type];
-  var body = aDef.tpl.replace('{A}', '行運' + tDef.zh).replace('{B}', '本命' + nDef.zh).replace('{ak}', tDef.kw).replace('{bk}', nDef.kw);
-  return '行運' + tDef.zh + aDef.zh + '本命' + nDef.zh + '（誤差 ' + best.delta.toFixed(1) + '°）：' + body + '。';
+  var score = 62;
+  periodCfg.transits.forEach(function (tc) {
+    var tKey = tc[0], orbLimit = tc[1];
+    var tLon = transitPlanets[tKey];
+    natalKeys.forEach(function (nKey) {
+      var nLon = natalChart.planets[nKey].lon;
+      var diff = astroAngleDiff(tLon, nLon);
+      HOROSCOPE_ASPECT_ANGLES.forEach(function (pair) {
+        var delta = Math.abs(diff - pair[1]);
+        if (delta <= orbLimit) {
+          var strength = 1 - delta / orbLimit;
+          score += astroAspectPoints(pair[0], tKey) * strength;
+        }
+      });
+    });
+  });
+  return Math.max(25, Math.min(95, Math.round(score)));
+}
+
+/* ---- seeded pseudo-random (per day/period + personal chart, stable on reload) ---- */
+function astroHashSeed(str) {
+  var h = 2166136261;
+  for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+function astroMulberry32(seed) {
+  return function () {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function astroSeededPickN(rng, arr, n) {
+  var pool = arr.slice(), out = [];
+  while (out.length < n && pool.length) {
+    var idx = Math.floor(rng() * pool.length);
+    out.push(pool.splice(idx, 1)[0]);
+  }
+  return out;
+}
+
+/* ---- daily narrative / advice / avoid banks ---- */
+var NARRATIVE_WEAK = {
+  love: ['今日感情能量有些低迷，容易多想或不安，別急著要對方馬上給答案，給彼此一點喘息的空間，關係反而更穩。', '今日在感情裡容易患得患失，一點小事就想很多，放慢步調、先安頓好自己的情緒，比追著對方要保證更重要。'],
+  career: ['今日工作上容易卡關或提不起勁，事情推進得比預期慢，別逼自己一次到位，先把眼前能做的做好即可。', '今日職場步調有點亂，容易分心或被打斷，與其硬撐著趕進度，不如先理清優先順序，穩住比快更重要。'],
+  family: ['今日與家人相處容易有些摩擦或誤會，一句話可能就被過度解讀，先深呼吸，晚點再談會比當下爭執更有效。', '今日家庭氣氛有點緊繃，長輩或家人的話容易讓你心裡不是滋味，給彼此一點空間，別急著解釋或說服。'],
+  health: ['今日身體或精神容易感到疲累，做什麼都提不起勁，這是身體在提醒你該休息了，別勉強自己硬撐。', '今日容易感到倦怠或被小毛病困擾，別忽視身體發出的訊號，適度放慢步調會恢復得更快。'],
+  wealth: ['今日財運有些起伏，容易有非預期的花費或猶豫不決的決定，先別衝動下決定，保守一點會更安心。', '今日金錢方面容易感到不踏實，看到什麼都想花，或是對數字特別敏感，先緩一緩，別急著做財務決定。'],
+  social: ['今日人際互動容易讓你感到耗神，一句無心的話都可能被放大解讀，適度保留社交能量，別勉強自己迎合。', '今日在人群中容易覺得格格不入或提不起勁社交，這很正常，允許自己安靜地待著。'],
+  study: ['今日你一心渴望充實自己，卻總有一種學不進去、難以掌握的無力感，別給自己太大壓力，循序漸進反而會更有效。', '今日學習狀態有點卡，明明想認真卻靜不下心，別責怪自己不夠努力，換個方式或先休息一下再繼續。'],
+  general: ['今日整體狀態有點低迷，做什麼都提不太起勁，容易分心或心浮氣躁，別勉強自己硬撐，允許自己慢下來。'],
+};
+var NARRATIVE_STRONG = {
+  love: '不過感情運勢相對加分，是適合表達心意、拉近距離的時機。',
+  career: '不過工作／事業運勢表現亮眼，是展現實力、爭取機會的好時機。',
+  family: '不過家庭關係相對和諧，適合多花點時間陪伴家人。',
+  health: '不過身心狀態相對穩定，是適合累積活力、建立好習慣的時機。',
+  wealth: '不過財運相對加分，適合規劃或處理與金錢相關的事務。',
+  social: '不過人際運勢不錯，適合主動聯繫、拓展新的關係。',
+  study: '不過學習運勢相對加分，若換個科目或方式，會更容易進入狀況。',
+};
+var NARRATIVE_STEADY_DAILY = '今日整體運勢平穩，沒有特別突出的行運被觸發，適合按照原本的步調生活，把力氣留給真正重要的事。';
+var ADVICE_CAUTION = {
+  love: ['耐心等待', '先照顧自己', '放低期待', '給彼此空間'],
+  career: ['穩紮穩打', '緩一緩腳步', '先求穩不求快', '儲備實力'],
+  family: ['多一點傾聽', '給彼此時間', '別急著講道理', '放軟身段'],
+  health: ['充分休息', '摸魚充電', '別硬撐', '放過自己'],
+  wealth: ['保守理財', '延後大筆花費', '再觀察一下', '量入為出'],
+  social: ['先觀察', '減少應酬', '獨處充電', '別勉強自己'],
+  study: ['摸魚大法', '零食充電', '放慢步調', '循序漸進'],
+  general: ['摸魚大法', '零食充電', '放慢腳步', '善待自己'],
+};
+var AVOID_BANK = {
+  love: ['猜忌試探', '翻舊帳', '冷戰逃避', '過度解讀'],
+  career: ['躁進衝動', '越級行事', '拖延交辦', '逞強攬事'],
+  family: ['翻舊帳', '正面衝突', '嘮叨說教', '冷處理'],
+  health: ['熬夜', '暴飲暴食', '硬撐不休息', '跳過三餐'],
+  wealth: ['衝動購物', '借貸投機', '跟風下單', '過度節省'],
+  social: ['口是心非', '過度比較', '勉強應酬', '散播八卦'],
+  study: ['懸梁刺股', '責備自己', '臨時抱佛腳', '一心多用'],
+  general: ['懸梁刺股', '責備自己', '硬撐', '和自己過不去'],
+};
+
+/* ---- lucky items (daily) ---- */
+var LUCKY_COLORS = [
+  { zh: '煙青', hex: '#8a8fa3' }, { zh: '藏青', hex: '#1f3a5f' }, { zh: '杏色', hex: '#e8c39e' },
+  { zh: '珊瑚橘', hex: '#ff7f5e' }, { zh: '薄荷綠', hex: '#98d8c8' }, { zh: '霧霾藍', hex: '#7a92a3' },
+  { zh: '酒紅', hex: '#722f37' }, { zh: '鵝黃', hex: '#f3e5ab' }, { zh: '天青', hex: '#a0d8ef' },
+  { zh: '米白', hex: '#f5f0e6' }, { zh: '墨綠', hex: '#2f4f3f' }, { zh: '藕粉', hex: '#e8c4c4' },
+];
+var LUCKY_ACCESSORIES = ['檀木', '銀飾', '水晶', '珍珠', '麻布', '黃銅', '陶瓷', '玉石', '琥珀', '木質', '絲質', '貝殼'];
+var LUCKY_HOURS = ['23-01點', '01-03點', '03-05點', '05-07點', '07-09點', '09-11點', '11-13點', '13-15點', '15-17點', '17-19點', '19-21點', '21-23點'];
+var LUCKY_DIRECTIONS = ['東', '南', '西', '北', '東南', '東北', '西南', '西北'];
+var LUCKY_FOODS = ['全麥食品', '堅果', '深色蔬菜', '溫熱湯品', '當季水果', '優格', '燕麥', '魚類', '豆製品', '根莖類'];
+var LUCKY_ITEMS_LIST = ['抱枕', '鑰匙圈', '手帕', '筆記本', '耳機', '保溫杯', '護手霜', '小鏡子', '香氛小物', '便條紙'];
+var LUCKY_FLOWERS = ['鈴蘭', '玫瑰', '向日葵', '桔梗', '滿天星', '薰衣草', '雛菊', '茉莉', '繡球花', '百合'];
+
+function renderLuckyCell(iconHtml, value, label) {
+  return '<div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px">' + iconHtml + '<div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;text-align:center">' + esc(value) + '</div><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4)">' + label + '</div></div>';
+}
+function renderLuckyGrid(rng) {
+  var color = astroSeededPickN(rng, LUCKY_COLORS, 1)[0];
+  var accessory = astroSeededPickN(rng, LUCKY_ACCESSORIES, 1)[0];
+  var hour = astroSeededPickN(rng, LUCKY_HOURS, 1)[0];
+  var direction = astroSeededPickN(rng, LUCKY_DIRECTIONS, 1)[0];
+  var food = astroSeededPickN(rng, LUCKY_FOODS, 1)[0];
+  var item = astroSeededPickN(rng, LUCKY_ITEMS_LIST, 1)[0];
+  var flower = astroSeededPickN(rng, LUCKY_FLOWERS, 1)[0];
+  var n1 = Math.floor(rng() * 10), n2 = Math.floor(rng() * 10);
+  if (n2 === n1) n2 = (n2 + 1) % 10;
+  var cells = [
+    renderLuckyCell('<div style="width:22px;height:22px;border-radius:50%;background:' + color.hex + ';border:1px solid rgba(255,255,255,.3)"></div>', color.zh, '幸運色'),
+    renderLuckyCell('<div style="font-size:20px">💎</div>', accessory, '幸運配飾'),
+    renderLuckyCell('<div style="font-size:20px">⏰</div>', hour, '幸運時辰'),
+    renderLuckyCell('<div style="font-size:20px">🧭</div>', direction, '幸運方位'),
+    renderLuckyCell('<div style="font-size:20px">🔢</div>', n1 + '/' + n2, '幸運數字'),
+    renderLuckyCell('<div style="font-size:20px">🍽️</div>', food, '幸運食物'),
+    renderLuckyCell('<div style="font-size:20px">🎁</div>', item, '幸運隨身物'),
+    renderLuckyCell('<div style="font-size:20px">🌸</div>', flower, '幸運花'),
+  ];
+  var h = '<div style="display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid rgba(201,169,110,.15)">';
+  cells.forEach(function (c) { h += c; });
+  h += '</div>';
+  return h;
+}
+
+/* ---- long-form (weekly / monthly / yearly) narrative banks ---- */
+var LONGFORM_THEME_TEXT = {
+  love: {
+    positive: '在感情層面，這段時間的行運對你有利，適合主動表達心意、安排約會，或是把猶豫已久的關係往前推一步，你的魅力也容易被看見。',
+    challenging: '在感情層面，容易有些摩擦或不踏實感，一句話可能被過度解讀，建議放慢步調，別急著要對方馬上給答案，關係需要一點時間發酵。',
+  },
+  career: {
+    positive: '工作／事業方面表現不錯，適合主動爭取機會、提出想法或整理過去的成果，你的努力容易被上層看見。',
+    challenging: '工作上容易感到壓力增加、任務突然變多，或是被瑣事打斷節奏，建議先理清優先順序，穩住腳步比一次衝刺更重要。',
+  },
+  family: {
+    positive: '與家人的互動相對和諧，適合多花一點時間陪伴，也記得多關注家中長輩的健康與近況。',
+    challenging: '家庭關係容易出現一些緊繃或誤會，一句話可能被放大解讀，建議多一點傾聽，給彼此消化的時間，別急著爭對錯。',
+  },
+  health: {
+    positive: '身心狀態相對穩定，是適合建立運動習慣、調整作息、累積體力的一段時間。',
+    challenging: '健康方面，容易感到疲累或情緒起伏，事情一多人就會煩躁，記得留意自己的情緒，讓自己耐心一點，別勉強硬撐。',
+  },
+  wealth: {
+    positive: '財運方面有加分，適合整理帳戶、規劃理財，或是重新盤點許久沒關注的資源與資產配置。',
+    challenging: '財務上容易有非預期的支出或猶豫不決的決定，建議保守一點，先觀察、別急著投入大筆資金。',
+  },
+  social: {
+    positive: '人際運勢不錯，適合主動聯繫、參加聚會或活動，這段期間也可能恰好有吸引目光、展現魅力的瞬間出現。',
+    challenging: '人際互動容易讓你耗神，一句無心的話都可能被放大解讀，建議保留一些社交能量，不必勉強自己迎合每一場邀約。',
+  },
+  study: {
+    positive: '學習與研究運勢加分，吸收力和理解力都不錯，適合安排衝刺、挑戰新的主題或考驗自己的計畫。',
+    challenging: '學習狀態容易卡關、分心或提不起勁，別責怪自己不夠努力，換個方式切入、或是先休息一下再繼續會更有效。',
+  },
+};
+var CLOSING_LONGFORM = {
+  weekly: '這週需要多留意自己的情緒與步調，事情一多容易焦躁，讓自己耐心一點，順著行運的節奏走，會比勉強自己更有效。',
+  monthly: '這個月建議定期回顧進度、適度調整計畫，不必事事追求一次到位，穩紮穩打的累積會是這個月最大的收穫。',
+  yearly: '整體而言，這是持續累積與調整步調的一年，順著行運高低起伏安排節奏，會比一味衝刺更能走得長遠。',
+};
+function steadyLongform(periodLabel) {
+  return periodLabel + '整體來說是平穩的一段時間，沒有特別強烈的行運被觸發，適合維持現有的步調，把手邊的事情做好，也多花一點時間陪伴自己與重要的人。';
 }
 
 function astroSetView(v) { state.astroView = v; render(); window.scrollTo(0, 0); }
+
+function renderDailyHoroscope(chart, transitPlanets, periodCfg, now) {
+  var scores = {};
+  HOROSCOPE_SCORE_CATS.forEach(function (cat) { scores[cat.key] = astroCategoryScore(cat.key, periodCfg, chart, transitPlanets); });
+  var keys = HOROSCOPE_SCORE_CATS.map(function (c) { return c.key; });
+  var overall = Math.round(keys.reduce(function (s, k) { return s + scores[k]; }, 0) / keys.length);
+  var maxScore = Math.max.apply(null, keys.map(function (k) { return scores[k]; }));
+  var minScore = Math.min.apply(null, keys.map(function (k) { return scores[k]; }));
+  var weakKey = keys.filter(function (k) { return scores[k] === minScore; })[0];
+  var strongKey = keys.filter(function (k) { return scores[k] === maxScore; })[0];
+
+  var dateStr = now.getFullYear() + pad2(now.getMonth() + 1) + pad2(now.getDate());
+  var seedStr = dateStr + '_' + Math.round(chart.asc * 100) + '_daily';
+  var rng = astroMulberry32(astroHashSeed(seedStr));
+
+  var narrative, adviceItems, avoidItems;
+  if (maxScore - minScore <= 4) {
+    narrative = NARRATIVE_STEADY_DAILY;
+    adviceItems = astroSeededPickN(rng, ADVICE_CAUTION.general, 2);
+    avoidItems = astroSeededPickN(rng, AVOID_BANK.general, 2);
+  } else {
+    var weakVariants = NARRATIVE_WEAK[weakKey];
+    narrative = weakVariants[Math.floor(rng() * weakVariants.length)];
+    if (strongKey !== weakKey) narrative += ' ' + NARRATIVE_STRONG[strongKey];
+    adviceItems = astroSeededPickN(rng, ADVICE_CAUTION[weakKey], 2);
+    avoidItems = astroSeededPickN(rng, AVOID_BANK[weakKey], 2);
+  }
+
+  var h = '';
+  h += '<div style="text-align:center;margin-top:18px">';
+  h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">綜合分數</div>';
+  h += '<div style="font:700 44px \'Noto Serif TC\',serif;color:#e6cd9a;line-height:1.2">' + overall + '<span style="font:400 16px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">分</span></div>';
+  h += '</div>';
+
+  h += '<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:16px 8px;margin-top:16px">';
+  HOROSCOPE_SCORE_CATS.forEach(function (cat) {
+    var s = scores[cat.key], col = CATEGORY_COLOR[cat.key];
+    var pct = Math.max(4, Math.min(100, s));
+    h += '<div style="display:flex;flex-direction:column;align-items:center;gap:6px;width:64px">';
+    h += '<div style="width:13px;height:64px;border-radius:7px;background:rgba(255,255,255,.06);position:relative;overflow:hidden">';
+    h += '<div style="position:absolute;bottom:0;left:0;right:0;height:' + pct + '%;background:linear-gradient(180deg,' + col[0] + ',' + col[1] + ');border-radius:7px"></div>';
+    h += '</div>';
+    h += '<div style="font:700 14px \'Noto Serif TC\',serif;color:#f0e9d8">' + s + '</div>';
+    h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55)">' + cat.zh + '</div>';
+    h += '</div>';
+  });
+  h += '</div>';
+
+  h += '<div style="margin-top:18px;border-top:1px solid rgba(201,169,110,.15);border-bottom:1px solid rgba(201,169,110,.15);padding:16px 0;font:400 13px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.8);line-height:1.9">' + esc(narrative) + '</div>';
+
+  h += '<div style="display:flex;gap:16px;margin-top:16px">';
+  h += '<div style="flex:1"><div style="font:700 13px \'Noto Sans TC\',sans-serif;color:#e6cd9a">建議</div><div style="margin-top:6px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.7">' + esc(adviceItems.join('、')) + '</div></div>';
+  h += '<div style="flex:1"><div style="font:700 13px \'Noto Sans TC\',sans-serif;color:#d67878">避免</div><div style="margin-top:6px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.7">' + esc(avoidItems.join('、')) + '</div></div>';
+  h += '</div>';
+
+  h += '<div style="margin-top:22px;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;text-align:center">今日幸運關鍵字</div>';
+  h += renderLuckyGrid(rng);
+
+  return h;
+}
+
+function renderLongHoroscope(chart, transitPlanets, periodKey, periodCfg) {
+  var periodLabel = periodKey === 'weekly' ? '這週' : periodKey === 'monthly' ? '這個月' : '這一年';
+  var topN = periodKey === 'weekly' ? 4 : periodKey === 'monthly' ? 5 : 7;
+
+  var hits = [];
+  HOROSCOPE_SCORE_CATS.forEach(function (cat) {
+    var best = findBestTransitAspect(chart, transitPlanets, periodCfg.transits, ASTRO_CATEGORY_RULERS[cat.key]);
+    if (best) {
+      var tone = astroAspectPoints(best.type, best.transitKey) >= 0 ? 'positive' : 'challenging';
+      hits.push({ key: cat.key, delta: best.delta, tone: tone });
+    }
+  });
+  hits.sort(function (a, b) { return a.delta - b.delta; });
+  hits = hits.slice(0, topN);
+
+  var body;
+  if (!hits.length) {
+    body = steadyLongform(periodLabel);
+  } else {
+    var ascSignDef = ZODIAC_SIGNS[chart.ascSign];
+    var sunSignDef = ZODIAC_SIGNS[chart.planets.Sun.sign];
+    var opening = ascSignDef.zh + '上升、' + sunSignDef.zh + '太陽的你，' + periodLabel + '整體來說：';
+    var sentences = hits.map(function (hit) { return LONGFORM_THEME_TEXT[hit.key][hit.tone]; });
+    body = opening + sentences.join('') + CLOSING_LONGFORM[periodKey];
+  }
+
+  var h = '';
+  h += '<div style="margin-top:16px;font:400 13px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.8);line-height:2;text-align:justify">' + esc(body) + '</div>';
+  return h;
+}
 
 function renderHoroscope(periodKey) {
   var chart = state.astroResult;
@@ -3131,13 +3391,13 @@ function renderHoroscope(periodKey) {
   var dateLabel = now.getFullYear() + '/' + pad2(now.getMonth() + 1) + '/' + pad2(now.getDate()) + (periodKey === 'yearly' ? '　' + now.getFullYear() + ' 年度' : '');
   h += '<div style="font:400 11px \'EB Garamond\',serif;color:rgba(240,233,216,.4);text-align:center;margin-top:2px">' + dateLabel + '</div>';
   h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);text-align:center;margin-top:8px;line-height:1.6">根據目前的行運與你的本命星盤比對而成，僅供參考</div>';
-  CATEGORIES.forEach(function (cat) {
-    var text = composeHoroscopeCategoryText(cat.key, periodKey, chart, transitPlanets);
-    h += '<div style="border-top:1px solid rgba(201,169,110,.15);padding:14px 0">';
-    h += '<div style="font:500 13px \'Noto Sans TC\',sans-serif;color:#e6cd9a">' + cat.icon + ' ' + cat.zh + '</div>';
-    h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);margin-top:5px;line-height:1.7">' + esc(text) + '</div>';
-    h += '</div>';
-  });
+
+  if (periodKey === 'daily') {
+    h += renderDailyHoroscope(chart, transitPlanets, periodCfg, now);
+  } else {
+    h += renderLongHoroscope(chart, transitPlanets, periodKey, periodCfg);
+  }
+
   h += '<button onclick="astroSetView(\'chart\')" style="width:100%;margin-top:20px;padding:12px;border-radius:12px;border:1px solid rgba(201,169,110,.3);background:rgba(255,255,255,.02);color:rgba(240,233,216,.6);font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">← 回到本命星盤</button>';
   return h;
 }
