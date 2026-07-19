@@ -3168,28 +3168,41 @@ function filterCityList(q) {
   return CITY_LIST.filter(function (c) { return c.zh.indexOf(q) !== -1 || c.en.toLowerCase().indexOf(ql) !== -1; }).slice(0, 12);
 }
 
-/* render() 會整段替換 innerHTML，等於把使用者正在打字的那個 <input> 整個銷毀重建，
-   新節點預設不會有焦點——這就是為什麼打字只能打出一個字（中文或英文都一樣）：
-   打完第一個字→重繪→輸入框失焦→第二個字打不進去。這裡在重繪後手動把焦點與游標
-   position 還原到新的輸入框上，才能正常連續輸入。
-   中文輸入法（注音／拼音）組字中另外有一個問題：組字尚未完成時若被重繪，會被瀏覽器
-   強制中斷組字，只送出第一個符號，所以 compositionstart~compositionend 期間要整個跳過
-   render()，等組字結束再重繪＋還原焦點。 */
-var _imeComposing = false;
-function refocusCityInput(id, caretPos) {
-  var el = document.getElementById(id);
-  if (!el) return;
-  try {
-    el.focus();
-    if (typeof caretPos === 'number') el.setSelectionRange(caretPos, caretPos);
-  } catch (e) {}
+/* 城市搜尋框絕對不能在打字時整段 render()——那等於把使用者正在輸入的那個 <input>
+   整個銷毀重建。這件事本身就會打斷輸入法組字（中文注音／拼音打一半被中斷，只送出
+   第一個符號或組不成字），就算組字沒被打斷，新節點預設也沒有焦點，一樣會讓下一個字
+   打不進去。正確做法是打字時完全不碰這個 <input>，只更新旁邊「城市建議列表＋生成
+   按鈕」這一小塊 DOM，瀏覽器原生的游標、焦點、注音組字狀態就完全不會被干擾。 */
+function renderCityLiveBlock(prefix, genFnName) {
+  var query = state[prefix + 'CityQuery'];
+  var matches = filterCityList(query);
+  var h = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">';
+  matches.forEach(function (c) {
+    var idx = CITY_LIST.indexOf(c);
+    var active = state[prefix + 'CityIdx'] === idx;
+    h += '<button onclick="' + prefix + 'SetCity(' + idx + ')" style="font:400 11px \'Noto Sans TC\',sans-serif;background:' + (active ? 'rgba(201,169,110,.2)' : 'rgba(201,169,110,.06)') + ';border:1px solid ' + (active ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.65)') + ';padding:6px 12px;border-radius:14px;cursor:pointer">' + c.zh + '</button>';
+  });
+  h += '</div>';
+  if (matches.length === 0 && query && query.trim()) {
+    h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);margin-top:8px">查無此城市，試試看用中文城市名或英文拼音（例如 Tokyo、New York）搜尋</div>';
+  }
+  if (state[prefix + 'CityIdx'] != null) {
+    h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:8px">已選擇：' + CITY_LIST[state[prefix + 'CityIdx']].zh + '</div>';
+  }
+  h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.3);margin-top:16px;line-height:1.7">🔒 出生資料只會儲存在你自己的裝置（瀏覽器）中，不會上傳到任何伺服器' + (prefix === 'astro' ? '；你也可以隨時在生成星盤後按「清除已儲存的星盤資料」完全刪除。' : '。') + '</div>';
+  var birthErr = validateBirthDate(state[prefix + 'Y'], state[prefix + 'M'], state[prefix + 'D'], state[prefix + 'H'], state[prefix + 'Min'], state[prefix + 'UnknownTime']);
+  var ready = state[prefix + 'Y'] && state[prefix + 'M'] && state[prefix + 'D'] && state[prefix + 'CityIdx'] != null && !birthErr;
+  h += '<button onclick="' + genFnName + '()" ' + (ready ? '' : 'disabled') + ' style="width:100%;margin-top:14px;padding:13px;border-radius:12px;border:1px solid ' + (ready ? '#c9a96e' : 'rgba(201,169,110,.2)') + ';background:' + (ready ? 'linear-gradient(135deg,#c9a96e,#a9835a)' : 'rgba(255,255,255,.03)') + ';color:' + (ready ? '#1a1622' : 'rgba(240,233,216,.3)') + ';font:600 14px \'Noto Sans TC\',sans-serif;cursor:pointer">生成星盤 →</button>';
+  return h;
 }
-function astroSetCity(idx) { state.astroCityIdx = idx; render(); }
-function astroCityInput(v, caretPos) {
+function updateCityLiveBlock(prefix, genFnName) {
+  var box = document.getElementById(prefix + '-city-live');
+  if (box) box.innerHTML = renderCityLiveBlock(prefix, genFnName);
+}
+function astroSetCity(idx) { state.astroCityIdx = idx; updateCityLiveBlock('astro', 'astroGenerate'); }
+function astroCityInput(v) {
   state.astroCityQuery = v; state.astroCityIdx = null;
-  if (_imeComposing) return;
-  render();
-  refocusCityInput('astro-city-input', caretPos);
+  updateCityLiveBlock('astro', 'astroGenerate');
 }
 function astroToggleUnknownTime() { state.astroUnknownTime = !state.astroUnknownTime; render(); }
 function pad2(n) { n = parseInt(n, 10) || 0; return (n < 10 ? '0' : '') + n; }
@@ -3290,36 +3303,16 @@ function renderBirthInputForm(prefix, promptText, genFnName) {
   }
 
   h += '<div style="margin-top:16px;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">出生地</div>';
-  h += '<input type="text" id="' + prefix + '-city-input" placeholder="搜尋城市，例如：台北、Tokyo" value="' + esc(state[prefix + 'CityQuery']) + '" oninput="' + prefix + 'CityInput(this.value,this.selectionStart)" oncompositionstart="_imeComposing=true" oncompositionend="_imeComposing=false;' + prefix + 'CityInput(this.value,this.selectionStart)" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
-  var matches = filterCityList(state[prefix + 'CityQuery']);
-  h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">';
-  matches.forEach(function (c) {
-    var idx = CITY_LIST.indexOf(c);
-    var active = state[prefix + 'CityIdx'] === idx;
-    h += '<button onclick="' + prefix + 'SetCity(' + idx + ')" style="font:400 11px \'Noto Sans TC\',sans-serif;background:' + (active ? 'rgba(201,169,110,.2)' : 'rgba(201,169,110,.06)') + ';border:1px solid ' + (active ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.65)') + ';padding:6px 12px;border-radius:14px;cursor:pointer">' + c.zh + '</button>';
-  });
-  h += '</div>';
-  if (matches.length === 0 && state[prefix + 'CityQuery'] && state[prefix + 'CityQuery'].trim()) {
-    h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);margin-top:8px">查無此城市，試試看用中文城市名或英文拼音（例如 Tokyo、New York）搜尋</div>';
-  }
-  if (state[prefix + 'CityIdx'] != null) {
-    h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:8px">已選擇：' + CITY_LIST[state[prefix + 'CityIdx']].zh + '</div>';
-  }
-
-  h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.3);margin-top:16px;line-height:1.7">🔒 出生資料只會儲存在你自己的裝置（瀏覽器）中，不會上傳到任何伺服器。</div>';
-
-  var ready = state[prefix + 'Y'] && state[prefix + 'M'] && state[prefix + 'D'] && state[prefix + 'CityIdx'] != null && !birthErr;
-  h += '<button onclick="' + genFnName + '()" ' + (ready ? '' : 'disabled') + ' style="width:100%;margin-top:14px;padding:13px;border-radius:12px;border:1px solid ' + (ready ? '#c9a96e' : 'rgba(201,169,110,.2)') + ';background:' + (ready ? 'linear-gradient(135deg,#c9a96e,#a9835a)' : 'rgba(255,255,255,.03)') + ';color:' + (ready ? '#1a1622' : 'rgba(240,233,216,.3)') + ';font:600 14px \'Noto Sans TC\',sans-serif;cursor:pointer">生成星盤 →</button>';
+  h += '<input type="text" placeholder="搜尋城市，例如：台北、Tokyo" value="' + esc(state[prefix + 'CityQuery']) + '" oninput="' + prefix + 'CityInput(this.value)" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+  h += '<div id="' + prefix + '-city-live">' + renderCityLiveBlock(prefix, genFnName) + '</div>';
   return h;
 }
 
 /* ================= 合盤 Synastry ================= */
-function synSetCity(idx) { state.synCityIdx = idx; render(); }
-function synCityInput(v, caretPos) {
+function synSetCity(idx) { state.synCityIdx = idx; updateCityLiveBlock('syn', 'synGenerate'); }
+function synCityInput(v) {
   state.synCityQuery = v; state.synCityIdx = null;
-  if (_imeComposing) return;
-  render();
-  refocusCityInput('syn-city-input', caretPos);
+  updateCityLiveBlock('syn', 'synGenerate');
 }
 function synToggleUnknownTime() { state.synUnknownTime = !state.synUnknownTime; render(); }
 function synGenerate() {
@@ -4354,26 +4347,8 @@ function renderAstro() {
     }
 
     h += '<div style="margin-top:16px;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">出生地</div>';
-    h += '<input type="text" id="astro-city-input" placeholder="搜尋城市，例如：台北、Tokyo" value="' + esc(state.astroCityQuery) + '" oninput="astroCityInput(this.value,this.selectionStart)" oncompositionstart="_imeComposing=true" oncompositionend="_imeComposing=false;astroCityInput(this.value,this.selectionStart)" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
-    var matches = filterCityList(state.astroCityQuery);
-    h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">';
-    matches.forEach(function (c) {
-      var idx = CITY_LIST.indexOf(c);
-      var active = state.astroCityIdx === idx;
-      h += '<button onclick="astroSetCity(' + idx + ')" style="font:400 11px \'Noto Sans TC\',sans-serif;background:' + (active ? 'rgba(201,169,110,.2)' : 'rgba(201,169,110,.06)') + ';border:1px solid ' + (active ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.65)') + ';padding:6px 12px;border-radius:14px;cursor:pointer">' + c.zh + '</button>';
-    });
-    h += '</div>';
-    if (matches.length === 0 && state.astroCityQuery && state.astroCityQuery.trim()) {
-      h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);margin-top:8px">查無此城市，試試看用中文城市名或英文拼音（例如 Tokyo、New York）搜尋</div>';
-    }
-    if (state.astroCityIdx != null) {
-      h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:8px">已選擇：' + CITY_LIST[state.astroCityIdx].zh + '</div>';
-    }
-
-    h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.3);margin-top:16px;line-height:1.7">🔒 出生資料只會儲存在你自己的裝置（瀏覽器）中，不會上傳到任何伺服器；你也可以隨時在生成星盤後按「清除已儲存的星盤資料」完全刪除。</div>';
-
-    var ready = state.astroY && state.astroM && state.astroD && state.astroCityIdx != null && !astroBirthErr;
-    h += '<button onclick="astroGenerate()" ' + (ready ? '' : 'disabled') + ' style="width:100%;margin-top:14px;padding:13px;border-radius:12px;border:1px solid ' + (ready ? '#c9a96e' : 'rgba(201,169,110,.2)') + ';background:' + (ready ? 'linear-gradient(135deg,#c9a96e,#a9835a)' : 'rgba(255,255,255,.03)') + ';color:' + (ready ? '#1a1622' : 'rgba(240,233,216,.3)') + ';font:600 14px \'Noto Sans TC\',sans-serif;cursor:pointer">生成星盤 →</button>';
+    h += '<input type="text" placeholder="搜尋城市，例如：台北、Tokyo" value="' + esc(state.astroCityQuery) + '" oninput="astroCityInput(this.value)" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+    h += '<div id="astro-city-live">' + renderCityLiveBlock('astro', 'astroGenerate') + '</div>';
 
   } else {
     var chart = state.astroResult;
