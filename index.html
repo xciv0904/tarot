@@ -374,7 +374,7 @@ var state = {
   astroY: '', astroM: '', astroD: '', astroH: '', astroMin: '',
   astroCityQuery: '', astroCityIdx: null, astroCityUsed: null,
   astroUnknownTime: false, astroResult: null, astroView: 'chart',
-  horoDateStr: null,
+  horoDayAnchor: null, horoWeekOffset: 0, horoMonthOffset: 0, horoYearOffset: 0,
 };
 
 var SPREAD_GROUPS = [
@@ -3369,6 +3369,8 @@ function renderCategoryScoreBars(scores) {
   return h;
 }
 
+var LAST_HORO = {};
+
 function renderDailyHoroscope(chart, transitPlanets, periodCfg, now) {
   var scores = computeCategoryScores(periodCfg, chart, transitPlanets);
   var keys = HOROSCOPE_SCORE_CATS.map(function (c) { return c.key; });
@@ -3408,6 +3410,14 @@ function renderDailyHoroscope(chart, transitPlanets, periodCfg, now) {
 
   h += '<div style="margin-top:22px;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;text-align:center">今日幸運關鍵字</div>';
   h += renderLuckyGrid(rng);
+
+  LAST_HORO.daily = {
+    periodLabel: '每日運勢',
+    dateRangeLabel: now.getFullYear() + '/' + pad2(now.getMonth() + 1) + '/' + pad2(now.getDate()),
+    overall: overall, scores: scores,
+    summary: narrative, advice: adviceItems, avoid: avoidItems,
+    returnInfo: null, categoryTexts: null,
+  };
 
   return h;
 }
@@ -3494,7 +3504,20 @@ function renderReturnHighlight(returnChart, kindLabel, dateLabel, topCatKey) {
   return h;
 }
 
-function renderPeriodDashboard(chart, transitPlanets, periodKey, periodCfg, now, city) {
+function buildPeriodSummary(periodKey, scores, topCatKey, weakCatKey, overall) {
+  var periodLabel = periodKey === 'weekly' ? '這週' : periodKey === 'monthly' ? '這個月' : '這一年';
+  var tail = overall >= 72 ? '整體狀態不錯，是可以主動出擊、多爭取一些的一段時間。'
+    : overall <= 45 ? '整體步調建議放緩，優先照顧好自己，別勉強衝刺。'
+    : '整體穩紮穩打即可，順著節奏走，不必給自己太大壓力。';
+  if (topCatKey === weakCatKey) {
+    return periodLabel + '各方面的分數相當平均（約 ' + overall + ' 分上下），沒有特別突出或特別弱的舞台，適合穩定地按自己的步調前進。' + tail;
+  }
+  var topZh = CATEGORIES.find(function (c) { return c.key === topCatKey; }).zh;
+  var weakZh = CATEGORIES.find(function (c) { return c.key === weakCatKey; }).zh;
+  return periodLabel + '最被強化的舞台是「' + topZh + '」（' + scores[topCatKey] + ' 分），值得多投入心力；「' + weakZh + '」（' + scores[weakCatKey] + ' 分）相對平淡，維持現狀就好，不必特別費力。' + tail;
+}
+
+function renderPeriodDashboard(chart, transitPlanets, periodKey, periodCfg, now, city, rangeLabel) {
   var scores, returnChart = null, kindLabel = '', returnDateLabel = '';
 
   if (periodKey === 'weekly') {
@@ -3519,6 +3542,8 @@ function renderPeriodDashboard(chart, transitPlanets, periodKey, periodCfg, now,
   var overall = Math.round(keys.reduce(function (s, k) { return s + scores[k]; }, 0) / keys.length);
   var overallLabel = periodKey === 'weekly' ? '本週綜合分數' : periodKey === 'monthly' ? '本月綜合分數' : '本年綜合分數';
   var topCatKey = keys.reduce(function (best, k) { return scores[k] > scores[best] ? k : best; }, keys[0]);
+  var weakCatKey = keys.reduce(function (worst, k) { return scores[k] < scores[worst] ? k : worst; }, keys[0]);
+  var summaryText = buildPeriodSummary(periodKey, scores, topCatKey, weakCatKey, overall);
 
   var bucketId;
   if (periodKey === 'weekly') { var wi = isoWeekInfo(now); bucketId = 'W' + wi.year + '-' + wi.week; }
@@ -3529,14 +3554,17 @@ function renderPeriodDashboard(chart, transitPlanets, periodKey, periodCfg, now,
   var h = '';
   h += renderOverallScoreBlock(overall, overallLabel);
   h += renderCategoryScoreBars(scores);
+  h += '<div style="margin-top:18px;border-top:1px solid rgba(201,169,110,.15);border-bottom:1px solid rgba(201,169,110,.15);padding:16px 0;font:400 13px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.8);line-height:1.9">' + esc(summaryText) + '</div>';
   if (returnChart) h += renderReturnHighlight(returnChart, kindLabel, returnDateLabel, topCatKey);
   h += '<div style="margin-top:18px">' + renderLuckyMini(rng) + '</div>';
 
   h += '<div style="margin-top:22px;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;text-align:center">分項解讀</div>';
+  var categoryTexts = {};
   HOROSCOPE_SCORE_CATS.forEach(function (cat) {
     var s = scores[cat.key], col = CATEGORY_COLOR[cat.key];
     var tone = astroToneOf(s);
     var text = PERIOD_CATEGORY_TEXT[cat.key][tone];
+    categoryTexts[cat.key] = text;
     h += '<div style="border-top:1px solid rgba(201,169,110,.15);padding:16px 0">';
     h += '<div style="display:flex;align-items:center;gap:10px">';
     h += '<span style="font:700 14px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + cat.zh + '</span>';
@@ -3547,37 +3575,144 @@ function renderPeriodDashboard(chart, transitPlanets, periodKey, periodCfg, now,
     h += '</div>';
   });
 
+  var periodLabelZh = periodKey === 'weekly' ? '本週運勢' : periodKey === 'monthly' ? '本月運勢' : '年度運勢報告';
+  LAST_HORO[periodKey] = {
+    periodLabel: periodLabelZh,
+    dateRangeLabel: rangeLabel,
+    overall: overall, scores: scores,
+    summary: summaryText, advice: null, avoid: null,
+    returnInfo: returnChart ? { kindLabel: kindLabel, dateLabel: returnDateLabel, ascSign: ZODIAC_SIGNS[returnChart.ascSign].zh, mcSign: ZODIAC_SIGNS[returnChart.mcSign].zh } : null,
+    categoryTexts: categoryTexts,
+  };
+
   return h;
 }
 
+/* ---- per-period date navigation ---- */
 function isoDateStr(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
-function astroSetHoroDate(v) { state.horoDateStr = v || null; render(); }
-function astroResetHoroDate() { state.horoDateStr = null; render(); window.scrollTo(0, 0); }
+function mondayOf(d) { var m = new Date(d); var dow = (m.getDay() + 6) % 7; m.setDate(m.getDate() - dow); return m; }
+function periodRangeLabel(periodKey, now) {
+  if (periodKey === 'weekly') {
+    var mon = mondayOf(now), sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+    return pad2(mon.getMonth() + 1) + '.' + pad2(mon.getDate()) + ' - ' + pad2(sun.getMonth() + 1) + '.' + pad2(sun.getDate());
+  }
+  if (periodKey === 'monthly') return now.getFullYear() + '年' + (now.getMonth() + 1) + '月';
+  if (periodKey === 'yearly') return now.getFullYear() + '年';
+  return now.getFullYear() + '/' + pad2(now.getMonth() + 1) + '/' + pad2(now.getDate());
+}
+function resolveHoroNow(periodKey) {
+  var today = new Date();
+  if (periodKey === 'daily') return state.horoDayAnchor ? new Date(state.horoDayAnchor + 'T12:00:00') : today;
+  if (periodKey === 'weekly') { var d = new Date(today); d.setDate(d.getDate() + state.horoWeekOffset * 7); return d; }
+  if (periodKey === 'monthly') return new Date(today.getFullYear(), today.getMonth() + state.horoMonthOffset, 15, 12);
+  return new Date(today.getFullYear() + state.horoYearOffset, today.getMonth(), today.getDate(), 12);
+}
+function astroSetHoroDay(iso) { var today = isoDateStr(new Date()); state.horoDayAnchor = (iso === today) ? null : iso; render(); }
+function astroSetHoroWeekOffset(v) { state.horoWeekOffset = v; render(); }
+function astroSetHoroMonthOffset(v) { state.horoMonthOffset = v; render(); }
+function astroSetHoroYearOffset(v) { state.horoYearOffset = v; render(); }
+
+function renderDailyDateStrip(selected) {
+  var todayIso = isoDateStr(new Date());
+  var selIso = isoDateStr(selected);
+  var WD = ['日', '一', '二', '三', '四', '五', '六'];
+  var h = '<div style="display:flex;gap:4px;margin-top:12px">';
+  for (var i = -3; i <= 3; i++) {
+    var d = new Date(selected); d.setDate(d.getDate() + i);
+    var iso = isoDateStr(d);
+    var isSel = iso === selIso, isToday = iso === todayIso;
+    h += '<button onclick="astroSetHoroDay(\'' + iso + '\')" style="flex:1;padding:8px 2px;border-radius:10px;border:1px solid ' + (isSel ? '#c9a96e' : 'rgba(201,169,110,.2)') + ';background:' + (isSel ? 'rgba(201,169,110,.18)' : 'rgba(255,255,255,.02)') + ';color:' + (isSel ? '#f0e9d8' : 'rgba(240,233,216,.55)') + ';cursor:pointer;text-align:center">';
+    h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif">' + (isToday ? '今天' : '週' + WD[d.getDay()]) + '</div>';
+    h += '<div style="font:600 13px \'Noto Serif TC\',serif;margin-top:2px">' + d.getDate() + '</div>';
+    h += '</button>';
+  }
+  h += '</div>';
+  return h;
+}
+function renderOffsetNav(labelPrev, labelCenter, labelNext, offset, setterName, rangeLabel) {
+  var h = '<div style="text-align:center;margin-top:12px">';
+  h += '<div style="font:400 11px \'EB Garamond\',serif;color:rgba(240,233,216,.4)">' + rangeLabel + '</div>';
+  h += '<div style="display:flex;justify-content:center;gap:8px;margin-top:6px">';
+  h += '<button onclick="' + setterName + '(' + (offset - 1) + ')" style="font:500 12px \'Noto Sans TC\',sans-serif;background:rgba(255,255,255,.03);border:1px solid rgba(201,169,110,.25);color:rgba(240,233,216,.6);padding:6px 12px;border-radius:14px;cursor:pointer">‹ ' + labelPrev + '</button>';
+  h += '<button onclick="' + setterName + '(0)" style="font:500 12px \'Noto Sans TC\',sans-serif;background:' + (offset === 0 ? 'rgba(201,169,110,.2)' : 'rgba(255,255,255,.03)') + ';border:1px solid ' + (offset === 0 ? '#c9a96e' : 'rgba(201,169,110,.25)') + ';color:' + (offset === 0 ? '#f0e9d8' : 'rgba(240,233,216,.6)') + ';padding:6px 14px;border-radius:14px;cursor:pointer">' + labelCenter + '</button>';
+  h += '<button onclick="' + setterName + '(' + (offset + 1) + ')" style="font:500 12px \'Noto Sans TC\',sans-serif;background:rgba(255,255,255,.03);border:1px solid rgba(201,169,110,.25);color:rgba(240,233,216,.6);padding:6px 12px;border-radius:14px;cursor:pointer">' + labelNext + ' ›</button>';
+  h += '</div></div>';
+  return h;
+}
+
+/* ---- copy horoscope for AI ---- */
+var _horoCopyTimer = null;
+function horoFlashCopied() {
+  var btn = document.getElementById('horo-copy-btn');
+  if (btn) btn.textContent = '已複製！Copied';
+  clearTimeout(_horoCopyTimer);
+  _horoCopyTimer = setTimeout(function () {
+    var b = document.getElementById('horo-copy-btn');
+    if (b) b.textContent = '複製給 AI 解讀 Copy for AI';
+  }, 2000);
+}
+function horoCopyForAI() {
+  var data = LAST_HORO[state.astroView];
+  if (!data) return;
+  var lines = [];
+  lines.push('【' + data.periodLabel + '】' + data.dateRangeLabel);
+  lines.push('綜合分數：' + data.overall + ' 分');
+  HOROSCOPE_SCORE_CATS.forEach(function (cat) {
+    if (data.scores[cat.key] != null) lines.push(cat.zh + '：' + data.scores[cat.key] + ' 分');
+  });
+  if (data.returnInfo) {
+    lines.push('');
+    lines.push(data.returnInfo.kindLabel + '　' + data.returnInfo.dateLabel + '　上升 ' + data.returnInfo.ascSign + '　天頂 ' + data.returnInfo.mcSign);
+  }
+  lines.push('');
+  lines.push('總結：' + data.summary);
+  if (data.advice) lines.push('建議：' + data.advice.join('、'));
+  if (data.avoid) lines.push('避免：' + data.avoid.join('、'));
+  if (data.categoryTexts) {
+    lines.push('');
+    lines.push('分項解讀：');
+    HOROSCOPE_SCORE_CATS.forEach(function (cat) {
+      if (data.categoryTexts[cat.key]) lines.push('- ' + cat.zh + '（' + data.scores[cat.key] + ' 分）：' + data.categoryTexts[cat.key]);
+    });
+  }
+  lines.push('');
+  lines.push('請根據以上運勢資料，幫我做更深入的解讀與建議。');
+  var text = lines.join('\n');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(horoFlashCopied).catch(function () { fallbackCopy(text, horoFlashCopied); });
+  } else {
+    fallbackCopy(text, horoFlashCopied);
+  }
+}
 
 function renderHoroscope(periodKey) {
   var chart = state.astroResult;
   var city = state.astroCityUsed || CITY_LIST[state.astroCityIdx];
   var periodCfg = HOROSCOPE_PERIODS[periodKey];
-  var now = state.horoDateStr ? new Date(state.horoDateStr + 'T12:00:00') : new Date();
+  var now = resolveHoroNow(periodKey);
   var transitPlanets = computeTransitPlanets(now);
+  var rangeLabel = periodRangeLabel(periodKey, now);
   var h = '';
   h += '<div style="font:600 16px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:14px;text-align:center">' + periodCfg.zh + '</div>';
-  var dateLabel = now.getFullYear() + '/' + pad2(now.getMonth() + 1) + '/' + pad2(now.getDate()) + (periodKey === 'yearly' ? '　' + now.getFullYear() + ' 年度' : '');
-  h += '<div style="font:400 11px \'EB Garamond\',serif;color:rgba(240,233,216,.4);text-align:center;margin-top:2px">' + dateLabel + '</div>';
+  h += '<div style="font:400 11px \'EB Garamond\',serif;color:rgba(240,233,216,.4);text-align:center;margin-top:2px">' + rangeLabel + '</div>';
   h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);text-align:center;margin-top:8px;line-height:1.6">根據目前的行運與你的本命星盤比對而成，僅供參考</div>';
 
-  h += '<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px">';
-  h += '<input type="date" value="' + isoDateStr(now) + '" onchange="astroSetHoroDate(this.value)" style="color-scheme:dark;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:6px 10px;font:400 12px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
-  if (state.horoDateStr) h += '<button onclick="astroResetHoroDate()" style="font:400 11px \'Noto Sans TC\',sans-serif;background:rgba(201,169,110,.12);border:1px solid rgba(201,169,110,.3);color:#e6cd9a;padding:6px 12px;border-radius:14px;cursor:pointer">回到今天</button>';
-  h += '</div>';
-
   if (periodKey === 'daily') {
+    h += renderDailyDateStrip(now);
     h += renderDailyHoroscope(chart, transitPlanets, periodCfg, now);
+  } else if (periodKey === 'weekly') {
+    h += renderOffsetNav('上週', '本週', '下週', state.horoWeekOffset, 'astroSetHoroWeekOffset', rangeLabel);
+    h += renderPeriodDashboard(chart, transitPlanets, periodKey, periodCfg, now, city, rangeLabel);
+  } else if (periodKey === 'monthly') {
+    h += renderOffsetNav('上月', '本月', '下月', state.horoMonthOffset, 'astroSetHoroMonthOffset', rangeLabel);
+    h += renderPeriodDashboard(chart, transitPlanets, periodKey, periodCfg, now, city, rangeLabel);
   } else {
-    h += renderPeriodDashboard(chart, transitPlanets, periodKey, periodCfg, now, city);
+    h += renderOffsetNav('上一年', '本年', '下一年', state.horoYearOffset, 'astroSetHoroYearOffset', rangeLabel);
+    h += renderPeriodDashboard(chart, transitPlanets, periodKey, periodCfg, now, city, rangeLabel);
   }
 
-  h += '<button onclick="astroSetView(\'chart\')" style="width:100%;margin-top:20px;padding:12px;border-radius:12px;border:1px solid rgba(201,169,110,.3);background:rgba(255,255,255,.02);color:rgba(240,233,216,.6);font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">← 回到本命星盤</button>';
+  h += '<button id="horo-copy-btn" onclick="horoCopyForAI()" style="width:100%;margin-top:22px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製給 AI 解讀 Copy for AI</button>';
+  h += '<button onclick="astroSetView(\'chart\')" style="width:100%;margin-top:10px;padding:12px;border-radius:12px;border:1px solid rgba(201,169,110,.3);background:rgba(255,255,255,.02);color:rgba(240,233,216,.6);font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">← 回到本命星盤</button>';
   return h;
 }
 
