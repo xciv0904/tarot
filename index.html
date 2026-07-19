@@ -3168,12 +3168,29 @@ function filterCityList(q) {
   return CITY_LIST.filter(function (c) { return c.zh.indexOf(q) !== -1 || c.en.toLowerCase().indexOf(ql) !== -1; }).slice(0, 12);
 }
 
-/* 中文輸入法（注音／拼音）在組字過程中若整個輸入框被重新渲染，會被瀏覽器強制中斷，
-   只會送出組字前的第一個符號。這裡在 compositionstart~compositionend 期間先跳過
-   render()，只在組字結束後才重繪，city input 才能正常打中文。 */
+/* render() 會整段替換 innerHTML，等於把使用者正在打字的那個 <input> 整個銷毀重建，
+   新節點預設不會有焦點——這就是為什麼打字只能打出一個字（中文或英文都一樣）：
+   打完第一個字→重繪→輸入框失焦→第二個字打不進去。這裡在重繪後手動把焦點與游標
+   position 還原到新的輸入框上，才能正常連續輸入。
+   中文輸入法（注音／拼音）組字中另外有一個問題：組字尚未完成時若被重繪，會被瀏覽器
+   強制中斷組字，只送出第一個符號，所以 compositionstart~compositionend 期間要整個跳過
+   render()，等組字結束再重繪＋還原焦點。 */
 var _imeComposing = false;
+function refocusCityInput(id, caretPos) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  try {
+    el.focus();
+    if (typeof caretPos === 'number') el.setSelectionRange(caretPos, caretPos);
+  } catch (e) {}
+}
 function astroSetCity(idx) { state.astroCityIdx = idx; render(); }
-function astroCityInput(v) { state.astroCityQuery = v; state.astroCityIdx = null; if (_imeComposing) return; render(); }
+function astroCityInput(v, caretPos) {
+  state.astroCityQuery = v; state.astroCityIdx = null;
+  if (_imeComposing) return;
+  render();
+  refocusCityInput('astro-city-input', caretPos);
+}
 function astroToggleUnknownTime() { state.astroUnknownTime = !state.astroUnknownTime; render(); }
 function pad2(n) { n = parseInt(n, 10) || 0; return (n < 10 ? '0' : '') + n; }
 
@@ -3273,7 +3290,7 @@ function renderBirthInputForm(prefix, promptText, genFnName) {
   }
 
   h += '<div style="margin-top:16px;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">出生地</div>';
-  h += '<input type="text" placeholder="搜尋城市，例如：台北、Tokyo" value="' + esc(state[prefix + 'CityQuery']) + '" oninput="' + prefix + 'CityInput(this.value)" oncompositionstart="_imeComposing=true" oncompositionend="_imeComposing=false;' + prefix + 'CityInput(this.value)" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+  h += '<input type="text" id="' + prefix + '-city-input" placeholder="搜尋城市，例如：台北、Tokyo" value="' + esc(state[prefix + 'CityQuery']) + '" oninput="' + prefix + 'CityInput(this.value,this.selectionStart)" oncompositionstart="_imeComposing=true" oncompositionend="_imeComposing=false;' + prefix + 'CityInput(this.value,this.selectionStart)" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
   var matches = filterCityList(state[prefix + 'CityQuery']);
   h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">';
   matches.forEach(function (c) {
@@ -3298,7 +3315,12 @@ function renderBirthInputForm(prefix, promptText, genFnName) {
 
 /* ================= 合盤 Synastry ================= */
 function synSetCity(idx) { state.synCityIdx = idx; render(); }
-function synCityInput(v) { state.synCityQuery = v; state.synCityIdx = null; if (_imeComposing) return; render(); }
+function synCityInput(v, caretPos) {
+  state.synCityQuery = v; state.synCityIdx = null;
+  if (_imeComposing) return;
+  render();
+  refocusCityInput('syn-city-input', caretPos);
+}
 function synToggleUnknownTime() { state.synUnknownTime = !state.synUnknownTime; render(); }
 function synGenerate() {
   var city = CITY_LIST[state.synCityIdx];
@@ -4332,7 +4354,7 @@ function renderAstro() {
     }
 
     h += '<div style="margin-top:16px;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">出生地</div>';
-    h += '<input type="text" placeholder="搜尋城市，例如：台北、Tokyo" value="' + esc(state.astroCityQuery) + '" oninput="astroCityInput(this.value)" oncompositionstart="_imeComposing=true" oncompositionend="_imeComposing=false;astroCityInput(this.value)" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+    h += '<input type="text" id="astro-city-input" placeholder="搜尋城市，例如：台北、Tokyo" value="' + esc(state.astroCityQuery) + '" oninput="astroCityInput(this.value,this.selectionStart)" oncompositionstart="_imeComposing=true" oncompositionend="_imeComposing=false;astroCityInput(this.value,this.selectionStart)" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
     var matches = filterCityList(state.astroCityQuery);
     h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">';
     matches.forEach(function (c) {
