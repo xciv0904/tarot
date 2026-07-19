@@ -1484,16 +1484,20 @@ function box9Panel() {
 function aboutToggle() { state.aboutOpen = !state.aboutOpen; render(); }
 function clearAllData() {
   try {
-    if (!confirm('確定要清除所有紀錄嗎？\n（抽牌歷史、學習進度、22 天計畫都會刪除，且無法復原）')) return;
+    if (!confirm('確定要清除所有紀錄嗎？\n（抽牌歷史、學習進度、22 天計畫、已儲存的星盤出生資料都會刪除，且無法復原）')) return;
   } catch (e) {}
   try {
     localStorage.removeItem('tl_history');
     localStorage.removeItem('tl_learn');
     localStorage.removeItem('tl_study');
+    localStorage.removeItem('tl_astro_profile');
   } catch (e) {}
   state.history = [];
   learnData = {};
   studyData = { start: null, done: {} };
+  state.astroY = ''; state.astroM = ''; state.astroD = ''; state.astroH = ''; state.astroMin = '';
+  state.astroCityQuery = ''; state.astroCityIdx = null; state.astroCityUsed = null;
+  state.astroUnknownTime = false; state.astroResult = null; state.astroView = null;
   render();
   try { alert('已清除所有紀錄'); } catch (e) {}
 }
@@ -1509,7 +1513,7 @@ function renderAbout() {
     h += '<div style="font:600 13px \'Noto Serif TC\',serif;color:#f0e9d8">Mystic Deck · 塔羅與雷諾曼</div>';
     h += sec('關於本站', '免費的線上塔羅與雷諾曼占卜工具，包含十三種牌陣、完整牌義典藏與牌義學習系統。');
     h += sec('娛樂性質聲明', '占卜結果由固定牌義與程式邏輯組合而成，僅供娛樂與自我反思參考，不構成任何醫療、法律、財務或心理專業建議。重大決定請諮詢專業人士。');
-    h += sec('隱私', '本站沒有伺服器、不收集任何個人資料。你的抽牌歷史、學習進度全部只儲存在你自己裝置的瀏覽器裡，清除瀏覽器資料或按下方按鈕即可完全刪除。');
+    h += sec('隱私', '本站沒有伺服器、不收集任何個人資料。你的抽牌歷史、學習進度、以及星盤功能使用的出生日期／時間／地點，全部只儲存在你自己裝置的瀏覽器裡，不會上傳或傳送到任何地方。清除瀏覽器資料或按下方按鈕即可完全刪除。（若使用「複製給 AI 解讀」功能，貼到外部 AI 工具後，資料就會離開本站，請自行留意。）');
     h += sec('牌圖版權', '塔羅牌面採用 1909 年出版的 Rider–Waite–Smith 牌（Pamela Colman Smith 繪），已屬公有領域（Public Domain）。');
     h += '<div style="text-align:center;margin-top:14px"><button onclick="clearAllData()" style="background:none;border:1px solid rgba(217,155,95,.5);color:#d99b5f;font:400 11px \'Noto Sans TC\',sans-serif;padding:7px 18px;border-radius:14px;cursor:pointer">清除我的所有紀錄</button></div>';
     h += '</div>';
@@ -3173,6 +3177,29 @@ function astroCityInput(v) { state.astroCityQuery = v; state.astroCityIdx = null
 function astroToggleUnknownTime() { state.astroUnknownTime = !state.astroUnknownTime; render(); }
 function pad2(n) { n = parseInt(n, 10) || 0; return (n < 10 ? '0' : '') + n; }
 
+/* 出生日期輸入驗證——輸入框本身沒有範圍限制（可以打出月份13、日期32），
+   這裡集中檢查，回傳 null 表示合法（或尚未填完，不算錯），否則回傳錯誤訊息 */
+function validateBirthDate(yRaw, mRaw, dRaw, hRaw, minRaw, unknownTime) {
+  if (!yRaw || !mRaw || !dRaw) return null;
+  var y = parseInt(yRaw, 10), m = parseInt(mRaw, 10), d = parseInt(dRaw, 10);
+  if (isNaN(y) || y < 1900 || y > 2100) return '年份請輸入 1900–2100 之間的西元年';
+  if (isNaN(m) || m < 1 || m > 12) return '月份請輸入 1–12';
+  if (isNaN(d) || d < 1 || d > 31) return '日期請輸入 1–31';
+  var daysInMonth = new Date(y, m, 0).getDate();
+  if (d > daysInMonth) return y + ' 年 ' + m + ' 月只有 ' + daysInMonth + ' 天，請確認日期';
+  if (!unknownTime) {
+    if (hRaw !== '' && hRaw != null) {
+      var hh = parseInt(hRaw, 10);
+      if (isNaN(hh) || hh < 0 || hh > 23) return '時間請輸入 0–23';
+    }
+    if (minRaw !== '' && minRaw != null) {
+      var mm = parseInt(minRaw, 10);
+      if (isNaN(mm) || mm < 0 || mm > 59) return '分鐘請輸入 0–59';
+    }
+  }
+  return null;
+}
+
 function astroSaveProfile() {
   try {
     localStorage.setItem('tl_astro_profile', JSON.stringify({
@@ -3208,6 +3235,7 @@ function astroForget() {
 function astroGenerate() {
   var city = CITY_LIST[state.astroCityIdx];
   if (!city || !state.astroY || !state.astroM || !state.astroD) return;
+  if (validateBirthDate(state.astroY, state.astroM, state.astroD, state.astroH, state.astroMin, state.astroUnknownTime)) { render(); return; }
   var hh = state.astroUnknownTime ? 12 : (parseInt(state.astroH, 10) || 0);
   var mm = state.astroUnknownTime ? 0 : (parseInt(state.astroMin, 10) || 0);
   var chart = computeNatalChart(parseInt(state.astroY, 10), parseInt(state.astroM, 10), parseInt(state.astroD, 10), hh, mm, city.lat, city.lon, city.tz);
@@ -3226,9 +3254,11 @@ function renderBirthInputForm(prefix, promptText, genFnName) {
   h += '<div style="margin-top:22px;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">出生日期</div>';
   h += '<div style="display:flex;gap:8px;margin-top:6px">';
   [['Y', '年 YYYY'], ['M', '月 MM'], ['D', '日 DD']].forEach(function (pair) {
-    h += '<input type="number" placeholder="' + pair[1] + '" value="' + esc(state[prefix + pair[0]]) + '" oninput="state.' + prefix + pair[0] + '=this.value" style="width:33%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+    h += '<input type="number" placeholder="' + pair[1] + '" value="' + esc(state[prefix + pair[0]]) + '" oninput="state.' + prefix + pair[0] + '=this.value" onblur="render()" style="width:33%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
   });
   h += '</div>';
+  var birthErr = validateBirthDate(state[prefix + 'Y'], state[prefix + 'M'], state[prefix + 'D'], state[prefix + 'H'], state[prefix + 'Min'], state[prefix + 'UnknownTime']);
+  if (birthErr) h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:#d67878;margin-top:6px">⚠ ' + esc(birthErr) + '</div>';
 
   h += '<div style="margin-top:16px;display:flex;justify-content:space-between;align-items:center">';
   h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">出生時間</div>';
@@ -3236,8 +3266,8 @@ function renderBirthInputForm(prefix, promptText, genFnName) {
   h += '</div>';
   if (!state[prefix + 'UnknownTime']) {
     h += '<div style="display:flex;gap:8px;margin-top:6px">';
-    h += '<input type="number" placeholder="時 HH (0-23)" value="' + esc(state[prefix + 'H']) + '" oninput="state.' + prefix + 'H=this.value" style="width:50%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
-    h += '<input type="number" placeholder="分 MM" value="' + esc(state[prefix + 'Min']) + '" oninput="state.' + prefix + 'Min=this.value" style="width:50%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+    h += '<input type="number" placeholder="時 HH (0-23)" value="' + esc(state[prefix + 'H']) + '" oninput="state.' + prefix + 'H=this.value" onblur="render()" style="width:50%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+    h += '<input type="number" placeholder="分 MM" value="' + esc(state[prefix + 'Min']) + '" oninput="state.' + prefix + 'Min=this.value" onblur="render()" style="width:50%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
     h += '</div>';
     h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:5px">時間會影響上升星座與宮位，請盡量提供準確的出生時間</div>';
   }
@@ -3252,12 +3282,17 @@ function renderBirthInputForm(prefix, promptText, genFnName) {
     h += '<button onclick="' + prefix + 'SetCity(' + idx + ')" style="font:400 11px \'Noto Sans TC\',sans-serif;background:' + (active ? 'rgba(201,169,110,.2)' : 'rgba(201,169,110,.06)') + ';border:1px solid ' + (active ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.65)') + ';padding:6px 12px;border-radius:14px;cursor:pointer">' + c.zh + '</button>';
   });
   h += '</div>';
+  if (matches.length === 0 && state[prefix + 'CityQuery'] && state[prefix + 'CityQuery'].trim()) {
+    h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);margin-top:8px">查無此城市，試試看用中文城市名或英文拼音（例如 Tokyo、New York）搜尋</div>';
+  }
   if (state[prefix + 'CityIdx'] != null) {
     h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:8px">已選擇：' + CITY_LIST[state[prefix + 'CityIdx']].zh + '</div>';
   }
 
-  var ready = state[prefix + 'Y'] && state[prefix + 'M'] && state[prefix + 'D'] && state[prefix + 'CityIdx'] != null;
-  h += '<button onclick="' + genFnName + '()" ' + (ready ? '' : 'disabled') + ' style="width:100%;margin-top:24px;padding:13px;border-radius:12px;border:1px solid ' + (ready ? '#c9a96e' : 'rgba(201,169,110,.2)') + ';background:' + (ready ? 'linear-gradient(135deg,#c9a96e,#a9835a)' : 'rgba(255,255,255,.03)') + ';color:' + (ready ? '#1a1622' : 'rgba(240,233,216,.3)') + ';font:600 14px \'Noto Sans TC\',sans-serif;cursor:pointer">生成星盤 →</button>';
+  h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.3);margin-top:16px;line-height:1.7">🔒 出生資料只會儲存在你自己的裝置（瀏覽器）中，不會上傳到任何伺服器。</div>';
+
+  var ready = state[prefix + 'Y'] && state[prefix + 'M'] && state[prefix + 'D'] && state[prefix + 'CityIdx'] != null && !birthErr;
+  h += '<button onclick="' + genFnName + '()" ' + (ready ? '' : 'disabled') + ' style="width:100%;margin-top:14px;padding:13px;border-radius:12px;border:1px solid ' + (ready ? '#c9a96e' : 'rgba(201,169,110,.2)') + ';background:' + (ready ? 'linear-gradient(135deg,#c9a96e,#a9835a)' : 'rgba(255,255,255,.03)') + ';color:' + (ready ? '#1a1622' : 'rgba(240,233,216,.3)') + ';font:600 14px \'Noto Sans TC\',sans-serif;cursor:pointer">生成星盤 →</button>';
   return h;
 }
 
@@ -3268,6 +3303,7 @@ function synToggleUnknownTime() { state.synUnknownTime = !state.synUnknownTime; 
 function synGenerate() {
   var city = CITY_LIST[state.synCityIdx];
   if (!city || !state.synY || !state.synM || !state.synD) return;
+  if (validateBirthDate(state.synY, state.synM, state.synD, state.synH, state.synMin, state.synUnknownTime)) { render(); return; }
   var hh = state.synUnknownTime ? 12 : (parseInt(state.synH, 10) || 0);
   var mm = state.synUnknownTime ? 0 : (parseInt(state.synMin, 10) || 0);
   state.synResult = computeNatalChart(parseInt(state.synY, 10), parseInt(state.synM, 10), parseInt(state.synD, 10), hh, mm, city.lat, city.lon, city.tz);
@@ -4270,10 +4306,12 @@ function renderAstro() {
 
     h += '<div style="margin-top:22px;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">出生日期</div>';
     h += '<div style="display:flex;gap:8px;margin-top:6px">';
-    h += '<input type="number" placeholder="年 YYYY" value="' + esc(state.astroY) + '" oninput="state.astroY=this.value" style="width:33%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
-    h += '<input type="number" placeholder="月 MM" value="' + esc(state.astroM) + '" oninput="state.astroM=this.value" style="width:33%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
-    h += '<input type="number" placeholder="日 DD" value="' + esc(state.astroD) + '" oninput="state.astroD=this.value" style="width:33%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+    h += '<input type="number" placeholder="年 YYYY" value="' + esc(state.astroY) + '" oninput="state.astroY=this.value" onblur="render()" style="width:33%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+    h += '<input type="number" placeholder="月 MM" value="' + esc(state.astroM) + '" oninput="state.astroM=this.value" onblur="render()" style="width:33%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+    h += '<input type="number" placeholder="日 DD" value="' + esc(state.astroD) + '" oninput="state.astroD=this.value" onblur="render()" style="width:33%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
     h += '</div>';
+    var astroBirthErr = validateBirthDate(state.astroY, state.astroM, state.astroD, state.astroH, state.astroMin, state.astroUnknownTime);
+    if (astroBirthErr) h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:#d67878;margin-top:6px">⚠ ' + esc(astroBirthErr) + '</div>';
 
     h += '<div style="margin-top:16px;display:flex;justify-content:space-between;align-items:center">';
     h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">出生時間</div>';
@@ -4281,8 +4319,8 @@ function renderAstro() {
     h += '</div>';
     if (!state.astroUnknownTime) {
       h += '<div style="display:flex;gap:8px;margin-top:6px">';
-      h += '<input type="number" placeholder="時 HH (0-23)" value="' + esc(state.astroH) + '" oninput="state.astroH=this.value" style="width:50%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
-      h += '<input type="number" placeholder="分 MM" value="' + esc(state.astroMin) + '" oninput="state.astroMin=this.value" style="width:50%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+      h += '<input type="number" placeholder="時 HH (0-23)" value="' + esc(state.astroH) + '" oninput="state.astroH=this.value" onblur="render()" style="width:50%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+      h += '<input type="number" placeholder="分 MM" value="' + esc(state.astroMin) + '" oninput="state.astroMin=this.value" onblur="render()" style="width:50%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
       h += '</div>';
       h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:5px">時間會影響上升星座與宮位，請盡量提供準確的出生時間</div>';
     }
@@ -4297,12 +4335,17 @@ function renderAstro() {
       h += '<button onclick="astroSetCity(' + idx + ')" style="font:400 11px \'Noto Sans TC\',sans-serif;background:' + (active ? 'rgba(201,169,110,.2)' : 'rgba(201,169,110,.06)') + ';border:1px solid ' + (active ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.65)') + ';padding:6px 12px;border-radius:14px;cursor:pointer">' + c.zh + '</button>';
     });
     h += '</div>';
+    if (matches.length === 0 && state.astroCityQuery && state.astroCityQuery.trim()) {
+      h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);margin-top:8px">查無此城市，試試看用中文城市名或英文拼音（例如 Tokyo、New York）搜尋</div>';
+    }
     if (state.astroCityIdx != null) {
       h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:8px">已選擇：' + CITY_LIST[state.astroCityIdx].zh + '</div>';
     }
 
-    var ready = state.astroY && state.astroM && state.astroD && state.astroCityIdx != null;
-    h += '<button onclick="astroGenerate()" ' + (ready ? '' : 'disabled') + ' style="width:100%;margin-top:24px;padding:13px;border-radius:12px;border:1px solid ' + (ready ? '#c9a96e' : 'rgba(201,169,110,.2)') + ';background:' + (ready ? 'linear-gradient(135deg,#c9a96e,#a9835a)' : 'rgba(255,255,255,.03)') + ';color:' + (ready ? '#1a1622' : 'rgba(240,233,216,.3)') + ';font:600 14px \'Noto Sans TC\',sans-serif;cursor:pointer">生成星盤 →</button>';
+    h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.3);margin-top:16px;line-height:1.7">🔒 出生資料只會儲存在你自己的裝置（瀏覽器）中，不會上傳到任何伺服器；你也可以隨時在生成星盤後按「清除已儲存的星盤資料」完全刪除。</div>';
+
+    var ready = state.astroY && state.astroM && state.astroD && state.astroCityIdx != null && !astroBirthErr;
+    h += '<button onclick="astroGenerate()" ' + (ready ? '' : 'disabled') + ' style="width:100%;margin-top:14px;padding:13px;border-radius:12px;border:1px solid ' + (ready ? '#c9a96e' : 'rgba(201,169,110,.2)') + ';background:' + (ready ? 'linear-gradient(135deg,#c9a96e,#a9835a)' : 'rgba(255,255,255,.03)') + ';color:' + (ready ? '#1a1622' : 'rgba(240,233,216,.3)') + ';font:600 14px \'Noto Sans TC\',sans-serif;cursor:pointer">生成星盤 →</button>';
 
   } else {
     var chart = state.astroResult;
