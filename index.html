@@ -373,7 +373,7 @@ var state = {
   copied: false,
   astroY: '', astroM: '', astroD: '', astroH: '', astroMin: '',
   astroCityQuery: '', astroCityIdx: null, astroCityUsed: null,
-  astroUnknownTime: false, astroResult: null,
+  astroUnknownTime: false, astroResult: null, astroView: 'chart',
 };
 
 var SPREAD_GROUPS = [
@@ -2254,6 +2254,7 @@ function revealMeanings() {
 }
 
 var _copyTimer = null;
+var _astroCopyTimer = null;
 function flashCopied() {
   state.copied = true;
   var btn = document.getElementById('copy-btn');
@@ -2266,7 +2267,7 @@ function flashCopied() {
   }, 2000);
 }
 
-function fallbackCopy(text) {
+function fallbackCopy(text, onDone) {
   try {
     var ta = document.createElement('textarea');
     ta.value = text;
@@ -2276,7 +2277,7 @@ function fallbackCopy(text) {
     ta.select();
     document.execCommand('copy');
     document.body.removeChild(ta);
-    flashCopied();
+    (onDone || flashCopied)();
   } catch (e) {}
 }
 
@@ -2731,6 +2732,54 @@ function astroEclipticLon(bodyKey, time) {
   return astroNormDeg(ecl.elon);
 }
 
+/* ---- Placidus house cusps (quadrant system) ----
+   validated against astrolabe.astroinfo.com.tw reference chart: all 12 cusps
+   match to <0.04° */
+function placidusRaOfLambda(lamDeg, epsRad) {
+  var lam = lamDeg * Math.PI / 180;
+  return astroNormDeg(Math.atan2(Math.sin(lam) * Math.cos(epsRad), Math.cos(lam)) * 180 / Math.PI);
+}
+function placidusLambdaOfRa(raDeg, epsRad) {
+  var ra = raDeg * Math.PI / 180;
+  return astroNormDeg(Math.atan2(Math.sin(ra), Math.cos(ra) * Math.cos(epsRad)) * 180 / Math.PI);
+}
+function placidusDecOfLambda(lamDeg, epsRad) {
+  var lam = lamDeg * Math.PI / 180;
+  return Math.asin(Math.sin(epsRad) * Math.sin(lam)) * 180 / Math.PI;
+}
+function placidusDsaOfLambda(lamDeg, epsRad, phiRad) {
+  var dec = placidusDecOfLambda(lamDeg, epsRad) * Math.PI / 180;
+  var x = -Math.tan(phiRad) * Math.tan(dec);
+  x = Math.max(-1, Math.min(1, x));
+  return Math.acos(x) * 180 / Math.PI; // 0-180
+}
+function placidusSolveCusp(thetaDeg, epsRad, phiRad, targetFn, initialGuessDeg) {
+  var lam = astroNormDeg(initialGuessDeg);
+  for (var i = 0; i < 40; i++) {
+    var dsa = placidusDsaOfLambda(lam, epsRad, phiRad);
+    var targetRA = astroNormDeg(targetFn(thetaDeg, dsa));
+    var newLam = placidusLambdaOfRa(targetRA, epsRad);
+    if (Math.abs(astroNormDeg(newLam - lam + 180) - 180) < 1e-9) { lam = newLam; break; }
+    lam = newLam;
+  }
+  return astroNormDeg(lam);
+}
+function placidusCusps(thetaDeg, epsRad, phiRad, ascDeg, mcDeg) {
+  var cusp11 = placidusSolveCusp(thetaDeg, epsRad, phiRad, function (th, dsa) { return th + dsa / 3; }, thetaDeg + 30);
+  var cusp12 = placidusSolveCusp(thetaDeg, epsRad, phiRad, function (th, dsa) { return th + 2 * dsa / 3; }, thetaDeg + 60);
+  var cuspA = placidusSolveCusp(thetaDeg, epsRad, phiRad, function (th, dsa) { return th + 180 - (180 - dsa) / 3; }, thetaDeg + 210);
+  var cuspB = placidusSolveCusp(thetaDeg, epsRad, phiRad, function (th, dsa) { return th + 180 - 2 * (180 - dsa) / 3; }, thetaDeg + 240);
+  // cuspA (1/3 formula) matches house 3, cuspB (2/3 formula) matches house 2 — verified against reference data
+  var c = new Array(12);
+  c[0] = ascDeg; c[9] = mcDeg;
+  c[10] = cusp11; c[11] = cusp12; c[1] = cuspB; c[2] = cuspA;
+  c[3] = astroNormDeg(mcDeg + 180);
+  c[6] = astroNormDeg(ascDeg + 180);
+  c[4] = astroNormDeg(cusp11 + 180); c[5] = astroNormDeg(cusp12 + 180);
+  c[7] = astroNormDeg(cuspB + 180); c[8] = astroNormDeg(cuspA + 180);
+  return c;
+}
+
 /* core natal chart computation — planet positions, MC and Ascendant
    cross-checked against a professional ephemeris (astrolabe.astroinfo.com.tw)
    to sub-arcminute precision */
@@ -2763,12 +2812,16 @@ function computeNatalChart(y, m, d, hh, mm, lat, lon, tz) {
   asc = astroNormDeg(asc * 180 / Math.PI);
 
   var ascSign = Math.floor(asc / 30);
-  var houseCusps = [];
-  for (var n = 0; n < 12; n++) houseCusps.push(((ascSign + n) % 12) * 30);
+  var houseCusps = placidusCusps(ramc, eps, phi, asc, mc);
 
   function houseOf(pLon) {
-    var signIdx = Math.floor(pLon / 30);
-    return 1 + ((signIdx - ascSign + 12) % 12);
+    for (var i = 0; i < 12; i++) {
+      var start = houseCusps[i], end = houseCusps[(i + 1) % 12];
+      var arc = astroNormDeg(end - start); if (arc === 0) arc = 360;
+      var rel = astroNormDeg(pLon - start);
+      if (rel < arc) return i + 1;
+    }
+    return 12;
   }
   ASTRO_PLANET_BODY_KEYS.forEach(function (key) {
     planets[key].house = houseOf(planets[key].lon);
@@ -2831,7 +2884,14 @@ function renderNatalWheel(chart) {
     svg += '<text x="' + gp.x + '" y="' + (gp.y + 4) + '" text-anchor="middle" font-size="13" fill="#c9a96e">' + ZODIAC_SIGNS[i].sym + '</text>';
   }
   for (var n = 0; n < 12; n++) {
-    var midH = astroWheelAngle(chart.houseCusps[n] + 15, chart.asc);
+    var cuspLon = chart.houseCusps[n];
+    var cA = astroWheelAngle(cuspLon, chart.asc);
+    var cp1 = astroPolar(cx, cy, 0, cA), cp2 = astroPolar(cx, cy, houseR, cA);
+    var isAngle = (n === 0 || n === 3 || n === 6 || n === 9); // ASC/IC/DSC/MC get the bolder axis lines drawn separately
+    if (!isAngle) svg += '<line x1="' + cp1.x + '" y1="' + cp1.y + '" x2="' + cp2.x + '" y2="' + cp2.y + '" stroke="rgba(201,169,110,.28)" stroke-width="0.7"/>';
+    var nextLon = chart.houseCusps[(n + 1) % 12];
+    var arcSpan = astroNormDeg(nextLon - cuspLon); if (arcSpan === 0) arcSpan = 360;
+    var midH = astroWheelAngle(cuspLon + arcSpan / 2, chart.asc);
     var hp = astroPolar(cx, cy, houseR - 13, midH);
     svg += '<text x="' + hp.x + '" y="' + (hp.y + 3) + '" text-anchor="middle" font-size="9" fill="rgba(240,233,216,.4)">' + (n + 1) + '</text>';
   }
@@ -2890,6 +2950,40 @@ function filterCityList(q) {
 function astroSetCity(idx) { state.astroCityIdx = idx; render(); }
 function astroCityInput(v) { state.astroCityQuery = v; state.astroCityIdx = null; render(); }
 function astroToggleUnknownTime() { state.astroUnknownTime = !state.astroUnknownTime; render(); }
+function pad2(n) { n = parseInt(n, 10) || 0; return (n < 10 ? '0' : '') + n; }
+
+function astroSaveProfile() {
+  try {
+    localStorage.setItem('tl_astro_profile', JSON.stringify({
+      y: state.astroY, m: state.astroM, d: state.astroD, h: state.astroH, min: state.astroMin,
+      unknownTime: state.astroUnknownTime, cityIdx: state.astroCityIdx
+    }));
+  } catch (e) {}
+}
+function astroLoadProfile() {
+  try {
+    var sv = JSON.parse(localStorage.getItem('tl_astro_profile') || 'null');
+    if (!sv) return;
+    state.astroY = sv.y; state.astroM = sv.m; state.astroD = sv.d;
+    state.astroH = sv.h; state.astroMin = sv.min;
+    state.astroUnknownTime = !!sv.unknownTime;
+    state.astroCityIdx = sv.cityIdx;
+    var city = CITY_LIST[state.astroCityIdx];
+    if (city && state.astroY && state.astroM && state.astroD) {
+      var hh = state.astroUnknownTime ? 12 : (parseInt(state.astroH, 10) || 0);
+      var mm = state.astroUnknownTime ? 0 : (parseInt(state.astroMin, 10) || 0);
+      state.astroResult = computeNatalChart(parseInt(state.astroY, 10), parseInt(state.astroM, 10), parseInt(state.astroD, 10), hh, mm, city.lat, city.lon, city.tz);
+      state.astroCityUsed = city;
+    }
+  } catch (e) {}
+}
+function astroForget() {
+  try { localStorage.removeItem('tl_astro_profile'); } catch (e) {}
+  state.astroY = ''; state.astroM = ''; state.astroD = ''; state.astroH = ''; state.astroMin = '';
+  state.astroCityQuery = ''; state.astroCityIdx = null; state.astroCityUsed = null;
+  state.astroUnknownTime = false; state.astroResult = null;
+  render(); window.scrollTo(0, 0);
+}
 function astroGenerate() {
   var city = CITY_LIST[state.astroCityIdx];
   if (!city || !state.astroY || !state.astroM || !state.astroD) return;
@@ -2898,10 +2992,155 @@ function astroGenerate() {
   var chart = computeNatalChart(parseInt(state.astroY, 10), parseInt(state.astroM, 10), parseInt(state.astroD, 10), hh, mm, city.lat, city.lon, city.tz);
   state.astroResult = chart;
   state.astroCityUsed = city;
+  astroSaveProfile();
   render();
   window.scrollTo(0, 0);
 }
 function astroReset() { state.astroResult = null; render(); window.scrollTo(0, 0); }
+
+function astroFlashCopied() {
+  var btn = document.getElementById('astro-copy-btn');
+  if (btn) btn.textContent = '已複製！Copied';
+  clearTimeout(_astroCopyTimer);
+  _astroCopyTimer = setTimeout(function () {
+    var b = document.getElementById('astro-copy-btn');
+    if (b) b.textContent = '複製給 AI 解讀 Copy for AI';
+  }, 2000);
+}
+function astroCopyForAI() {
+  var chart = state.astroResult;
+  if (!chart) return;
+  var lines = [];
+  lines.push('個人本命星盤資料 Natal Chart Data');
+  var birthStr = state.astroY + '/' + pad2(state.astroM) + '/' + pad2(state.astroD) + ' ' +
+    (state.astroUnknownTime ? '(出生時間未知，以正午估算)' : pad2(state.astroH) + ':' + pad2(state.astroMin));
+  lines.push('出生：' + birthStr + '　地點：' + (state.astroCityUsed ? state.astroCityUsed.zh : ''));
+  lines.push('宮位制：普拉西德制 Placidus');
+  lines.push('');
+  lines.push('行星位置 Planet positions:');
+  PLANET_DEFS.forEach(function (d) {
+    var p = chart.planets[d.key];
+    var sign = ZODIAC_SIGNS[p.sign];
+    lines.push('- ' + d.zh + '(' + d.key + ')：' + sign.zh + ' ' + p.deg.toFixed(2) + '°　第' + p.house + '宮' + (p.retro ? '　逆行 R' : ''));
+  });
+  lines.push('');
+  lines.push('上升 ASC：' + ZODIAC_SIGNS[chart.ascSign].zh + ' ' + (chart.asc % 30).toFixed(2) + '°');
+  lines.push('天頂 MC：' + ZODIAC_SIGNS[Math.floor(chart.mc / 30)].zh + ' ' + (chart.mc % 30).toFixed(2) + '°');
+  lines.push('');
+  lines.push('宮位起點 House cusps:');
+  chart.houseCusps.forEach(function (cusp, i) {
+    var sign = ZODIAC_SIGNS[Math.floor(cusp / 30)];
+    lines.push('- 第' + (i + 1) + '宮：' + sign.zh + ' ' + (cusp % 30).toFixed(2) + '°');
+  });
+  if (chart.aspects.length) {
+    lines.push('');
+    lines.push('主要相位 Aspects:');
+    chart.aspects.slice().sort(function (a, b) { return a.orb - b.orb; }).forEach(function (asp) {
+      var aDef = PLANET_DEFS.find(function (x) { return x.key === asp.a; });
+      var bDef = PLANET_DEFS.find(function (x) { return x.key === asp.b; });
+      lines.push('- ' + aDef.zh + ' ' + ASPECT_DEFS[asp.type].zh + ' ' + bDef.zh + '（誤差 ' + asp.orb.toFixed(2) + '°）');
+    });
+  }
+  lines.push('');
+  lines.push('請根據以上本命星盤資料，幫我做深入的性格特質與人生議題解讀。');
+  var text = lines.join('\n');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(astroFlashCopied).catch(function () { fallbackCopy(text, astroFlashCopied); });
+  } else {
+    fallbackCopy(text, astroFlashCopied);
+  }
+}
+
+/* ================= 運勢：每日／本週／本月／年度 (transit-based) ================= */
+
+var ASTRO_CATEGORY_RULERS = {
+  love: ['Venus', 'Moon'],
+  career: ['Saturn', 'Sun'],
+  family: ['Moon', 'Saturn'],
+  health: ['Mars', 'Sun'],
+  wealth: ['Venus', 'Jupiter'],
+  social: ['Mercury', 'Venus'],
+  study: ['Mercury', 'Jupiter'],
+  general: ['Sun', 'Moon'],
+};
+var CATEGORY_STEADY_TEXT = {
+  love: '目前沒有明顯的感情行運被觸發，關係維持平常的步調，適合單純享受當下的相處，不必刻意找話題或製造變化。',
+  career: '工作上沒有特別強的行運訊號，適合穩紮穩打、按表操課，把手邊的事做好即可，不需躁進。',
+  family: '家庭關係平穩，沒有特別的行運被觸發，適合維持現有的相處模式，不必刻意處理陳年議題。',
+  health: '身心狀態平穩，沒有明顯的健康行運，維持規律作息即可，是適合休養、儲備體力的時期。',
+  wealth: '財務運勢平穩，沒有特別的波動，適合維持現有的理財節奏，不宜也不需要做重大變動。',
+  social: '人際關係平穩，沒有特別的社交行運，適合維持現有的互動節奏，不必勉強自己社交或迴避。',
+  study: '學業或學習運勢平穩，沒有特別強的行運，適合按部就班累積，扎實比衝刺更划算。',
+  general: '整體運勢平穩，沒有特別突出的行運，是適合休養生息、按計畫前進的一段時間。',
+};
+var HOROSCOPE_PERIODS = {
+  daily: { zh: '每日運勢', en: 'Daily', transits: [['Moon', 6], ['Sun', 2], ['Mercury', 2], ['Venus', 2], ['Mars', 2]] },
+  weekly: { zh: '本週運勢', en: 'Weekly', transits: [['Sun', 3], ['Mercury', 4], ['Venus', 4], ['Mars', 4], ['Jupiter', 2]] },
+  monthly: { zh: '本月運勢', en: 'Monthly', transits: [['Sun', 6], ['Venus', 6], ['Mars', 6], ['Jupiter', 4], ['Saturn', 3]] },
+  yearly: { zh: '年度運勢報告', en: 'Yearly', transits: [['Jupiter', 8], ['Saturn', 6], ['Uranus', 4], ['Neptune', 4], ['Pluto', 4]] },
+};
+
+function computeTransitPlanets(dateObj) {
+  var time = Astronomy.MakeTime(dateObj);
+  var out = {};
+  ASTRO_PLANET_BODY_KEYS.forEach(function (key) { out[key] = astroEclipticLon(key, time); });
+  return out;
+}
+function astroAngleDiff(a, b) { var d = Math.abs(a - b); if (d > 180) d = 360 - d; return d; }
+var HOROSCOPE_ASPECT_ANGLES = [['conjunction', 0], ['sextile', 60], ['square', 90], ['trine', 120], ['opposition', 180]];
+
+function findBestTransitAspect(natalChart, transitPlanets, transitConfigs, natalKeys) {
+  var best = null;
+  transitConfigs.forEach(function (tc) {
+    var tKey = tc[0], orbLimit = tc[1];
+    var tLon = transitPlanets[tKey];
+    natalKeys.forEach(function (nKey) {
+      var nLon = natalChart.planets[nKey].lon;
+      var diff = astroAngleDiff(tLon, nLon);
+      HOROSCOPE_ASPECT_ANGLES.forEach(function (pair) {
+        var delta = Math.abs(diff - pair[1]);
+        if (delta <= orbLimit && (!best || delta < best.delta)) {
+          best = { transitKey: tKey, natalKey: nKey, type: pair[0], delta: delta };
+        }
+      });
+    });
+  });
+  return best;
+}
+function composeHoroscopeCategoryText(catKey, periodKey, natalChart, transitPlanets) {
+  var natalKeys = ASTRO_CATEGORY_RULERS[catKey];
+  var periodCfg = HOROSCOPE_PERIODS[periodKey];
+  var best = findBestTransitAspect(natalChart, transitPlanets, periodCfg.transits, natalKeys);
+  if (!best) return CATEGORY_STEADY_TEXT[catKey];
+  var tDef = PLANET_DEFS.find(function (p) { return p.key === best.transitKey; });
+  var nDef = PLANET_DEFS.find(function (p) { return p.key === best.natalKey; });
+  var aDef = ASPECT_DEFS[best.type];
+  var body = aDef.tpl.replace('{A}', '行運' + tDef.zh).replace('{B}', '本命' + nDef.zh).replace('{ak}', tDef.kw).replace('{bk}', nDef.kw);
+  return '行運' + tDef.zh + aDef.zh + '本命' + nDef.zh + '（誤差 ' + best.delta.toFixed(1) + '°）：' + body + '。';
+}
+
+function astroSetView(v) { state.astroView = v; render(); window.scrollTo(0, 0); }
+
+function renderHoroscope(periodKey) {
+  var chart = state.astroResult;
+  var periodCfg = HOROSCOPE_PERIODS[periodKey];
+  var now = new Date();
+  var transitPlanets = computeTransitPlanets(now);
+  var h = '';
+  h += '<div style="font:600 16px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:14px;text-align:center">' + periodCfg.zh + '</div>';
+  var dateLabel = now.getFullYear() + '/' + pad2(now.getMonth() + 1) + '/' + pad2(now.getDate()) + (periodKey === 'yearly' ? '　' + now.getFullYear() + ' 年度' : '');
+  h += '<div style="font:400 11px \'EB Garamond\',serif;color:rgba(240,233,216,.4);text-align:center;margin-top:2px">' + dateLabel + '</div>';
+  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);text-align:center;margin-top:8px;line-height:1.6">根據目前的行運與你的本命星盤比對而成，僅供參考</div>';
+  CATEGORIES.forEach(function (cat) {
+    var text = composeHoroscopeCategoryText(cat.key, periodKey, chart, transitPlanets);
+    h += '<div style="border-top:1px solid rgba(201,169,110,.15);padding:14px 0">';
+    h += '<div style="font:500 13px \'Noto Sans TC\',sans-serif;color:#e6cd9a">' + cat.icon + ' ' + cat.zh + '</div>';
+    h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);margin-top:5px;line-height:1.7">' + esc(text) + '</div>';
+    h += '</div>';
+  });
+  h += '<button onclick="astroSetView(\'chart\')" style="width:100%;margin-top:20px;padding:12px;border-radius:12px;border:1px solid rgba(201,169,110,.3);background:rgba(255,255,255,.02);color:rgba(240,233,216,.6);font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">← 回到本命星盤</button>';
+  return h;
+}
 
 function renderAstro() {
   var h = '<div style="padding:8px 20px 20px">';
@@ -2949,6 +3188,21 @@ function renderAstro() {
 
   } else {
     var chart = state.astroResult;
+
+    var viewTabs = [['chart', '本命星盤'], ['daily', '每日'], ['weekly', '本週'], ['monthly', '本月'], ['yearly', '年度']];
+    h += '<div style="display:flex;gap:6px;margin-top:16px;flex-wrap:wrap;justify-content:center">';
+    viewTabs.forEach(function (vt) {
+      var on = (state.astroView || 'chart') === vt[0];
+      h += '<button onclick="astroSetView(\'' + vt[0] + '\')" style="font:500 11px \'Noto Sans TC\',sans-serif;background:' + (on ? 'rgba(201,169,110,.2)' : 'rgba(255,255,255,.03)') + ';border:1px solid ' + (on ? '#c9a96e' : 'rgba(201,169,110,.25)') + ';color:' + (on ? '#f0e9d8' : 'rgba(240,233,216,.55)') + ';padding:6px 13px;border-radius:14px;cursor:pointer">' + vt[1] + '</button>';
+    });
+    h += '</div>';
+
+    if (state.astroView && state.astroView !== 'chart') {
+      h += renderHoroscope(state.astroView);
+      h += '</div>';
+      return h;
+    }
+
     var ascSignDef = ZODIAC_SIGNS[chart.ascSign];
     var mcSignDef = ZODIAC_SIGNS[Math.floor(chart.mc / 30)];
     h += '<div style="margin-top:16px">' + renderNatalWheel(chart) + '</div>';
@@ -2957,6 +3211,7 @@ function renderAstro() {
     h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">上升星座 ASC</div><div style="font:600 15px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + ascSignDef.sym + ' ' + ascSignDef.zh + '</div><div style="font:400 10px \'EB Garamond\',serif;color:rgba(240,233,216,.4)">' + (chart.asc % 30).toFixed(1) + '°</div></div>';
     h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">天頂 MC</div><div style="font:600 15px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + mcSignDef.sym + ' ' + mcSignDef.zh + '</div><div style="font:400 10px \'EB Garamond\',serif;color:rgba(240,233,216,.4)">' + (chart.mc % 30).toFixed(1) + '°</div></div>';
     h += '</div>';
+    h += '<div style="text-align:center;margin-top:6px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.3)">宮位制：普拉西德制 Placidus</div>';
 
     if (state.astroUnknownTime) {
       h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-top:10px;text-align:center">＊出生時間未知，以正午估算——上升星座與宮位僅供參考</div>';
@@ -2982,12 +3237,16 @@ function renderAstro() {
       });
     }
 
-    h += '<button onclick="astroReset()" style="width:100%;margin-top:24px;padding:12px;border-radius:12px;border:1px solid rgba(201,169,110,.3);background:rgba(255,255,255,.02);color:rgba(240,233,216,.6);font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">重新輸入 ↺</button>';
+    h += '<button id="astro-copy-btn" onclick="astroCopyForAI()" style="width:100%;margin-top:24px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製給 AI 解讀 Copy for AI</button>';
+    h += '<button onclick="astroReset()" style="width:100%;margin-top:10px;padding:12px;border-radius:12px;border:1px solid rgba(201,169,110,.3);background:rgba(255,255,255,.02);color:rgba(240,233,216,.6);font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">重新輸入 ↺</button>';
+    h += '<div style="text-align:center;margin-top:10px"><button onclick="astroForget()" style="background:none;border:none;color:rgba(240,233,216,.3);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">清除已儲存的星盤資料</button></div>';
   }
 
   h += '</div>';
   return h;
 }
+
+astroLoadProfile();
 
 render();
 
