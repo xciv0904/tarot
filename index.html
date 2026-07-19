@@ -3869,6 +3869,12 @@ var LUCKY_COLORS = [
   { zh: '米白', hex: '#f5f0e6' }, { zh: '墨綠', hex: '#2f4f3f' }, { zh: '藕粉', hex: '#e8c4c4' },
 ];
 var LUCKY_ACCESSORIES = ['檀木', '銀飾', '水晶', '珍珠', '麻布', '黃銅', '陶瓷', '玉石', '琥珀', '木質', '絲質', '貝殼'];
+/* 每種配飾材質給對應的圖示，避免像「木質」卻顯示鑽石圖示這種文不對圖的狀況 */
+var LUCKY_ACCESSORY_ICON = {
+  '檀木': '🪵', '木質': '🪵', '銀飾': '💍', '水晶': '🔮', '珍珠': '🦪',
+  '麻布': '🧵', '黃銅': '🔔', '陶瓷': '🏺', '玉石': '🟢', '琥珀': '🍯',
+  '絲質': '🎀', '貝殼': '🐚',
+};
 var LUCKY_HOURS = ['23-01點', '01-03點', '03-05點', '05-07點', '07-09點', '09-11點', '11-13點', '13-15點', '15-17點', '17-19點', '19-21點', '21-23點'];
 var LUCKY_DIRECTIONS = ['東', '南', '西', '北', '東南', '東北', '西南', '西北'];
 var LUCKY_FOODS = ['全麥食品', '堅果', '深色蔬菜', '溫熱湯品', '當季水果', '優格', '燕麥', '魚類', '豆製品', '根莖類'];
@@ -3890,10 +3896,10 @@ function renderLuckyGrid(rng) {
   if (n2 === n1) n2 = (n2 + 1) % 10;
   var cells = [
     renderLuckyCell('<div style="width:22px;height:22px;border-radius:50%;background:' + color.hex + ';border:1px solid rgba(255,255,255,.3)"></div>', color.zh, '幸運色'),
-    renderLuckyCell('<div style="font-size:20px">💎</div>', accessory, '幸運配飾'),
+    renderLuckyCell('<div style="font-size:20px">' + (LUCKY_ACCESSORY_ICON[accessory] || '💎') + '</div>', accessory, '幸運配飾'),
     renderLuckyCell('<div style="font-size:20px">⏰</div>', hour, '幸運時辰'),
     renderLuckyCell('<div style="font-size:20px">🧭</div>', direction, '幸運方位'),
-    renderLuckyCell('<div style="font-size:20px">🔢</div>', n1 + '/' + n2, '幸運數字'),
+    renderLuckyCell('<div style="font-size:20px">🔢</div>', n1 + '、' + n2, '幸運數字'),
     renderLuckyCell('<div style="font-size:20px">🍽️</div>', food, '幸運食物'),
     renderLuckyCell('<div style="font-size:20px">🎁</div>', item, '幸運隨身物'),
     renderLuckyCell('<div style="font-size:20px">🌸</div>', flower, '幸運花'),
@@ -4014,7 +4020,7 @@ function renderLuckyMini(rng) {
     renderLuckyCell('<div style="width:22px;height:22px;border-radius:8px;background:' + color.hex + ';border:1px solid rgba(255,255,255,.3)"></div>', color.zh, '幸運色'),
     renderLuckyCell('<div style="font-size:20px">🌸</div>', flower, '幸運花'),
     renderLuckyCell('<div style="font-size:20px">💎</div>', stone, '幸運石'),
-    renderLuckyCell('<div style="font-size:20px">🔢</div>', n1 + '/' + n2, '幸運數字'),
+    renderLuckyCell('<div style="font-size:20px">🔢</div>', n1 + '、' + n2, '幸運數字'),
   ];
   var h = '<div style="display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid rgba(201,169,110,.15)">';
   cells.forEach(function (c) { h += c; });
