@@ -3700,6 +3700,62 @@ function astroReturnCategoryScore(catKey, natalChart, returnChart, aspectCfg) {
   return Math.max(15, Math.min(98, Math.round(score)));
 }
 
+/* ---- expose *why* a score is what it is, for the copy-for-AI text ---- */
+function planetZhName(key) {
+  var d = PLANET_DEFS.find(function (p) { return p.key === key; });
+  return d ? d.zh : key;
+}
+function astroCategoryAspectBasis(catKey, periodCfg, natalChart, transitPlanets) {
+  var natalKeys = ASTRO_CATEGORY_RULERS[catKey];
+  var items = [];
+  periodCfg.transits.forEach(function (tc) {
+    var tKey = tc[0], orbLimit = tc[1];
+    var tLon = transitPlanets[tKey];
+    natalKeys.forEach(function (nKey) {
+      var nLon = natalChart.planets[nKey].lon;
+      var diff = astroAngleDiff(tLon, nLon);
+      HOROSCOPE_ASPECT_ANGLES.forEach(function (pair) {
+        var delta = Math.abs(diff - pair[1]);
+        if (delta <= orbLimit) {
+          var strength = 1 - delta / orbLimit;
+          var pts = astroAspectPoints(pair[0], tKey) * strength;
+          items.push({ pts: pts, text: '行運' + planetZhName(tKey) + ASPECT_DEFS[pair[0]].zh + '本命' + planetZhName(nKey) + '（誤差' + delta.toFixed(1) + '°，' + (pts >= 0 ? '+' : '') + pts.toFixed(1) + '分）' });
+        }
+      });
+    });
+  });
+  items.sort(function (a, b) { return Math.abs(b.pts) - Math.abs(a.pts); });
+  return items.map(function (it) { return it.text; });
+}
+function astroReturnCategoryAspectBasis(catKey, natalChart, returnChart, aspectCfg) {
+  var natalKeys = ASTRO_CATEGORY_RULERS[catKey];
+  var items = [];
+  aspectCfg.forEach(function (tc) {
+    var tKey = tc[0], orbLimit = tc[1];
+    var tLon = returnChart.planets[tKey].lon;
+    natalKeys.forEach(function (nKey) {
+      var nLon = natalChart.planets[nKey].lon;
+      var diff = astroAngleDiff(tLon, nLon);
+      HOROSCOPE_ASPECT_ANGLES.forEach(function (pair) {
+        var delta = Math.abs(diff - pair[1]);
+        if (delta <= orbLimit) {
+          var strength = 1 - delta / orbLimit;
+          var pts = astroAspectPoints(pair[0], tKey) * strength;
+          items.push({ pts: pts, text: '回歸盤' + planetZhName(tKey) + ASPECT_DEFS[pair[0]].zh + '本命' + planetZhName(nKey) + '（誤差' + delta.toFixed(1) + '°，' + (pts >= 0 ? '+' : '') + pts.toFixed(1) + '分）' });
+        }
+      });
+    });
+  });
+  items.sort(function (a, b) { return Math.abs(b.pts) - Math.abs(a.pts); });
+  var houseItems = [];
+  ASTRO_PLANET_BODY_KEYS.forEach(function (key) {
+    if (HOUSE_CATEGORY_MAP[returnChart.planets[key].natalHouse] === catKey) {
+      houseItems.push('回歸盤' + planetZhName(key) + '落入本命第' + returnChart.planets[key].natalHouse + '宮（該宮位對應此類別，+' + RETURN_PLANET_WEIGHT[key] + '分）');
+    }
+  });
+  return items.map(function (it) { return it.text; }).concat(houseItems);
+}
+
 /* ---- seeded pseudo-random (per day/period + personal chart, stable on reload) ---- */
 function astroHashSeed(str) {
   var h = 2166136261;
@@ -3882,12 +3938,15 @@ function renderDailyHoroscope(chart, transitPlanets, periodCfg, now) {
   h += '<div style="margin-top:22px;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;text-align:center">今日幸運關鍵字</div>';
   h += renderLuckyGrid(rng);
 
+  var dailyScoreBasis = {};
+  HOROSCOPE_SCORE_CATS.forEach(function (cat) { dailyScoreBasis[cat.key] = astroCategoryAspectBasis(cat.key, periodCfg, chart, transitPlanets); });
+
   LAST_HORO.daily = {
     periodLabel: '每日運勢',
     dateRangeLabel: now.getFullYear() + '/' + pad2(now.getMonth() + 1) + '/' + pad2(now.getDate()),
     overall: overall, scores: scores,
     summary: narrative, advice: adviceItems, avoid: avoidItems,
-    returnInfo: null, categoryTexts: null,
+    returnInfo: null, categoryTexts: null, scoreBasis: dailyScoreBasis,
   };
 
   return h;
@@ -4046,6 +4105,14 @@ function renderPeriodDashboard(chart, transitPlanets, periodKey, periodCfg, now,
     h += '</div>';
   });
 
+  var periodScoreBasis = {};
+  if (periodKey === 'weekly') {
+    HOROSCOPE_SCORE_CATS.forEach(function (cat) { periodScoreBasis[cat.key] = astroCategoryAspectBasis(cat.key, periodCfg, chart, transitPlanets); });
+  } else {
+    var aspectCfgUsed = periodKey === 'monthly' ? LUNAR_RETURN_ASPECT_CFG : SOLAR_RETURN_ASPECT_CFG;
+    HOROSCOPE_SCORE_CATS.forEach(function (cat) { periodScoreBasis[cat.key] = astroReturnCategoryAspectBasis(cat.key, chart, returnChart, aspectCfgUsed); });
+  }
+
   var periodLabelZh = periodKey === 'weekly' ? '本週運勢' : periodKey === 'monthly' ? '本月運勢' : '年度運勢報告';
   LAST_HORO[periodKey] = {
     periodLabel: periodLabelZh,
@@ -4053,7 +4120,7 @@ function renderPeriodDashboard(chart, transitPlanets, periodKey, periodCfg, now,
     overall: overall, scores: scores,
     summary: summaryText, advice: null, avoid: null,
     returnInfo: returnChart ? { kindLabel: kindLabel, dateLabel: returnDateLabel, ascSign: ZODIAC_SIGNS[returnChart.ascSign].zh, mcSign: ZODIAC_SIGNS[returnChart.mcSign].zh } : null,
-    categoryTexts: categoryTexts,
+    categoryTexts: categoryTexts, scoreBasis: periodScoreBasis,
   };
 
   return h;
@@ -4127,27 +4194,29 @@ function horoCopyForAI() {
   if (!data) return;
   var lines = [];
   lines.push('【' + data.periodLabel + '】' + data.dateRangeLabel);
-  lines.push('綜合分數：' + data.overall + ' 分');
-  HOROSCOPE_SCORE_CATS.forEach(function (cat) {
-    if (data.scores[cat.key] != null) lines.push(cat.zh + '：' + data.scores[cat.key] + ' 分');
-  });
+  lines.push('綜合分數：' + data.overall + ' 分（八大類別分數平均）');
   if (data.returnInfo) {
-    lines.push('');
     lines.push(data.returnInfo.kindLabel + '　' + data.returnInfo.dateLabel + '　上升 ' + data.returnInfo.ascSign + '　天頂 ' + data.returnInfo.mcSign);
   }
+  lines.push('');
+  lines.push('各類別分數與計算依據（依影響力排序）：');
+  HOROSCOPE_SCORE_CATS.forEach(function (cat) {
+    if (data.scores[cat.key] == null) return;
+    lines.push('- ' + cat.zh + '：' + data.scores[cat.key] + ' 分');
+    if (data.categoryTexts && data.categoryTexts[cat.key]) lines.push('　解讀：' + data.categoryTexts[cat.key]);
+    var basis = data.scoreBasis && data.scoreBasis[cat.key];
+    if (basis && basis.length) {
+      lines.push('　依據：' + basis.slice(0, 5).join('；'));
+    } else {
+      lines.push('　依據：此期間該類別無明顯行運相位被觸發，維持基準分數');
+    }
+  });
   lines.push('');
   lines.push('總結：' + data.summary);
   if (data.advice) lines.push('建議：' + data.advice.join('、'));
   if (data.avoid) lines.push('避免：' + data.avoid.join('、'));
-  if (data.categoryTexts) {
-    lines.push('');
-    lines.push('分項解讀：');
-    HOROSCOPE_SCORE_CATS.forEach(function (cat) {
-      if (data.categoryTexts[cat.key]) lines.push('- ' + cat.zh + '（' + data.scores[cat.key] + ' 分）：' + data.categoryTexts[cat.key]);
-    });
-  }
   lines.push('');
-  lines.push('請根據以上運勢資料，幫我做更深入的解讀與建議。');
+  lines.push('（分數計算方式：從基準分出發，依「本期間會被觸發的行運行星」與「本命對應行星」之間形成的相位強度增減分數；月／年運額外納入回歸盤行星落入本命宮位的加成。以上為完整依據，請根據這些實際的行運與相位，幫我做更深入、更具體的解讀與建議，而不只是重複分數高低。）');
   var text = lines.join('\n');
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(horoFlashCopied).catch(function () { fallbackCopy(text, horoFlashCopied); });
