@@ -3659,6 +3659,13 @@ function astroReset() {
   render();
   window.scrollTo(0, 0);
 }
+function birthAutoNext(el, nextId, digits) {
+  var raw = String(el.value || '').replace(/\D/g, '');
+  var n = parseInt(el.value, 10), min = parseInt(el.min, 10), max = parseInt(el.max, 10);
+  if (raw.length < digits || (!isNaN(min) && n < min) || (!isNaN(max) && n > max)) return;
+  el.blur();
+  setTimeout(function () { var next = document.getElementById(nextId); if (next) next.focus(); }, 0);
+}
 
 /* ================= 通用出生資料輸入表單（供合盤等第二人使用） ================= */
 function renderBirthInputForm(prefix, promptText, genFnName) {
@@ -3666,8 +3673,9 @@ function renderBirthInputForm(prefix, promptText, genFnName) {
   h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);margin-top:14px;line-height:1.7;text-align:center">' + promptText + '</div>';
   h += '<div style="margin-top:22px;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">出生日期</div>';
   h += '<div style="display:flex;gap:8px;margin-top:6px">';
-  [['Y', '年 YYYY'], ['M', '月 MM'], ['D', '日 DD']].forEach(function (pair) {
-    h += '<input type="number" placeholder="' + pair[1] + '" value="' + esc(state[prefix + pair[0]]) + '" oninput="state.' + prefix + pair[0] + '=this.value" onblur="render()" style="width:33%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+  var dateFields = [['Y', '年 YYYY', '出生年份', 1900, 2100, 4, prefix+'-m'], ['M', '月 MM', '出生月份', 1, 12, 2, prefix+'-d'], ['D', '日 DD', '出生日期', 1, 31, 2, state[prefix+'UnknownTime'] ? prefix+'-city' : prefix+'-h']];
+  dateFields.forEach(function (pair) {
+    h += '<input id="'+prefix+'-'+pair[0].toLowerCase()+'" aria-label="'+pair[2]+'" inputmode="numeric" min="'+pair[3]+'" max="'+pair[4]+'" type="number" placeholder="' + pair[1] + '" value="' + esc(state[prefix + pair[0]]) + '" oninput="state.' + prefix + pair[0] + '=this.value;birthAutoNext(this,\''+pair[6]+'\','+pair[5]+')" onblur="render()" style="width:33%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
   });
   h += '</div>';
   var birthErr = validateBirthDate(state[prefix + 'Y'], state[prefix + 'M'], state[prefix + 'D'], state[prefix + 'H'], state[prefix + 'Min'], state[prefix + 'UnknownTime']);
@@ -3679,14 +3687,14 @@ function renderBirthInputForm(prefix, promptText, genFnName) {
   h += '</div>';
   if (!state[prefix + 'UnknownTime']) {
     h += '<div style="display:flex;gap:8px;margin-top:6px">';
-    h += '<input type="number" placeholder="時 HH (0-23)" value="' + esc(state[prefix + 'H']) + '" oninput="state.' + prefix + 'H=this.value" onblur="render()" style="width:50%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
-    h += '<input type="number" placeholder="分 MM" value="' + esc(state[prefix + 'Min']) + '" oninput="state.' + prefix + 'Min=this.value" onblur="render()" style="width:50%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+    h += '<input id="'+prefix+'-h" aria-label="出生小時" inputmode="numeric" min="0" max="23" type="number" placeholder="時 HH (0-23)" value="' + esc(state[prefix + 'H']) + '" oninput="state.' + prefix + 'H=this.value;birthAutoNext(this,\''+prefix+'-min\',2)" onblur="render()" style="width:50%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+    h += '<input id="'+prefix+'-min" aria-label="出生分鐘" inputmode="numeric" min="0" max="59" type="number" placeholder="分 MM" value="' + esc(state[prefix + 'Min']) + '" oninput="state.' + prefix + 'Min=this.value;birthAutoNext(this,\''+prefix+'-city\',2)" onblur="render()" style="width:50%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
     h += '</div>';
     h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:5px">時間會影響上升星座與宮位，請盡量提供準確的出生時間</div>';
   }
 
   h += '<div style="margin-top:16px;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">出生地</div>';
-  h += '<input type="text" placeholder="搜尋城市，例如：台北、Tokyo" value="' + esc(state[prefix + 'CityQuery']) + '" oninput="' + prefix + 'CityInput(this.value)" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+  h += '<input id="'+prefix+'-city" aria-label="搜尋出生城市" type="text" placeholder="搜尋城市，例如：台北、Tokyo" value="' + esc(state[prefix + 'CityQuery']) + '" oninput="' + prefix + 'CityInput(this.value)" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
   h += '<div id="' + prefix + '-city-live">' + renderCityLiveBlock(prefix, genFnName) + '</div>';
   return h;
 }
@@ -4708,6 +4716,13 @@ function astroSetHoroMonthOffset(v) { state.horoMonthOffset = v; render(); }
 function astroSetHoroYearOffset(v) { state.horoYearOffset = v; render(); }
 function astroSetHoroYearRange(n) { state.horoYearRange = n; state.horoYearOffset = 0; render(); window.scrollTo(0, 0); }
 function astroSelectHoroYear(v) { state.horoYearOffset = v; render(); }
+function astroGoHoroYear() {
+  var el = document.getElementById('horo-year-jump');
+  var y = el ? parseInt(el.value, 10) : NaN;
+  if (!isFinite(y) || y < 1900 || y > 2200) { if (el) el.focus(); return; }
+  state.horoYearOffset = y - new Date().getFullYear();
+  render();
+}
 
 function computeYearOverview(chart, city, offset) {
   var today = new Date();
@@ -4876,6 +4891,8 @@ function renderHoroscope(periodKey) {
     var yearRows = buildYearOverviewRows(chart, city, state.horoYearRange || 1);
     h += '<div style="margin-top:16px;font:500 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55)">未來 ' + state.horoYearRange + ' 年比較</div>';
     yearRows.forEach(function(row){h += renderYearOverviewCard(row);});
+    h += renderOffsetNav('上一年', '本年', '下一年', state.horoYearOffset, 'astroSetHoroYearOffset', rangeLabel);
+    h += '<div style="display:flex;gap:7px;margin-top:9px"><input id="horo-year-jump" aria-label="指定年度" inputmode="numeric" type="number" min="1900" max="2200" placeholder="輸入年份 YYYY" onkeydown="if(event.key===\'Enter\')astroGoHoroYear()" style="flex:1;min-width:0;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:9px;padding:8px 10px;color:#f0e9d8;font:400 12px \'Noto Sans TC\',sans-serif;outline:none"><button onclick="astroGoHoroYear()" style="border:1px solid #c9a96e;border-radius:9px;padding:8px 13px;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 11px \'Noto Sans TC\',sans-serif;cursor:pointer">前往指定年份</button></div>';
     h += '<div style="margin-top:20px;border-top:1px solid rgba(201,169,110,.2);padding-top:16px;text-align:center;font:600 13px \'Noto Serif TC\',serif;color:#e6cd9a">' + rangeLabel + '完整解讀</div>';
     h += renderPeriodDashboard(chart, transitPlanets, periodKey, periodCfg, now, city, rangeLabel);
   }
@@ -4942,9 +4959,9 @@ function renderAstro() {
 
     h += '<div style="margin-top:22px;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">出生日期</div>';
     h += '<div style="display:flex;gap:8px;margin-top:6px">';
-    h += '<input aria-label="出生年份" inputmode="numeric" min="1900" max="2100" type="number" placeholder="年 YYYY" value="' + esc(state.astroY) + '" oninput="state.astroY=this.value" onblur="render()" style="width:33%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
-    h += '<input aria-label="出生月份" inputmode="numeric" min="1" max="12" type="number" placeholder="月 MM" value="' + esc(state.astroM) + '" oninput="state.astroM=this.value" onblur="render()" style="width:33%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
-    h += '<input aria-label="出生日期" inputmode="numeric" min="1" max="31" type="number" placeholder="日 DD" value="' + esc(state.astroD) + '" oninput="state.astroD=this.value" onblur="render()" style="width:33%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+    h += '<input id="astro-y" aria-label="出生年份" inputmode="numeric" min="1900" max="2100" type="number" placeholder="年 YYYY" value="' + esc(state.astroY) + '" oninput="state.astroY=this.value;birthAutoNext(this,\'astro-m\',4)" onblur="render()" style="width:33%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+    h += '<input id="astro-m" aria-label="出生月份" inputmode="numeric" min="1" max="12" type="number" placeholder="月 MM" value="' + esc(state.astroM) + '" oninput="state.astroM=this.value;birthAutoNext(this,\'astro-d\',2)" onblur="render()" style="width:33%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+    h += '<input id="astro-d" aria-label="出生日期" inputmode="numeric" min="1" max="31" type="number" placeholder="日 DD" value="' + esc(state.astroD) + '" oninput="state.astroD=this.value;birthAutoNext(this,\'' + (state.astroUnknownTime ? 'astro-city' : 'astro-h') + '\',2)" onblur="render()" style="width:33%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
     h += '</div>';
     var astroBirthErr = validateBirthDate(state.astroY, state.astroM, state.astroD, state.astroH, state.astroMin, state.astroUnknownTime);
     if (astroBirthErr) h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:#d67878;margin-top:6px">⚠ ' + esc(astroBirthErr) + '</div>';
@@ -4955,13 +4972,13 @@ function renderAstro() {
     h += '</div>';
     if (!state.astroUnknownTime) {
       h += '<div style="display:flex;gap:8px;margin-top:6px">';
-      h += '<input aria-label="出生小時" inputmode="numeric" min="0" max="23" type="number" placeholder="時 HH (0-23)" value="' + esc(state.astroH) + '" oninput="state.astroH=this.value" onblur="render()" style="width:50%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
-      h += '<input aria-label="出生分鐘" inputmode="numeric" min="0" max="59" type="number" placeholder="分 MM" value="' + esc(state.astroMin) + '" oninput="state.astroMin=this.value" onblur="render()" style="width:50%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+      h += '<input id="astro-h" aria-label="出生小時" inputmode="numeric" min="0" max="23" type="number" placeholder="時 HH (0-23)" value="' + esc(state.astroH) + '" oninput="state.astroH=this.value;birthAutoNext(this,\'astro-min\',2)" onblur="render()" style="width:50%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+      h += '<input id="astro-min" aria-label="出生分鐘" inputmode="numeric" min="0" max="59" type="number" placeholder="分 MM" value="' + esc(state.astroMin) + '" oninput="state.astroMin=this.value;birthAutoNext(this,\'astro-city\',2)" onblur="render()" style="width:50%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
       h += '</div>';
       h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:5px">時間會影響上升星座與宮位，請盡量提供準確的出生時間</div>';
     }
     h += '<div style="margin-top:16px;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">出生地</div>';
-    h += '<input aria-label="搜尋出生城市" type="text" placeholder="搜尋城市，例如：台北、Tokyo" value="' + esc(state.astroCityQuery) + '" oninput="astroCityInput(this.value)" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+    h += '<input id="astro-city" aria-label="搜尋出生城市" type="text" placeholder="搜尋城市，例如：台北、Tokyo" value="' + esc(state.astroCityQuery) + '" oninput="astroCityInput(this.value)" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
     h += '<div id="astro-city-live">' + renderCityLiveBlock('astro', 'astroGenerate') + '</div>';
 
   } else {
