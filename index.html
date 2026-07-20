@@ -9,6 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="塔羅占卜">
 <meta name="description" content="免費線上塔羅與雷諾曼占卜，以及完整西洋占星本命星盤——十大行星、上升／宮位、每日／週／月／年運勢、合盤配對與二次推運。">
+<link rel="canonical" href="https://xciv0904.github.io/tarot/">
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
@@ -28,6 +29,8 @@
   a{color:#c9a96e}
   a:hover{color:#e6cd9a}
   button{font-family:'Noto Sans TC',sans-serif}
+  button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid #e6cd9a;outline-offset:3px}
+  .sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
   ::-webkit-scrollbar{width:6px}
   ::-webkit-scrollbar-thumb{background:rgba(201,169,110,.3);border-radius:3px}
   input::placeholder{color:rgba(240,233,216,.35)}
@@ -41,7 +44,8 @@
   <!-- Header -->
   <div style="padding:28px 24px 18px;text-align:center;position:relative">
     <div style="font:400 11px 'EB Garamond',serif;letter-spacing:.35em;color:#c9a96e;text-transform:uppercase">Mystic Deck</div>
-    <div style="font:600 24px 'Noto Serif TC',serif;color:#f0e9d8;margin-top:4px;letter-spacing:.03em">塔羅 · 雷諾曼</div>
+    <h1 class="sr-only">免費線上塔羅與雷諾曼占卜</h1>
+    <div aria-hidden="true" style="font:600 24px 'Noto Serif TC',serif;color:#f0e9d8;margin-top:4px;letter-spacing:.03em">塔羅 · 雷諾曼</div>
   </div>
 
   <div id="view"></div>
@@ -350,6 +354,7 @@ var state = {
   wizardStep: 1,       // 1=類別 2=牌陣 3=問題 4=確認
   question: '',
   target: '',
+  timeframe: 'month',
   drawn: [],
   phase: 'setup',      // setup | shuffling | picking | result
   pickOrder: [],       // shuffled indices of the full deck (picking pool)
@@ -434,8 +439,8 @@ function flipBox(id, flipped, radius, backHtml, frontHtml) {
   var bf = '-webkit-backface-visibility:hidden;backface-visibility:hidden';
   return '<div style="position:absolute;inset:0;perspective:900px">'
     + '<div id="' + id + '-inner" style="position:absolute;inset:0;transform-style:preserve-3d;-webkit-transform-style:preserve-3d;transition:transform .7s cubic-bezier(.35,.15,.25,1);transform:rotateY(' + (flipped ? 180 : 0) + 'deg)">'
-    + '<div style="position:absolute;inset:0;border-radius:' + radius + 'px;border:1px solid #c9a96e;background:linear-gradient(160deg,#241f2e,#1a1622);display:flex;align-items:center;justify-content:center;' + bf + '">' + backHtml + '</div>'
-    + '<div style="position:absolute;inset:0;border-radius:' + radius + 'px;border:1px solid #d8b96c;background:#f2e9d8;box-sizing:border-box;transform:rotateY(180deg);' + bf + '">' + frontHtml + '</div>'
+    + '<div id="' + id + '-back" aria-hidden="' + flipped + '" style="position:absolute;inset:0;border-radius:' + radius + 'px;border:1px solid #c9a96e;background:linear-gradient(160deg,#241f2e,#1a1622);display:flex;align-items:center;justify-content:center;' + bf + '">' + backHtml + '</div>'
+    + '<div id="' + id + '-front" aria-hidden="' + (!flipped) + '" style="position:absolute;inset:0;border-radius:' + radius + 'px;border:1px solid #d8b96c;background:#f2e9d8;box-sizing:border-box;transform:rotateY(180deg);' + bf + '">' + frontHtml + '</div>'
     + '</div>'
     + '<div id="' + id + '-glow" style="position:absolute;inset:-5px;border-radius:' + (radius + 4) + 'px;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center, rgba(255,244,210,.55), rgba(230,205,154,.22) 45%, transparent 72%)"></div>'
     + '</div>';
@@ -443,6 +448,10 @@ function flipBox(id, flipped, radius, backHtml, frontHtml) {
 function doFlip(id, flipped) {
   var inner = document.getElementById(id + '-inner');
   if (inner) inner.style.transform = 'rotateY(' + (flipped ? 180 : 0) + 'deg)';
+  var back = document.getElementById(id + '-back');
+  var front = document.getElementById(id + '-front');
+  if (back) back.setAttribute('aria-hidden', String(flipped));
+  if (front) front.setAttribute('aria-hidden', String(!flipped));
   if (flipped) {
     var g = document.getElementById(id + '-glow');
     if (g) { g.style.animation = 'none'; void g.offsetWidth; g.style.animation = 'cardGlow .95s ease-out'; }
@@ -541,6 +550,18 @@ function lenPairs(drawn) {
     out.push({ label: a.nameZh + ' ＋ ' + b.nameZh, text: lenPairText(a, b) });
   }
   return out;
+}
+
+function lenStory(drawn) {
+  if (!drawn || drawn.length < 2) return '';
+  var pairs = lenPairs(drawn);
+  if (drawn.length === 3) {
+    return '第一張「' + drawn[0].card.nameZh + '」交代背景，並以「' + pairs[0].text + '」推進到核心牌「' + drawn[1].card.nameZh + '」；接著「' + pairs[1].text + '」，因此事情會朝「' + LEN_COMBI[drawn[2].card.n].n + '」的方向發展。';
+  }
+  if (drawn.length === 5) {
+    return '中央牌「' + drawn[2].card.nameZh + '」是問題核心。左側顯示「' + pairs[0].text + '」，說明事情如何形成；右側則由「' + pairs[2].text + '」走向「' + pairs[3].text + '」。首尾牌「' + drawn[0].card.nameZh + '＋' + drawn[4].card.nameZh + '」提醒你：' + lenPairText(drawn[0].card, drawn[4].card) + '。';
+  }
+  return pairs.map(function (p) { return p.text; }).join('，接著');
 }
 
 /* ================= 記憶心法 Mnemonics (tarot encyclopedia) ================= */
@@ -1391,12 +1412,12 @@ function renderGrandTableau() {
   h += '<div style="display:grid;grid-template-columns:repeat(9,1fr);gap:4px">';
   state.drawn.forEach(function (d, i) {
     var isSig = d.card.n === state.gtSig;
-    h += '<div onclick="openLibCard(\'l' + d.card.n + '\')" style="cursor:pointer;animation:cardIn .4s ease both;animation-delay:' + (i * 0.025) + 's;position:relative">';
+    h += '<button aria-label="查看第 ' + (i + 1) + ' 宮，' + esc(d.card.nameZh) + '的牌義" onclick="openLibCard(\'l' + d.card.n + '\')" style="appearance:none;background:none;border:none;padding:0;color:inherit;text-align:inherit;cursor:pointer;animation:cardIn .4s ease both;animation-delay:' + (i * 0.025) + 's;position:relative">';
     h += '<div style="width:100%;aspect-ratio:150/230;border-radius:4px;border:' + (isSig ? '2px solid #e6cd9a;box-shadow:0 0 10px rgba(230,205,154,.6)' : '1px solid rgba(216,185,108,.45)') + ';overflow:hidden;background:#f2e9d8;display:flex;flex-direction:column">';
     h += d.card.img ? '<img src="' + d.card.img + '" alt="' + esc(d.card.nameZh) + '" style="width:100%;height:100%;object-fit:contain;display:block">' : '';
     h += '</div>';
     h += '<div style="text-align:center;font:400 8px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,' + (isSig ? '.95' : '.45') + ');margin-top:2px;line-height:1.2">' + d.card.nameZh + '</div>';
-    h += '</div>';
+    h += '</button>';
   });
   h += '</div>';
   h += '<div style="display:flex;justify-content:center;gap:8px;margin-top:14px">';
@@ -1714,6 +1735,13 @@ function renderWizard(spreads, isTarot) {
     h += '</div>';
     h += '<textarea id="question-input" oninput="updateQHint(this.value)" placeholder="' + tmpl.placeholder + '" style="width:100%;box-sizing:border-box;margin-top:10px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:11px 14px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none;min-height:74px;resize:vertical">' + esc(state.question) + '</textarea>';
     h += '<div id="q-hint" style="font:400 11px \'Noto Sans TC\',sans-serif;margin-top:7px;line-height:1.6;min-height:16px"></div>';
+    if (!isTarot) {
+      var ranges = [['week','一週內'],['month','一個月內'],['quarter','三個月內'],['half','半年內'],['open','不限時間']];
+      h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:14px">想看的時間範圍</div>';
+      h += '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:8px">';
+      ranges.forEach(function (r) { var active = state.timeframe === r[0]; h += '<button aria-pressed="' + active + '" onclick="wizSetTimeframe(\'' + r[0] + '\')" style="font:400 11px \'Noto Sans TC\',sans-serif;background:' + (active ? 'rgba(201,169,110,.18)' : 'rgba(255,255,255,.02)') + ';border:1px solid ' + (active ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.6)') + ';padding:7px 12px;border-radius:15px;cursor:pointer">' + r[1] + '</button>'; });
+      h += '</div>';
+    }
     h += wizBtns(true, true, '下一步', 'wizNext()');
 
   } else {
@@ -1725,6 +1753,7 @@ function renderWizard(spreads, isTarot) {
     h += row('牌組', state.deck === 'tarot' ? '塔羅牌' : '雷諾曼牌');
     h += row('類別', (cat4 ? cat4.icon + ' ' + cat4.zh : ''));
     h += row('牌陣', sp2.zh + '（' + sp2.positions.length + ' 張）');
+    if (!isTarot) h += row('時間範圍', timeframeLabel());
     if (state.target) h += row('對象', esc(state.target));
     h += row('問題', state.question ? esc(state.question) : '<span style="color:rgba(240,233,216,.4)">（未填寫，將以通用方式解讀）</span>');
     h += '</div>';
@@ -1746,6 +1775,8 @@ function wizSetCat(k) {
   render();
 }
 function wizSetSpread(k) { state.spread = k; render(); }
+function wizSetTimeframe(k) { state.timeframe = k; render(); }
+function timeframeLabel() { return ({week:'一週內',month:'一個月內',quarter:'三個月內',half:'半年內',open:'不限時間'})[state.timeframe] || '一個月內'; }
 function wizNext() {
   if (state.wizardStep === 1 && !state.category) return;
   if (state.wizardStep === 3) {
@@ -1797,7 +1828,7 @@ function renderReading() {
   if (!spreads[state.spread]) state.spread = 'single';
   var h = '';
   h += '<div style="padding:0 20px">';
-  h += '<div style="font:600 18px \'Noto Serif TC\',serif;color:#f0e9d8;text-align:center">' + (isTarot ? '塔羅牌占卜' : '雷諾曼占卜') + '</div>';
+  h += '<h2 style="font:600 18px \'Noto Serif TC\',serif;color:#f0e9d8;text-align:center;margin:0">' + (isTarot ? '塔羅牌占卜' : '雷諾曼占卜') + '</h2>';
   h += '<div style="font:italic 11px \'EB Garamond\',serif;color:rgba(240,233,216,.45);text-align:center;margin-top:2px">' + (isTarot ? 'Tarot Reading' : 'Lenormand Reading') + '</div>';
 
   // guided 4-step wizard replaces the old pickers (setup phase only)
@@ -1845,12 +1876,13 @@ function renderReading() {
       var pickedThis = pi !== -1;
       var rot = (((j * 7919) % 5) - 2) * 0.7;
       var tf = 'rotate(' + rot + 'deg)' + (pickedThis ? ' translateY(-16px)' : '');
-      h += '<div id="pick-' + j + '" onclick="pickCard(' + j + ')" style="position:absolute;left:' + (j * STEP) + 'px;top:18px;width:' + CW + 'px;height:' + CH + 'px;border-radius:6px;border:1px solid ' + (pickedThis ? '#e6cd9a' : 'rgba(201,169,110,.55)') + ';background:linear-gradient(160deg,#241f2e,#1a1622);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:' + (pickedThis ? '0 0 16px 3px rgba(230,205,154,.55)' : '-3px 0 8px rgba(0,0,0,.45)') + ';transition:transform .3s,box-shadow .3s;transform:' + tf + '">' + sigil('50%', '50%');
+      h += '<button type="button" id="pick-' + j + '" aria-label="選擇第 ' + (j + 1) + ' 張牌" aria-pressed="' + pickedThis + '"' + (pickedThis ? ' disabled' : '') + ' onclick="pickCard(' + j + ')" style="position:absolute;left:' + (j * STEP) + 'px;top:18px;width:' + CW + 'px;height:' + CH + 'px;padding:0;border-radius:6px;border:1px solid ' + (pickedThis ? '#e6cd9a' : 'rgba(201,169,110,.55)') + ';background:linear-gradient(160deg,#241f2e,#1a1622);cursor:' + (pickedThis ? 'default' : 'pointer') + ';display:flex;align-items:center;justify-content:center;box-shadow:' + (pickedThis ? '0 0 16px 3px rgba(230,205,154,.55)' : '-3px 0 8px rgba(0,0,0,.45)') + ';transition:transform .3s,box-shadow .3s;transform:' + tf + '">' + sigil('50%', '50%');
       if (pickedThis) h += '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:600 17px \'Noto Serif TC\',serif;color:#e6cd9a;text-shadow:0 0 8px rgba(20,17,26,.9)">' + (pi + 1) + '</div>';
-      h += '</div>';
+      h += '</button>';
     });
     h += '</div></div>';
     h += '<div style="text-align:center;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);letter-spacing:.1em">← 左右滑動瀏覽整副牌 →</div>';
+    h += '<div style="text-align:center;margin-top:10px"><button onclick="autoPickCards()" style="font:500 11px \'Noto Sans TC\',sans-serif;background:rgba(201,169,110,.1);border:1px solid rgba(201,169,110,.45);color:#e6cd9a;padding:7px 15px;border-radius:15px;cursor:pointer">讓系統代抽 Auto Draw</button></div>';
     h += '<div style="text-align:center;margin-top:12px"><button onclick="startReading()" style="font:400 11px \'Noto Sans TC\',sans-serif;background:none;border:1px solid rgba(201,169,110,.35);color:rgba(240,233,216,.6);padding:6px 14px;border-radius:14px;cursor:pointer">重新洗牌 Reshuffle</button></div>';
     h += '</div>';
   }
@@ -1883,9 +1915,9 @@ function renderReading() {
         + '<div style="font:600 10px \'Noto Serif TC\',serif;color:#4a3826;line-height:1.2">' + esc(c.nameZh) + '</div>'
         + (isTarot ? '<div style="font:500 8px \'Noto Sans TC\',sans-serif;color:#8a6f47;margin-top:2px">' + (d.reversed ? '逆位 Reversed' : '正位 Upright') + '</div>' : '')
         + '</div></div>';
-      h += '<div onclick="flipCardAt(' + i + ')" style="width:100%;aspect-ratio:150/230;cursor:pointer;position:relative">';
+      h += '<button id="flip-button-' + i + '" type="button" aria-label="' + (d.flipped ? ('第 ' + (i + 1) + ' 張，' + esc(d.pos.zh) + '，' + esc(c.nameZh)) : ('翻開第 ' + (i + 1) + ' 張牌，位置：' + esc(d.pos.zh))) + '" onclick="flipCardAt(' + i + ')" style="appearance:none;background:none;border:none;padding:0;width:100%;aspect-ratio:150/230;cursor:pointer;position:relative">';
       h += flipBox('card-' + i, d.flipped, 8, sigil('40%', '40%'), cardFront);
-      h += '</div>';
+      h += '</button>';
       h += '<div id="card-meaning-' + i + '" style="text-align:center;max-width:160px;display:' + (d.flipped ? 'block' : 'none') + '">';
       h += '<div style="font:600 11px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + esc(meaningZh) + '</div>';
       h += '<div style="font:italic 10px \'EB Garamond\',serif;color:rgba(240,233,216,.5);margin-top:2px">' + esc(meaningEn) + '</div>';
@@ -1919,6 +1951,7 @@ function renderReading() {
       var lp = lenPairs(state.drawn);
       h += '<div style="border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:15px 17px;background:rgba(255,255,255,.02);margin-top:12px">';
       h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:#c9a96e;text-transform:uppercase">✧ 組牌解讀 Pair Reading</div>';
+      h += '<div style="margin-top:9px;padding:11px 13px;border-left:2px solid #e6cd9a;background:rgba(201,169,110,.08);font:400 12px \'Noto Sans TC\',sans-serif;color:#f0e9d8;line-height:1.85">' + esc(lenStory(state.drawn)) + '</div>';
       lp.forEach(function (pr) {
         h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.85);margin-top:9px;line-height:1.8">「' + esc(pr.label) + '」：' + esc(pr.text) + '</div>';
       });
@@ -2332,6 +2365,19 @@ function pickCard(j) {
   if (state.picked.length >= need) setTimeout(buildDrawn, 450);
 }
 
+function autoPickCards() {
+  if (state.phase !== 'picking') return;
+  var need = currentSpreads()[state.spread].positions.length;
+  var available = [];
+  for (var i = 0; i < state.pickOrder.length; i++) if (state.picked.indexOf(i) === -1) available.push(i);
+  while (state.picked.length < need && available.length) {
+    var at = Math.floor(Math.random() * available.length);
+    state.picked.push(available.splice(at, 1)[0]);
+  }
+  fxPick();
+  setTimeout(buildDrawn, 300);
+}
+
 function buildDrawn() {
   var isTarot = state.deck === 'tarot';
   var data = isTarot ? TAROT : LENORMAND;
@@ -2354,6 +2400,7 @@ function buildDrawn() {
     categoryLabel: cat ? cat.zh : '',
     question: state.question || '',
     target: state.target || '',
+    timeframe: isTarot ? '' : timeframeLabel(),
     detail: {
       deck: state.deck,
       overall: overallReading(),
@@ -2384,6 +2431,11 @@ function flipCardAt(i) {
     var d = state.drawn[i];
     lg.textContent = (i + 1) + '．' + d.pos.zh + (d.flipped ? '：' + d.card.nameZh + (d.reversed ? '（逆）' : '') : '');
   }
+  var flipBtn = document.getElementById('flip-button-' + i);
+  if (flipBtn) {
+    var fd = state.drawn[i];
+    flipBtn.setAttribute('aria-label', fd.flipped ? ('第 ' + (i + 1) + ' 張，' + fd.pos.zh + '，' + fd.card.nameZh) : ('翻開第 ' + (i + 1) + ' 張牌，位置：' + fd.pos.zh));
+  }
   updateSummaryVisibility();
 }
 
@@ -2397,11 +2449,13 @@ function flipAll() {
           doFlip('card-' + idx, true);
           var m = document.getElementById('card-meaning-' + idx);
           if (m) m.style.display = 'block';
+          var d2 = state.drawn[idx];
           var lg = document.getElementById('legend-' + idx);
           if (lg) {
-            var d2 = state.drawn[idx];
             lg.textContent = (idx + 1) + '．' + d2.pos.zh + '：' + d2.card.nameZh + (d2.reversed ? '（逆）' : '');
           }
+          var fb = document.getElementById('flip-button-' + idx);
+          if (fb) fb.setAttribute('aria-label', '第 ' + (idx + 1) + ' 張，' + d2.pos.zh + '，' + d2.card.nameZh);
           updateSummaryVisibility();
         }, dl);
       })(i, delay);
@@ -2855,23 +2909,34 @@ function closeLibCard() { state.libSelected = null; render(); }
 function renderNav() {
   var navDef = [
     { key: 'home', zh: '首頁', en: 'Home' },
-    { key: 'tarot', zh: '塔羅', en: 'Tarot', deck: 'tarot' },
-    { key: 'lenormand', zh: '雷諾曼', en: 'Lenormand', deck: 'lenormand' },
+    { key: 'reading', zh: '占卜', en: 'Reading' },
     { key: 'astro', zh: '星盤', en: 'Natal Chart' },
     { key: 'library', zh: '牌典', en: 'Library' },
-    { key: 'history', zh: '歷史', en: 'History' },
+    { key: 'more', zh: '更多', en: 'More' },
   ];
-  var activeTab = state.tab === 'reading' ? state.deck : state.tab;
+  var activeTab = state.tab;
   var h = '';
   navDef.forEach(function (n) {
-    var active = activeTab === (n.deck || n.key);
-    var onclick = n.deck ? "go('reading','" + n.deck + "')" : "go('" + n.key + "')";
+    var active = activeTab === n.key || (n.key === 'more' && state.tab === 'history');
+    var onclick = n.key === 'reading' ? "go('reading',state.deck)" : "go('" + n.key + "')";
     h += '<button onclick="' + onclick + '" style="flex:1;background:none;border:none;padding:14px 6px 12px;cursor:pointer;color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.4)') + ';text-align:center">';
     h += '<div style="font:500 13px \'Noto Sans TC\',sans-serif">' + n.zh + '</div>';
     h += '<div style="font:italic 9px \'EB Garamond\',serif;opacity:.55;margin-top:1px">' + n.en + '</div>';
     h += '</button>';
   });
   document.getElementById('nav').innerHTML = h;
+}
+
+function renderMore() {
+  var h = '<div style="padding:8px 24px 24px"><h2 style="font:600 18px \'Noto Serif TC\',serif;color:#f0e9d8;margin:0 0 16px">更多功能</h2>';
+  var items = [
+    ['塔羅牌占卜','Tarot Reading',"go('reading','tarot')"],
+    ['雷諾曼占卜','Lenormand Reading',"go('reading','lenormand')"],
+    ['占卜歷史紀錄','Reading History',"go('history')"]
+  ];
+  items.forEach(function (it) { h += '<button onclick="' + it[2] + '" style="width:100%;display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.02);border:1px solid rgba(201,169,110,.28);color:#f0e9d8;padding:14px 15px;border-radius:10px;margin-bottom:9px;cursor:pointer;text-align:left"><span>' + it[0] + '<span style="display:block;font:italic 10px \'EB Garamond\',serif;opacity:.45;margin-top:2px">' + it[1] + '</span></span><span aria-hidden="true">›</span></button>'; });
+  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);line-height:1.8;margin-top:18px">占卜內容僅供自我探索與娛樂參考；健康、財務與法律問題請諮詢合格專業人士。</div></div>';
+  return h;
 }
 
 function render() {
@@ -2881,6 +2946,7 @@ function render() {
   else if (state.tab === 'astro') view.innerHTML = renderAstro();
   else if (state.tab === 'library') view.innerHTML = renderLibrary();
   else if (state.tab === 'history') view.innerHTML = renderHistory();
+  else if (state.tab === 'more') view.innerHTML = renderMore();
   renderNav();
 }
 
