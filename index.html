@@ -15,10 +15,10 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="塔羅 · 占星 | Mystic Deck">
 <meta property="og:description" content="免費線上塔羅／雷諾曼占卜 × 完整西洋占星——本命星盤、每日運勢、合盤配對、二次推運，一站可以看到底。">
-<meta property="og:image" content="https://xciv0904.github.io/assets/og.png">
-<meta property="og:url" content="https://xciv0904.github.io/">
+<meta property="og:image" content="https://xciv0904.github.io/tarot/assets/og.png">
+<meta property="og:url" content="https://xciv0904.github.io/tarot/">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://xciv0904.github.io/assets/og.png">
+<meta name="twitter:image" content="https://xciv0904.github.io/tarot/assets/og.png">
 <title>塔羅 · 占星 | Mystic Deck</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;600&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,500&family=EB+Garamond:ital@0;1&display=swap" rel="stylesheet">
@@ -372,6 +372,8 @@ var state = {
   aboutOpen: false,
   copied: false,
   tlGuideOpen: false,
+  dailyRevealed: false,
+  homeMoreOpen: false,
   astroY: '', astroM: '', astroD: '', astroH: '', astroMin: '',
   astroCityQuery: '', astroCityIdx: null, astroCityUsed: null,
   astroUnknownTime: false, astroResult: null, astroView: 'chart', astroGenerating: false, astroTourDismissed: false,
@@ -1541,38 +1543,88 @@ function renderTarotLenormandGuide() {
 
 /* ---------- views ---------- */
 
+function startQuestionFlow() {
+  state.wizardStep = 1;
+  state.category = null;
+  state.question = '';
+  state.target = '';
+  go('reading', state.deck || 'tarot');
+}
+
+function toggleDailyReveal() {
+  state.dailyRevealed = !state.dailyRevealed;
+  render();
+  if (state.dailyRevealed) {
+    setTimeout(function () {
+      var el = document.getElementById('daily-card-block');
+      if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 60);
+  }
+}
+
+function toggleHomeMore() { state.homeMoreOpen = !state.homeMoreOpen; render(); }
+
 function renderHome() {
-  var c = dailyCard;
-  var meaningZh = dailyReversed ? c.revZh : c.upZh;
-  var meaningEn = dailyReversed ? c.revEn : c.upEn;
-  var todayLabel = new Date().toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' });
   var h = '';
   h += '<div style="padding:0 24px">';
-  h += '<div style="text-align:center;font:italic 12px \'EB Garamond\',serif;color:rgba(240,233,216,.5);margin-bottom:16px">' + esc(todayLabel) + '・今日一牌 Daily Card</div>';
-  var frontInner = '<div style="position:absolute;inset:4px;border:1px solid #d8b96c;border-radius:7px;overflow:hidden;display:flex;flex-direction:column">'
-    + cardImgHtml(c.img, c.nameZh + ' ' + c.nameEn)
-    + '<div style="flex:none;background:#f2e9d8;padding:8px 6px 10px;text-align:center;border-top:1px solid #d8b96c">'
-    + '<div style="font:600 11px \'Noto Serif TC\',serif;color:#8a6f47">' + esc(c.num) + '</div>'
-    + '<div style="font:600 15px \'Noto Serif TC\',serif;color:#4a3826;margin-top:2px">' + esc(c.nameZh) + '</div>'
-    + '<div style="font:italic 10px \'EB Garamond\',serif;color:#a9784f">' + esc(c.nameEn) + '</div>'
-    + '<div style="font:500 10px \'Noto Sans TC\',sans-serif;color:#8a6f47;margin-top:4px">' + (dailyReversed ? '逆位 Reversed' : '正位 Upright') + '</div>'
-    + '</div></div>';
-  h += '<div onclick="toggleDailyFlip()" style="margin:0 auto;width:170px;height:262px;cursor:pointer;position:relative">';
-  h += flipBox('daily', state.dailyFlipped, 10, sigil(76, 76), frontInner);
+
+  // ---- two primary entry points ----
+  h += '<div style="display:flex;flex-direction:column;gap:12px;margin-top:6px">';
+  h += '<button onclick="startQuestionFlow()" style="font:600 16px \'Noto Serif TC\',serif;letter-spacing:.04em;background:linear-gradient(120deg,#c9a96e,#e6cd9a);color:#1a1622;border:none;padding:22px 22px;border-radius:14px;cursor:pointer;text-align:left">';
+  h += '<div>我想問一個問題 →</div><div style="font:italic 11px \'EB Garamond\',serif;opacity:.7;margin-top:3px;font-weight:400">I have a question — start a guided reading</div>';
+  h += '</button>';
+  h += '<button onclick="toggleDailyReveal()" style="font:600 16px \'Noto Serif TC\',serif;letter-spacing:.04em;background:rgba(201,169,110,.12);color:#f0e9d8;border:1px solid rgba(201,169,110,.5);padding:22px 22px;border-radius:14px;cursor:pointer;text-align:left">';
+  h += '<div>我想抽今日指引 →</div><div style="font:italic 11px \'EB Garamond\',serif;opacity:.6;margin-top:3px;font-weight:400">Just draw today\'s single card</div>';
+  h += '</button>';
   h += '</div>';
-  h += '<div id="daily-meaning" style="text-align:center;margin-top:16px;padding:0 20px;display:' + (state.dailyFlipped ? 'block' : 'none') + '">';
-  h += '<div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + esc(meaningZh) + '</div>';
-  h += '<div style="font:italic 12px \'EB Garamond\',serif;color:rgba(240,233,216,.5);margin-top:3px">' + esc(meaningEn) + '</div>';
+
+  // ---- daily card, revealed on demand ----
+  if (state.dailyRevealed) {
+    var c = dailyCard;
+    var meaningZh = dailyReversed ? c.revZh : c.upZh;
+    var meaningEn = dailyReversed ? c.revEn : c.upEn;
+    var todayLabel = new Date().toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' });
+    h += '<div id="daily-card-block" style="margin-top:28px">';
+    h += '<div style="text-align:center;font:italic 12px \'EB Garamond\',serif;color:rgba(240,233,216,.5);margin-bottom:16px">' + esc(todayLabel) + '・今日一牌 Daily Card</div>';
+    var frontInner = '<div style="position:absolute;inset:4px;border:1px solid #d8b96c;border-radius:7px;overflow:hidden;display:flex;flex-direction:column">'
+      + cardImgHtml(c.img, c.nameZh + ' ' + c.nameEn)
+      + '<div style="flex:none;background:#f2e9d8;padding:8px 6px 10px;text-align:center;border-top:1px solid #d8b96c">'
+      + '<div style="font:600 11px \'Noto Serif TC\',serif;color:#8a6f47">' + esc(c.num) + '</div>'
+      + '<div style="font:600 15px \'Noto Serif TC\',serif;color:#4a3826;margin-top:2px">' + esc(c.nameZh) + '</div>'
+      + '<div style="font:italic 10px \'EB Garamond\',serif;color:#a9784f">' + esc(c.nameEn) + '</div>'
+      + '<div style="font:500 10px \'Noto Sans TC\',sans-serif;color:#8a6f47;margin-top:4px">' + (dailyReversed ? '逆位 Reversed' : '正位 Upright') + '</div>'
+      + '</div></div>';
+    h += '<div onclick="toggleDailyFlip()" style="margin:0 auto;width:170px;height:262px;cursor:pointer;position:relative">';
+    h += flipBox('daily', state.dailyFlipped, 10, sigil(76, 76), frontInner);
+    h += '</div>';
+    h += '<div id="daily-meaning" style="text-align:center;margin-top:16px;padding:0 20px;display:' + (state.dailyFlipped ? 'block' : 'none') + '">';
+    h += '<div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + esc(meaningZh) + '</div>';
+    h += '<div style="font:italic 12px \'EB Garamond\',serif;color:rgba(240,233,216,.5);margin-top:3px">' + esc(meaningEn) + '</div>';
+    h += '</div>';
+    h += '</div>';
+  }
+
+  // ---- everything else, collapsed by default ----
+  h += '<div style="margin-top:32px;border-top:1px solid rgba(201,169,110,.15);padding-top:16px">';
+  h += '<div onclick="toggleHomeMore()" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer">';
+  h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.08em;color:rgba(240,233,216,.5)">更多功能 More</div>';
+  h += '<span style="color:#c9a96e;font-size:12px">' + (state.homeMoreOpen ? '︿ 收合' : '﹀ 展開') + '</span>';
   h += '</div>';
-  h += '<div style="display:flex;flex-direction:column;gap:12px;margin-top:36px">';
-  h += '<button onclick="go(\'reading\',\'tarot\')" style="font:500 15px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;background:linear-gradient(120deg,#c9a96e,#e6cd9a);color:#1a1622;border:none;padding:16px 20px;border-radius:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"><span>塔羅牌占卜 <span style="font:italic 11px \'EB Garamond\',serif;opacity:.7">Tarot Reading</span></span><span>›</span></button>';
-  h += '<button onclick="go(\'reading\',\'lenormand\')" style="font:500 15px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;background:rgba(201,169,110,.12);color:#f0e9d8;border:1px solid rgba(201,169,110,.5);padding:16px 20px;border-radius:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"><span>雷諾曼占卜 <span style="font:italic 11px \'EB Garamond\',serif;opacity:.6">Lenormand Reading</span></span><span>›</span></button>';
-  h += '<button onclick="go(\'library\')" style="font:500 15px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;background:linear-gradient(160deg,#f2e9d8,#e6d9c0);color:#4a3826;border:1px solid #d8b96c;padding:16px 20px;border-radius:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"><span>塔羅百科 <span style="font:italic 11px \'EB Garamond\',serif;opacity:.6;color:#8a6f47">Encyclopedia</span></span><span>›</span></button>';
+  if (state.homeMoreOpen) {
+    h += '<div style="display:flex;flex-direction:column;gap:10px;margin-top:14px">';
+    h += '<button onclick="go(\'reading\',\'tarot\')" style="font:500 14px \'Noto Sans TC\',sans-serif;background:rgba(255,255,255,.02);color:#f0e9d8;border:1px solid rgba(201,169,110,.3);padding:13px 16px;border-radius:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"><span>塔羅牌占卜 <span style="font:italic 10px \'EB Garamond\',serif;opacity:.5">Tarot Reading</span></span><span>›</span></button>';
+    h += '<button onclick="go(\'reading\',\'lenormand\')" style="font:500 14px \'Noto Sans TC\',sans-serif;background:rgba(255,255,255,.02);color:#f0e9d8;border:1px solid rgba(201,169,110,.3);padding:13px 16px;border-radius:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"><span>雷諾曼占卜 <span style="font:italic 10px \'EB Garamond\',serif;opacity:.5">Lenormand Reading</span></span><span>›</span></button>';
+    h += '<button onclick="go(\'library\')" style="font:500 14px \'Noto Sans TC\',sans-serif;background:rgba(255,255,255,.02);color:#f0e9d8;border:1px solid rgba(201,169,110,.3);padding:13px 16px;border-radius:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"><span>塔羅百科 <span style="font:italic 10px \'EB Garamond\',serif;opacity:.5">Encyclopedia</span></span><span>›</span></button>';
+    h += '<button onclick="go(\'astro\')" style="font:500 14px \'Noto Sans TC\',sans-serif;background:rgba(255,255,255,.02);color:#f0e9d8;border:1px solid rgba(201,169,110,.3);padding:13px 16px;border-radius:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"><span>星盤 <span style="font:italic 10px \'EB Garamond\',serif;opacity:.5">Natal Chart</span></span><span>›</span></button>';
+    h += '<button onclick="go(\'history\')" style="font:500 14px \'Noto Sans TC\',sans-serif;background:rgba(255,255,255,.02);color:#f0e9d8;border:1px solid rgba(201,169,110,.3);padding:13px 16px;border-radius:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"><span>歷史紀錄 <span style="font:italic 10px \'EB Garamond\',serif;opacity:.5">History</span></span><span>›</span></button>';
+    h += '</div>';
+    h += renderTarotLenormandGuide();
+    h += renderStudyWidget();
+    h += '<div style="text-align:center;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:18px;line-height:1.8;padding:0 10px">初次接觸塔羅嗎？建議先到「塔羅百科」認識大阿爾克那 22 張牌，<br>再回來開始占卜，解讀會更容易上手。</div>';
+    h += renderAbout();
+  }
   h += '</div>';
-  h += renderTarotLenormandGuide();
-  h += renderStudyWidget();
-  h += '<div style="text-align:center;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:18px;line-height:1.8;padding:0 10px">初次接觸塔羅嗎？建議先到「塔羅百科」認識大阿爾克那 22 張牌，<br>再回來開始占卜，解讀會更容易上手。</div>';
-  h += renderAbout();
+
   h += '</div>';
   return h;
 }
@@ -1607,7 +1659,13 @@ function renderWizard(spreads, isTarot) {
   h += '<div style="font:500 10px \'Noto Sans TC\',sans-serif;letter-spacing:.18em;color:#c9a96e;margin-top:20px">STEP ' + state.wizardStep + ' / 4</div>';
 
   if (state.wizardStep === 1) {
-    h += '<div style="font:600 15px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:6px">你想詢問的是哪個面向？</div>';
+    h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);margin-top:6px">選擇牌組（不確定可先看下方差異說明）</div>';
+    h += '<div style="display:flex;gap:8px;margin-top:8px">';
+    h += '<button onclick="wizSetDeck(\'tarot\')" style="flex:1;text-align:center;background:' + (isTarot ? 'rgba(201,169,110,.15)' : 'rgba(255,255,255,.02)') + ';border:1px solid ' + (isTarot ? '#c9a96e' : 'rgba(201,169,110,.25)') + ';border-radius:10px;padding:9px;cursor:pointer;font:500 12px \'Noto Sans TC\',sans-serif;color:' + (isTarot ? '#f0e9d8' : 'rgba(240,233,216,.6)') + '">塔羅牌 Tarot</button>';
+    h += '<button onclick="wizSetDeck(\'lenormand\')" style="flex:1;text-align:center;background:' + (!isTarot ? 'rgba(201,169,110,.15)' : 'rgba(255,255,255,.02)') + ';border:1px solid ' + (!isTarot ? '#c9a96e' : 'rgba(201,169,110,.25)') + ';border-radius:10px;padding:9px;cursor:pointer;font:500 12px \'Noto Sans TC\',sans-serif;color:' + (!isTarot ? '#f0e9d8' : 'rgba(240,233,216,.6)') + '">雷諾曼牌 Lenormand</button>';
+    h += '</div>';
+    h += renderTarotLenormandGuide();
+    h += '<div style="font:600 15px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:18px">你想詢問的是哪個面向？</div>';
     h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px">';
     CATEGORIES.forEach(function (cat) {
       var active = cat.key === state.category;
@@ -1679,6 +1737,10 @@ function renderWizard(spreads, isTarot) {
   return h;
 }
 
+function wizSetDeck(d) {
+  if (state.deck !== d) { state.deck = d; state.spread = 'single'; }
+  render();
+}
 function wizSetCat(k) {
   if (state.category !== k) { state.category = k; state.target = ''; }
   render();
@@ -1883,8 +1945,20 @@ function renderReading() {
       if (isTarot) h += '<div style="font:400 10px \'EB Garamond\',serif;color:rgba(240,233,216,.4)">' + (d.reversed ? '逆位 Reversed' : '正位 Upright') + '</div>';
       h += '</div>';
       h += '<div style="font:600 14px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:4px">' + esc(c.nameZh) + ' <span style="font:italic 11px \'EB Garamond\',serif;color:rgba(240,233,216,.5)">' + esc(c.nameEn) + '</span></div>';
-      h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.85);margin-top:5px;line-height:1.7">' + esc(cardPosText(d, isTarot)) + '</div>';
-      h += '<div style="font:italic 11px \'EB Garamond\',serif;color:rgba(240,233,216,.45);margin-top:2px">' + esc(meaningEn) + '</div>';
+      h += '<div style="font:italic 10px \'EB Garamond\',serif;color:rgba(240,233,216,.4);margin-top:1px">' + esc(meaningEn) + '</div>';
+      var fields = [
+        ['核心訊息', 'Core', cardCoreMeaning(d, isTarot)],
+        ['目前狀態', 'Now', cardPosText(d, isTarot)],
+        ['可能的盲點', 'Blind Spot', cardBlindSpot(d, isTarot)],
+        ['建議採取的行動', 'Action', cardAction(d, isTarot)],
+      ];
+      h += '<div style="margin-top:9px;display:flex;flex-direction:column;gap:7px">';
+      fields.forEach(function (f) {
+        h += '<div><span style="font:500 10px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;color:#c9a96e">' + f[0] + ' <span style="font:italic 9px \'EB Garamond\',serif;color:rgba(201,169,110,.6)">' + f[1] + '</span></span>';
+        h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.85);margin-top:2px;line-height:1.7">' + esc(f[2]) + '</div></div>';
+      });
+      h += '</div>';
+      h += '<div style="margin-top:9px;padding:8px 12px;border-left:2px solid #c9a96e;background:rgba(201,169,110,.07)"><span style="font:500 10px \'Noto Sans TC\',sans-serif;color:#e6cd9a">一句提醒 </span><span style="font:italic 12px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + esc(cardReminder(d, isTarot)) + '</span></div>';
       var libKey = isTarot ? c.id : ('l' + c.n);
       h += '<div style="margin-top:8px"><span onclick="openLibCard(\'' + libKey + '\')" style="font:400 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;cursor:pointer;border-bottom:1px dotted rgba(201,169,110,.5)">在牌典查看這張牌 →</span></div>';
       h += '</div>';
@@ -2013,6 +2087,68 @@ function cardPosText(d, isTarot) {
   return tpl.replace('{kw}', kw).replace('{meaning}', meaning);
 }
 
+/* ---- structured per-card breakdown: 核心訊息 / 目前狀態 / 盲點 / 行動 / 提醒 ---- */
+var BLIND_SPOT_TEMPLATES = {
+  obstacle: '容易只看到「{kw}」帶來的阻力，而忽略自己其實握有應對的主動權',
+  advice: '可能知道該怎麼做，卻遲遲不敢真的照著「{kw}」的方向去行動',
+  past: '容易被「{kw}」的舊經驗牽著走，忘了現在的條件已經不同',
+  future: '可能把「{kw}」的走向當成定局，反而少了主動調整的空間',
+  root: '「{kw}」是深層原因，但表面上可能還看不出這一層關聯',
+  other: '容易把重心放在對方或外在的「{kw}」，卻沒留意自己能調整的部分',
+  self: '可能對自己的「{kw}」太過熟悉，反而看不出它其實正在影響全局',
+  hope: '在「{kw}」的期待與擔憂之間拉扯，容易想太多而遲遲無法決定',
+  present: '正處在「{kw}」的狀態中，容易只看見眼前，忽略更長期的走向',
+  bond: '容易只從自己的角度解讀這段連結中的「{kw}」，忽略對方的感受',
+  strength: '容易低估「{kw}」這個優勢，或是太依賴它而忽略其他面向',
+  generic: '容易忽略「{kw}」其實正在悄悄影響事情的走向',
+};
+var ACTION_TEMPLATES = {
+  obstacle: '正面盤點「{kw}」帶來的具體限制，一項一項拆解，而不是籠統地擔心',
+  advice: '照著「{kw}」的方向踏出一個具體、現在就能做的小動作',
+  past: '把「{kw}」的經驗當參考、不當包袱，帶著新的條件重新評估現況',
+  future: '朝「{kw}」的方向做準備，同時保留一點彈性應變的空間',
+  root: '花時間釐清「{kw}」這個根源，而不是只處理表面的症狀',
+  other: '主動溝通，了解對方或外在環境中「{kw}」背後真正的原因',
+  self: '誠實面對自己內在的「{kw}」，這是接下來調整的起點',
+  hope: '把「{kw}」的期待寫下來、具體化，減少懸而未決的焦慮感',
+  present: '順著「{kw}」的狀態，做眼前最務實的下一步，不用一次想到終點',
+  bond: '找個時間跟對方聊聊「{kw}」，把默契或誤解攤開來說清楚',
+  strength: '善用「{kw}」這個優勢，讓它在關鍵時刻發揮作用',
+  generic: '把「{kw}」放在心上，作為接下來行動的重要參考',
+};
+var REMINDER_TEMPLATES = {
+  obstacle: '阻力是提醒，不是懲罰。',
+  advice: '知道了，就去做。',
+  past: '過去是養分，不是判決。',
+  future: '方向已經在那裡，剩下的是節奏。',
+  root: '看懂根源，問題就解了一半。',
+  other: '你能真正掌握的，只有自己的回應。',
+  self: '誠實面對自己，是最快的捷徑。',
+  hope: '不用同時解決期待和恐懼，先選一個面對就好。',
+  present: '此刻已經足夠，不用急著衝到下一步。',
+  bond: '關係是兩個人的事，但你先動也沒關係。',
+  strength: '優勢要用出來，才算數。',
+  generic: '把這張牌的訊息放在心上就好。',
+};
+function cardCoreMeaning(d, isTarot) {
+  var meaningZh = isTarot ? (d.reversed ? d.card.revZh : d.card.upZh) : d.card.mZh;
+  return meaningZh;
+}
+function cardBlindSpot(d, isTarot) {
+  var role = posRole(d.pos.zh);
+  var kw = cardKws(d, isTarot)[0] || '這張牌';
+  return (BLIND_SPOT_TEMPLATES[role] || BLIND_SPOT_TEMPLATES.generic).replace('{kw}', kw);
+}
+function cardAction(d, isTarot) {
+  var role = posRole(d.pos.zh);
+  var kw = cardKws(d, isTarot)[0] || '這張牌';
+  return (ACTION_TEMPLATES[role] || ACTION_TEMPLATES.generic).replace('{kw}', kw);
+}
+function cardReminder(d, isTarot) {
+  var role = posRole(d.pos.zh);
+  return REMINDER_TEMPLATES[role] || REMINDER_TEMPLATES.generic;
+}
+
 /* ---- classic card combos: theme stacking regardless of orientation ---- */
 var CLASSIC_COMBOS = [
   { ids: ['m13', 'm16'], text: '死神與高塔同時出現，顯示變動的力道非常強烈——這不是漸進式的調整，而是舊有結構被連根拔起的劇烈轉折。建議做好心理準備，而非抗拒它的發生。' },
@@ -2117,7 +2253,10 @@ function overallReading() {
       if (/阻礙|挑戰|恐懼/.test(drawn[i].pos.zh)) { ci = i; break; }
     }
     if (ci === -1) ci = Math.floor(drawn.length / 2);
-    var picks = [0, ci, drawn.length - 1].filter(function (v, i2, a) { return a.indexOf(v) === i2; });
+    var rawPicks = drawn.length >= 5
+      ? [0, ci, Math.floor(drawn.length / 2), drawn.length - 2, drawn.length - 1]
+      : [0, ci, drawn.length - 1];
+    var picks = rawPicks.filter(function (v, i2, a) { return v >= 0 && v < drawn.length && a.indexOf(v) === i2; });
     picks.forEach(function (pi) { parts.push(cardClause(drawn[pi])); });
     tail = '其餘的牌' + (toneIdx === 0 ? '大多順勢支持這股流動' : '則提醒你留意過程中的變數');
   }
@@ -2130,10 +2269,12 @@ function overallReading() {
       (ins.length ? '；' + ins.join('；') : '') + '。' +
       ps.join('；') + '。整體而言，' + advice + '。';
   }
+  var cap = drawn.length >= 5 ? 320 : 200;
   var txt = assemble(insights, true, parts.length);
-  if (txt.length > 200) txt = assemble(insights, false, parts.length);
-  if (txt.length > 200) txt = assemble(insights, false, 2);
-  if (txt.length > 200) txt = assemble(insights.slice(0, 1), false, 2);
+  if (txt.length > cap) txt = assemble(insights, false, parts.length);
+  if (txt.length > cap) txt = assemble(insights, false, Math.min(3, parts.length));
+  if (txt.length > cap) txt = assemble(insights, false, 2);
+  if (txt.length > cap) txt = assemble(insights.slice(0, 1), false, 2);
   return txt;
 }
 
@@ -2219,7 +2360,12 @@ function buildDrawn() {
       analysis: analyzeSpread(state.drawn, isTarot),
       pairs: (isTarot || state.spread === 'grand' || state.spread === 'box9') ? [] : lenPairs(state.drawn),
       cards: state.drawn.map(function (d) {
-        return { name: d.card.nameZh, nameEn: d.card.nameEn, pos: d.pos.zh, rev: isTarot ? d.reversed : null, text: cardPosText(d, isTarot) };
+        return {
+          name: d.card.nameZh, nameEn: d.card.nameEn, pos: d.pos.zh, rev: isTarot ? d.reversed : null,
+          text: cardPosText(d, isTarot),
+          core: cardCoreMeaning(d, isTarot), blindSpot: cardBlindSpot(d, isTarot),
+          action: cardAction(d, isTarot), reminder: cardReminder(d, isTarot),
+        };
       }),
     },
   };
@@ -2323,9 +2469,12 @@ function copyForAI() {
   state.drawn.forEach(function (d) {
     var c = d.card;
     var orient = isTarot ? (d.reversed ? '逆位 Reversed' : '正位 Upright') : '';
-    var meaningZh = isTarot ? (d.reversed ? c.revZh : c.upZh) : c.mZh;
-    var meaningEn = isTarot ? (d.reversed ? c.revEn : c.upEn) : c.mEn;
-    lines.push(d.pos.zh + '（' + d.pos.en + '）：' + c.nameZh + ' ' + c.nameEn + (orient ? '，' + orient : '') + ' — ' + meaningZh + ' / ' + meaningEn);
+    lines.push(d.pos.zh + '（' + d.pos.en + '）：' + c.nameZh + ' ' + c.nameEn + (orient ? '，' + orient : ''));
+    lines.push('　核心訊息：' + cardCoreMeaning(d, isTarot));
+    lines.push('　目前狀態：' + cardPosText(d, isTarot));
+    lines.push('　可能的盲點：' + cardBlindSpot(d, isTarot));
+    lines.push('　建議採取的行動：' + cardAction(d, isTarot));
+    lines.push('　一句提醒：' + cardReminder(d, isTarot));
   });
   lines.push('');
   if (!isTarot && state.drawn.length >= 2) {
@@ -2554,6 +2703,9 @@ function historyCopyForAI() {
       lines.push('抽到的牌：');
       dt.cards.forEach(function (cd) {
         lines.push('- ' + cd.pos + '：' + cd.name + ' ' + cd.nameEn + (cd.rev !== null && cd.rev !== undefined ? (cd.rev ? '（逆位）' : '（正位）') : '') + (cd.text ? '——' + cd.text : ''));
+        if (cd.blindSpot) lines.push('　可能的盲點：' + cd.blindSpot);
+        if (cd.action) lines.push('　建議採取的行動：' + cd.action);
+        if (cd.reminder) lines.push('　一句提醒：' + cd.reminder);
       });
       lines.push('');
     }
@@ -2629,7 +2781,17 @@ function renderHistory() {
         if (cd.rev !== null && cd.rev !== undefined) h += '<div style="font:400 10px \'EB Garamond\',serif;color:rgba(240,233,216,.4)">' + (cd.rev ? '逆位 Reversed' : '正位 Upright') + '</div>';
         h += '</div>';
         h += '<div style="font:600 14px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:4px">' + esc(cd.name) + ' <span style="font:italic 11px \'EB Garamond\',serif;color:rgba(240,233,216,.5)">' + esc(cd.nameEn) + '</span></div>';
-        h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.85);margin-top:5px;line-height:1.7">' + esc(cd.text) + '</div>';
+        var histFields = [];
+        if (cd.core) histFields.push(['核心訊息', cd.core]);
+        histFields.push(['目前狀態', cd.text]);
+        if (cd.blindSpot) histFields.push(['可能的盲點', cd.blindSpot]);
+        if (cd.action) histFields.push(['建議採取的行動', cd.action]);
+        h += '<div style="margin-top:7px;display:flex;flex-direction:column;gap:6px">';
+        histFields.forEach(function (f) {
+          h += '<div><span style="font:500 10px \'Noto Sans TC\',sans-serif;color:#c9a96e">' + f[0] + '</span><div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.85);margin-top:2px;line-height:1.7">' + esc(f[1]) + '</div></div>';
+        });
+        h += '</div>';
+        if (cd.reminder) h += '<div style="margin-top:8px;padding:7px 11px;border-left:2px solid #c9a96e;background:rgba(201,169,110,.07)"><span style="font:500 10px \'Noto Sans TC\',sans-serif;color:#e6cd9a">一句提醒 </span><span style="font:italic 12px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + esc(cd.reminder) + '</span></div>';
         h += '</div>';
       });
       h += '</div>';
