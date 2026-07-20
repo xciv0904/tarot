@@ -382,6 +382,8 @@ var state = {
   astroY: '', astroM: '', astroD: '', astroH: '', astroMin: '',
   astroCityQuery: '', astroCityIdx: null, astroCityUsed: null,
   astroUnknownTime: false, astroResult: null, astroView: 'chart', astroGenerating: false, astroTourDismissed: false,
+  astroHouseSystem: 'placidus', astroDetail: null, astroMethodOpen: false,
+  astroReturnCityIdx: null, synRelationship: 'love',
   horoDayAnchor: null, horoWeekOffset: 0, horoMonthOffset: 0, horoYearOffset: 0,
   synY: '', synM: '', synD: '', synH: '', synMin: '', synGenerating: false,
   synCityQuery: '', synCityIdx: null, synCityUsed: null,
@@ -3164,7 +3166,7 @@ function placidusCusps(thetaDeg, epsRad, phiRad, ascDeg, mcDeg) {
 /* core natal chart computation — planet positions, MC and Ascendant
    cross-checked against a professional ephemeris (astrolabe.astroinfo.com.tw)
    to sub-arcminute precision */
-function computeNatalChart(y, m, d, hh, mm, lat, lon, tz) {
+function computeNatalChart(y, m, d, hh, mm, lat, lon, tz, houseSystem) {
   var utcDate = zonedTimeToUtc(y, m, d, hh, mm, 0, tz);
   var time = Astronomy.MakeTime(utcDate);
 
@@ -3193,7 +3195,10 @@ function computeNatalChart(y, m, d, hh, mm, lat, lon, tz) {
   asc = astroNormDeg(asc * 180 / Math.PI);
 
   var ascSign = Math.floor(asc / 30);
-  var houseCusps = placidusCusps(ramc, eps, phi, asc, mc);
+  houseSystem = houseSystem || 'placidus';
+  var houseCusps = houseSystem === 'whole'
+    ? (function () { var start = Math.floor(asc / 30) * 30, out = []; for (var wi = 0; wi < 12; wi++) out.push(astroNormDeg(start + wi * 30)); return out; })()
+    : placidusCusps(ramc, eps, phi, asc, mc);
 
   function houseOf(pLon) {
     for (var i = 0; i < 12; i++) {
@@ -3282,21 +3287,23 @@ function computeNatalChart(y, m, d, hh, mm, lat, lon, tz) {
     }
   }
 
-  return { utcDate: utcDate, asc: asc, mc: mc, ascSign: ascSign, houseCusps: houseCusps, planets: planets, points: points, aspects: aspects };
+  return { utcDate: utcDate, asc: asc, mc: mc, ascSign: ascSign, houseCusps: houseCusps, houseSystem: houseSystem, planets: planets, points: points, aspects: aspects };
 }
 
 /* ---- interpretation composition ---- */
 function planetPlacementText(planetDef, chart) {
   var p = chart.planets[planetDef.key];
   var sign = ZODIAC_SIGNS[p.sign];
-  return planetDef.zh + '代表' + planetDef.meaning + '。在' + sign.zh + '的映照下，這股能量傾向' + sign.trait + '；坐落於第' + p.house + '宮，主要體現在' + HOUSE_MEANINGS[p.house - 1] + '上。' + (p.retro ? '目前為逆行狀態，這股能量的展現較為內化，需要多一層自我覺察才會顯現在外。' : '');
+  var houseText = state.astroUnknownTime ? '。由於出生時間未知，本次不解讀宮位' : '；坐落於第' + p.house + '宮，主要體現在' + HOUSE_MEANINGS[p.house - 1] + '上';
+  return planetDef.zh + '代表' + planetDef.meaning + '。在' + sign.zh + '的映照下，這股能量傾向' + sign.trait + houseText + '。' + (p.retro ? '目前為逆行狀態，這股能量的展現較為內化，需要多一層自我覺察才會顯現在外。' : '');
 }
 function pointPlacementText(pointDef, chart) {
   var p = chart.points[pointDef.key];
   var sign = ZODIAC_SIGNS[p.sign];
   var retroTxt = pointDef.key === 'Node' ? '（依天文結構，北／南交點永遠逆行，屬於正常現象）'
     : (p.retro ? '目前為逆行狀態，這股能量的展現較為內化，需要多一層自我覺察才會顯現在外。' : '');
-  return pointDef.zh + '代表' + pointDef.meaning + '。落在' + sign.zh + '，帶有' + sign.trait + '的色彩；坐落於第' + p.house + '宮，主要體現在' + HOUSE_MEANINGS[p.house - 1] + '上。' + retroTxt;
+  var houseText = state.astroUnknownTime ? '。出生時間未知，本次不解讀宮位' : '；坐落於第' + p.house + '宮，主要體現在' + HOUSE_MEANINGS[p.house - 1] + '上';
+  return pointDef.zh + '代表' + pointDef.meaning + '。落在' + sign.zh + '，帶有' + sign.trait + '的色彩' + houseText + '。' + retroTxt;
 }
 function findAnyPointDef(key) {
   return PLANET_DEFS.find(function (x) { return x.key === key; }) || EXTRA_POINT_DEFS.find(function (x) { return x.key === key; });
@@ -3360,25 +3367,25 @@ var ASPECT_SYMBOL = { conjunction: '☌', sextile: '⚹', square: '□', trine: 
 function renderAspectGrid(chart) {
   var keys = ASTRO_PLANET_BODY_KEYS;
   var lookup = {};
-  chart.aspects.forEach(function (asp) {
+  astroUsableAspects(chart).forEach(function (asp) {
     if (keys.indexOf(asp.a) >= 0 && keys.indexOf(asp.b) >= 0) { lookup[asp.a + '|' + asp.b] = asp; lookup[asp.b + '|' + asp.a] = asp; }
   });
-  var h = '<div style="overflow-x:auto;margin-top:12px"><table style="border-collapse:collapse;margin:0 auto">';
+  var h = '<div style="overflow-x:auto;margin-top:12px"><table aria-label="行星相位總表" style="border-collapse:collapse;margin:0 auto">';
   keys.forEach(function (rk, ri) {
     var rd = PLANET_DEFS.find(function (x) { return x.key === rk; });
-    h += '<tr><td style="width:20px;height:20px;text-align:center;font:400 12px serif;color:#c9a96e">' + rd.sym + '</td>';
+    h += '<tr><th scope="row" aria-label="' + rd.zh + '" style="width:20px;height:20px;text-align:center;font:400 12px serif;color:#c9a96e">' + rd.sym + '</th>';
     keys.forEach(function (ck, ci) {
       if (ci >= ri) { h += '<td style="width:20px;height:20px"></td>'; return; }
       var asp = lookup[rk + '|' + ck];
       if (asp) {
-        h += '<td style="width:20px;height:20px;text-align:center;font:400 12px sans-serif;color:' + ASPECT_COLOR[asp.type] + '" title="' + asp.orb.toFixed(1) + '°">' + ASPECT_SYMBOL[asp.type] + '</td>';
+        h += '<td aria-label="' + ASPECT_DEFS[asp.type].zh + '，誤差 ' + asp.orb.toFixed(1) + '度" style="width:20px;height:20px;text-align:center;font:400 12px sans-serif;color:' + ASPECT_COLOR[asp.type] + '" title="' + asp.orb.toFixed(1) + '°">' + ASPECT_SYMBOL[asp.type] + '</td>';
       } else {
         h += '<td style="width:20px;height:20px;border:1px solid rgba(255,255,255,.03)"></td>';
       }
     });
     h += '</tr>';
   });
-  h += '<tr><td></td>' + keys.map(function (k) { var d = PLANET_DEFS.find(function (x) { return x.key === k; }); return '<td style="width:20px;height:20px;text-align:center;font:400 12px serif;color:#c9a96e">' + d.sym + '</td>'; }).join('') + '</tr>';
+  h += '<tr><td></td>' + keys.map(function (k) { var d = PLANET_DEFS.find(function (x) { return x.key === k; }); return '<th scope="col" aria-label="' + d.zh + '" style="width:20px;height:20px;text-align:center;font:400 12px serif;color:#c9a96e">' + d.sym + '</th>'; }).join('') + '</tr>';
   h += '</table></div>';
   return h;
 }
@@ -3391,7 +3398,7 @@ function astroPolar(cx, cy, r, angleDeg) {
 }
 function renderNatalWheel(chart) {
   var cx = 150, cy = 150, R = 142, signR = 122, houseR = 96, planetR = 76;
-  var svg = '<svg viewBox="0 0 300 300" width="100%" style="max-width:320px;display:block;margin:0 auto">';
+  var svg = '<svg role="img" aria-labelledby="natal-wheel-title natal-wheel-desc" viewBox="0 0 300 300" width="100%" style="max-width:320px;display:block;margin:0 auto"><title id="natal-wheel-title">個人本命星盤輪盤</title><desc id="natal-wheel-desc">顯示十二星座、十二宮、十大行星與主要相位；行星符號可點擊查看詳細解讀。</desc>';
   svg += '<circle cx="150" cy="150" r="' + R + '" fill="none" stroke="rgba(201,169,110,.4)" stroke-width="1"/>';
   svg += '<circle cx="150" cy="150" r="' + signR + '" fill="none" stroke="rgba(201,169,110,.22)" stroke-width="1"/>';
   svg += '<circle cx="150" cy="150" r="' + houseR + '" fill="none" stroke="rgba(201,169,110,.14)" stroke-width="1"/>';
@@ -3414,7 +3421,7 @@ function renderNatalWheel(chart) {
     var arcSpan = astroNormDeg(nextLon - cuspLon); if (arcSpan === 0) arcSpan = 360;
     var midH = astroWheelAngle(cuspLon + arcSpan / 2, chart.asc);
     var hp = astroPolar(cx, cy, houseR - 13, midH);
-    svg += '<text x="' + hp.x + '" y="' + (hp.y + 3) + '" text-anchor="middle" font-size="9" fill="rgba(240,233,216,.4)">' + (n + 1) + '</text>';
+    svg += '<text role="button" tabindex="0" aria-label="第' + (n + 1) + '宮，' + HOUSE_MEANINGS[n] + '，點擊查看" onclick="astroSelectDetail(\'house-' + (n + 1) + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();astroSelectDetail(\'house-' + (n + 1) + '\')}" x="' + hp.x + '" y="' + (hp.y + 3) + '" text-anchor="middle" font-size="9" fill="rgba(240,233,216,.55)" style="cursor:pointer">' + (n + 1) + '</text>';
   }
 
   // ASC-DESC axis (always horizontal by construction)
@@ -3454,11 +3461,20 @@ function renderNatalWheel(chart) {
     var tick1 = astroPolar(cx, cy, houseR, ang), tick2 = astroPolar(cx, cy, r + 8, ang);
     svg += '<line x1="' + tick1.x + '" y1="' + tick1.y + '" x2="' + tick2.x + '" y2="' + tick2.y + '" stroke="rgba(201,169,110,.3)" stroke-width="0.6"/>';
     var def = PLANET_DEFS.find(function (p) { return p.key === key; });
-    svg += '<circle cx="' + pos.x + '" cy="' + pos.y + '" r="10" fill="#1a1622" stroke="rgba(201,169,110,.5)" stroke-width="0.8"/>';
-    svg += '<text x="' + pos.x + '" y="' + (pos.y + 4) + '" text-anchor="middle" font-size="11" fill="#f0e9d8">' + def.sym + '</text>';
+    var aria = def.zh + '位於' + ZODIAC_SIGNS[chart.planets[key].sign].zh + '第' + chart.planets[key].house + '宮，點擊查看解讀';
+    svg += '<g role="button" tabindex="0" aria-label="' + aria + '" onclick="astroSelectDetail(\'' + key + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();astroSelectDetail(\'' + key + '\')}" style="cursor:pointer">';
+    svg += '<circle cx="' + pos.x + '" cy="' + pos.y + '" r="10" fill="#1a1622" stroke="' + (state.astroDetail === key ? '#e6cd9a' : 'rgba(201,169,110,.5)') + '" stroke-width="' + (state.astroDetail === key ? '2' : '.8') + '"/>';
+    svg += '<text x="' + pos.x + '" y="' + (pos.y + 4) + '" text-anchor="middle" font-size="11" fill="#f0e9d8">' + def.sym + '</text></g>';
   });
 
   svg += '</svg>';
+  if (state.astroDetail && chart.planets[state.astroDetail]) {
+    var detailDef = PLANET_DEFS.find(function(p){return p.key===state.astroDetail;});
+    svg += '<div role="status" style="margin-top:9px;border:1px solid rgba(201,169,110,.35);border-radius:10px;padding:11px 13px;background:rgba(201,169,110,.07)"><strong style="font:600 13px \'Noto Serif TC\',serif;color:#e6cd9a">' + detailDef.sym + ' ' + detailDef.zh + '</strong><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.75;margin-top:4px">' + esc(planetPlacementText(detailDef, chart)) + '</div></div>';
+  } else if (/^house-\d+$/.test(state.astroDetail || '')) {
+    var hn = parseInt(state.astroDetail.split('-')[1],10);
+    svg += '<div role="status" style="margin-top:9px;border:1px solid rgba(201,169,110,.35);border-radius:10px;padding:11px 13px;background:rgba(201,169,110,.07)"><strong style="font:600 13px \'Noto Serif TC\',serif;color:#e6cd9a">第 ' + hn + ' 宮</strong><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.75;margin-top:4px">這個人生領域代表' + esc(HOUSE_MEANINGS[hn-1]) + '。</div></div>';
+  }
   return svg;
 }
 
@@ -3537,7 +3553,7 @@ function astroSaveProfile() {
   try {
     localStorage.setItem('tl_astro_profile', JSON.stringify({
       y: state.astroY, m: state.astroM, d: state.astroD, h: state.astroH, min: state.astroMin,
-      unknownTime: state.astroUnknownTime, cityIdx: state.astroCityIdx
+      unknownTime: state.astroUnknownTime, cityIdx: state.astroCityIdx, houseSystem: state.astroHouseSystem
     }));
   } catch (e) {}
 }
@@ -3548,12 +3564,13 @@ function astroLoadProfile() {
     state.astroY = sv.y; state.astroM = sv.m; state.astroD = sv.d;
     state.astroH = sv.h; state.astroMin = sv.min;
     state.astroUnknownTime = !!sv.unknownTime;
+    state.astroHouseSystem = sv.houseSystem || 'placidus';
     state.astroCityIdx = sv.cityIdx;
     var city = CITY_LIST[state.astroCityIdx];
     if (city && state.astroY && state.astroM && state.astroD) {
       var hh = state.astroUnknownTime ? 12 : (parseInt(state.astroH, 10) || 0);
       var mm = state.astroUnknownTime ? 0 : (parseInt(state.astroMin, 10) || 0);
-      state.astroResult = computeNatalChart(parseInt(state.astroY, 10), parseInt(state.astroM, 10), parseInt(state.astroD, 10), hh, mm, city.lat, city.lon, city.tz);
+      state.astroResult = computeNatalChart(parseInt(state.astroY, 10), parseInt(state.astroM, 10), parseInt(state.astroD, 10), hh, mm, city.lat, city.lon, city.tz, state.astroHouseSystem);
       state.astroCityUsed = city;
     }
   } catch (e) {}
@@ -3565,7 +3582,7 @@ function astroExportProfile() {
   var data = {
     type: 'mystic-deck-natal-profile', version: 1,
     y: state.astroY, m: state.astroM, d: state.astroD, h: state.astroH, min: state.astroMin,
-    unknownTime: state.astroUnknownTime,
+    unknownTime: state.astroUnknownTime, houseSystem: state.astroHouseSystem,
     cityZh: city ? city.zh : null, cityEn: city ? city.en : null,
   };
   try {
@@ -3595,6 +3612,7 @@ function astroImportProfileFile(fileInput) {
     state.astroY = data.y; state.astroM = data.m; state.astroD = data.d;
     state.astroH = data.h; state.astroMin = data.min;
     state.astroUnknownTime = !!data.unknownTime;
+    state.astroHouseSystem = data.houseSystem || 'placidus';
     state.astroCityIdx = cityIdx;
     if (cityIdx != null) {
       astroGenerate();
@@ -3610,7 +3628,7 @@ function astroForget() {
   try { localStorage.removeItem('tl_astro_profile'); } catch (e) {}
   state.astroY = ''; state.astroM = ''; state.astroD = ''; state.astroH = ''; state.astroMin = '';
   state.astroCityQuery = ''; state.astroCityIdx = null; state.astroCityUsed = null;
-  state.astroUnknownTime = false; state.astroResult = null;
+  state.astroUnknownTime = false; state.astroHouseSystem = 'placidus'; state.astroResult = null;
   render(); window.scrollTo(0, 0);
 }
 function astroGenerate() {
@@ -3625,7 +3643,7 @@ function astroGenerate() {
   setTimeout(function () {
     var hh = state.astroUnknownTime ? 12 : (parseInt(state.astroH, 10) || 0);
     var mm = state.astroUnknownTime ? 0 : (parseInt(state.astroMin, 10) || 0);
-    var chart = computeNatalChart(parseInt(state.astroY, 10), parseInt(state.astroM, 10), parseInt(state.astroD, 10), hh, mm, city.lat, city.lon, city.tz);
+    var chart = computeNatalChart(parseInt(state.astroY, 10), parseInt(state.astroM, 10), parseInt(state.astroD, 10), hh, mm, city.lat, city.lon, city.tz, state.astroHouseSystem);
     state.astroResult = chart;
     state.astroCityUsed = city;
     state.astroGenerating = false;
@@ -3683,7 +3701,7 @@ function synGenerate() {
   setTimeout(function () {
     var hh = state.synUnknownTime ? 12 : (parseInt(state.synH, 10) || 0);
     var mm = state.synUnknownTime ? 0 : (parseInt(state.synMin, 10) || 0);
-    state.synResult = computeNatalChart(parseInt(state.synY, 10), parseInt(state.synM, 10), parseInt(state.synD, 10), hh, mm, city.lat, city.lon, city.tz);
+    state.synResult = computeNatalChart(parseInt(state.synY, 10), parseInt(state.synM, 10), parseInt(state.synD, 10), hh, mm, city.lat, city.lon, city.tz, state.astroHouseSystem);
     state.synCityUsed = city;
     state.synGenerating = false;
     render();
@@ -3691,6 +3709,8 @@ function synGenerate() {
   }, 30);
 }
 function synReset() { state.synResult = null; render(); window.scrollTo(0, 0); }
+function synSetRelationship(k) { state.synRelationship = k; render(); }
+function synRelationshipLabel() { return ({love:'戀愛／伴侶',family:'親子／家人',friend:'朋友',work:'工作夥伴'})[state.synRelationship] || '戀愛／伴侶'; }
 
 /* 兩張星盤之間的交叉相位——合盤與推運都能共用這個比對邏輯 */
 var CROSS_ASPECT_ORB = { conjunction: 7, sextile: 4, square: 5, trine: 6, opposition: 7 };
@@ -3744,8 +3764,9 @@ function synastryCopyForAI() {
   var score = computeSynastryScore(aspects);
   var lines = [];
   lines.push('合盤資料 Synastry Data');
-  lines.push('本人：' + ZODIAC_SIGNS[chartA.ascSign].zh + '上升、' + ZODIAC_SIGNS[chartA.planets.Sun.sign].zh + '太陽、' + ZODIAC_SIGNS[chartA.planets.Moon.sign].zh + '月亮');
-  lines.push('對方：' + ZODIAC_SIGNS[chartB.ascSign].zh + '上升、' + ZODIAC_SIGNS[chartB.planets.Sun.sign].zh + '太陽、' + ZODIAC_SIGNS[chartB.planets.Moon.sign].zh + '月亮');
+  lines.push('關係類型：' + synRelationshipLabel());
+  lines.push('本人：' + (state.astroUnknownTime ? '出生時間未知、' : ZODIAC_SIGNS[chartA.ascSign].zh + '上升、') + ZODIAC_SIGNS[chartA.planets.Sun.sign].zh + '太陽、' + ZODIAC_SIGNS[chartA.planets.Moon.sign].zh + '月亮');
+  lines.push('對方：' + (state.synUnknownTime ? '出生時間未知、' : ZODIAC_SIGNS[chartB.ascSign].zh + '上升、') + ZODIAC_SIGNS[chartB.planets.Sun.sign].zh + '太陽、' + ZODIAC_SIGNS[chartB.planets.Moon.sign].zh + '月亮');
   lines.push('合盤相性指數：' + score + ' 分');
   lines.push('');
   lines.push('交叉相位 Cross-aspects：');
@@ -3755,7 +3776,7 @@ function synastryCopyForAI() {
     lines.push('- 本人' + aDef.zh + ' ' + ASPECT_DEFS[asp.type].zh + ' 對方' + bDef.zh + '（誤差 ' + asp.orb.toFixed(2) + '°）');
   });
   lines.push('');
-  lines.push('請根據以上兩人的合盤交叉相位，幫我分析這段關係的默契、吸引力與需要磨合的課題。');
+  lines.push('請根據以上兩人的合盤交叉相位，針對「' + synRelationshipLabel() + '」分析彼此的默契、互動優勢與需要磨合的課題。');
   var text = lines.join('\n');
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(synastryFlashCopied).catch(function () { fallbackCopy(text, synastryFlashCopied); });
@@ -3765,6 +3786,9 @@ function synastryCopyForAI() {
 }
 function renderSynastry() {
   var h = '<div style="font:600 16px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:6px;text-align:center">合盤 Synastry</div>';
+  h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:13px">這段關係的類型</div><div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:7px">';
+  [['love','戀愛／伴侶'],['family','親子／家人'],['friend','朋友'],['work','工作夥伴']].forEach(function(r){var on=state.synRelationship===r[0];h+='<button aria-pressed="'+on+'" onclick="synSetRelationship(\''+r[0]+'\')" style="background:'+(on?'rgba(201,169,110,.18)':'rgba(255,255,255,.02)')+';border:1px solid '+(on?'#c9a96e':'rgba(201,169,110,.3)')+';color:'+(on?'#f0e9d8':'rgba(240,233,216,.6)')+';padding:7px 11px;border-radius:15px;cursor:pointer">'+r[1]+'</button>';});
+  h += '</div>';
   if (!state.synResult) {
     h += renderBirthInputForm('syn', '輸入對方的出生資料，看看兩人的星盤如何互動——合盤會比對雙方的行星關係，適合用來理解一段感情或關係的默契與課題。', 'synGenerate');
     return h;
@@ -3772,15 +3796,15 @@ function renderSynastry() {
   var chartA = state.astroResult, chartB = state.synResult;
   var aspects = computeCrossChartAspects(chartA, chartB).sort(function (a, b) { return a.orb - b.orb; });
   var score = computeSynastryScore(aspects);
-  h += renderOverallScoreBlock(score, '合盤相性指數');
+  h += renderOverallScoreBlock(score, synRelationshipLabel() + '相性指數');
   h += '<div style="display:flex;gap:10px;margin-top:14px;text-align:center">';
-  h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">本人</div><div style="font:600 13px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + ZODIAC_SIGNS[chartA.ascSign].sym + ' ' + ZODIAC_SIGNS[chartA.ascSign].zh + '上升</div><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:2px">' + ZODIAC_SIGNS[chartA.planets.Sun.sign].zh + '太陽　' + ZODIAC_SIGNS[chartA.planets.Moon.sign].zh + '月亮</div></div>';
-  h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">對方</div><div style="font:600 13px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + ZODIAC_SIGNS[chartB.ascSign].sym + ' ' + ZODIAC_SIGNS[chartB.ascSign].zh + '上升</div><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:2px">' + ZODIAC_SIGNS[chartB.planets.Sun.sign].zh + '太陽　' + ZODIAC_SIGNS[chartB.planets.Moon.sign].zh + '月亮</div></div>';
+  h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">本人</div><div style="font:600 13px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + (state.astroUnknownTime ? '出生時間未知' : ZODIAC_SIGNS[chartA.ascSign].sym + ' ' + ZODIAC_SIGNS[chartA.ascSign].zh + '上升') + '</div><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:2px">' + ZODIAC_SIGNS[chartA.planets.Sun.sign].zh + '太陽　' + ZODIAC_SIGNS[chartA.planets.Moon.sign].zh + '月亮</div></div>';
+  h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">對方</div><div style="font:600 13px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + (state.synUnknownTime ? '出生時間未知' : ZODIAC_SIGNS[chartB.ascSign].sym + ' ' + ZODIAC_SIGNS[chartB.ascSign].zh + '上升') + '</div><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:2px">' + ZODIAC_SIGNS[chartB.planets.Sun.sign].zh + '太陽　' + ZODIAC_SIGNS[chartB.planets.Moon.sign].zh + '月亮</div></div>';
   h += '</div>';
 
   var harmonious = aspects.filter(function (a) { return a.type === 'trine' || a.type === 'sextile'; }).length;
   var challenging = aspects.filter(function (a) { return a.type === 'square' || a.type === 'opposition'; }).length;
-  var summaryTxt = '兩人之間共有 ' + aspects.length + ' 組緊密相位，其中 ' + harmonious + ' 組是和諧相位、' + challenging + ' 組是挑戰相位。' +
+  var summaryTxt = '這份「' + synRelationshipLabel() + '」合盤共有 ' + aspects.length + ' 組緊密相位，其中 ' + harmonious + ' 組是和諧相位、' + challenging + ' 組是挑戰相位。' +
     (score >= 72 ? '整體默契不錯，彼此的能量容易自然地互相支援。' : score <= 45 ? '相處上需要多一點耐心磨合，摩擦也是認識彼此的機會。' : '有順也有磨，是需要花時間慢慢培養默契的一段關係。');
   h += '<div style="margin-top:16px;border-top:1px solid rgba(201,169,110,.15);border-bottom:1px solid rgba(201,169,110,.15);padding:14px 0;font:400 13px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.8);line-height:1.9">' + esc(summaryTxt) + '</div>';
 
@@ -3819,13 +3843,13 @@ function renderProgression() {
   h += '<div style="font:600 12px \'Noto Sans TC\',sans-serif;color:#e6cd9a">推運在算什麼？</div>';
   h += '<div style="margin-top:8px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.9">推運用的是「一天等於一年」的技術：把你出生後第幾天的星象，拿來對應你現在活到的年紀。例如你現在 30 歲，看的就是你出生後第 30 天當下太陽、月亮、上升的位置。這不是在算「今天會發生什麼事」，而是描繪你目前所在的人生階段、內心正在慢慢展開、轉變的主題。</div>';
   h += '<div style="margin-top:10px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.9">跟本命星盤不一樣：本命星盤是你出生那一刻就固定下來、一輩子不會變的底層設定；推運則是這套設定隨著你長大，一路展開、演變出來的「現在階段限定版」。跟每日／週／月／年運勢也不一樣：那些看的是外在具體事件的短期起伏；推運看的是更緩慢、內在心理層面的長期發展節奏，通常要幾個月到幾年才會有明顯變化。</div>';
-  h += '<div style="margin-top:10px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.9">下面三張卡片怎麼看：推運月亮大約每 2–3 年換一個星座，代表你這段時間的情緒需求與安全感來源正在轉變；推運太陽通常要 28–30 年才換一次星座，一輩子只會遇到一兩次，是核心自我認同的重大轉型期；推運上升則反映你現在對外展現自己、給人第一印象的方式有沒有在改變。</div>';
+  h += '<div style="margin-top:10px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.9">推運月亮大約每 2–3 年換一個星座，代表情緒需求與安全感來源；推運太陽通常要 28–30 年才換一次星座，是核心自我認同的長期轉型。' + (state.astroUnknownTime ? '出生時間未知，因此不顯示推運上升。' : '推運上升則反映目前對外展現自己的方式。') + '</div>';
   h += '</div>';
 
   h += '<div style="display:flex;gap:10px;margin-top:16px;text-align:center">';
   h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">推運月亮</div><div style="font:600 15px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + moonSign.sym + ' ' + moonSign.zh + '</div><div style="font:400 10px \'EB Garamond\',serif;color:rgba(240,233,216,.4)">' + prog.planets.Moon.deg.toFixed(1) + '°</div></div>';
   h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">推運太陽</div><div style="font:600 15px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + sunSign.sym + ' ' + sunSign.zh + '</div><div style="font:400 10px \'EB Garamond\',serif;color:rgba(240,233,216,.4)">' + prog.planets.Sun.deg.toFixed(1) + '°</div></div>';
-  h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">推運上升</div><div style="font:600 15px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + ascSign.sym + ' ' + ascSign.zh + '</div><div style="font:400 10px \'EB Garamond\',serif;color:rgba(240,233,216,.4)">' + (prog.asc % 30).toFixed(1) + '°</div></div>';
+  if (!state.astroUnknownTime) h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">推運上升</div><div style="font:600 15px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + ascSign.sym + ' ' + ascSign.zh + '</div><div style="font:400 10px \'EB Garamond\',serif;color:rgba(240,233,216,.4)">' + (prog.asc % 30).toFixed(1) + '°</div></div>';
   h += '</div>';
 
   var moonTxt = '目前推運月亮落在' + moonSign.zh + '，這大約 2–3 年的階段，內在的情緒需求與安全感的來源傾向' + moonSign.trait + '，是這段時間的心境主旋律。';
@@ -3899,40 +3923,40 @@ function astroCopyForAI() {
   var lines = [];
   lines.push('個人本命星盤資料 Natal Chart Data');
   var birthStr = state.astroY + '/' + pad2(state.astroM) + '/' + pad2(state.astroD) + ' ' +
-    (state.astroUnknownTime ? '(出生時間未知，以正午估算)' : pad2(state.astroH) + ':' + pad2(state.astroMin));
+    (state.astroUnknownTime ? '(出生時間未知；無時間星盤)' : pad2(state.astroH) + ':' + pad2(state.astroMin));
   lines.push('出生：' + birthStr + '　地點：' + (state.astroCityUsed ? state.astroCityUsed.zh : ''));
-  lines.push('宮位制：普拉西德制 Placidus');
+  lines.push('宮位制：' + (state.astroHouseSystem === 'whole' ? '整宮制 Whole Sign' : '普拉西德制 Placidus'));
   lines.push('');
   lines.push('行星位置 Planet positions:');
   PLANET_DEFS.forEach(function (d) {
     var p = chart.planets[d.key];
     var sign = ZODIAC_SIGNS[p.sign];
-    lines.push('- ' + d.zh + '(' + d.key + ')：' + sign.zh + ' ' + p.deg.toFixed(2) + '°　第' + p.house + '宮' + (p.retro ? '　逆行 R' : ''));
+    lines.push('- ' + d.zh + '(' + d.key + ')：' + sign.zh + ' ' + p.deg.toFixed(2) + '°' + (state.astroUnknownTime ? '' : '　第' + p.house + '宮') + (p.retro ? '　逆行 R' : ''));
   });
   lines.push('');
   lines.push('額外本命點 Additional points:');
   EXTRA_POINT_DEFS.forEach(function (d) {
+    if (state.astroUnknownTime && (d.key === 'Fortune' || d.key === 'Vertex')) return;
     var p = chart.points[d.key];
     var sign = ZODIAC_SIGNS[p.sign];
-    lines.push('- ' + d.zh + '(' + d.key + ')：' + sign.zh + ' ' + p.deg.toFixed(2) + '°　第' + p.house + '宮' + (p.retro ? '　逆行 R' : ''));
+    lines.push('- ' + d.zh + '(' + d.key + ')：' + sign.zh + ' ' + p.deg.toFixed(2) + '°' + (state.astroUnknownTime ? '' : '　第' + p.house + '宮') + (p.retro ? '　逆行 R' : ''));
   });
   lines.push('');
-  lines.push('上升 ASC：' + ZODIAC_SIGNS[chart.ascSign].zh + ' ' + (chart.asc % 30).toFixed(2) + '°');
-  lines.push('天頂 MC：' + ZODIAC_SIGNS[Math.floor(chart.mc / 30)].zh + ' ' + (chart.mc % 30).toFixed(2) + '°');
-  lines.push('');
-  lines.push('宮位起點 House cusps:');
-  chart.houseCusps.forEach(function (cusp, i) {
-    var sign = ZODIAC_SIGNS[Math.floor(cusp / 30)];
-    lines.push('- 第' + (i + 1) + '宮：' + sign.zh + ' ' + (cusp % 30).toFixed(2) + '°');
-  });
+  if (!state.astroUnknownTime) {
+    lines.push('上升 ASC：' + ZODIAC_SIGNS[chart.ascSign].zh + ' ' + (chart.asc % 30).toFixed(2) + '°');
+    lines.push('天頂 MC：' + ZODIAC_SIGNS[Math.floor(chart.mc / 30)].zh + ' ' + (chart.mc % 30).toFixed(2) + '°');
+    lines.push(''); lines.push('宮位起點 House cusps:');
+    chart.houseCusps.forEach(function (cusp, i) { var sign = ZODIAC_SIGNS[Math.floor(cusp / 30)]; lines.push('- 第' + (i + 1) + '宮：' + sign.zh + ' ' + (cusp % 30).toFixed(2) + '°'); });
+  } else { lines.push('月亮當日可能範圍：' + astroMoonRangeText()); }
   var eq = computeElementQualityBalance(chart);
   lines.push('');
   lines.push('元素分布：火' + eq.elem['火'] + '　土' + eq.elem['土'] + '　風' + eq.elem['風'] + '　水' + eq.elem['水']);
   lines.push('性質分布：本位' + eq.qual['本位'] + '　固定' + eq.qual['固定'] + '　變動' + eq.qual['變動']);
-  if (chart.aspects.length) {
+  var usableAspects = astroUsableAspects(chart);
+  if (usableAspects.length) {
     lines.push('');
     lines.push('主要相位 Aspects:');
-    chart.aspects.slice().sort(function (a, b) { return a.orb - b.orb; }).forEach(function (asp) {
+    usableAspects.slice().sort(function (a, b) { return a.orb - b.orb; }).forEach(function (asp) {
       var aDef = findAnyPointDef(asp.a);
       var bDef = findAnyPointDef(asp.b);
       lines.push('- ' + aDef.zh + ' ' + ASPECT_DEFS[asp.type].zh + ' ' + bDef.zh + '（誤差 ' + asp.orb.toFixed(2) + '°）');
@@ -4334,6 +4358,7 @@ function renderOverallScoreBlock(overall, label) {
   var h = '<div style="text-align:center;margin-top:18px">';
   h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">' + label + '</div>';
   h += '<div style="font:700 44px \'Noto Serif TC\',serif;color:#e6cd9a;line-height:1.2">' + overall + '<span style="font:400 16px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">分</span></div>';
+  h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-top:4px">指標可信度：' + scoreConfidenceLabel() + '</div>';
   h += '</div>';
   return h;
 }
@@ -4508,7 +4533,7 @@ function buildPeriodSummary(periodKey, scores, topCatKey, weakCatKey, overall) {
 function renderPeriodDashboard(chart, transitPlanets, periodKey, periodCfg, now, city, rangeLabel) {
   var scores, returnChart = null, kindLabel = '', returnDateLabel = '';
 
-  if (periodKey === 'weekly') {
+  if (periodKey === 'weekly' || state.astroUnknownTime) {
     scores = computeCategoryScores(periodCfg, chart, transitPlanets);
   } else if (periodKey === 'monthly') {
     returnChart = findLunarReturnChart(chart, Astronomy.MakeTime(now), city.lat, city.lon);
@@ -4535,14 +4560,15 @@ function renderPeriodDashboard(chart, transitPlanets, periodKey, periodCfg, now,
 
   var bucketId;
   if (periodKey === 'weekly') { var wi = isoWeekInfo(now); bucketId = 'W' + wi.year + '-' + wi.week; }
-  else if (periodKey === 'monthly') { bucketId = 'M' + returnDateLabel; }
-  else { bucketId = 'Y' + returnDateLabel; }
+  else if (periodKey === 'monthly') { bucketId = 'M' + (returnDateLabel || rangeLabel); }
+  else { bucketId = 'Y' + (returnDateLabel || rangeLabel); }
   var rng = astroMulberry32(astroHashSeed(bucketId + '_' + Math.round(chart.asc * 100) + '_' + periodKey));
 
   var h = '';
   h += renderOverallScoreBlock(overall, overallLabel);
   h += renderCategoryScoreBars(scores);
   h += '<div style="margin-top:18px;border-top:1px solid rgba(201,169,110,.15);border-bottom:1px solid rgba(201,169,110,.15);padding:16px 0;font:400 13px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.8);line-height:1.9">' + esc(summaryText) + '</div>';
+  if (state.astroUnknownTime && periodKey !== 'weekly') h += '<div style="margin-top:10px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);line-height:1.7">無出生時間模式不使用回歸盤宮位，分數僅依行運與本命行星相位估算。</div>';
   if (returnChart) h += renderReturnHighlight(returnChart, kindLabel, returnDateLabel, topCatKey);
   h += '<div style="margin-top:18px">' + renderLuckyMini(rng) + '</div>';
 
@@ -4564,7 +4590,7 @@ function renderPeriodDashboard(chart, transitPlanets, periodKey, periodCfg, now,
   });
 
   var periodScoreBasis = {};
-  if (periodKey === 'weekly') {
+  if (periodKey === 'weekly' || !returnChart) {
     HOROSCOPE_SCORE_CATS.forEach(function (cat) { periodScoreBasis[cat.key] = astroCategoryAspectBasis(cat.key, periodCfg, chart, transitPlanets); });
   } else {
     var aspectCfgUsed = periodKey === 'monthly' ? LUNAR_RETURN_ASPECT_CFG : SOLAR_RETURN_ASPECT_CFG;
@@ -4682,10 +4708,11 @@ function horoCopyForAI() {
     fallbackCopy(text, horoFlashCopied);
   }
 }
+function astroSetReturnCity(v) { state.astroReturnCityIdx = v === '' ? null : parseInt(v,10); render(); }
 
 function renderHoroscope(periodKey) {
   var chart = state.astroResult;
-  var city = state.astroCityUsed || CITY_LIST[state.astroCityIdx];
+  var city = state.astroReturnCityIdx == null ? (state.astroCityUsed || CITY_LIST[state.astroCityIdx]) : CITY_LIST[state.astroReturnCityIdx];
   var periodCfg = HOROSCOPE_PERIODS[periodKey];
   var now = resolveHoroNow(periodKey);
   var transitPlanets = computeTransitPlanets(now);
@@ -4694,6 +4721,12 @@ function renderHoroscope(periodKey) {
   h += '<div style="font:600 16px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:14px;text-align:center">' + periodCfg.zh + '</div>';
   h += '<div style="font:400 11px \'EB Garamond\',serif;color:rgba(240,233,216,.4);text-align:center;margin-top:2px">' + rangeLabel + '</div>';
   h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);text-align:center;margin-top:8px;line-height:1.6">根據目前的行運與你的本命星盤比對而成，僅供參考</div>';
+  if (periodKey === 'monthly' || periodKey === 'yearly') {
+    h += '<label style="display:block;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);margin-top:13px">回歸盤所在地<select aria-label="回歸盤所在地" onchange="astroSetReturnCity(this.value)" style="width:100%;margin-top:6px;background:#1a1622;border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;color:#f0e9d8">';
+    h += '<option value="">使用出生地（' + esc((state.astroCityUsed || {}).zh || '') + '）</option>';
+    CITY_LIST.forEach(function(c,i){h += '<option value="' + i + '"' + (state.astroReturnCityIdx===i?' selected':'') + '>' + esc(c.zh) + ' / ' + esc(c.en) + '</option>';});
+    h += '</select></label><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:5px">若生日當天人在外地，可改選當時所在地；這會影響回歸盤的上升與宮位。</div>';
+  }
 
   if (periodKey === 'daily') {
     h += renderDailyDateStrip(now);
@@ -4714,6 +4747,50 @@ function renderHoroscope(periodKey) {
   return h;
 }
 
+function astroSetHouseSystem(k) {
+  state.astroHouseSystem = k;
+  if (state.astroResult && state.astroCityUsed) {
+    var hh = state.astroUnknownTime ? 12 : (parseInt(state.astroH, 10) || 0);
+    var mm = state.astroUnknownTime ? 0 : (parseInt(state.astroMin, 10) || 0);
+    state.astroResult = computeNatalChart(parseInt(state.astroY, 10), parseInt(state.astroM, 10), parseInt(state.astroD, 10), hh, mm, state.astroCityUsed.lat, state.astroCityUsed.lon, state.astroCityUsed.tz, k);
+    astroSaveProfile();
+  }
+  render();
+}
+function astroSelectDetail(k) { state.astroDetail = state.astroDetail === k ? null : k; render(); }
+function astroMoonRangeText() {
+  if (!state.astroUnknownTime || !state.astroCityUsed) return '';
+  var c = state.astroCityUsed;
+  var a = computeNatalChart(+state.astroY,+state.astroM,+state.astroD,0,0,c.lat,c.lon,c.tz,state.astroHouseSystem).planets.Moon;
+  var b = computeNatalChart(+state.astroY,+state.astroM,+state.astroD,23,59,c.lat,c.lon,c.tz,state.astroHouseSystem).planets.Moon;
+  return ZODIAC_SIGNS[a.sign].zh + ' ' + a.deg.toFixed(1) + '° ～ ' + ZODIAC_SIGNS[b.sign].zh + ' ' + b.deg.toFixed(1) + '°';
+}
+function renderAstroQuickSummary(chart) {
+  var sun = ZODIAC_SIGNS[chart.planets.Sun.sign], moon = ZODIAC_SIGNS[chart.planets.Moon.sign];
+  var eq = computeElementQualityBalance(chart);
+  var elems = ['火','土','風','水'];
+  var topElem = elems.reduce(function(a,b){return eq.elem[b]>eq.elem[a]?b:a;}, elems[0]);
+  var major = astroUsableAspects(chart).filter(function(a){return ASTRO_PLANET_BODY_KEYS.indexOf(a.a)>=0&&ASTRO_PLANET_BODY_KEYS.indexOf(a.b)>=0;}).sort(function(a,b){return a.orb-b.orb;}).slice(0,3);
+  var h = '<section style="margin-top:16px;border:1px solid rgba(201,169,110,.38);border-radius:12px;padding:15px 17px;background:rgba(201,169,110,.07)"><h3 style="font:600 14px \'Noto Serif TC\',serif;color:#e6cd9a;margin:0">三分鐘看懂你的星盤</h3>';
+  h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.82);line-height:1.85;margin-top:9px">你的核心自我帶有<strong>' + sun.zh + '</strong>的' + sun.trait + '；情緒需求偏向<strong>' + moon.zh + '</strong>的' + moon.trait + '。整體以<strong>' + topElem + '元素</strong>最突出。' + (state.astroUnknownTime ? '出生時間未知，因此本摘要不採用上升與宮位。' : '你給人的第一印象則帶有<strong>' + ZODIAC_SIGNS[chart.ascSign].zh + '上升</strong>的色彩。') + '</div>';
+  if (major.length) h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:10px">最重要的三個相位</div>' + major.map(function(a){return '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.68);line-height:1.7;margin-top:4px">• ' + esc(aspectPlacementText(a)) + '</div>';}).join('');
+  return h + '</section>';
+}
+
+function astroUsableAspects(chart) {
+  if (!state.astroUnknownTime) return chart.aspects || [];
+  return (chart.aspects || []).filter(function (a) {
+    return ['Moon', 'Fortune', 'Vertex'].indexOf(a.a) < 0 && ['Moon', 'Fortune', 'Vertex'].indexOf(a.b) < 0;
+  });
+}
+function scoreConfidenceLabel() { return state.astroUnknownTime ? '中低（出生時間未知，不採用宮位）' : '中等（占星指標，並非事件機率）'; }
+function renderAstroMethodology() {
+  var h='<section style="margin-top:16px;border:1px solid rgba(201,169,110,.3);border-radius:12px;padding:15px 17px;background:rgba(255,255,255,.02)"><h3 style="font:600 14px \'Noto Serif TC\',serif;color:#e6cd9a;margin:0">計算方式與限制</h3>';
+  var rows=[['天文位置','使用 Astronomy Engine 計算十大行星；凱龍星使用簡化軌道模型。'],['宮位','可選普拉西德制或整宮制；出生時間未知時不解讀上升、天頂、宮位、福點與宿命點。'],['相位容許度','合相／對分 8°、三分／四分 6°、六分 4°；依誤差由小到大排列。出生時間未知時，也會排除月亮、福點與宿命點相位。'],['交點與莉莉絲','採平均交點與平均莉莉絲算法。'],['運勢分數','依行運相位與回歸盤規則形成的本站指標，不是科學機率或事件保證。'],['隱私','出生資料只保存在你的瀏覽器，不會上傳伺服器。']];
+  rows.forEach(function(r){h+='<div style="margin-top:10px"><strong style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e">'+r[0]+'</strong><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.7);line-height:1.75;margin-top:2px">'+r[1]+'</div></div>';});
+  return h+'</section>';
+}
+
 function renderAstro() {
   var h = '<div style="padding:8px 20px 20px">';
   h += '<div style="font:400 11px \'EB Garamond\',serif;letter-spacing:.3em;color:#c9a96e;text-transform:uppercase;text-align:center">Natal Chart</div>';
@@ -4727,37 +4804,40 @@ function renderAstro() {
 
     h += '<div style="margin-top:22px;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">出生日期</div>';
     h += '<div style="display:flex;gap:8px;margin-top:6px">';
-    h += '<input type="number" placeholder="年 YYYY" value="' + esc(state.astroY) + '" oninput="state.astroY=this.value" onblur="render()" style="width:33%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
-    h += '<input type="number" placeholder="月 MM" value="' + esc(state.astroM) + '" oninput="state.astroM=this.value" onblur="render()" style="width:33%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
-    h += '<input type="number" placeholder="日 DD" value="' + esc(state.astroD) + '" oninput="state.astroD=this.value" onblur="render()" style="width:33%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+    h += '<input aria-label="出生年份" inputmode="numeric" min="1900" max="2100" type="number" placeholder="年 YYYY" value="' + esc(state.astroY) + '" oninput="state.astroY=this.value" onblur="render()" style="width:33%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+    h += '<input aria-label="出生月份" inputmode="numeric" min="1" max="12" type="number" placeholder="月 MM" value="' + esc(state.astroM) + '" oninput="state.astroM=this.value" onblur="render()" style="width:33%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+    h += '<input aria-label="出生日期" inputmode="numeric" min="1" max="31" type="number" placeholder="日 DD" value="' + esc(state.astroD) + '" oninput="state.astroD=this.value" onblur="render()" style="width:33%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
     h += '</div>';
     var astroBirthErr = validateBirthDate(state.astroY, state.astroM, state.astroD, state.astroH, state.astroMin, state.astroUnknownTime);
     if (astroBirthErr) h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:#d67878;margin-top:6px">⚠ ' + esc(astroBirthErr) + '</div>';
 
     h += '<div style="margin-top:16px;display:flex;justify-content:space-between;align-items:center">';
     h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">出生時間</div>';
-    h += '<label style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" ' + (state.astroUnknownTime ? 'checked' : '') + ' onchange="astroToggleUnknownTime()">不確定時間（以正午 12:00 估算）</label>';
+    h += '<label style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" ' + (state.astroUnknownTime ? 'checked' : '') + ' onchange="astroToggleUnknownTime()">不確定時間（產生無時間星盤）</label>';
     h += '</div>';
     if (!state.astroUnknownTime) {
       h += '<div style="display:flex;gap:8px;margin-top:6px">';
-      h += '<input type="number" placeholder="時 HH (0-23)" value="' + esc(state.astroH) + '" oninput="state.astroH=this.value" onblur="render()" style="width:50%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
-      h += '<input type="number" placeholder="分 MM" value="' + esc(state.astroMin) + '" oninput="state.astroMin=this.value" onblur="render()" style="width:50%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+      h += '<input aria-label="出生小時" inputmode="numeric" min="0" max="23" type="number" placeholder="時 HH (0-23)" value="' + esc(state.astroH) + '" oninput="state.astroH=this.value" onblur="render()" style="width:50%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+      h += '<input aria-label="出生分鐘" inputmode="numeric" min="0" max="59" type="number" placeholder="分 MM" value="' + esc(state.astroMin) + '" oninput="state.astroMin=this.value" onblur="render()" style="width:50%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
       h += '</div>';
       h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:5px">時間會影響上升星座與宮位，請盡量提供準確的出生時間</div>';
     }
+    h += '<div style="margin-top:16px;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">宮位制</div><div style="display:flex;gap:8px;margin-top:7px">';
+    [['placidus','普拉西德制 Placidus'],['whole','整宮制 Whole Sign']].forEach(function(r){var on=state.astroHouseSystem===r[0];h+='<button type="button" aria-pressed="'+on+'" onclick="astroSetHouseSystem(\''+r[0]+'\')" style="flex:1;background:'+(on?'rgba(201,169,110,.18)':'rgba(255,255,255,.02)')+';border:1px solid '+(on?'#c9a96e':'rgba(201,169,110,.3)')+';color:'+(on?'#f0e9d8':'rgba(240,233,216,.6)')+';padding:8px;border-radius:9px;cursor:pointer">'+r[1]+'</button>';});
+    h += '</div>';
 
     h += '<div style="margin-top:16px;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">出生地</div>';
-    h += '<input type="text" placeholder="搜尋城市，例如：台北、Tokyo" value="' + esc(state.astroCityQuery) + '" oninput="astroCityInput(this.value)" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+    h += '<input aria-label="搜尋出生城市" type="text" placeholder="搜尋城市，例如：台北、Tokyo" value="' + esc(state.astroCityQuery) + '" oninput="astroCityInput(this.value)" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
     h += '<div id="astro-city-live">' + renderCityLiveBlock('astro', 'astroGenerate') + '</div>';
 
   } else {
     var chart = state.astroResult;
 
-    var viewTabs = [['chart', '本命星盤'], ['daily', '每日'], ['weekly', '本週'], ['monthly', '本月'], ['yearly', '年度'], ['synastry', '合盤'], ['progression', '推運']];
+    var viewTabs = [['chart', '本命星盤'], ['daily', '每日'], ['weekly', '本週'], ['monthly', '本月'], ['yearly', '年度'], ['synastry', '合盤'], ['progression', '推運'], ['method', '計算方式']];
     h += '<div style="display:flex;gap:6px;margin-top:16px;flex-wrap:wrap;justify-content:center">';
     viewTabs.forEach(function (vt) {
       var on = (state.astroView || 'chart') === vt[0];
-      h += '<button onclick="astroSetView(\'' + vt[0] + '\')" style="font:500 11px \'Noto Sans TC\',sans-serif;background:' + (on ? 'rgba(201,169,110,.2)' : 'rgba(255,255,255,.03)') + ';border:1px solid ' + (on ? '#c9a96e' : 'rgba(201,169,110,.25)') + ';color:' + (on ? '#f0e9d8' : 'rgba(240,233,216,.55)') + ';padding:6px 13px;border-radius:14px;cursor:pointer">' + vt[1] + '</button>';
+      h += '<button aria-pressed="' + on + '" onclick="astroSetView(\'' + vt[0] + '\')" style="font:500 11px \'Noto Sans TC\',sans-serif;background:' + (on ? 'rgba(201,169,110,.2)' : 'rgba(255,255,255,.03)') + ';border:1px solid ' + (on ? '#c9a96e' : 'rgba(201,169,110,.25)') + ';color:' + (on ? '#f0e9d8' : 'rgba(240,233,216,.55)') + ';padding:6px 13px;border-radius:14px;cursor:pointer">' + vt[1] + '</button>';
     });
     h += '</div>';
     if (!state.astroTourDismissed) h += renderAstroTourCard();
@@ -4774,6 +4854,7 @@ function renderAstro() {
       h += '</div>';
       return h;
     }
+    if (state.astroView === 'method') { h += renderAstroMethodology(); h += '</div>'; return h; }
     if (state.astroView && state.astroView !== 'chart') {
       h += renderHoroscope(state.astroView);
       h += '</div>';
@@ -4782,18 +4863,23 @@ function renderAstro() {
 
     var ascSignDef = ZODIAC_SIGNS[chart.ascSign];
     var mcSignDef = ZODIAC_SIGNS[Math.floor(chart.mc / 30)];
-    h += '<div style="margin-top:16px">' + renderNatalWheel(chart) + '</div>';
+    if (!state.astroUnknownTime) h += '<div style="margin-top:16px">' + renderNatalWheel(chart) + '</div>';
+    else h += '<div style="margin-top:16px;padding:13px 15px;border:1px solid rgba(201,169,110,.3);border-radius:10px;background:rgba(201,169,110,.06);font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.8">這是無出生時間星盤：不顯示可能誤導的星盤輪盤、上升、天頂、宮位、福點與宿命點。月亮當日可能範圍：<strong style="color:#e6cd9a">' + esc(astroMoonRangeText()) + '</strong></div>';
 
+    if (!state.astroUnknownTime) {
     h += '<div style="display:flex;gap:10px;margin-top:10px;justify-content:center;text-align:center">';
     h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">上升星座 ASC</div><div style="font:600 15px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + ascSignDef.sym + ' ' + ascSignDef.zh + '</div><div style="font:400 10px \'EB Garamond\',serif;color:rgba(240,233,216,.4)">' + (chart.asc % 30).toFixed(1) + '°</div></div>';
     h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">天頂 MC</div><div style="font:600 15px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + mcSignDef.sym + ' ' + mcSignDef.zh + '</div><div style="font:400 10px \'EB Garamond\',serif;color:rgba(240,233,216,.4)">' + (chart.mc % 30).toFixed(1) + '°</div></div>';
     h += '</div>';
-    h += '<div style="text-align:center;margin-top:6px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.3)">宮位制：普拉西德制 Placidus</div>';
-
-    if (state.astroUnknownTime) {
-      h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-top:10px;text-align:center">＊出生時間未知，以正午估算——上升星座與宮位僅供參考</div>';
+    h += '<div style="text-align:center;margin-top:6px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.3)">宮位制：' + (state.astroHouseSystem === 'whole' ? '整宮制 Whole Sign' : '普拉西德制 Placidus') + '</div>';
+    h += '<div style="display:flex;justify-content:center;gap:7px;margin-top:8px"><button aria-pressed="' + (state.astroHouseSystem==='placidus') + '" onclick="astroSetHouseSystem(\'placidus\')" style="background:none;border:1px solid rgba(201,169,110,.3);color:#c9a96e;padding:5px 9px;border-radius:12px;cursor:pointer">普拉西德</button><button aria-pressed="' + (state.astroHouseSystem==='whole') + '" onclick="astroSetHouseSystem(\'whole\')" style="background:none;border:1px solid rgba(201,169,110,.3);color:#c9a96e;padding:5px 9px;border-radius:12px;cursor:pointer">整宮制</button></div>';
     }
 
+    if (state.astroUnknownTime) {
+      h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-top:10px;text-align:center">＊出生時間未知：行星度數以當日中點呈現，月亮請以上方範圍為準。</div>';
+    }
+
+    h += renderAstroQuickSummary(chart);
     h += renderElementQualitySummary(chart);
 
     h += '<div style="margin-top:22px;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase">行星落點 Placements</div>';
@@ -4803,7 +4889,7 @@ function renderAstro() {
       h += '<div style="border-top:1px solid rgba(201,169,110,.15);padding:12px 0">';
       h += '<div style="display:flex;justify-content:space-between;align-items:baseline">';
       h += '<span style="font:500 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + def.sym + ' ' + def.zh + '</span>';
-      h += '<span style="font:400 11px \'EB Garamond\',serif;color:#c9a96e">' + sign.sym + ' ' + sign.zh + ' ' + p.deg.toFixed(1) + '°　第' + p.house + '宮' + (p.retro ? '　℞' : '') + '</span>';
+      h += '<span style="font:400 11px \'EB Garamond\',serif;color:#c9a96e">' + sign.sym + ' ' + sign.zh + ' ' + p.deg.toFixed(1) + '°' + (state.astroUnknownTime ? '' : '　第' + p.house + '宮') + (p.retro ? '　℞' : '') + '</span>';
       h += '</div>';
       h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.7);margin-top:5px;line-height:1.7">' + esc(planetPlacementText(def, chart)) + '</div>';
       h += '</div>';
@@ -4811,23 +4897,25 @@ function renderAstro() {
 
     h += '<div style="margin-top:22px;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase">額外本命點 Additional Points</div>';
     EXTRA_POINT_DEFS.forEach(function (def) {
+      if (state.astroUnknownTime && (def.key === 'Fortune' || def.key === 'Vertex')) return;
       var p = chart.points[def.key];
       var sign = ZODIAC_SIGNS[p.sign];
       h += '<div style="border-top:1px solid rgba(201,169,110,.15);padding:12px 0">';
       h += '<div style="display:flex;justify-content:space-between;align-items:baseline">';
       h += '<span style="font:500 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + def.sym + ' ' + def.zh + '</span>';
-      h += '<span style="font:400 11px \'EB Garamond\',serif;color:#c9a96e">' + sign.sym + ' ' + sign.zh + ' ' + p.deg.toFixed(1) + '°　第' + p.house + '宮' + (p.retro ? '　℞' : '') + '</span>';
+      h += '<span style="font:400 11px \'EB Garamond\',serif;color:#c9a96e">' + sign.sym + ' ' + sign.zh + ' ' + p.deg.toFixed(1) + '°' + (state.astroUnknownTime ? '' : '　第' + p.house + '宮') + (p.retro ? '　℞' : '') + '</span>';
       h += '</div>';
       h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.7);margin-top:5px;line-height:1.7">' + esc(pointPlacementText(def, chart)) + '</div>';
       h += '</div>';
     });
     h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.3);margin-top:8px">＊凱龍星座標為簡化軌道模型估算，精度約在 0.2° 以內；莉莉絲／福點／交點採用平均點（mean）算法，屬主流占星軟體常見標準之一；出生地與時間的時區換算已自動套用當地歷史上的日光節約時間規則（例如台灣 1945–1961 年間、以及歐美許多地區實施夏令時的年份），不需要自行手動校正。</div>';
 
-    if (chart.aspects.length) {
+    var usableAspects = astroUsableAspects(chart);
+    if (usableAspects.length) {
       h += '<div style="margin-top:22px;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase">相位總表 Aspect Grid</div>';
       h += renderAspectGrid(chart);
       h += '<div style="margin-top:14px;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase">主要相位 Aspects</div>';
-      chart.aspects.sort(function (x, y) { return x.orb - y.orb; }).forEach(function (asp) {
+      usableAspects.slice().sort(function (x, y) { return x.orb - y.orb; }).forEach(function (asp) {
         h += '<div style="border-top:1px solid rgba(201,169,110,.15);padding:10px 0;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.7);line-height:1.7">' + esc(aspectPlacementText(asp)) + '</div>';
       });
     }
