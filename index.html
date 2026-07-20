@@ -385,7 +385,7 @@ var state = {
   astroHouseSystem: 'placidus', astroDetail: null, astroMethodOpen: false,
   astroReturnCityIdx: null, synRelationship: 'love',
   progYears: 1, progExpandedYear: 0, progOnlyTransitions: false,
-  horoDayAnchor: null, horoWeekOffset: 0, horoMonthOffset: 0, horoYearOffset: 0,
+  horoDayAnchor: null, horoWeekOffset: 0, horoMonthOffset: 0, horoYearOffset: 0, horoYearRange: 1,
   synY: '', synM: '', synD: '', synH: '', synMin: '', synGenerating: false,
   synCityQuery: '', synCityIdx: null, synCityUsed: null,
   synUnknownTime: false, synResult: null,
@@ -4706,6 +4706,44 @@ function astroSetHoroDay(iso) { var today = isoDateStr(new Date()); state.horoDa
 function astroSetHoroWeekOffset(v) { state.horoWeekOffset = v; render(); }
 function astroSetHoroMonthOffset(v) { state.horoMonthOffset = v; render(); }
 function astroSetHoroYearOffset(v) { state.horoYearOffset = v; render(); }
+function astroSetHoroYearRange(n) { state.horoYearRange = n; state.horoYearOffset = 0; render(); window.scrollTo(0, 0); }
+function astroSelectHoroYear(v) { state.horoYearOffset = v; render(); }
+
+function computeYearOverview(chart, city, offset) {
+  var today = new Date();
+  var now = new Date(today.getFullYear() + offset, today.getMonth(), today.getDate(), 12);
+  var transitPlanets = computeTransitPlanets(now), scores = {}, returnChart = null;
+  if (state.astroUnknownTime) {
+    scores = computeCategoryScores(HOROSCOPE_PERIODS.yearly, chart, transitPlanets);
+  } else {
+    returnChart = findSolarReturnChart(chart, Astronomy.MakeTime(now), city.lat, city.lon);
+    HOROSCOPE_SCORE_CATS.forEach(function (cat) { scores[cat.key] = astroReturnCategoryScore(cat.key, chart, returnChart, SOLAR_RETURN_ASPECT_CFG); });
+  }
+  var keys = HOROSCOPE_SCORE_CATS.map(function (c) { return c.key; });
+  var overall = Math.round(keys.reduce(function (sum, k) { return sum + scores[k]; }, 0) / keys.length);
+  var topKey = keys.reduce(function (a, b) { return scores[b] > scores[a] ? b : a; }, keys[0]);
+  var weakKey = keys.reduce(function (a, b) { return scores[b] < scores[a] ? b : a; }, keys[0]);
+  var topCat = HOROSCOPE_SCORE_CATS.find(function(c){return c.key===topKey;});
+  var weakCat = HOROSCOPE_SCORE_CATS.find(function(c){return c.key===weakKey;});
+  return { offset:offset, year:now.getFullYear(), now:now, transitPlanets:transitPlanets, scores:scores, overall:overall,
+    topKey:topKey, weakKey:weakKey, topZh:topCat.zh, weakZh:weakCat.zh, returnChart:returnChart,
+    summary:buildPeriodSummary('yearly', scores, topKey, weakKey, overall) };
+}
+function buildYearOverviewRows(chart, city, count) {
+  var rows = [];
+  for (var i = 0; i < count; i++) rows.push(computeYearOverview(chart, city, i));
+  return rows;
+}
+function renderYearOverviewCard(row) {
+  var selected = state.horoYearOffset === row.offset;
+  var h = '<button aria-pressed="'+selected+'" onclick="astroSelectHoroYear('+row.offset+')" style="display:block;width:100%;text-align:left;margin-top:9px;border:1px solid '+(selected?'#c9a96e':'rgba(201,169,110,.22)')+';border-radius:12px;padding:12px 13px;background:'+(selected?'rgba(201,169,110,.1)':'rgba(255,255,255,.02)')+';color:inherit;cursor:pointer">';
+  h += '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div style="font:600 17px \'Noto Serif TC\',serif;color:#e6cd9a">'+row.year+'</div><div style="font:700 22px \'Noto Serif TC\',serif;color:#f0e9d8">'+row.overall+'<span style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)"> 分</span></div></div>';
+  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:5px">較強：<span style="color:#e6cd9a">'+row.topZh+' '+row.scores[row.topKey]+'</span>　留意：'+row.weakZh+' '+row.scores[row.weakKey]+'</div>';
+  h += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-top:9px">';
+  HOROSCOPE_SCORE_CATS.forEach(function(cat){var col=CATEGORY_COLOR[cat.key];h+='<div title="'+cat.zh+' '+row.scores[cat.key]+'分" aria-label="'+cat.zh+' '+row.scores[cat.key]+'分" style="text-align:center"><div style="height:4px;border-radius:3px;background:linear-gradient(90deg,'+col[0]+' '+row.scores[cat.key]+'%,'+'rgba(255,255,255,.08) '+row.scores[cat.key]+'%)"></div><div style="font:400 8px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-top:3px">'+cat.zh.slice(0,1)+'</div></div>';});
+  h += '</div><div style="font:400 9px \'Noto Sans TC\',sans-serif;color:'+(selected?'#c9a96e':'rgba(240,233,216,.35)')+';margin-top:7px;text-align:right">'+(selected?'下方正在顯示此年完整解讀':'點擊查看完整解讀')+'</div></button>';
+  return h;
+}
 
 function renderDailyDateStrip(selected) {
   var todayIso = isoDateStr(new Date());
@@ -4743,15 +4781,34 @@ function horoFlashCopied() {
   clearTimeout(_horoCopyTimer);
   _horoCopyTimer = setTimeout(function () {
     var b = document.getElementById('horo-copy-btn');
-    if (b) b.textContent = '複製給 AI 解讀 Copy for AI';
+    if (b) b.textContent = state.astroView === 'yearly' && state.horoYearRange > 1 ? '複製未來 ' + state.horoYearRange + ' 年給 AI 解讀' : '複製給 AI 解讀 Copy for AI';
   }, 2000);
 }
 function horoCopyForAI() {
+  if (state.astroView === 'yearly' && state.horoYearRange > 1) {
+    var natal = state.astroResult;
+    var returnCity = state.astroReturnCityIdx == null ? (state.astroCityUsed || CITY_LIST[state.astroCityIdx]) : CITY_LIST[state.astroReturnCityIdx];
+    var yearRows = buildYearOverviewRows(natal, returnCity, state.horoYearRange);
+    var multi = ['【未來 ' + state.horoYearRange + ' 年年度運勢總覽】', '回歸盤所在地：' + returnCity.zh];
+    if (state.astroUnknownTime) multi.push('注意：出生時間未知，年度分數不使用回歸盤上升與宮位。');
+    yearRows.forEach(function(row){
+      multi.push(''); multi.push('【' + row.year + '】綜合 ' + row.overall + ' 分');
+      multi.push('最強領域：' + row.topZh + ' ' + row.scores[row.topKey] + ' 分；較需留意：' + row.weakZh + ' ' + row.scores[row.weakKey] + ' 分');
+      multi.push(HOROSCOPE_SCORE_CATS.map(function(cat){return cat.zh + ' ' + row.scores[cat.key];}).join('｜'));
+      multi.push('摘要：' + row.summary);
+      if (row.returnChart) { var rd=row.returnChart.time.date; multi.push('太陽回歸：'+rd.getFullYear()+'/'+pad2(rd.getMonth()+1)+'/'+pad2(rd.getDate())+'　上升'+ZODIAC_SIGNS[row.returnChart.ascSign].zh+'　天頂'+ZODIAC_SIGNS[row.returnChart.mcSign].zh); }
+    });
+    multi.push(''); multi.push('請比較這些年份的整體起伏、感情、事業、財運與內在發展，指出最適合主動推進及較適合保守調整的年份。分數是占星趨勢指標，不是事件發生機率。');
+    var multiText = multi.join('\n');
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(multiText).then(horoFlashCopied).catch(function(){fallbackCopy(multiText,horoFlashCopied);});
+    else fallbackCopy(multiText,horoFlashCopied);
+    return;
+  }
   var data = LAST_HORO[state.astroView];
   if (!data) return;
   var lines = [];
   lines.push('【' + data.periodLabel + '】' + data.dateRangeLabel);
-  lines.push('綜合分數：' + data.overall + ' 分（八大類別分數平均）');
+  lines.push('綜合分數：' + data.overall + ' 分（七大類別分數平均）');
   if (data.returnInfo) {
     lines.push(data.returnInfo.kindLabel + '　' + data.returnInfo.dateLabel + '　上升 ' + data.returnInfo.ascSign + '　天頂 ' + data.returnInfo.mcSign);
   }
@@ -4794,6 +4851,11 @@ function renderHoroscope(periodKey) {
   h += '<div style="font:600 16px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:14px;text-align:center">' + periodCfg.zh + '</div>';
   h += '<div style="font:400 11px \'EB Garamond\',serif;color:rgba(240,233,216,.4);text-align:center;margin-top:2px">' + rangeLabel + '</div>';
   h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);text-align:center;margin-top:8px;line-height:1.6">根據目前的行運與你的本命星盤比對而成，僅供參考</div>';
+  if (periodKey === 'yearly') {
+    h += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:14px">';
+    [1,3,5,10].forEach(function(n){var on=state.horoYearRange===n;h+='<button aria-pressed="'+on+'" onclick="astroSetHoroYearRange('+n+')" style="padding:8px 4px;border-radius:10px;border:1px solid '+(on?'#c9a96e':'rgba(201,169,110,.28)')+';background:'+(on?'rgba(201,169,110,.18)':'rgba(255,255,255,.02)')+';color:'+(on?'#f0e9d8':'rgba(240,233,216,.55)')+';font:500 11px \'Noto Sans TC\',sans-serif;cursor:pointer">'+n+' 年</button>';});
+    h += '</div>';
+  }
   if (periodKey === 'monthly' || periodKey === 'yearly') {
     h += '<label style="display:block;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);margin-top:13px">回歸盤所在地<select aria-label="回歸盤所在地" onchange="astroSetReturnCity(this.value)" style="width:100%;margin-top:6px;background:#1a1622;border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;color:#f0e9d8">';
     h += '<option value="">使用出生地（' + esc((state.astroCityUsed || {}).zh || '') + '）</option>';
@@ -4811,11 +4873,14 @@ function renderHoroscope(periodKey) {
     h += renderOffsetNav('上月', '本月', '下月', state.horoMonthOffset, 'astroSetHoroMonthOffset', rangeLabel);
     h += renderPeriodDashboard(chart, transitPlanets, periodKey, periodCfg, now, city, rangeLabel);
   } else {
-    h += renderOffsetNav('上一年', '本年', '下一年', state.horoYearOffset, 'astroSetHoroYearOffset', rangeLabel);
+    var yearRows = buildYearOverviewRows(chart, city, state.horoYearRange || 1);
+    h += '<div style="margin-top:16px;font:500 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55)">未來 ' + state.horoYearRange + ' 年比較</div>';
+    yearRows.forEach(function(row){h += renderYearOverviewCard(row);});
+    h += '<div style="margin-top:20px;border-top:1px solid rgba(201,169,110,.2);padding-top:16px;text-align:center;font:600 13px \'Noto Serif TC\',serif;color:#e6cd9a">' + rangeLabel + '完整解讀</div>';
     h += renderPeriodDashboard(chart, transitPlanets, periodKey, periodCfg, now, city, rangeLabel);
   }
 
-  h += '<button id="horo-copy-btn" onclick="horoCopyForAI()" style="width:100%;margin-top:22px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製給 AI 解讀 Copy for AI</button>';
+  h += '<button id="horo-copy-btn" onclick="horoCopyForAI()" style="width:100%;margin-top:22px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">' + (periodKey === 'yearly' && state.horoYearRange > 1 ? '複製未來 ' + state.horoYearRange + ' 年給 AI 解讀' : '複製給 AI 解讀 Copy for AI') + '</button>';
   h += '<button onclick="astroSetView(\'chart\')" style="width:100%;margin-top:10px;padding:12px;border-radius:12px;border:1px solid rgba(201,169,110,.3);background:rgba(255,255,255,.02);color:rgba(240,233,216,.6);font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">← 回到本命星盤</button>';
   return h;
 }
