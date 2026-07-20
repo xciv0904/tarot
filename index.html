@@ -1515,7 +1515,7 @@ function renderAbout() {
     h += sec('關於本站', '免費的線上塔羅與雷諾曼占卜工具，包含十三種牌陣、完整牌義典藏與牌義學習系統。');
     h += sec('娛樂性質聲明', '占卜結果由固定牌義與程式邏輯組合而成，僅供娛樂與自我反思參考，不構成任何醫療、法律、財務或心理專業建議。重大決定請諮詢專業人士。');
     h += sec('隱私', '本站沒有伺服器、不收集任何個人資料。你的抽牌歷史、學習進度、以及星盤功能使用的出生日期／時間／地點，全部只儲存在你自己裝置的瀏覽器裡，不會上傳或傳送到任何地方。清除瀏覽器資料或按下方按鈕即可完全刪除。（若使用「複製給 AI 解讀」功能，貼到外部 AI 工具後，資料就會離開本站，請自行留意。）');
-    h += sec('牌圖版權', '塔羅牌面採用 1909 年出版的 Rider–Waite–Smith 牌（Pamela Colman Smith 繪），已屬公有領域（Public Domain）。');
+    h += sec('牌圖版權', '塔羅牌面採用 1909 年出版的 Rider–Waite–Smith 牌（Pamela Colman Smith 繪），已屬公有領域（Public Domain）。雷諾曼牌面則是本站依據傳統 36 張雷諾曼牌的經典象徵（如騎士、房子、心等）重新繪製的原創插畫，非取自任何現有商業牌卡。');
     h += '<div style="text-align:center;margin-top:14px"><button onclick="clearAllData()" style="background:none;border:1px solid rgba(217,155,95,.5);color:#d99b5f;font:400 11px \'Noto Sans TC\',sans-serif;padding:7px 18px;border-radius:14px;cursor:pointer">清除我的所有紀錄</button></div>';
     h += '</div>';
   }
@@ -2528,6 +2528,59 @@ function fmtDate(iso) {
 function histOpen(i) { state.histSelected = i; render(); window.scrollTo(0, 0); }
 function histClose() { state.histSelected = null; render(); }
 
+var _histCopyTimer = null;
+function historyFlashCopied() {
+  var btn = document.getElementById('hist-copy-btn');
+  if (btn) btn.textContent = '已複製！Copied';
+  clearTimeout(_histCopyTimer);
+  _histCopyTimer = setTimeout(function () {
+    var b = document.getElementById('hist-copy-btn');
+    if (b) b.textContent = '複製給 AI 解讀 Copy for AI';
+  }, 2000);
+}
+function historyCopyForAI() {
+  if (state.histSelected === null || !state.history[state.histSelected]) return;
+  var e = state.history[state.histSelected];
+  var dt = e.detail;
+  var lines = [];
+  lines.push('占卜紀錄回顧 Past Reading');
+  lines.push('類型：' + e.typeLabel + ' · ' + e.spreadLabel + (e.categoryLabel ? ' · ' + e.categoryLabel : ''));
+  lines.push('時間：' + fmtDate(e.date));
+  if (e.target) lines.push('對象：' + e.target);
+  if (e.question) lines.push('問題：' + e.question);
+  lines.push('');
+  if (dt) {
+    if (dt.cards && dt.cards.length) {
+      lines.push('抽到的牌：');
+      dt.cards.forEach(function (cd) {
+        lines.push('- ' + cd.pos + '：' + cd.name + ' ' + cd.nameEn + (cd.rev !== null && cd.rev !== undefined ? (cd.rev ? '（逆位）' : '（正位）') : '') + (cd.text ? '——' + cd.text : ''));
+      });
+      lines.push('');
+    }
+    if (dt.pairs && dt.pairs.length) {
+      lines.push('組牌解讀：');
+      dt.pairs.forEach(function (pr) { lines.push('- ' + pr.label + '：' + pr.text); });
+      lines.push('');
+    }
+    if (dt.analysis && dt.analysis.length) {
+      lines.push('牌陣分析：');
+      dt.analysis.forEach(function (t) { lines.push('- ' + t); });
+      lines.push('');
+    }
+    if (dt.overall) { lines.push('綜合解讀：' + dt.overall); lines.push(''); }
+  } else if (e.summary) {
+    lines.push('摘要：' + e.summary);
+    lines.push('');
+  }
+  lines.push('請根據以上這次占卜紀錄，幫我重新解讀一次，並補充我當初可能沒注意到的細節或提醒。');
+  var text = lines.join('\n');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(historyFlashCopied).catch(function () { fallbackCopy(text, historyFlashCopied); });
+  } else {
+    fallbackCopy(text, historyFlashCopied);
+  }
+}
+
 function renderHistory() {
   var h = '';
   h += '<div style="padding:0 20px">';
@@ -2583,6 +2636,7 @@ function renderHistory() {
     } else {
       h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.6);margin-top:18px;line-height:1.8;text-align:center">' + esc(e.summary) + '<br><span style="color:rgba(240,233,216,.35);font-size:11px">（此為舊格式紀錄，僅保留摘要）</span></div>';
     }
+    h += '<button id="hist-copy-btn" onclick="historyCopyForAI()" style="width:100%;margin-top:22px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製給 AI 解讀 Copy for AI</button>';
     h += '</div></div>';
     return h;
   }
