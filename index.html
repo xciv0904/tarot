@@ -3512,7 +3512,14 @@ function renderProgression() {
   var ascSign = ZODIAC_SIGNS[prog.ascSign];
 
   var h = '<div style="font:600 16px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:6px;text-align:center">二次推運 Secondary Progression</div>';
-  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);text-align:center;margin-top:6px;line-height:1.6">採用「一天等於一年」的推運技術，反映的是內在心境隨年齡展開的變化節奏，與每日／回歸盤的短期行運互補。</div>';
+  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);text-align:center;margin-top:6px;line-height:1.6">你現在的內在心境，走到了人生的哪一階段</div>';
+
+  h += '<div style="margin-top:14px;border:1px solid rgba(201,169,110,.25);border-radius:12px;padding:14px 16px;background:rgba(255,255,255,.02)">';
+  h += '<div style="font:600 12px \'Noto Sans TC\',sans-serif;color:#e6cd9a">推運在算什麼？</div>';
+  h += '<div style="margin-top:8px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.9">推運用的是「一天等於一年」的技術：把你出生後第幾天的星象，拿來對應你現在活到的年紀。例如你現在 30 歲，看的就是你出生後第 30 天當下太陽、月亮、上升的位置。這不是在算「今天會發生什麼事」，而是描繪你目前所在的人生階段、內心正在慢慢展開、轉變的主題。</div>';
+  h += '<div style="margin-top:10px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.9">跟本命星盤不一樣：本命星盤是你出生那一刻就固定下來、一輩子不會變的底層設定；推運則是這套設定隨著你長大，一路展開、演變出來的「現在階段限定版」。跟每日／週／月／年運勢也不一樣：那些看的是外在具體事件的短期起伏；推運看的是更緩慢、內在心理層面的長期發展節奏，通常要幾個月到幾年才會有明顯變化。</div>';
+  h += '<div style="margin-top:10px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.9">下面三張卡片怎麼看：推運月亮大約每 2–3 年換一個星座，代表你這段時間的情緒需求與安全感來源正在轉變；推運太陽通常要 28–30 年才換一次星座，一輩子只會遇到一兩次，是核心自我認同的重大轉型期；推運上升則反映你現在對外展現自己、給人第一印象的方式有沒有在改變。</div>';
+  h += '</div>';
 
   h += '<div style="display:flex;gap:10px;margin-top:16px;text-align:center">';
   h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">推運月亮</div><div style="font:600 15px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + moonSign.sym + ' ' + moonSign.zh + '</div><div style="font:400 10px \'EB Garamond\',serif;color:rgba(240,233,216,.4)">' + prog.planets.Moon.deg.toFixed(1) + '°</div></div>';
