@@ -3652,7 +3652,12 @@ function astroGenerate() {
     window.scrollTo(0, 0);
   }, 30);
 }
-function astroReset() { state.astroResult = null; render(); window.scrollTo(0, 0); }
+function astroReset() {
+  state.astroResult = null;
+  state.astroHouseSystem = 'placidus';
+  render();
+  window.scrollTo(0, 0);
+}
 
 /* ================= 通用出生資料輸入表單（供合盤等第二人使用） ================= */
 function renderBirthInputForm(prefix, promptText, genFnName) {
@@ -4822,10 +4827,6 @@ function renderAstro() {
       h += '</div>';
       h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:5px">時間會影響上升星座與宮位，請盡量提供準確的出生時間</div>';
     }
-    h += '<div style="margin-top:16px;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">宮位制</div><div style="display:flex;gap:8px;margin-top:7px">';
-    [['placidus','普拉西德制 Placidus'],['whole','整宮制 Whole Sign']].forEach(function(r){var on=state.astroHouseSystem===r[0];h+='<button type="button" aria-pressed="'+on+'" onclick="astroSetHouseSystem(\''+r[0]+'\')" style="flex:1;background:'+(on?'rgba(201,169,110,.18)':'rgba(255,255,255,.02)')+';border:1px solid '+(on?'#c9a96e':'rgba(201,169,110,.3)')+';color:'+(on?'#f0e9d8':'rgba(240,233,216,.6)')+';padding:8px;border-radius:9px;cursor:pointer">'+r[1]+'</button>';});
-    h += '</div>';
-
     h += '<div style="margin-top:16px;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">出生地</div>';
     h += '<input aria-label="搜尋出生城市" type="text" placeholder="搜尋城市，例如：台北、Tokyo" value="' + esc(state.astroCityQuery) + '" oninput="astroCityInput(this.value)" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
     h += '<div id="astro-city-live">' + renderCityLiveBlock('astro', 'astroGenerate') + '</div>';
