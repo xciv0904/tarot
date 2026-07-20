@@ -384,6 +384,7 @@ var state = {
   astroUnknownTime: false, astroResult: null, astroView: 'chart', astroGenerating: false, astroTourDismissed: false,
   astroHouseSystem: 'placidus', astroDetail: null, astroMethodOpen: false,
   astroReturnCityIdx: null, synRelationship: 'love',
+  progYears: 1, progExpandedYear: 0, progOnlyTransitions: false,
   horoDayAnchor: null, horoWeekOffset: 0, horoMonthOffset: 0, horoYearOffset: 0,
   synY: '', synM: '', synD: '', synH: '', synMin: '', synGenerating: false,
   synCityQuery: '', synCityIdx: null, synCityUsed: null,
@@ -3824,56 +3825,119 @@ function renderSynastry() {
 }
 
 /* ================= 二次推運 Secondary Progression ================= */
-function computeProgressedChart(natalChart, city) {
-  var elapsedDays = (Date.now() - natalChart.utcDate.getTime()) / 86400000;
+function computeProgressedChart(natalChart, city, targetDate) {
+  targetDate = targetDate || new Date();
+  var elapsedDays = (targetDate.getTime() - natalChart.utcDate.getTime()) / 86400000;
   var elapsedYears = elapsedDays / 365.2422;
   var progTime = Astronomy.MakeTime(natalChart.utcDate).AddDays(elapsedYears);
   var chart = computeReturnChart(progTime, city.lat, city.lon, natalChart);
   chart.ageYears = elapsedYears;
+  chart.targetDate = targetDate;
   return chart;
+}
+function progressionAspects(natal, prog) {
+  return computeCrossChartAspects(natal, prog).filter(function (a) {
+    if (state.astroUnknownTime && (a.aKey === 'Moon' || a.bKey === 'Moon')) return false;
+    return ['Sun', 'Moon', 'Venus', 'Mars', 'Mercury'].indexOf(a.bKey) >= 0;
+  }).sort(function (a, b) { return a.orb - b.orb; });
+}
+function progressionAddYears(date, years) {
+  var d = new Date(date.getTime());
+  d.setFullYear(d.getFullYear() + years);
+  return d;
+}
+function buildProgressionYears(natal, city, count) {
+  var base = new Date(), rows = [];
+  for (var i = 0; i < count; i++) {
+    var startDate = progressionAddYears(base, i);
+    var endDate = progressionAddYears(base, i + 1);
+    var prog = computeProgressedChart(natal, city, startDate);
+    var endProg = computeProgressedChart(natal, city, endDate);
+    var aspects = progressionAspects(natal, prog);
+    var moonChanged = prog.planets.Moon.sign !== endProg.planets.Moon.sign;
+    var sunChanged = prog.planets.Sun.sign !== endProg.planets.Sun.sign;
+    var tight = aspects.some(function (a) { return a.orb <= 0.5 && (a.bKey === 'Sun' || a.bKey === 'Venus'); });
+    var focusMap = { Sun:'自我定位', Moon:'內在感受', Mercury:'思考溝通', Venus:'關係價值', Mars:'行動方向' };
+    var focuses = [];
+    aspects.slice(0, 5).forEach(function (a) { var f = focusMap[a.bKey]; if (f && focuses.indexOf(f) < 0) focuses.push(f); });
+    var moonSign = ZODIAC_SIGNS[prog.planets.Moon.sign];
+    var theme = moonSign.zh + '式的內在整理：' + moonSign.trait;
+    if (sunChanged) theme = '核心自我進入新的長期階段';
+    else if (moonChanged) theme = '情緒需求與安全感來源正在換檔';
+    rows.push({ index:i, year:startDate.getFullYear(), startDate:startDate, endDate:endDate, prog:prog, endProg:endProg,
+      aspects:aspects, moonChanged:moonChanged, sunChanged:sunChanged, isTransition:moonChanged || sunChanged || tight,
+      focuses:focuses.slice(0, 3), theme:theme });
+  }
+  return rows;
+}
+function progressionAddMonths(date, months) {
+  var first = new Date(date.getFullYear(), date.getMonth() + months, 1, date.getHours(), date.getMinutes(), date.getSeconds());
+  var lastDay = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+  first.setDate(Math.min(date.getDate(), lastDay));
+  return first;
+}
+function renderProgressionMonths(natal, city) {
+  var base = new Date(), charts = [], h = '<div style="margin-top:16px;font:500 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55)">未來 12 個月節奏</div><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:9px">';
+  for (var i = 0; i <= 12; i++) charts.push(computeProgressedChart(natal, city, progressionAddMonths(base, i)));
+  for (var m = 0; m < 12; m++) {
+    var d = progressionAddMonths(base, m), p = charts[m], next = charts[m + 1];
+    var moon = ZODIAC_SIGNS[p.planets.Moon.sign], moonShift = p.planets.Moon.sign !== next.planets.Moon.sign;
+    var aspects = progressionAspects(natal, p), top = aspects[0];
+    h += '<div style="border:1px solid '+(moonShift?'rgba(230,205,154,.5)':'rgba(201,169,110,.18)')+';border-radius:9px;padding:8px 9px;background:rgba(255,255,255,.018)"><div style="display:flex;justify-content:space-between;gap:5px"><span style="font:600 11px \'Noto Sans TC\',sans-serif;color:#e6cd9a">'+d.getFullYear()+'/'+pad2(d.getMonth()+1)+'</span>'+(moonShift?'<span style="font:500 8px \'Noto Sans TC\',sans-serif;color:#211b15;background:#e6cd9a;border-radius:8px;padding:2px 5px">換座</span>':'')+'</div><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:4px">☽ '+moon.zh+' '+p.planets.Moon.deg.toFixed(1)+'°</div>'+(top?'<div style="font:400 9px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-top:4px;line-height:1.45">'+esc(crossAspectText(top,'本命','推運').split('：')[0])+'</div>':'')+'</div>';
+  }
+  return h + '</div>';
+}
+function progSetYears(n) { state.progYears = n; state.progExpandedYear = 0; state.progOnlyTransitions = false; render(); window.scrollTo(0, 0); }
+function progToggleYear(i) { state.progExpandedYear = state.progExpandedYear === i ? null : i; render(); }
+function progToggleTransitions() { state.progOnlyTransitions = !state.progOnlyTransitions; render(); }
+function renderProgressionYearCard(row, natal) {
+  var p = row.prog, moon = ZODIAC_SIGNS[p.planets.Moon.sign], sun = ZODIAC_SIGNS[p.planets.Sun.sign];
+  var open = state.progExpandedYear === row.index;
+  var h = '<article style="margin-top:10px;border:1px solid ' + (row.isTransition ? 'rgba(230,205,154,.55)' : 'rgba(201,169,110,.22)') + ';border-radius:12px;background:rgba(255,255,255,.02);overflow:hidden">';
+  h += '<button aria-expanded="' + open + '" onclick="progToggleYear(' + row.index + ')" style="display:block;width:100%;text-align:left;background:none;border:0;color:inherit;padding:13px 14px;cursor:pointer">';
+  h += '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div style="font:600 17px \'Noto Serif TC\',serif;color:#e6cd9a">' + row.year + '</div><div style="display:flex;gap:6px;align-items:center">' + (row.isTransition ? '<span style="font:600 10px \'Noto Sans TC\',sans-serif;color:#211b15;background:#e6cd9a;border-radius:10px;padding:3px 7px">轉折年</span>' : '') + '<span style="font:400 15px sans-serif;color:rgba(240,233,216,.45)">' + (open ? '−' : '＋') + '</span></div></div>';
+  h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.82);margin-top:5px;line-height:1.65">' + esc(row.theme) + '</div>';
+  h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"><span style="font:400 10px \'Noto Sans TC\',sans-serif;color:#c9a96e">☽ ' + moon.zh + '</span><span style="font:400 10px \'Noto Sans TC\',sans-serif;color:#c9a96e">☉ ' + sun.zh + '</span>' + row.focuses.map(function(f){return '<span style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);border:1px solid rgba(201,169,110,.2);border-radius:10px;padding:2px 6px">'+f+'</span>';}).join('') + '</div>';
+  if (row.aspects.length) h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);margin-top:8px;line-height:1.6">重點：' + esc(crossAspectText(row.aspects[0], '本命', '推運').split('：')[0]) + '</div>';
+  h += '</button>';
+  if (open) {
+    h += '<div style="border-top:1px solid rgba(201,169,110,.15);padding:12px 14px">';
+    h += '<div style="display:flex;gap:8px;text-align:center"><div style="flex:1;border:1px solid rgba(201,169,110,.18);border-radius:9px;padding:8px"><div style="font:400 9px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4)">推運月亮</div><div style="font:600 12px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:2px">' + moon.sym + moon.zh + ' ' + p.planets.Moon.deg.toFixed(1) + '°</div></div><div style="flex:1;border:1px solid rgba(201,169,110,.18);border-radius:9px;padding:8px"><div style="font:400 9px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4)">推運太陽</div><div style="font:600 12px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:2px">' + sun.sym + sun.zh + ' ' + p.planets.Sun.deg.toFixed(1) + '°</div></div></div>';
+    if (row.moonChanged || row.sunChanged) h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:#e6cd9a;margin-top:10px;line-height:1.7">' + (row.moonChanged ? '• 這一年推運月亮將換座，內在需求會出現階段轉換。<br>' : '') + (row.sunChanged ? '• 這一年推運太陽將換座，是較少見的長期自我轉型。' : '') + '</div>';
+    row.aspects.slice(0, 6).forEach(function (a) { h += '<div style="border-top:1px solid rgba(201,169,110,.12);padding:8px 0;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.7);line-height:1.65">' + esc(crossAspectText(a, '本命', '推運')) + '</div>'; });
+    if (!row.aspects.length) h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);line-height:1.7">這一年沒有容許度內特別緊密的主要相位，適合延續既有節奏。</div>';
+    h += '</div>';
+  }
+  return h + '</article>';
 }
 function renderProgression() {
   var chart = state.astroResult;
   var city = state.astroCityUsed || CITY_LIST[state.astroCityIdx];
-  var prog = computeProgressedChart(chart, city);
-  var moonSign = ZODIAC_SIGNS[prog.planets.Moon.sign];
-  var sunSign = ZODIAC_SIGNS[prog.planets.Sun.sign];
-  var natalSunSign = ZODIAC_SIGNS[chart.planets.Sun.sign];
-  var ascSign = ZODIAC_SIGNS[prog.ascSign];
+  var years = buildProgressionYears(chart, city, state.progYears || 1);
 
   var h = '<div style="font:600 16px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:6px;text-align:center">二次推運 Secondary Progression</div>';
-  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);text-align:center;margin-top:6px;line-height:1.6">你現在的內在心境，走到了人生的哪一階段</div>';
+  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);text-align:center;margin-top:6px;line-height:1.6">從現在開始，看見未來不同年份的內在發展節奏</div>';
 
-  h += '<div style="margin-top:14px;border:1px solid rgba(201,169,110,.25);border-radius:12px;padding:14px 16px;background:rgba(255,255,255,.02)">';
-  h += '<div style="font:600 12px \'Noto Sans TC\',sans-serif;color:#e6cd9a">推運在算什麼？</div>';
+  h += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:14px">';
+  [1,3,5,10].forEach(function(n){var on=state.progYears===n;h+='<button aria-pressed="'+on+'" onclick="progSetYears('+n+')" style="padding:8px 4px;border-radius:10px;border:1px solid '+(on?'#c9a96e':'rgba(201,169,110,.28)')+';background:'+(on?'rgba(201,169,110,.18)':'rgba(255,255,255,.02)')+';color:'+(on?'#f0e9d8':'rgba(240,233,216,.55)')+';font:500 11px \'Noto Sans TC\',sans-serif;cursor:pointer">'+n+' 年</button>';});
+  h += '</div>';
+
+  h += '<details style="margin-top:12px;border:1px solid rgba(201,169,110,.2);border-radius:12px;padding:11px 14px;background:rgba(255,255,255,.02)">';
+  h += '<summary style="font:600 12px \'Noto Sans TC\',sans-serif;color:#e6cd9a;cursor:pointer">推運在算什麼？</summary>';
   h += '<div style="margin-top:8px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.9">推運用的是「一天等於一年」的技術：把你出生後第幾天的星象，拿來對應你現在活到的年紀。例如你現在 30 歲，看的就是你出生後第 30 天當下太陽、月亮、上升的位置。這不是在算「今天會發生什麼事」，而是描繪你目前所在的人生階段、內心正在慢慢展開、轉變的主題。</div>';
-  h += '<div style="margin-top:10px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.9">跟本命星盤不一樣：本命星盤是你出生那一刻就固定下來、一輩子不會變的底層設定；推運則是這套設定隨著你長大，一路展開、演變出來的「現在階段限定版」。跟每日／週／月／年運勢也不一樣：那些看的是外在具體事件的短期起伏；推運看的是更緩慢、內在心理層面的長期發展節奏，通常要幾個月到幾年才會有明顯變化。</div>';
   h += '<div style="margin-top:10px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.9">推運月亮大約每 2–3 年換一個星座，代表情緒需求與安全感來源；推運太陽通常要 28–30 年才換一次星座，是核心自我認同的長期轉型。' + (state.astroUnknownTime ? '出生時間未知，因此不顯示推運上升。' : '推運上升則反映目前對外展現自己的方式。') + '</div>';
+  h += '</details>';
+
+  var visible = state.progOnlyTransitions ? years.filter(function(y){return y.isTransition;}) : years;
+  h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px"><div style="font:500 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55)">未來 ' + state.progYears + ' 年趨勢</div>';
+  if (state.progYears > 1) h += '<button aria-pressed="'+state.progOnlyTransitions+'" onclick="progToggleTransitions()" style="background:none;border:1px solid rgba(201,169,110,.3);border-radius:12px;padding:5px 9px;color:#c9a96e;font:400 10px \'Noto Sans TC\',sans-serif;cursor:pointer">'+(state.progOnlyTransitions?'顯示全部年份':'只看轉折年')+'</button>';
   h += '</div>';
+  if (!visible.length) h += '<div style="margin-top:12px;border:1px dashed rgba(201,169,110,.25);border-radius:12px;padding:16px;text-align:center;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">這個範圍內沒有被標記的明顯轉折年，可以切回「顯示全部年份」查看穩定發展期。</div>';
+  visible.forEach(function(row){h += renderProgressionYearCard(row, chart);});
+  if (state.progYears === 1) h += renderProgressionMonths(chart, city);
+  if (state.astroUnknownTime) h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.38);line-height:1.7;margin-top:10px">＊出生時間未知：不採用上升、天頂、宮位及月亮相關相位；推運月亮位置僅作概略階段參考。</div>';
 
-  h += '<div style="display:flex;gap:10px;margin-top:16px;text-align:center">';
-  h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">推運月亮</div><div style="font:600 15px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + moonSign.sym + ' ' + moonSign.zh + '</div><div style="font:400 10px \'EB Garamond\',serif;color:rgba(240,233,216,.4)">' + prog.planets.Moon.deg.toFixed(1) + '°</div></div>';
-  h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">推運太陽</div><div style="font:600 15px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + sunSign.sym + ' ' + sunSign.zh + '</div><div style="font:400 10px \'EB Garamond\',serif;color:rgba(240,233,216,.4)">' + prog.planets.Sun.deg.toFixed(1) + '°</div></div>';
-  if (!state.astroUnknownTime) h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">推運上升</div><div style="font:600 15px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + ascSign.sym + ' ' + ascSign.zh + '</div><div style="font:400 10px \'EB Garamond\',serif;color:rgba(240,233,216,.4)">' + (prog.asc % 30).toFixed(1) + '°</div></div>';
-  h += '</div>';
-
-  var moonTxt = '目前推運月亮落在' + moonSign.zh + '，這大約 2–3 年的階段，內在的情緒需求與安全感的來源傾向' + moonSign.trait + '，是這段時間的心境主旋律。';
-  var sunTxt = sunSign.zh === natalSunSign.zh
-    ? '推運太陽仍停留在本命的' + natalSunSign.zh + '，代表核心自我的發展仍延續同一個大階段的主題，尚未進入下一次自我認同的轉型期。'
-    : '推運太陽已從本命的' + natalSunSign.zh + '推進到' + sunSign.zh + '，這是每 28～30 年才會發生一次的換座，代表核心自我認同正在經歷長期的轉型。';
-  h += '<div style="margin-top:16px;border-top:1px solid rgba(201,169,110,.15);border-bottom:1px solid rgba(201,169,110,.15);padding:14px 0;font:400 13px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.8);line-height:1.9">' + esc(moonTxt) + ' ' + esc(sunTxt) + '</div>';
-
-  var aspects = computeCrossChartAspects(chart, prog).filter(function (a) {
-    return a.bKey === 'Sun' || a.bKey === 'Moon' || a.bKey === 'Venus' || a.bKey === 'Mars' || a.bKey === 'Mercury';
-  }).sort(function (a, b) { return a.orb - b.orb; });
-  if (aspects.length) {
-    h += '<div style="margin-top:18px;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;text-align:center">推運與本命的重點相位</div>';
-    aspects.slice(0, 8).forEach(function (asp) {
-      h += '<div style="border-top:1px solid rgba(201,169,110,.15);padding:10px 0;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.7">' + esc(crossAspectText(asp, '本命', '推運')) + '</div>';
-    });
-  }
-
-  h += '<button id="prog-copy-btn" onclick="progressionCopyForAI()" style="width:100%;margin-top:22px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製給 AI 解讀 Copy for AI</button>';
+  h += '<button id="prog-copy-btn" onclick="progressionCopyForAI()" style="width:100%;margin-top:22px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製未來 ' + state.progYears + ' 年給 AI 解讀</button>';
   return h;
 }
 function progressionFlashCopied() {
@@ -3882,29 +3946,33 @@ function progressionFlashCopied() {
   clearTimeout(_astroCopyTimer);
   _astroCopyTimer = setTimeout(function () {
     var b = document.getElementById('prog-copy-btn');
-    if (b) b.textContent = '複製給 AI 解讀 Copy for AI';
+    if (b) b.textContent = '複製未來 ' + state.progYears + ' 年給 AI 解讀';
   }, 2000);
 }
 function progressionCopyForAI() {
   var chart = state.astroResult;
   var city = state.astroCityUsed || CITY_LIST[state.astroCityIdx];
-  var prog = computeProgressedChart(chart, city);
+  var years = buildProgressionYears(chart, city, state.progYears || 1);
   var lines = [];
-  lines.push('二次推運資料 Secondary Progression Data（採一天等於一年）');
-  lines.push('計算基準日：' + new Date().toISOString().slice(0, 10) + '（年齡約 ' + prog.ageYears.toFixed(2) + ' 歲，採一天等於一年）');
-  lines.push('推運月亮：' + ZODIAC_SIGNS[prog.planets.Moon.sign].zh + ' ' + prog.planets.Moon.deg.toFixed(2) + '°');
-  lines.push('推運太陽：' + ZODIAC_SIGNS[prog.planets.Sun.sign].zh + ' ' + prog.planets.Sun.deg.toFixed(2) + '°');
-  lines.push('推運上升：' + ZODIAC_SIGNS[prog.ascSign].zh + ' ' + (prog.asc % 30).toFixed(2) + '°');
-  lines.push('推運天頂：' + ZODIAC_SIGNS[prog.mcSign].zh + ' ' + (prog.mc % 30).toFixed(2) + '°');
-  lines.push('');
-  lines.push('推運與本命的相位 Progressed-to-natal aspects：');
-  computeCrossChartAspects(chart, prog).sort(function (a, b) { return a.orb - b.orb; }).forEach(function (asp) {
-    var aDef = PLANET_DEFS.find(function (x) { return x.key === asp.aKey; });
-    var bDef = PLANET_DEFS.find(function (x) { return x.key === asp.bKey; });
-    lines.push('- 本命' + aDef.zh + ' ' + ASPECT_DEFS[asp.type].zh + ' 推運' + bDef.zh + '（誤差 ' + asp.orb.toFixed(2) + '°）');
+  lines.push('未來 ' + state.progYears + ' 年二次推運資料 Secondary Progression（一天等於一年）');
+  lines.push('起始日：' + new Date().toISOString().slice(0, 10));
+  if (state.astroUnknownTime) lines.push('注意：出生時間未知，已排除上升、天頂、宮位與月亮相關相位。');
+  years.forEach(function(row) {
+    var p = row.prog;
+    lines.push('');
+    lines.push('【' + row.year + (row.isTransition ? '｜轉折年' : '') + '】' + row.theme);
+    lines.push('推運月亮：' + ZODIAC_SIGNS[p.planets.Moon.sign].zh + ' ' + p.planets.Moon.deg.toFixed(2) + '°');
+    lines.push('推運太陽：' + ZODIAC_SIGNS[p.planets.Sun.sign].zh + ' ' + p.planets.Sun.deg.toFixed(2) + '°');
+    if (row.moonChanged) lines.push('趨勢：這一年推運月亮換座。');
+    if (row.sunChanged) lines.push('趨勢：這一年推運太陽換座。');
+    row.aspects.slice(0, 6).forEach(function (asp) {
+      var aDef = PLANET_DEFS.find(function (x) { return x.key === asp.aKey; });
+      var bDef = PLANET_DEFS.find(function (x) { return x.key === asp.bKey; });
+      lines.push('- 本命' + aDef.zh + ' ' + ASPECT_DEFS[asp.type].zh + ' 推運' + bDef.zh + '（誤差 ' + asp.orb.toFixed(2) + '°）');
+    });
   });
   lines.push('');
-  lines.push('請根據以上二次推運資料，幫我解讀目前這個人生階段的心境變化與發展主題。');
+  lines.push('請依年份比較以上二次推運，整理長期主題、重要轉折、關係／事業／內在發展，並提醒這是占星趨勢而非事件保證。');
   var text = lines.join('\n');
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(progressionFlashCopied).catch(function () { fallbackCopy(text, progressionFlashCopied); });
