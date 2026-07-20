@@ -371,6 +371,7 @@ var state = {
   gtHelpOpen: false,
   aboutOpen: false,
   copied: false,
+  tlGuideOpen: false,
   astroY: '', astroM: '', astroD: '', astroH: '', astroMin: '',
   astroCityQuery: '', astroCityIdx: null, astroCityUsed: null,
   astroUnknownTime: false, astroResult: null, astroView: 'chart', astroGenerating: false, astroTourDismissed: false,
@@ -1521,6 +1522,23 @@ function renderAbout() {
   return h;
 }
 
+/* ---------- 塔羅 vs 雷諾曼：不知道要選哪個的人很多，直接放在首頁選擇處說明 ---------- */
+function tlGuideToggle() { state.tlGuideOpen = !state.tlGuideOpen; render(); }
+function renderTarotLenormandGuide() {
+  var h = '<div style="margin-top:16px;border:1px solid rgba(201,169,110,.25);border-radius:12px;padding:14px 16px;background:rgba(255,255,255,.02)">';
+  h += '<div onclick="tlGuideToggle()" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer">';
+  h += '<div style="font:600 12px \'Noto Sans TC\',sans-serif;color:#e6cd9a">不知道要選塔羅還是雷諾曼？點這裡看差別</div>';
+  h += '<span style="color:rgba(240,233,216,.4);font:400 12px sans-serif">' + (state.tlGuideOpen ? '︿' : '﹀') + '</span>';
+  h += '</div>';
+  if (state.tlGuideOpen) {
+    h += '<div style="margin-top:12px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.9">塔羅牌共 78 張，22 張大阿爾克那談的是人生的重大主題與內在課題，56 張小阿爾克那則對應日常生活的細節，牌義豐富、還分正逆位，解讀起來比較像深度的心理探索——想搞懂「為什麼會這樣」「我內心真正在意的是什麼」，適合問感情裡的心理狀態、自我探索、需要多角度分析的複雜處境。</div>';
+    h += '<div style="margin-top:10px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.9">雷諾曼共 36 張，每張都是船、鑰匙、雲、蛇這類具體的生活物件，沒有正逆位，牌與牌之間像在「造句」，給出的答案直接、務實，比較少心理層面的隱喻——想知道「這件事會不會發生」「大概什麼時候」，適合具體的事件預測、時間點判斷、工作或財務這類務實的生活決策。</div>';
+    h += '<div style="margin-top:10px;font:400 12px \'Noto Sans TC\',sans-serif;color:#c9a96e;line-height:1.9">一句話：想深入理解自己選塔羅，想要具體明確的答案選雷諾曼。不確定的話，兩種都抽一次互相參照也可以。</div>';
+  }
+  h += '</div>';
+  return h;
+}
+
 /* ---------- views ---------- */
 
 function renderHome() {
@@ -1551,6 +1569,7 @@ function renderHome() {
   h += '<button onclick="go(\'reading\',\'lenormand\')" style="font:500 15px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;background:rgba(201,169,110,.12);color:#f0e9d8;border:1px solid rgba(201,169,110,.5);padding:16px 20px;border-radius:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"><span>雷諾曼占卜 <span style="font:italic 11px \'EB Garamond\',serif;opacity:.6">Lenormand Reading</span></span><span>›</span></button>';
   h += '<button onclick="go(\'library\')" style="font:500 15px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;background:linear-gradient(160deg,#f2e9d8,#e6d9c0);color:#4a3826;border:1px solid #d8b96c;padding:16px 20px;border-radius:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"><span>塔羅百科 <span style="font:italic 11px \'EB Garamond\',serif;opacity:.6;color:#8a6f47">Encyclopedia</span></span><span>›</span></button>';
   h += '</div>';
+  h += renderTarotLenormandGuide();
   h += renderStudyWidget();
   h += '<div style="text-align:center;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:18px;line-height:1.8;padding:0 10px">初次接觸塔羅嗎？建議先到「塔羅百科」認識大阿爾克那 22 張牌，<br>再回來開始占卜，解讀會更容易上手。</div>';
   h += renderAbout();
