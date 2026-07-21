@@ -359,7 +359,7 @@ var state = {
   phase: 'setup',      // setup | shuffling | picking | result
   pickOrder: [],       // shuffled indices of the full deck (picking pool)
   picked: [],          // pool cell indices the user has tapped, in order
-  dailyFlipped: true,
+  dailyFlipped: false,
   history: [],
   libDeck: 'tarot',
   libSuit: 'all',
@@ -377,11 +377,12 @@ var state = {
   aboutOpen: false,
   copied: false,
   tlGuideOpen: false,
+  dailyRevealed: false,
   homeMoreOpen: false,
   astroY: '', astroM: '', astroD: '', astroH: '', astroMin: '',
   astroCityQuery: '', astroCityIdx: null, astroCityUsed: null,
   astroUnknownTime: false, astroResult: null, astroView: 'chart', astroGenerating: false, astroTourDismissed: false,
-  astroHouseSystem: 'placidus', astroDetail: null, astroMethodOpen: false, astroPlacementModal: null,
+  astroHouseSystem: 'placidus', astroDetail: null, astroMethodOpen: false,
   astroReturnCityIdx: null, synRelationship: 'love',
   progYears: 1, progExpandedYear: 0, progOnlyTransitions: false,
   horoDayAnchor: null, horoWeekOffset: 0, horoMonthOffset: 0, horoYearOffset: 0, horoYearRange: 1,
@@ -1574,57 +1575,58 @@ function startQuestionFlow() {
   go('reading', state.deck || 'tarot');
 }
 
-function toggleHomeMore() { state.homeMoreOpen = !state.homeMoreOpen; render(); }
-
-function dailyFullMeaning(c, reversed) {
-  if (c.rich) return reversed ? c.rich.r : c.rich.u;
-  return reversed ? c.revZh : c.upZh;
+function toggleDailyReveal() {
+  state.dailyRevealed = !state.dailyRevealed;
+  render();
+  if (state.dailyRevealed) {
+    setTimeout(function () {
+      var el = document.getElementById('daily-card-block');
+      if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 60);
+  }
 }
+
+function toggleHomeMore() { state.homeMoreOpen = !state.homeMoreOpen; render(); }
 
 function renderHome() {
   var h = '';
   h += '<div style="padding:0 24px">';
 
-  // ---- primary entry point ----
-  h += '<div style="margin-top:6px">';
-  h += '<button onclick="startQuestionFlow()" style="width:100%;box-sizing:border-box;font:600 16px \'Noto Serif TC\',serif;letter-spacing:.04em;background:linear-gradient(120deg,#c9a96e,#e6cd9a);color:#1a1622;border:none;padding:22px 22px;border-radius:14px;cursor:pointer;text-align:left">';
+  // ---- two primary entry points ----
+  h += '<div style="display:flex;flex-direction:column;gap:12px;margin-top:6px">';
+  h += '<button onclick="startQuestionFlow()" style="font:600 16px \'Noto Serif TC\',serif;letter-spacing:.04em;background:linear-gradient(120deg,#c9a96e,#e6cd9a);color:#1a1622;border:none;padding:22px 22px;border-radius:14px;cursor:pointer;text-align:left">';
   h += '<div>我想問一個問題 →</div><div style="font:italic 11px \'EB Garamond\',serif;opacity:.7;margin-top:3px;font-weight:400">I have a question — start a guided reading</div>';
+  h += '</button>';
+  h += '<button onclick="toggleDailyReveal()" style="font:600 16px \'Noto Serif TC\',serif;letter-spacing:.04em;background:rgba(201,169,110,.12);color:#f0e9d8;border:1px solid rgba(201,169,110,.5);padding:22px 22px;border-radius:14px;cursor:pointer;text-align:left">';
+  h += '<div>我想抽今日指引 →</div><div style="font:italic 11px \'EB Garamond\',serif;opacity:.6;margin-top:3px;font-weight:400">Just draw today\'s single card</div>';
   h += '</button>';
   h += '</div>';
 
-  // ---- daily card: always shown, no click needed ----
-  var c = dailyCard;
-  var meaningZh = dailyReversed ? c.revZh : c.upZh;
-  var meaningEn = dailyReversed ? c.revEn : c.upEn;
-  var todayLabel = new Date().toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' });
-  h += '<div style="margin-top:28px">';
-  h += '<div style="text-align:center;font:italic 12px \'EB Garamond\',serif;color:rgba(240,233,216,.5);margin-bottom:16px">' + esc(todayLabel) + '・今日一牌 Daily Card</div>';
-  var frontInner = '<div style="position:absolute;inset:4px;border:1px solid #d8b96c;border-radius:7px;overflow:hidden;display:flex;flex-direction:column">'
-    + cardImgHtml(c.img, c.nameZh + ' ' + c.nameEn)
-    + '<div style="flex:none;background:#f2e9d8;padding:8px 6px 10px;text-align:center;border-top:1px solid #d8b96c">'
-    + '<div style="font:600 11px \'Noto Serif TC\',serif;color:#8a6f47">' + esc(c.num) + '</div>'
-    + '<div style="font:600 15px \'Noto Serif TC\',serif;color:#4a3826;margin-top:2px">' + esc(c.nameZh) + '</div>'
-    + '<div style="font:italic 10px \'EB Garamond\',serif;color:#a9784f">' + esc(c.nameEn) + '</div>'
-    + '<div style="font:500 10px \'Noto Sans TC\',sans-serif;color:#8a6f47;margin-top:4px">' + (dailyReversed ? '逆位 Reversed' : '正位 Upright') + '</div>'
-    + '</div></div>';
-  h += '<div onclick="toggleDailyFlip()" style="margin:0 auto;width:170px;height:262px;cursor:pointer;position:relative">';
-  h += flipBox('daily', state.dailyFlipped, 10, sigil(76, 76), frontInner);
-  h += '</div>';
-  h += '<div id="daily-meaning" style="text-align:center;margin-top:16px;padding:0 20px;display:' + (state.dailyFlipped ? 'block' : 'none') + '">';
-  h += '<div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + esc(meaningZh) + '</div>';
-  h += '<div style="font:italic 12px \'EB Garamond\',serif;color:rgba(240,233,216,.5);margin-top:3px">' + esc(meaningEn) + '</div>';
-  h += '</div>';
-  h += '<div style="margin-top:18px;display:flex;flex-direction:column;gap:10px;padding:0 4px">';
-  h += '<div style="border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:12px 15px;background:rgba(255,255,255,.02)">';
-  h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.08em;color:#c9a96e">為什麼是這張牌 <span style="font:italic 9px \'EB Garamond\',serif;color:rgba(201,169,110,.6)">Why this card</span></div>';
-  h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.8);margin-top:6px;line-height:1.75">今天是「' + esc(todayLabel) + '」，宇宙把這一天的訊息，摺進了這張牌裡。它不是隨機翻出來的——今天無論你什麼時候打開，遇見的都會是它；等到明天，時間翻頁，才會換下一張牌與你相遇。就把它當作今天專屬於你的一次低語。</div>';
-  h += '</div>';
-  h += '<div style="border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:12px 15px;background:rgba(255,255,255,.02)">';
-  h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.08em;color:#c9a96e">這張牌的意義 <span style="font:italic 9px \'EB Garamond\',serif;color:rgba(201,169,110,.6)">Card Meaning</span></div>';
-  h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.8);margin-top:6px;line-height:1.75">' + esc(dailyFullMeaning(c, dailyReversed)) + '</div>';
-  h += '</div>';
-  h += '</div>';
-  h += '</div>';
+  // ---- daily card, revealed on demand ----
+  if (state.dailyRevealed) {
+    var c = dailyCard;
+    var meaningZh = dailyReversed ? c.revZh : c.upZh;
+    var meaningEn = dailyReversed ? c.revEn : c.upEn;
+    var todayLabel = new Date().toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' });
+    h += '<div id="daily-card-block" style="margin-top:28px">';
+    h += '<div style="text-align:center;font:italic 12px \'EB Garamond\',serif;color:rgba(240,233,216,.5);margin-bottom:16px">' + esc(todayLabel) + '・今日一牌 Daily Card</div>';
+    var frontInner = '<div style="position:absolute;inset:4px;border:1px solid #d8b96c;border-radius:7px;overflow:hidden;display:flex;flex-direction:column">'
+      + cardImgHtml(c.img, c.nameZh + ' ' + c.nameEn)
+      + '<div style="flex:none;background:#f2e9d8;padding:8px 6px 10px;text-align:center;border-top:1px solid #d8b96c">'
+      + '<div style="font:600 11px \'Noto Serif TC\',serif;color:#8a6f47">' + esc(c.num) + '</div>'
+      + '<div style="font:600 15px \'Noto Serif TC\',serif;color:#4a3826;margin-top:2px">' + esc(c.nameZh) + '</div>'
+      + '<div style="font:italic 10px \'EB Garamond\',serif;color:#a9784f">' + esc(c.nameEn) + '</div>'
+      + '<div style="font:500 10px \'Noto Sans TC\',sans-serif;color:#8a6f47;margin-top:4px">' + (dailyReversed ? '逆位 Reversed' : '正位 Upright') + '</div>'
+      + '</div></div>';
+    h += '<div onclick="toggleDailyFlip()" style="margin:0 auto;width:170px;height:262px;cursor:pointer;position:relative">';
+    h += flipBox('daily', state.dailyFlipped, 10, sigil(76, 76), frontInner);
+    h += '</div>';
+    h += '<div id="daily-meaning" style="text-align:center;margin-top:16px;padding:0 20px;display:' + (state.dailyFlipped ? 'block' : 'none') + '">';
+    h += '<div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + esc(meaningZh) + '</div>';
+    h += '<div style="font:italic 12px \'EB Garamond\',serif;color:rgba(240,233,216,.5);margin-top:3px">' + esc(meaningEn) + '</div>';
+    h += '</div>';
+    h += '</div>';
+  }
 
   // ---- everything else, collapsed by default ----
   h += '<div style="margin-top:32px;border-top:1px solid rgba(201,169,110,.15);padding-top:16px">';
@@ -2998,6 +3000,48 @@ var HOUSE_MEANINGS = [
   '潛意識、隱藏面、靈性與需要獨處沉澱之處',
 ];
 
+/* 給第一次接觸占星的使用者：把「行星＝什麼需求、星座＝怎麼做、宮位＝在哪裡發生」翻成生活語言。 */
+var PLANET_BEGINNER = {
+  Sun:{question:'什麼事情會讓你覺得「這就是我」？',verb:'建立自信、確認自己想成為誰',result:'感覺自己有價值、有方向',strength:'能逐漸活出自己的主見與存在感',watch:'不要只靠表現或別人的肯定證明自己'},
+  Moon:{question:'累了或不安時，你真正需要什麼？',verb:'照顧情緒、尋找安心感',result:'讓心情慢慢穩定下來',strength:'能感覺自己與別人真正的情緒需求',watch:'不要等到情緒累積很久才承認自己需要休息'},
+  Mercury:{question:'你習慣怎麼思考、學習和說話？',verb:'理解事情、整理想法並與人溝通',result:'把腦中的想法說清楚',strength:'能發展出自己擅長的理解與表達方式',watch:'不要只顧著想得正確，卻忽略對方是否聽得懂'},
+  Venus:{question:'什麼會讓你喜歡、靠近並覺得值得？',verb:'建立關係、表達喜歡與判斷價值',result:'感受到舒服、被欣賞與有連結',strength:'知道自己喜歡什麼，也能散發自然吸引力',watch:'不要為了維持喜歡或和諧而勉強迎合'},
+  Mars:{question:'你想要一件事時，會怎麼採取行動？',verb:'爭取想要的事、表達慾望與界線',result:'把想法變成實際行動',strength:'能在需要時拿出勇氣與推進力',watch:'留意衝動、壓抑怒氣，或把所有事情都當成競爭'},
+  Jupiter:{question:'你在哪裡容易看見機會並建立信心？',verb:'擴大眼界、嘗試機會與建立信念',result:'覺得人生還有更多可能',strength:'能用樂觀與格局帶動自己和別人',watch:'不要因為太有信心而答應過多或忽略細節'},
+  Saturn:{question:'你在哪裡需要練習耐心、責任與界線？',verb:'面對責任、建立規則並累積實力',result:'得到真正可靠的安全感與能力',strength:'願意長期投入，最後形成別人取代不了的專業',watch:'不要因為怕犯錯而過度嚴格、拖延或否定自己'},
+  Uranus:{question:'你在哪裡最不想照別人的規則走？',verb:'打破舊做法、保有自由並嘗試改變',result:'活出更真實而有選擇的自己',strength:'能提出新方法，看見別人沒想到的可能',watch:'不要只為了反對而改變，或突然切斷重要連結'},
+  Neptune:{question:'你在哪裡最容易有想像、同理與直覺？',verb:'感受氣氛、想像可能並追尋理想',result:'與內在感受、創意或信念連結',strength:'有細膩的同理心、創意與直覺感受力',watch:'需要分清楚理想與現實，避免過度投射或逃避'},
+  Pluto:{question:'你在哪裡會經歷「不能再照舊」的深層改變？',verb:'面對真相、放下控制並重新建立力量',result:'從危機或執著中長出更穩定的內在力量',strength:'能看見問題核心，也有走過低谷後重生的韌性',watch:'留意過度控制、猜疑，或把事情逼到非黑即白'}
+};
+var SIGN_BEGINNER = [
+  {mode:'先做再說、直接嘗試',behavior:'很快表態並主動跨出第一步',strength:'勇於開始、反應快',watch:'太急時容易忽略別人的速度'},
+  {mode:'確認安全與實際價值後，穩穩進行',behavior:'先觀察是否可靠，再用自己的步調持續投入',strength:'穩定、耐心而能把成果留下來',watch:'太想維持現狀時可能不容易轉彎'},
+  {mode:'蒐集資訊、邊聊邊想並保持彈性',behavior:'先問、先比較，也可能同時嘗試幾種方法',strength:'學得快、善於連結資訊與溝通',watch:'資訊太多時容易分心或改變太快'},
+  {mode:'先感受氣氛與關係是否安心',behavior:'留意彼此感受，確認有信任後才真正投入',strength:'細膩、會照顧人且記得情感細節',watch:'不安時容易退回保護殼或把話放在心裡'},
+  {mode:'大方投入、真誠表現並希望被看見',behavior:'用熱情與創意表達自己，也願意鼓舞別人',strength:'有感染力、創造力與帶動氣氛的能力',watch:'沒有得到回應時可能特別受傷或逞強'},
+  {mode:'先觀察細節、找出問題，再一步步改善',behavior:'分析哪裡可以更好，並用實際行動處理',strength:'細心、可靠且善於把混亂整理清楚',watch:'標準太高時容易焦慮、挑剔或看不到已完成的部分'},
+  {mode:'先考慮彼此立場，再尋找公平好看的做法',behavior:'比較不同選項，盡量讓關係與結果都平衡',strength:'有協調力、審美感並懂得換位思考',watch:'太怕衝突時容易猶豫或把真正想法往後放'},
+  {mode:'深入觀察、確認真相與信任後才投入',behavior:'不只看表面，會追問真正的動機與核心問題',strength:'專注、洞察深並有面對困難的韌性',watch:'不安全時容易猜疑、控制或不願放手'},
+  {mode:'先看更大的可能，再從經驗中找答案',behavior:'願意嘗試新環境、新觀點或直接去體驗',strength:'樂觀、坦率並能看見長遠意義',watch:'太追求自由時可能忽略承諾與眼前細節'},
+  {mode:'設定目標、安排步驟，再耐心做到有成果',behavior:'先判斷責任與效益，願意為長期結果努力',strength:'自律、務實並有完成大目標的耐力',watch:'太重視成果時容易給自己過大壓力'},
+  {mode:'保持獨立、從不同角度思考',behavior:'先拉開距離觀察，再提出自己的新做法',strength:'客觀、有創意並能看到群體與未來',watch:'太理性時可能讓人感覺疏離或難以靠近'},
+  {mode:'跟著直覺、感受與想像慢慢靠近答案',behavior:'先感受整體氛圍，再用同理或創意回應',strength:'溫柔、有想像力並能理解難以言說的感受',watch:'界線不清時容易受影響、逃避或理想化'}
+];
+var HOUSE_BEGINNER = [
+  {area:'你的第一印象、外在風格與面對新環境的方式',example:'剛認識人、開始新事情或需要自己做主'},
+  {area:'金錢、安全感、擁有的資源與自我價值',example:'談收入、花錢、累積能力或判斷自己值不值得'},
+  {area:'日常溝通、學習、資訊與身邊的人際往來',example:'聊天、學新東西、寫訊息或處理日常雜事'},
+  {area:'家庭、居住、內在安全感與私下的自己',example:'回到家、面對家人、需要休息或整理童年感受'},
+  {area:'戀愛、創作、玩樂與讓自己發光的方式',example:'談戀愛、做作品、培養興趣或勇敢表現自己'},
+  {area:'工作日常、健康、習慣與把事情做好',example:'安排工作流程、照顧身體或處理每天必須完成的事'},
+  {area:'伴侶、合作與一對一的重要關係',example:'面對另一半、合作對象或需要協調彼此需求'},
+  {area:'親密、信任、共同金錢、失去與人生重大轉折',example:'需要談清楚金錢、界線、秘密，或陪自己／別人走過低潮'},
+  {area:'旅行、進修、信念與你如何理解更大的世界',example:'出國、深造、接觸新觀點或重新思考人生方向'},
+  {area:'事業、責任、成就與社會如何看見你',example:'做職涯選擇、承擔重要任務或建立專業形象'},
+  {area:'朋友、社群、團隊與對未來的期待',example:'加入團體、經營人脈、共同完成理想或規劃未來'},
+  {area:'獨處、潛意識、休息與不容易說出口的感受',example:'需要退到幕後、做夢、療癒、放空或面對內心深處'}
+];
+
 var ASPECT_DEFS = {
   conjunction: { zh: '合相', tpl: '緊密融合，{A}的{ak}與{B}的{bk}疊加在一起，力量集中但也可能難以分辨彼此的界線' },
   sextile: { zh: '六分相', tpl: '互相呼應，{A}的{ak}與{B}的{bk}能自然彼此支援，只要主動把握機會就能順勢發揮' },
@@ -3296,6 +3340,39 @@ function planetPlacementText(planetDef, chart) {
   var houseText = state.astroUnknownTime ? '。由於出生時間未知，本次不解讀宮位' : '；坐落於第' + p.house + '宮，主要體現在' + HOUSE_MEANINGS[p.house - 1] + '上';
   return planetDef.zh + '代表' + planetDef.meaning + '。在' + sign.zh + '的映照下，這股能量傾向' + sign.trait + houseText + '。' + (p.retro ? '目前為逆行狀態，這股能量的展現較為內化，需要多一層自我覺察才會顯現在外。' : '');
 }
+function planetBeginnerDetail(planetDef, chart) {
+  var p = chart.planets[planetDef.key], sign = ZODIAC_SIGNS[p.sign];
+  var pb = PLANET_BEGINNER[planetDef.key], sb = SIGN_BEGINNER[p.sign];
+  var hb = state.astroUnknownTime ? null : HOUSE_BEGINNER[p.house - 1];
+  var oneLine = '你通常會用「' + sb.mode + '」的方式來' + pb.verb + (hb ? '；這項特質在' + hb.area + '特別明顯。' : '。');
+  var everyday = hb ? '例如，當' + hb.example + '時，你可能會' + sb.behavior + '，藉此' + pb.result + '。' : '生活中，你可能會' + sb.behavior + '，藉此' + pb.result + '。';
+  return {
+    title: planetDef.sym + ' ' + planetDef.zh + '在' + sign.zh + (hb ? '｜第' + p.house + '宮' : ''),
+    question: pb.question,
+    oneLine: oneLine,
+    everyday: everyday,
+    strength: pb.strength + '；' + sb.strength + '。',
+    watch: sb.watch + '，也要記得' + pb.watch + '。',
+    technical: planetDef.zh + '＝' + planetDef.meaning + '；' + sign.zh + '＝表現方式；' + (hb ? '第' + p.house + '宮＝' + hb.area : '出生時間未知，因此不採用宮位') + '。'
+  };
+}
+function renderAstroDetailModal(chart) {
+  if (!state.astroDetail) return '';
+  if (/^house-\d+$/.test(state.astroDetail)) {
+    var hn = parseInt(state.astroDetail.split('-')[1],10), hb = HOUSE_BEGINNER[hn-1];
+    return '<div role="presentation" onclick="if(event.target===this)astroSelectDetail(null)" style="position:fixed;inset:0;z-index:90;background:rgba(8,6,12,.78);display:flex;align-items:center;justify-content:center;padding:20px"><section role="dialog" aria-modal="true" aria-label="第'+hn+'宮白話解讀" style="width:min(480px,100%);max-height:78vh;overflow:auto;border:1px solid rgba(230,205,154,.5);border-radius:16px;padding:18px 19px;background:#211b2b;box-shadow:0 18px 60px rgba(0,0,0,.5)"><div style="display:flex;justify-content:space-between;gap:12px"><h3 style="margin:0;font:600 17px \'Noto Serif TC\',serif;color:#f0e9d8">第 '+hn+' 宮，用白話說</h3><button aria-label="關閉解讀" onclick="astroSelectDetail(null)" style="background:none;border:0;color:rgba(240,233,216,.55);font-size:24px;line-height:1;cursor:pointer">×</button></div><div style="margin-top:13px;font:600 13px \'Noto Sans TC\',sans-serif;color:#e6cd9a;line-height:1.75">它在看：'+esc(hb.area)+'</div><div style="margin-top:10px;font:400 13px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.82);line-height:1.85">生活例子：'+esc(hb.example)+'。</div><div style="margin-top:12px;padding:10px 12px;border-radius:10px;background:rgba(201,169,110,.09);font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.7);line-height:1.75">宮位不是在說你好或不好，而是在說：某種個性最常在哪一類生活情境中被你使用。</div></section></div>';
+  }
+  var def = PLANET_DEFS.find(function(x){return x.key===state.astroDetail;});
+  if (!def || !chart.planets[state.astroDetail]) return '';
+  var d = planetBeginnerDetail(def, chart);
+  function section(label, text, color) { return '<div style="margin-top:13px"><div style="font:600 11px \'Noto Sans TC\',sans-serif;color:'+(color||'#c9a96e')+';letter-spacing:.08em">'+label+'</div><div style="margin-top:4px;font:400 13px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.82);line-height:1.85">'+esc(text)+'</div></div>'; }
+  var h='<div role="presentation" onclick="if(event.target===this)astroSelectDetail(null)" style="position:fixed;inset:0;z-index:90;background:rgba(8,6,12,.78);display:flex;align-items:center;justify-content:center;padding:20px"><section role="dialog" aria-modal="true" aria-label="'+esc(d.title)+'白話解讀" style="width:min(520px,100%);max-height:82vh;overflow:auto;border:1px solid rgba(230,205,154,.5);border-radius:16px;padding:18px 19px;background:#211b2b;box-shadow:0 18px 60px rgba(0,0,0,.5)">';
+  h+='<div style="display:flex;justify-content:space-between;gap:12px"><div><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:#c9a96e;letter-spacing:.12em">不用背術語，先看生活中的你</div><h3 style="margin:4px 0 0;font:600 18px \'Noto Serif TC\',serif;color:#f0e9d8">'+esc(d.title)+'</h3></div><button aria-label="關閉解讀" onclick="astroSelectDetail(null)" style="background:none;border:0;color:rgba(240,233,216,.55);font-size:24px;line-height:1;cursor:pointer">×</button></div>';
+  h+='<div style="margin-top:14px;padding:12px 13px;border-radius:11px;background:rgba(201,169,110,.1);border:1px solid rgba(201,169,110,.22)"><div style="font:600 11px \'Noto Sans TC\',sans-serif;color:#e6cd9a">一句話先看懂</div><div style="font:500 14px \'Noto Sans TC\',sans-serif;color:#f0e9d8;line-height:1.85;margin-top:4px">'+esc(d.oneLine)+'</div></div>';
+  h+=section('它其實在回答',d.question)+section('生活中可能怎麼出現',d.everyday)+section('你的優勢',d.strength,'#9bc5a3')+section('容易卡住的地方',d.watch,'#d9a0a0');
+  h+='<details style="margin-top:14px;border-top:1px solid rgba(201,169,110,.18);padding-top:10px"><summary style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);cursor:pointer">想知道占星術語怎麼組合？</summary><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.75;margin-top:7px">'+esc(d.technical)+'</div></details>';
+  return h+'</section></div>';
+}
 function pointPlacementText(pointDef, chart) {
   var p = chart.points[pointDef.key];
   var sign = ZODIAC_SIGNS[p.sign];
@@ -3303,88 +3380,6 @@ function pointPlacementText(pointDef, chart) {
     : (p.retro ? '目前為逆行狀態，這股能量的展現較為內化，需要多一層自我覺察才會顯現在外。' : '');
   var houseText = state.astroUnknownTime ? '。出生時間未知，本次不解讀宮位' : '；坐落於第' + p.house + '宮，主要體現在' + HOUSE_MEANINGS[p.house - 1] + '上';
   return pointDef.zh + '代表' + pointDef.meaning + '。落在' + sign.zh + '，帶有' + sign.trait + '的色彩' + houseText + '。' + retroTxt;
-}
-/* ---- tap-in detail text: planet+sign only, and planet+house only ---- */
-var ELEMENT_FLAVOR = {
-  '火': '你會用比較直接、主動出擊的方式來表現這股力量，重視當下能不能立刻行動，勝過長遠的計畫',
-  '土': '你會用穩紮穩打、講求實際成果的方式來表現這股力量，重視看得到、摸得到的踏實感',
-  '風': '你會用理性思考、樂於交流分享的方式來表現這股力量，重視想法上的激盪與人際連結',
-  '水': '你會用細膩感受、順著直覺走的方式來表現這股力量，重視內在情緒有沒有被理解',
-};
-function planetSignMeaning(def, sign) {
-  var flavor = ELEMENT_FLAVOR[sign.elem] || '';
-  return def.zh + '代表你的' + def.meaning + '。當這股特質落在' + sign.zh + '，會揉合「' + sign.trait + '」這種性格色彩——' + flavor + '。簡單來說，這就是你展現' + def.kw + '時，最自然會用上的方式。';
-}
-/* concrete, everyday-life scenarios for each house — used so the planet+house
-   explanation gives actual examples instead of just restating the abstract
-   life-area label */
-var HOUSE_SCENARIOS = [
-  ['你怎麼向陌生人介紹自己', '你給人的第一印象', '展開新計畫或新關係時的態度'],
-  ['你賺錢與花錢的習慣', '你對自己能力與價值的信心', '你擁有的東西帶給你的安全感'],
-  ['你跟兄弟姊妹、鄰居、同學相處的方式', '日常閒聊、傳訊息、討論生活小事的習慣', '你怎麼學習新知識、吸收資訊'],
-  ['你在原生家庭中扮演的角色', '你對「家」這個空間的情感依附', '壓力大時，你回到內心尋求安穩的方式'],
-  ['你談戀愛、展現魅力的方式', '你投入興趣、藝術創作或玩樂的程度', '你想被眾人注目、獲得掌聲的渴望'],
-  ['你處理每天例行工作與雜務的態度', '你照顧身體、維持健康習慣的方式', '你在職場上服務、協助他人的表現'],
-  ['你挑選伴侶或重要合作對象的標準', '你在一對一關係裡表現自己的方式', '你怎麼處理關係中的衝突與協商'],
-  ['你跟伴侶討論金錢、財務共享時的態度', '你面對重大危機、失落或轉變時刻的反應', '你對性、生死、心理深層議題的好奇或敏感程度'],
-  ['你對異國文化、長途旅行的嚮往', '你追求高等教育、進修新領域的動機', '你怎麼形成自己的人生信念與世界觀'],
-  ['你在職場上追求的成就與頭銜', '外界，例如上司或社會大眾如何看待你', '你想在眾人面前留下的形象'],
-  ['你挑選朋友圈、社群的方式', '你參與團體活動、公益或理想性計畫的熱忱', '你對未來、對世界能變得更好的願景'],
-  ['你一個人獨處、沉澱時做的事', '你不輕易讓人看見的脆弱或秘密', '你的直覺、夢境，或說不清楚原因的感受'],
-];
-/* what each point is actually "after" — phrased as a concrete want/need
-   rather than an abstract noun, so it reads as a real motivation */
-var PLANET_DRIVE = {
-  Sun: '想被看見、想活出自己核心價值與自信的渴望',
-  Moon: '需要安全感、想被好好照顧、情緒被接住的渴望',
-  Mercury: '想把想法說清楚、想被理解，也喜歡持續學習新事物的習慣',
-  Venus: '想被喜歡、追求美感與和諧、想擁有讓自己愉悅的事物的渴望',
-  Mars: '想主動出擊、證明行動力、爭取想要的東西的衝勁',
-  Jupiter: '想擴展視野、把握成長機會、相信事情會變好的樂觀',
-  Saturn: '需要扛起責任、透過紀律證明自己、面對現實課題的壓力與成長',
-  Uranus: '想打破常規、追求自由與與眾不同的渴望',
-  Neptune: '容易被觸動、追尋夢想與理想，有時也容易感到迷惘的敏感',
-  Pluto: '想掌控全局、經歷深刻蛻變、在極端情況中展現力量的驅動力',
-  Node: '這一世想要學習、想要成長突破的方向',
-  SNode: '與生俱來就很熟悉，卻也容易安於現狀而需要放下的舒適圈',
-  Lilith: '不想被馴服、想忠於原始慾望與真實自我的那一面',
-  Chiron: '曾經受過傷、也因此特別能同理與療癒他人的敏感點',
-  Fortune: '不太費力就能感受到幸福、資源自然匯聚的地方',
-  Vertex: '命中注定般的相遇與轉折，容易發生的地方',
-};
-function planetHouseMeaning(def, houseNum) {
-  var drive = PLANET_DRIVE[def.key] || def.meaning;
-  var scenarios = HOUSE_SCENARIOS[houseNum - 1] || [];
-  var scenarioText = scenarios.length ? scenarios.join('、') : HOUSE_MEANINGS[houseNum - 1];
-  return def.zh + '在第' + houseNum + '宮，代表你「' + drive + '」，會具體展現在這些地方：' + scenarioText + '。換句話說，這些生活片段，就是你最容易感受到' + def.zh + '這股力量在起作用的時刻。';
-}
-function openPlanetSignModal(key) { state.astroPlacementModal = { type: 'sign', key: key }; render(); }
-function openPlanetHouseModal(key, houseNum) { state.astroPlacementModal = { type: 'house', key: key, house: houseNum }; render(); }
-function closePlacementModal() { state.astroPlacementModal = null; render(); }
-function renderPlacementModal(chart) {
-  var m = state.astroPlacementModal;
-  if (!m) return '';
-  var def = findAnyPointDef(m.key);
-  if (!def) return '';
-  var p = chart.planets[m.key] || chart.points[m.key];
-  var sign = ZODIAC_SIGNS[p.sign];
-  var title, body;
-  if (m.type === 'sign') {
-    title = def.sym + ' ' + def.zh + ' ' + sign.zh;
-    body = planetSignMeaning(def, sign);
-  } else {
-    title = def.sym + ' ' + def.zh + ' 第' + m.house + '宮';
-    body = planetHouseMeaning(def, m.house);
-  }
-  var h = '<div onclick="closePlacementModal()" style="position:fixed;inset:0;background:rgba(10,8,14,.72);z-index:40;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box">';
-  h += '<div onclick="event.stopPropagation()" style="width:100%;max-width:360px;background:#1f1a28;border:1px solid rgba(201,169,110,.4);border-radius:16px;padding:22px 20px;box-shadow:0 12px 40px rgba(0,0,0,.5)">';
-  h += '<div style="display:flex;justify-content:space-between;align-items:center">';
-  h += '<div style="font:600 16px \'Noto Serif TC\',serif;color:#f0e9d8">' + esc(title) + '</div>';
-  h += '<button onclick="closePlacementModal()" aria-label="關閉" style="background:none;border:none;color:rgba(240,233,216,.5);font-size:20px;cursor:pointer;line-height:1;padding:2px 4px">×</button>';
-  h += '</div>';
-  h += '<div style="font:400 13px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.85);margin-top:14px;line-height:1.9;text-align:justify">' + esc(body) + '</div>';
-  h += '</div></div>';
-  return h;
 }
 function findAnyPointDef(key) {
   return PLANET_DEFS.find(function (x) { return x.key === key; }) || EXTRA_POINT_DEFS.find(function (x) { return x.key === key; });
@@ -3549,13 +3544,6 @@ function renderNatalWheel(chart) {
   });
 
   svg += '</svg>';
-  if (state.astroDetail && chart.planets[state.astroDetail]) {
-    var detailDef = PLANET_DEFS.find(function(p){return p.key===state.astroDetail;});
-    svg += '<div role="status" style="margin-top:9px;border:1px solid rgba(201,169,110,.35);border-radius:10px;padding:11px 13px;background:rgba(201,169,110,.07)"><strong style="font:600 13px \'Noto Serif TC\',serif;color:#e6cd9a">' + detailDef.sym + ' ' + detailDef.zh + '</strong><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.75;margin-top:4px">' + esc(planetPlacementText(detailDef, chart)) + '</div></div>';
-  } else if (/^house-\d+$/.test(state.astroDetail || '')) {
-    var hn = parseInt(state.astroDetail.split('-')[1],10);
-    svg += '<div role="status" style="margin-top:9px;border:1px solid rgba(201,169,110,.35);border-radius:10px;padding:11px 13px;background:rgba(201,169,110,.07)"><strong style="font:600 13px \'Noto Serif TC\',serif;color:#e6cd9a">第 ' + hn + ' 宮</strong><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.75;margin-top:4px">這個人生領域代表' + esc(HOUSE_MEANINGS[hn-1]) + '。</div></div>';
-  }
   return svg;
 }
 
@@ -4481,7 +4469,7 @@ function renderLuckyGrid(rng) {
   return h;
 }
 
-function astroSetView(v) { state.astroView = v; render(); window.scrollTo(0, 0); }
+function astroSetView(v) { state.astroView = v; state.astroDetail = null; render(); window.scrollTo(0, 0); }
 function astroDismissTour() {
   state.astroTourDismissed = true;
   try { localStorage.setItem('tl_astro_tour_seen', '1'); } catch (e) {}
@@ -5117,17 +5105,14 @@ function renderAstro() {
     PLANET_DEFS.forEach(function (def) {
       var p = chart.planets[def.key];
       var sign = ZODIAC_SIGNS[p.sign];
-      h += '<div style="border-top:1px solid rgba(201,169,110,.15);padding:12px 0">';
+      h += '<button aria-label="查看'+def.zh+'的白話解讀" onclick="astroSelectDetail(\''+def.key+'\')" style="display:block;width:100%;text-align:left;border:0;border-top:1px solid rgba(201,169,110,.15);padding:12px 0;background:none;color:inherit;cursor:pointer">';
       h += '<div style="display:flex;justify-content:space-between;align-items:baseline">';
       h += '<span style="font:500 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + def.sym + ' ' + def.zh + '</span>';
-      h += '<span style="font:400 11px \'EB Garamond\',serif;color:#c9a96e">';
-      h += '<span onclick="openPlanetSignModal(\'' + def.key + '\')" style="cursor:pointer;border-bottom:1px dotted #c9a96e" aria-label="查看' + esc(def.zh) + esc(sign.zh) + '的意思">' + sign.sym + ' ' + sign.zh + ' ' + p.deg.toFixed(1) + '°</span>';
-      if (!state.astroUnknownTime) h += '　<span onclick="openPlanetHouseModal(\'' + def.key + '\',' + p.house + ')" style="cursor:pointer;border-bottom:1px dotted #c9a96e" aria-label="查看' + esc(def.zh) + '第' + p.house + '宮的意思">第' + p.house + '宮</span>';
-      if (p.retro) h += '　℞';
-      h += '</span>';
+      h += '<span style="font:400 11px \'EB Garamond\',serif;color:#c9a96e">' + sign.sym + ' ' + sign.zh + ' ' + p.deg.toFixed(1) + '°' + (state.astroUnknownTime ? '' : '　第' + p.house + '宮') + (p.retro ? '　℞' : '') + '</span>';
       h += '</div>';
-      h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.7);margin-top:5px;line-height:1.7">' + esc(planetPlacementText(def, chart)) + '</div>';
-      h += '</div>';
+      var preview = planetBeginnerDetail(def, chart);
+      h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.7);margin-top:5px;line-height:1.7">' + esc(preview.oneLine) + '</div><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:5px">點一下看生活例子、優勢與提醒 →</div>';
+      h += '</button>';
     });
 
     h += '<div style="margin-top:22px;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase">額外本命點 Additional Points</div>';
@@ -5138,11 +5123,7 @@ function renderAstro() {
       h += '<div style="border-top:1px solid rgba(201,169,110,.15);padding:12px 0">';
       h += '<div style="display:flex;justify-content:space-between;align-items:baseline">';
       h += '<span style="font:500 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + def.sym + ' ' + def.zh + '</span>';
-      h += '<span style="font:400 11px \'EB Garamond\',serif;color:#c9a96e">';
-      h += '<span onclick="openPlanetSignModal(\'' + def.key + '\')" style="cursor:pointer;border-bottom:1px dotted #c9a96e" aria-label="查看' + esc(def.zh) + esc(sign.zh) + '的意思">' + sign.sym + ' ' + sign.zh + ' ' + p.deg.toFixed(1) + '°</span>';
-      if (!state.astroUnknownTime) h += '　<span onclick="openPlanetHouseModal(\'' + def.key + '\',' + p.house + ')" style="cursor:pointer;border-bottom:1px dotted #c9a96e" aria-label="查看' + esc(def.zh) + '第' + p.house + '宮的意思">第' + p.house + '宮</span>';
-      if (p.retro) h += '　℞';
-      h += '</span>';
+      h += '<span style="font:400 11px \'EB Garamond\',serif;color:#c9a96e">' + sign.sym + ' ' + sign.zh + ' ' + p.deg.toFixed(1) + '°' + (state.astroUnknownTime ? '' : '　第' + p.house + '宮') + (p.retro ? '　℞' : '') + '</span>';
       h += '</div>';
       h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.7);margin-top:5px;line-height:1.7">' + esc(pointPlacementText(def, chart)) + '</div>';
       h += '</div>';
@@ -5165,7 +5146,7 @@ function renderAstro() {
     h += '<button onclick="astroExportProfile()" style="background:none;border:none;color:rgba(240,233,216,.3);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">匯出星盤資料備份</button>';
     h += '<button onclick="astroForget()" style="background:none;border:none;color:rgba(240,233,216,.3);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">清除已儲存的星盤資料</button>';
     h += '</div>';
-    if (state.astroPlacementModal) h += renderPlacementModal(chart);
+    h += renderAstroDetailModal(chart);
   }
 
   h += '</div>';
