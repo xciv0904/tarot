@@ -4487,8 +4487,21 @@ var LUCKY_ACCESSORY_ICON = {
 var LUCKY_HOURS = ['23-01點', '01-03點', '03-05點', '05-07點', '07-09點', '09-11點', '11-13點', '13-15點', '15-17點', '17-19點', '19-21點', '21-23點'];
 var LUCKY_DIRECTIONS = ['東', '南', '西', '北', '東南', '東北', '西南', '西北'];
 var LUCKY_FOODS = ['全麥食品', '堅果', '深色蔬菜', '溫熱湯品', '當季水果', '優格', '燕麥', '魚類', '豆製品', '根莖類'];
+/* 每種食物給對應的圖示，避免像「魚類」卻顯示餐具圖示這種文不對圖的狀況 */
+var LUCKY_FOOD_ICON = {
+  '全麥食品': '🍞', '堅果': '🥜', '深色蔬菜': '🥬', '溫熱湯品': '🍲', '當季水果': '🍎',
+  '優格': '🥣', '燕麥': '🌾', '魚類': '🐟', '豆製品': '🫘', '根莖類': '🥕',
+};
 var LUCKY_ITEMS_LIST = ['抱枕', '鑰匙圈', '手帕', '筆記本', '耳機', '保溫杯', '護手霜', '小鏡子', '香氛小物', '便條紙'];
+var LUCKY_ITEM_ICON = {
+  '抱枕': '🛋️', '鑰匙圈': '🔑', '手帕': '🧣', '筆記本': '📓', '耳機': '🎧',
+  '保溫杯': '☕', '護手霜': '🧴', '小鏡子': '🪞', '香氛小物': '🕯️', '便條紙': '📝',
+};
 var LUCKY_FLOWERS = ['鈴蘭', '玫瑰', '向日葵', '桔梗', '滿天星', '薰衣草', '雛菊', '茉莉', '繡球花', '百合'];
+var LUCKY_FLOWER_ICON = {
+  '鈴蘭': '💮', '玫瑰': '🌹', '向日葵': '🌻', '桔梗': '🪻', '滿天星': '✨',
+  '薰衣草': '💜', '雛菊': '🌼', '茉莉': '🤍', '繡球花': '🔵', '百合': '🏵️',
+};
 
 function renderLuckyCell(iconHtml, value, label) {
   return '<div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px">' + iconHtml + '<div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;text-align:center">' + esc(value) + '</div><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4)">' + label + '</div></div>';
@@ -4509,9 +4522,9 @@ function renderLuckyGrid(rng) {
     renderLuckyCell('<div style="font-size:20px">⏰</div>', hour, '幸運時辰'),
     renderLuckyCell('<div style="font-size:20px">🧭</div>', direction, '幸運方位'),
     renderLuckyCell('<div style="font-size:20px">🔢</div>', n1 + '、' + n2, '幸運數字'),
-    renderLuckyCell('<div style="font-size:20px">🍽️</div>', food, '幸運食物'),
-    renderLuckyCell('<div style="font-size:20px">🎁</div>', item, '幸運隨身物'),
-    renderLuckyCell('<div style="font-size:20px">🌸</div>', flower, '幸運花'),
+    renderLuckyCell('<div style="font-size:20px">' + (LUCKY_FOOD_ICON[food] || '🍽️') + '</div>', food, '幸運食物'),
+    renderLuckyCell('<div style="font-size:20px">' + (LUCKY_ITEM_ICON[item] || '🎁') + '</div>', item, '幸運隨身物'),
+    renderLuckyCell('<div style="font-size:20px">' + (LUCKY_FLOWER_ICON[flower] || '🌸') + '</div>', flower, '幸運花'),
   ];
   var h = '<div style="display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid rgba(201,169,110,.15)">';
   cells.forEach(function (c) { h += c; });
@@ -4618,7 +4631,7 @@ function renderDailyHoroscope(chart, transitPlanets, periodCfg, now) {
   h += '</div>';
 
   var categoryOneliners = {};
-  HOROSCOPE_SCORE_CATS.forEach(function (cat) { categoryOneliners[cat.key] = categoryOnelinerText(cat.key, scores[cat.key]); });
+  HOROSCOPE_SCORE_CATS.forEach(function (cat) { categoryOneliners[cat.key] = categoryOnelinerText(rng, cat.key, scores[cat.key]); });
   h += '<div style="margin-top:20px;border-top:1px solid rgba(201,169,110,.15);padding-top:14px">';
   h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase">今日提醒 By Category</div>';
   HOROSCOPE_SCORE_CATS.forEach(function (cat) {
@@ -4657,6 +4670,11 @@ function isoWeekInfo(d) {
 }
 
 var LUCKY_STONES = ['黃水晶', '白水晶', '粉晶', '紫水晶', '黑曜石', '月光石', '拓帕石', '橄欖石', '紅玉髓', '藍晶石'];
+/* 每種礦石給對應的顏色圖示，跟幸運配飾的作法一致，避免全部都是同一顆鑽石圖示 */
+var LUCKY_STONE_ICON = {
+  '黃水晶': '🟡', '白水晶': '⚪', '粉晶': '💗', '紫水晶': '🟣', '黑曜石': '⚫',
+  '月光石': '🌙', '拓帕石': '🟠', '橄欖石': '🟢', '紅玉髓': '🔴', '藍晶石': '🔵',
+};
 
 function renderLuckyMini(rng) {
   var color = astroSeededPickN(rng, LUCKY_COLORS, 1)[0];
@@ -4666,8 +4684,8 @@ function renderLuckyMini(rng) {
   if (n2 === n1) n2 = (n2 + 1) % 10;
   var cells = [
     renderLuckyCell('<div style="width:22px;height:22px;border-radius:8px;background:' + color.hex + ';border:1px solid rgba(255,255,255,.3)"></div>', color.zh, '幸運色'),
-    renderLuckyCell('<div style="font-size:20px">🌸</div>', flower, '幸運花'),
-    renderLuckyCell('<div style="font-size:20px">💎</div>', stone, '幸運石'),
+    renderLuckyCell('<div style="font-size:20px">' + (LUCKY_FLOWER_ICON[flower] || '🌸') + '</div>', flower, '幸運花'),
+    renderLuckyCell('<div style="font-size:20px">' + (LUCKY_STONE_ICON[stone] || '💎') + '</div>', stone, '幸運石'),
     renderLuckyCell('<div style="font-size:20px">🔢</div>', n1 + '、' + n2, '幸運數字'),
   ];
   var h = '<div style="display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid rgba(201,169,110,.15)">';
@@ -4719,45 +4737,123 @@ var PERIOD_CATEGORY_TEXT = {
 
 /* per-category short one-line reminder/highlight, shown alongside the score
    and (for week/month/year) the long-form paragraph — gives a concrete,
-   actionable takeaway ("注意...") rather than an abstract score */
+   actionable takeaway ("注意...") rather than an abstract score. Each tone
+   has a small pool so the same score range doesn't always show the same
+   line; a seeded rng (shared with the lucky-item picks) selects one. */
 var CATEGORY_ONELINER = {
   love: {
-    positive: '適合主動聯繫在意的人，好感更容易被回應。',
-    neutral: '維持穩定互動即可，不必刻意製造話題。',
-    challenging: '注意言語衝突與誤會，講話前先緩一口氣。',
+    positive: [
+      '適合主動聯繫在意的人，好感更容易被回應。',
+      '單身者社交場合容易遇到心動對象，不妨主動一點。',
+      '穩定關係適合安排一次好好相處的約會，感情會加溫。',
+    ],
+    neutral: [
+      '維持穩定互動即可，不必刻意製造話題。',
+      '感情步調平順，順其自然發展就好。',
+    ],
+    challenging: [
+      '注意言語衝突與誤會，講話前先緩一口氣。',
+      '網路交友要提高警覺，對方身分不明前先別涉入金錢往來。',
+      '舊情人或曖昧對象的糾纏要拿捏分寸，避免被情緒勒索。',
+    ],
   },
   career: {
-    positive: '適合主動爭取表現機會，努力容易被看見。',
-    neutral: '按部就班完成手邊工作，先別急著求變。',
-    challenging: '注意工作上的溝通落差，重要訊息務必再三確認。',
+    positive: [
+      '適合主動爭取表現機會，努力容易被看見。',
+      '適合提案或談合作，這段時間你的說服力不錯。',
+    ],
+    neutral: [
+      '按部就班完成手邊工作，先別急著求變。',
+      '工作步調平順，維持現有節奏即可。',
+    ],
+    challenging: [
+      '注意工作上的溝通落差，重要訊息務必再三確認。',
+      '簽約、離職或異動相關文件，細節要看仔細再簽名。',
+      '留意過勞警訊，別把工作壓力一路帶回家裡。',
+    ],
   },
   family: {
-    positive: '適合安排家庭聚會，感情會更緊密。',
-    neutral: '維持日常互動即可，不必特別安排什麼。',
-    challenging: '注意長輩健康與家人情緒，避免舊事重提引發爭執。',
+    positive: [
+      '適合安排家庭聚會，感情會更緊密。',
+      '適合主動關心家人近況，一句問候就能拉近距離。',
+    ],
+    neutral: [
+      '維持日常互動即可，不必特別安排什麼。',
+      '家庭關係平穩，順著原本的相處模式就好。',
+    ],
+    challenging: [
+      '注意長輩健康與家人情緒，避免舊事重提引發爭執。',
+      '家中水電、瓦斯等居家安全值得檢查一下。',
+      '照顧年幼或年長家人時，多留意環境安全。',
+    ],
   },
   health: {
-    positive: '精神狀態不錯，適合安排運動或健檢。',
-    neutral: '作息維持規律即可，不必刻意進補或衝刺。',
-    challenging: '注意飲食與作息，避免熬夜或暴飲暴食。',
+    positive: [
+      '精神狀態不錯，適合安排運動或健檢。',
+      '體力與精神都在狀態上，適合挑戰新的運動習慣。',
+    ],
+    neutral: [
+      '作息維持規律即可，不必刻意進補或衝刺。',
+      '身心平穩，維持現有的生活步調就好。',
+    ],
+    challenging: [
+      '注意飲食與作息，避免熬夜或暴飲暴食。',
+      '外出通勤要留意行車安全，尤其上下班尖峰時段。',
+      '外食留意飲食衛生，季節交替時腸胃較敏感。',
+      '長時間使用3C要留意眼睛與頸椎負擔，記得起身活動。',
+    ],
   },
   wealth: {
-    positive: '財運加分，適合檢視理財規劃或談加薪。',
-    neutral: '收支平穩，維持原有理財節奏即可。',
-    challenging: '注意意外支出與衝動消費，簽約前多看一次條款。',
+    positive: [
+      '財運加分，適合檢視理財規劃或談加薪。',
+      '適合整理資產配置，財務能量正在流動。',
+    ],
+    neutral: [
+      '收支平穩，維持原有理財節奏即可。',
+      '財務沒有太大波動，照計畫走就好。',
+    ],
+    challenging: [
+      '注意意外支出與衝動消費，簽約前多看一次條款。',
+      '陌生連結或高報酬投資邀約要提高警覺，避免落入詐騙。',
+      '借錢給人或幫忙作保這類的事，這段時間要謹慎評估。',
+    ],
   },
   social: {
-    positive: '人際魅力加分，適合參加聚會或拓展人脈。',
-    neutral: '人際互動平順，維持現有節奏即可。',
-    challenging: '注意口舌是非，避免在群體中隨口評論他人。',
+    positive: [
+      '人際魅力加分，適合參加聚會或拓展人脈。',
+      '這段時間人緣不錯，適合主動聯繫許久沒聯絡的朋友。',
+    ],
+    neutral: [
+      '人際互動平順，維持現有節奏即可。',
+      '社交運勢普通，不必勉強自己迎合每一場邀約。',
+    ],
+    challenging: [
+      '注意口舌是非，避免在群體中隨口評論他人。',
+      '公開發文或私訊要三思，容易被截圖或斷章取義流傳。',
+      '聚會場合飲酒應酬記得量力而為，安全回家最重要。',
+    ],
   },
   study: {
-    positive: '吸收力不錯，適合挑戰較難的內容。',
-    neutral: '按進度複習即可，不必臨時抱佛腳。',
-    challenging: '注意粗心失誤，答題或交件前務必再檢查一次。',
+    positive: [
+      '吸收力不錯，適合挑戰較難的內容。',
+      '這段時間學習效率高，適合安排考試或報告衝刺。',
+    ],
+    neutral: [
+      '按進度複習即可，不必臨時抱佛腳。',
+      '學習狀態平穩，維持原本的步調就好。',
+    ],
+    challenging: [
+      '注意粗心失誤，答題或交件前務必再檢查一次。',
+      '報名、繳交截止日期要提前確認，避免最後一刻手忙腳亂。',
+      '熬夜唸書反而影響隔天精神，適度休息效果更好。',
+    ],
   },
 };
-function categoryOnelinerText(catKey, score) { return (CATEGORY_ONELINER[catKey] || {})[astroToneOf(score)] || ''; }
+function categoryOnelinerText(rng, catKey, score) {
+  var pool = (CATEGORY_ONELINER[catKey] || {})[astroToneOf(score)] || [];
+  if (!pool.length) return '';
+  return astroSeededPickN(rng, pool, 1)[0] || '';
+}
 
 var RETURN_HIGHLIGHT_LABEL = { wealth: '財運', love: '感情', career: '事業／工作', family: '家庭', health: '健康', social: '人際', study: '學業／學習', general: '自我狀態' };
 
@@ -4831,7 +4927,7 @@ function renderPeriodDashboard(chart, transitPlanets, periodKey, periodCfg, now,
     var s = scores[cat.key], col = CATEGORY_COLOR[cat.key];
     var tone = astroToneOf(s);
     var text = PERIOD_CATEGORY_TEXT[cat.key][tone];
-    var oneliner = categoryOnelinerText(cat.key, s);
+    var oneliner = categoryOnelinerText(rng, cat.key, s);
     categoryTexts[cat.key] = text;
     categoryOneliners[cat.key] = oneliner;
     h += '<div style="border-top:1px solid rgba(201,169,110,.15);padding:16px 0">';
