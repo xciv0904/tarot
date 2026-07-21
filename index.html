@@ -5424,7 +5424,7 @@ function renderAstro() {
     h += renderAngleAndHouseBeginner(chart);
     h += renderElementQualitySummary(chart);
 
-    h += '<details' + (state.astroOpenPlacements ? ' open' : '') + ' style="margin-top:22px" ontoggle="state.astroOpenPlacements=this.open;render()"><summary style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;cursor:pointer;list-style:none"><span class="astro-caret" style="display:inline-block;width:12px">' + (state.astroOpenPlacements ? '▾' : '▸') + '</span>行星落點 Placements</summary>';
+    h += '<details' + (state.astroOpenPlacements ? ' open' : '') + ' style="margin-top:22px" ontoggle="state.astroOpenPlacements=this.open;var c=this.querySelector(\'.astro-caret\');if(c)c.textContent=this.open?\'▾\':\'▸\'"><summary style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;cursor:pointer;list-style:none"><span class="astro-caret" style="display:inline-block;width:12px">' + (state.astroOpenPlacements ? '▾' : '▸') + '</span>行星落點 Placements</summary>';
     h += '<div style="margin-top:2px">';
     PLANET_DEFS.forEach(function (def) {
       var p = chart.planets[def.key];
@@ -5440,7 +5440,7 @@ function renderAstro() {
     });
     h += '</div></details>';
 
-    h += '<details' + (state.astroOpenPoints ? ' open' : '') + ' style="margin-top:14px" ontoggle="state.astroOpenPoints=this.open;render()"><summary style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;cursor:pointer;list-style:none"><span class="astro-caret" style="display:inline-block;width:12px">' + (state.astroOpenPoints ? '▾' : '▸') + '</span>額外本命點 Additional Points</summary>';
+    h += '<details' + (state.astroOpenPoints ? ' open' : '') + ' style="margin-top:14px" ontoggle="state.astroOpenPoints=this.open;var c=this.querySelector(\'.astro-caret\');if(c)c.textContent=this.open?\'▾\':\'▸\'"><summary style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;cursor:pointer;list-style:none"><span class="astro-caret" style="display:inline-block;width:12px">' + (state.astroOpenPoints ? '▾' : '▸') + '</span>額外本命點 Additional Points</summary>';
     h += '<div style="margin-top:2px">';
     EXTRA_POINT_DEFS.forEach(function (def) {
       if (state.astroUnknownTime && (def.key === 'Fortune' || def.key === 'Vertex')) return;
@@ -5468,7 +5468,7 @@ function renderAstro() {
 
     var usableAspects = astroUsableAspects(chart);
     if (usableAspects.length) {
-      h += '<details' + (state.astroOpenAspects ? ' open' : '') + ' style="margin-top:14px" ontoggle="state.astroOpenAspects=this.open;render()"><summary style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;cursor:pointer;list-style:none"><span class="astro-caret" style="display:inline-block;width:12px">' + (state.astroOpenAspects ? '▾' : '▸') + '</span>主要相位 Aspects</summary>';
+      h += '<details' + (state.astroOpenAspects ? ' open' : '') + ' style="margin-top:14px" ontoggle="state.astroOpenAspects=this.open;var c=this.querySelector(\'.astro-caret\');if(c)c.textContent=this.open?\'▾\':\'▸\'"><summary style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;cursor:pointer;list-style:none"><span class="astro-caret" style="display:inline-block;width:12px">' + (state.astroOpenAspects ? '▾' : '▸') + '</span>主要相位 Aspects</summary>';
       h += '<div style="margin-top:2px">';
       h += '<details style="margin-top:8px"><summary style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;color:rgba(240,233,216,.5);cursor:pointer">查看專業相位總表 Aspect Grid</summary>';
       h += renderAspectGrid(chart)+'</details>';
