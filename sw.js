@@ -1,5 +1,5 @@
 /* Mystic Deck service worker — 卡牌圖片快取優先,頁面網路優先 */
-const CACHE = 'mystic-v1';
+const CACHE = 'mystic-v2';
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(['./']); }).catch(function () {}));
   self.skipWaiting();
