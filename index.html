@@ -383,6 +383,7 @@ var state = {
   astroUnknownTime: false, astroResult: null, astroView: 'chart', astroGenerating: false, astroTourDismissed: false,
   astroHouseSystem: 'placidus', astroDetail: null, astroMethodOpen: false,
   astroOpenPlacements: false, astroOpenPoints: false, astroOpenAspects: false,
+  aiPersona: 'moon',
   astroReturnCityIdx: null, synRelationship: 'love',
   progYears: 1, progExpandedYear: 0, progOnlyTransitions: false,
   horoDayAnchor: null, horoWeekOffset: 0, horoMonthOffset: 0, horoYearOffset: 0, horoYearRange: 1,
@@ -1931,6 +1932,7 @@ function renderReading() {
 
     }
 
+    h += renderPersonaPicker();
     h += '<div style="display:flex;justify-content:center;gap:10px;margin-top:22px;flex-wrap:wrap">';
     h += '<button onclick="flipAll()" style="font:400 12px \'Noto Sans TC\',sans-serif;background:none;border:1px solid rgba(201,169,110,.4);color:#c9a96e;padding:8px 18px;border-radius:20px;cursor:pointer">全部翻牌 Reveal All</button>';
     h += '<button onclick="revealMeanings()" style="font:500 12px \'Noto Sans TC\',sans-serif;background:linear-gradient(120deg,#c9a96e,#e6cd9a);border:none;color:#1a1622;padding:8px 18px;border-radius:20px;cursor:pointer">直接看牌義 View Meanings</button>';
@@ -2512,6 +2514,66 @@ function fallbackCopy(text, onDone) {
   } catch (e) {}
 }
 
+/* ---- 複製給 AI 解讀：解讀語氣人格 ----
+   使用者可以挑選不同的「分析者」風格，這只會影響貼到複製文字最後面、
+   告訴外部 AI「請用什麼語氣回答」的那一行指示，不影響上面的資料本身。 */
+var AI_PERSONAS = [
+  {
+    key: 'moon', name: '月見', tagline: '溫暖敘事，原版語氣',
+    instruction: '請以「月見」的風格回答：語氣溫暖而有畫面感，適度使用比喻，在指出課題的同時給予鼓勵，讓人讀完覺得被理解也有方向。',
+  },
+  {
+    key: 'blade', name: '拆局者', tagline: '直接犀利，不繞路',
+    instruction: '請以「拆局者」的風格回答：直接點出核心盲點，不繞彎、不過度包裝，用簡短有力的句子把問題攤開，最後給一個明確可行的解法。',
+  },
+  {
+    key: 'blank', name: '留白', tagline: '簡要，只留重點',
+    instruction: '請以「留白」的風格回答：極度精簡，只保留最關鍵的一兩個重點，避免任何鋪陳、比喻或重複，句子越短越好。',
+  },
+  {
+    key: 'warmlight', name: '暖光', tagline: '溫暖療癒，先接住情緒',
+    instruction: '請以「暖光」的風格回答：語氣柔軟、像陪伴一樣，先同理感受再給建議，多使用肯定與安撫的字眼，避免任何批判性的用語。',
+  },
+  {
+    key: 'compass', name: '羅盤', tagline: '理性務實，給具體步驟',
+    instruction: '請以「羅盤」的風格回答：用結構化的方式呈現，先給診斷、再列出具體可執行的步驟（可用編號），語氣理性務實，避免情緒化的形容詞。',
+  },
+  {
+    key: 'random', name: '擲筊', tagline: '每次隨機，讓緣分決定',
+    instruction: '', // 特殊處理：實際風格在 personaInstructionLine() 裡每次重新抽一位
+  },
+];
+function findAiPersona(key) { return AI_PERSONAS.find(function (p) { return p.key === key; }) || AI_PERSONAS[0]; }
+/* 「擲筊」模式：每次複製都重新從其餘 5 位分析者裡隨機抽一位，並在複製出來的
+   文字裡註明這次抽到誰，讓使用者事後回頭看也知道當時是哪種語氣 */
+function personaInstructionLine() {
+  if (state.aiPersona === 'random') {
+    var pool = AI_PERSONAS.filter(function (p) { return p.key !== 'random'; });
+    var pick = pool[Math.floor(Math.random() * pool.length)];
+    return '（本次擲筊抽到「' + pick.name + '」為你解讀）\n' + pick.instruction;
+  }
+  return findAiPersona(state.aiPersona).instruction;
+}
+function setAiPersona(key) {
+  state.aiPersona = key;
+  try { localStorage.setItem('tl_ai_persona', key); } catch (e) {}
+  render();
+}
+/* 放在每個「複製給 AI 解讀」按鈕正上方的小選擇器，所有風格（含隨機的擲筊）共用同一套 state.aiPersona */
+function renderPersonaPicker() {
+  var h = '<div style="margin-top:16px">';
+  h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-bottom:6px">解讀語氣 AI Tone</div>';
+  h += '<div style="display:flex;gap:6px;flex-wrap:wrap">';
+  AI_PERSONAS.forEach(function (p) {
+    var on = state.aiPersona === p.key;
+    h += '<button type="button" aria-pressed="' + on + '" title="' + esc(p.tagline) + '" onclick="setAiPersona(\'' + p.key + '\')" style="padding:6px 12px;border-radius:14px;border:1px solid ' + (on ? '#c9a96e' : 'rgba(201,169,110,.28)') + ';background:' + (on ? 'rgba(201,169,110,.18)' : 'rgba(255,255,255,.02)') + ';color:' + (on ? '#f0e9d8' : 'rgba(240,233,216,.55)') + ';font:500 11px \'Noto Sans TC\',sans-serif;cursor:pointer">' + esc(p.name) + '</button>';
+  });
+  h += '</div>';
+  h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:5px">' + esc(findAiPersona(state.aiPersona).tagline) + '</div>';
+  h += '</div>';
+  return h;
+}
+
 function copyForAI() {
   var isTarot = state.deck === 'tarot';
   var spreads = currentSpreads();
@@ -2543,6 +2605,7 @@ function copyForAI() {
   if (_an.length) lines.push('牌陣分析：' + _an.join(' '));
   lines.push('');
   lines.push('請根據以上牌陣，幫我解讀這次占卜的整體意義。');
+  lines.push(personaInstructionLine());
   var text = lines.join('\n');
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(flashCopied).catch(function () { fallbackCopy(text); });
@@ -2783,6 +2846,7 @@ function historyCopyForAI() {
     lines.push('');
   }
   lines.push('請根據以上這次占卜紀錄，幫我重新解讀一次，並補充我當初可能沒注意到的細節或提醒。');
+  lines.push(personaInstructionLine());
   var text = lines.join('\n');
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(historyFlashCopied).catch(function () { fallbackCopy(text, historyFlashCopied); });
@@ -2856,6 +2920,7 @@ function renderHistory() {
     } else {
       h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.6);margin-top:18px;line-height:1.8;text-align:center">' + esc(e.summary) + '<br><span style="color:rgba(240,233,216,.35);font-size:11px">（此為舊格式紀錄，僅保留摘要）</span></div>';
     }
+    h += renderPersonaPicker();
     h += '<button id="hist-copy-btn" onclick="historyCopyForAI()" style="width:100%;margin-top:22px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製給 AI 解讀 Copy for AI</button>';
     h += '</div></div>';
     return h;
@@ -3943,6 +4008,7 @@ function synastryCopyForAI() {
   });
   lines.push('');
   lines.push('請根據以上兩人的合盤交叉相位，針對「' + synRelationshipLabel() + '」分析彼此的默契、互動優勢與需要磨合的課題。');
+  lines.push(personaInstructionLine());
   var text = lines.join('\n');
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(synastryFlashCopied).catch(function () { fallbackCopy(text, synastryFlashCopied); });
@@ -3979,6 +4045,7 @@ function renderSynastry() {
     h += '<div style="border-top:1px solid rgba(201,169,110,.15);padding:10px 0;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.7">' + esc(crossAspectText(asp, '本人', '對方')) + '</div>';
   });
 
+  h += renderPersonaPicker();
   h += '<button id="syn-copy-btn" onclick="synastryCopyForAI()" style="width:100%;margin-top:22px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製給 AI 解讀 Copy for AI</button>';
   h += '<button onclick="synReset()" style="width:100%;margin-top:10px;padding:12px;border-radius:12px;border:1px solid rgba(201,169,110,.3);background:rgba(255,255,255,.02);color:rgba(240,233,216,.6);font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">重新輸入對方資料 ↺</button>';
   return h;
@@ -4103,6 +4170,7 @@ function renderProgression() {
   if (state.progYears === 1) h += renderProgressionMonths(chart, city);
   if (state.astroUnknownTime) h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.38);line-height:1.7;margin-top:10px">＊出生時間未知：不採用上升、天頂、宮位及月亮相關相位；推運月亮位置僅作概略階段參考。</div>';
 
+  h += renderPersonaPicker();
   h += '<button id="prog-copy-btn" onclick="progressionCopyForAI()" style="width:100%;margin-top:22px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製未來 ' + state.progYears + ' 年給 AI 解讀</button>';
   return h;
 }
@@ -4139,6 +4207,7 @@ function progressionCopyForAI() {
   });
   lines.push('');
   lines.push('請依年份比較以上二次推運，整理長期主題、重要轉折、關係／事業／內在發展，並提醒這是占星趨勢而非事件保證。');
+  lines.push(personaInstructionLine());
   var text = lines.join('\n');
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(progressionFlashCopied).catch(function () { fallbackCopy(text, progressionFlashCopied); });
@@ -4203,6 +4272,7 @@ function astroCopyForAI() {
   }
   lines.push('');
   lines.push('請根據以上本命星盤資料，幫我做深入的性格特質與人生議題解讀。');
+  lines.push(personaInstructionLine());
   var text = lines.join('\n');
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(astroFlashCopied).catch(function () { fallbackCopy(text, astroFlashCopied); });
@@ -5129,6 +5199,7 @@ function horoCopyForAI() {
       if (row.returnChart) { var rd=row.returnChart.time.date; multi.push('太陽回歸：'+rd.getFullYear()+'/'+pad2(rd.getMonth()+1)+'/'+pad2(rd.getDate())+'　上升'+ZODIAC_SIGNS[row.returnChart.ascSign].zh+'　天頂'+ZODIAC_SIGNS[row.returnChart.mcSign].zh); }
     });
     multi.push(''); multi.push('請比較這些年份的整體起伏、感情、事業、財運與內在發展，指出最適合主動推進及較適合保守調整的年份。分數是占星趨勢指標，不是事件發生機率。');
+    multi.push(personaInstructionLine());
     var multiText = multi.join('\n');
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(multiText).then(horoFlashCopied).catch(function(){fallbackCopy(multiText,horoFlashCopied);});
     else fallbackCopy(multiText,horoFlashCopied);
@@ -5162,6 +5233,7 @@ function horoCopyForAI() {
   if (data.avoid) lines.push('避免：' + data.avoid.join('、'));
   lines.push('');
   lines.push('（分數計算方式：從基準分出發，依「本期間會被觸發的行運行星」與「本命對應行星」之間形成的相位強度增減分數；月／年運額外納入回歸盤行星落入本命宮位的加成。以上為完整依據，請根據這些實際的行運與相位，幫我做更深入、更具體的解讀與建議，而不只是重複分數高低。）');
+  lines.push(personaInstructionLine());
   var text = lines.join('\n');
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(horoFlashCopied).catch(function () { fallbackCopy(text, horoFlashCopied); });
@@ -5214,6 +5286,7 @@ function renderHoroscope(periodKey) {
     h += renderPeriodDashboard(chart, transitPlanets, periodKey, periodCfg, now, city, rangeLabel);
   }
 
+  h += renderPersonaPicker();
   h += '<button id="horo-copy-btn" onclick="horoCopyForAI()" style="width:100%;margin-top:22px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">' + (periodKey === 'yearly' && state.horoYearRange > 1 ? '複製未來 ' + state.horoYearRange + ' 年給 AI 解讀' : '複製給 AI 解讀 Copy for AI') + '</button>';
   h += '<button onclick="astroSetView(\'chart\')" style="width:100%;margin-top:10px;padding:12px;border-radius:12px;border:1px solid rgba(201,169,110,.3);background:rgba(255,255,255,.02);color:rgba(240,233,216,.6);font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">← 回到本命星盤</button>';
   return h;
@@ -5405,6 +5478,7 @@ function renderAstro() {
       h += '</div></details>';
     }
 
+    h += renderPersonaPicker();
     h += '<button id="astro-copy-btn" onclick="astroCopyForAI()" style="width:100%;margin-top:24px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製給 AI 解讀 Copy for AI</button>';
     h += '<button onclick="astroReset()" style="width:100%;margin-top:10px;padding:12px;border-radius:12px;border:1px solid rgba(201,169,110,.3);background:rgba(255,255,255,.02);color:rgba(240,233,216,.6);font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">重新輸入 ↺</button>';
     h += '<div style="text-align:center;margin-top:10px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap">';
@@ -5420,6 +5494,7 @@ function renderAstro() {
 
 astroLoadProfile();
 try { state.astroTourDismissed = localStorage.getItem('tl_astro_tour_seen') === '1'; } catch (e) {}
+try { var _savedPersona = localStorage.getItem('tl_ai_persona'); if (_savedPersona && findAiPersona(_savedPersona).key === _savedPersona) state.aiPersona = _savedPersona; } catch (e) {}
 
 render();
 
