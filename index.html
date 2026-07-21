@@ -4617,6 +4617,18 @@ function renderDailyHoroscope(chart, transitPlanets, periodCfg, now) {
   h += '<div style="flex:1"><div style="font:700 13px \'Noto Sans TC\',sans-serif;color:#d67878">避免</div><div style="margin-top:6px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.7">' + esc(avoidItems.join('、')) + '</div></div>';
   h += '</div>';
 
+  var categoryOneliners = {};
+  HOROSCOPE_SCORE_CATS.forEach(function (cat) { categoryOneliners[cat.key] = categoryOnelinerText(cat.key, scores[cat.key]); });
+  h += '<div style="margin-top:20px;border-top:1px solid rgba(201,169,110,.15);padding-top:14px">';
+  h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase">今日提醒 By Category</div>';
+  HOROSCOPE_SCORE_CATS.forEach(function (cat) {
+    h += '<div style="display:flex;gap:8px;margin-top:9px;align-items:baseline">';
+    h += '<span style="flex:none;width:38px;font:600 12px \'Noto Sans TC\',sans-serif;color:#e6cd9a">' + esc(cat.zh) + '</span>';
+    h += '<span style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.6">' + esc(categoryOneliners[cat.key]) + '</span>';
+    h += '</div>';
+  });
+  h += '</div>';
+
   h += '<div style="margin-top:22px;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;text-align:center">今日幸運關鍵字</div>';
   h += renderLuckyGrid(rng);
 
@@ -4628,7 +4640,7 @@ function renderDailyHoroscope(chart, transitPlanets, periodCfg, now) {
     dateRangeLabel: now.getFullYear() + '/' + pad2(now.getMonth() + 1) + '/' + pad2(now.getDate()),
     overall: overall, scores: scores,
     summary: narrative, advice: adviceItems, avoid: avoidItems,
-    returnInfo: null, categoryTexts: null, scoreBasis: dailyScoreBasis,
+    returnInfo: null, categoryTexts: null, categoryOneliners: categoryOneliners, scoreBasis: dailyScoreBasis,
   };
 
   return h;
@@ -4705,6 +4717,48 @@ var PERIOD_CATEGORY_TEXT = {
   },
 };
 
+/* per-category short one-line reminder/highlight, shown alongside the score
+   and (for week/month/year) the long-form paragraph — gives a concrete,
+   actionable takeaway ("注意...") rather than an abstract score */
+var CATEGORY_ONELINER = {
+  love: {
+    positive: '適合主動聯繫在意的人，好感更容易被回應。',
+    neutral: '維持穩定互動即可，不必刻意製造話題。',
+    challenging: '注意言語衝突與誤會，講話前先緩一口氣。',
+  },
+  career: {
+    positive: '適合主動爭取表現機會，努力容易被看見。',
+    neutral: '按部就班完成手邊工作，先別急著求變。',
+    challenging: '注意工作上的溝通落差，重要訊息務必再三確認。',
+  },
+  family: {
+    positive: '適合安排家庭聚會，感情會更緊密。',
+    neutral: '維持日常互動即可，不必特別安排什麼。',
+    challenging: '注意長輩健康與家人情緒，避免舊事重提引發爭執。',
+  },
+  health: {
+    positive: '精神狀態不錯，適合安排運動或健檢。',
+    neutral: '作息維持規律即可，不必刻意進補或衝刺。',
+    challenging: '注意飲食與作息，避免熬夜或暴飲暴食。',
+  },
+  wealth: {
+    positive: '財運加分，適合檢視理財規劃或談加薪。',
+    neutral: '收支平穩，維持原有理財節奏即可。',
+    challenging: '注意意外支出與衝動消費，簽約前多看一次條款。',
+  },
+  social: {
+    positive: '人際魅力加分，適合參加聚會或拓展人脈。',
+    neutral: '人際互動平順，維持現有節奏即可。',
+    challenging: '注意口舌是非，避免在群體中隨口評論他人。',
+  },
+  study: {
+    positive: '吸收力不錯，適合挑戰較難的內容。',
+    neutral: '按進度複習即可，不必臨時抱佛腳。',
+    challenging: '注意粗心失誤，答題或交件前務必再檢查一次。',
+  },
+};
+function categoryOnelinerText(catKey, score) { return (CATEGORY_ONELINER[catKey] || {})[astroToneOf(score)] || ''; }
+
 var RETURN_HIGHLIGHT_LABEL = { wealth: '財運', love: '感情', career: '事業／工作', family: '家庭', health: '健康', social: '人際', study: '學業／學習', general: '自我狀態' };
 
 function renderReturnHighlight(returnChart, kindLabel, dateLabel, topCatKey) {
@@ -4772,12 +4826,14 @@ function renderPeriodDashboard(chart, transitPlanets, periodKey, periodCfg, now,
   h += '<div style="margin-top:18px">' + renderLuckyMini(rng) + '</div>';
 
   h += '<div style="margin-top:22px;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;text-align:center">分項解讀</div>';
-  var categoryTexts = {};
+  var categoryTexts = {}, categoryOneliners = {};
   HOROSCOPE_SCORE_CATS.forEach(function (cat) {
     var s = scores[cat.key], col = CATEGORY_COLOR[cat.key];
     var tone = astroToneOf(s);
     var text = PERIOD_CATEGORY_TEXT[cat.key][tone];
+    var oneliner = categoryOnelinerText(cat.key, s);
     categoryTexts[cat.key] = text;
+    categoryOneliners[cat.key] = oneliner;
     h += '<div style="border-top:1px solid rgba(201,169,110,.15);padding:16px 0">';
     h += '<div style="display:flex;align-items:center;gap:10px">';
     h += '<span style="font:700 14px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + cat.zh + '</span>';
@@ -4785,6 +4841,7 @@ function renderPeriodDashboard(chart, transitPlanets, periodKey, periodCfg, now,
     h += '<div style="flex:1;height:7px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden"><div style="width:' + s + '%;height:100%;background:linear-gradient(90deg,' + col[0] + ',' + col[1] + ')"></div></div>';
     h += '</div>';
     h += '<div style="margin-top:8px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.8">' + esc(text) + '</div>';
+    h += '<div style="margin-top:7px;font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;line-height:1.7">' + esc(oneliner) + '</div>';
     h += '</div>';
   });
 
@@ -4807,7 +4864,7 @@ function renderPeriodDashboard(chart, transitPlanets, periodKey, periodCfg, now,
     overall: overall, scores: scores,
     summary: summaryText, advice: null, avoid: null,
     returnInfo: returnChart ? { kindLabel: kindLabel, dateLabel: returnDateLabel, ascSign: ZODIAC_SIGNS[returnChart.ascSign].zh, mcSign: ZODIAC_SIGNS[returnChart.mcSign].zh } : null,
-    categoryTexts: categoryTexts, scoreBasis: periodScoreBasis,
+    categoryTexts: categoryTexts, categoryOneliners: categoryOneliners, scoreBasis: periodScoreBasis,
   };
 
   return h;
@@ -4955,6 +5012,7 @@ function horoCopyForAI() {
     if (data.scores[cat.key] == null) return;
     lines.push('- ' + cat.zh + '：' + data.scores[cat.key] + ' 分');
     if (data.categoryTexts && data.categoryTexts[cat.key]) lines.push('　解讀：' + data.categoryTexts[cat.key]);
+    if (data.categoryOneliners && data.categoryOneliners[cat.key]) lines.push('　提醒：' + data.categoryOneliners[cat.key]);
     var basis = data.scoreBasis && data.scoreBasis[cat.key];
     if (basis && basis.length) {
       lines.push('　依據：' + basis.slice(0, 5).join('；'));
@@ -5001,6 +5059,7 @@ function renderHoroscope(periodKey) {
   }
 
   if (periodKey === 'daily') {
+    h += '<div style="display:flex;gap:7px;margin-top:13px"><input id="horo-day-jump" aria-label="指定日期" type="date" value="' + isoDateStr(now) + '" onchange="astroSetHoroDay(this.value)" style="flex:1;min-width:0;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:9px;padding:8px 10px;color:#f0e9d8;font:400 12px \'Noto Sans TC\',sans-serif;outline:none;color-scheme:dark">' + (state.horoDayAnchor ? '<button onclick="astroSetHoroDay(\'' + isoDateStr(new Date()) + '\')" style="flex:none;border:1px solid #c9a96e;border-radius:9px;padding:8px 13px;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 11px \'Noto Sans TC\',sans-serif;cursor:pointer;white-space:nowrap">回到今天</button>' : '') + '</div>';
     h += renderDailyDateStrip(now);
     h += renderDailyHoroscope(chart, transitPlanets, periodCfg, now);
   } else if (periodKey === 'weekly') {
