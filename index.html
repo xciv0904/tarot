@@ -3315,8 +3315,48 @@ function planetSignMeaning(def, sign) {
   var flavor = ELEMENT_FLAVOR[sign.elem] || '';
   return def.zh + '代表你的' + def.meaning + '。當這股特質落在' + sign.zh + '，會揉合「' + sign.trait + '」這種性格色彩——' + flavor + '。簡單來說，這就是你展現' + def.kw + '時，最自然會用上的方式。';
 }
+/* concrete, everyday-life scenarios for each house — used so the planet+house
+   explanation gives actual examples instead of just restating the abstract
+   life-area label */
+var HOUSE_SCENARIOS = [
+  ['你怎麼向陌生人介紹自己', '你給人的第一印象', '展開新計畫或新關係時的態度'],
+  ['你賺錢與花錢的習慣', '你對自己能力與價值的信心', '你擁有的東西帶給你的安全感'],
+  ['你跟兄弟姊妹、鄰居、同學相處的方式', '日常閒聊、傳訊息、討論生活小事的習慣', '你怎麼學習新知識、吸收資訊'],
+  ['你在原生家庭中扮演的角色', '你對「家」這個空間的情感依附', '壓力大時，你回到內心尋求安穩的方式'],
+  ['你談戀愛、展現魅力的方式', '你投入興趣、藝術創作或玩樂的程度', '你想被眾人注目、獲得掌聲的渴望'],
+  ['你處理每天例行工作與雜務的態度', '你照顧身體、維持健康習慣的方式', '你在職場上服務、協助他人的表現'],
+  ['你挑選伴侶或重要合作對象的標準', '你在一對一關係裡表現自己的方式', '你怎麼處理關係中的衝突與協商'],
+  ['你跟伴侶討論金錢、財務共享時的態度', '你面對重大危機、失落或轉變時刻的反應', '你對性、生死、心理深層議題的好奇或敏感程度'],
+  ['你對異國文化、長途旅行的嚮往', '你追求高等教育、進修新領域的動機', '你怎麼形成自己的人生信念與世界觀'],
+  ['你在職場上追求的成就與頭銜', '外界，例如上司或社會大眾如何看待你', '你想在眾人面前留下的形象'],
+  ['你挑選朋友圈、社群的方式', '你參與團體活動、公益或理想性計畫的熱忱', '你對未來、對世界能變得更好的願景'],
+  ['你一個人獨處、沉澱時做的事', '你不輕易讓人看見的脆弱或秘密', '你的直覺、夢境，或說不清楚原因的感受'],
+];
+/* what each point is actually "after" — phrased as a concrete want/need
+   rather than an abstract noun, so it reads as a real motivation */
+var PLANET_DRIVE = {
+  Sun: '想被看見、想活出自己核心價值與自信的渴望',
+  Moon: '需要安全感、想被好好照顧、情緒被接住的渴望',
+  Mercury: '想把想法說清楚、想被理解，也喜歡持續學習新事物的習慣',
+  Venus: '想被喜歡、追求美感與和諧、想擁有讓自己愉悅的事物的渴望',
+  Mars: '想主動出擊、證明行動力、爭取想要的東西的衝勁',
+  Jupiter: '想擴展視野、把握成長機會、相信事情會變好的樂觀',
+  Saturn: '需要扛起責任、透過紀律證明自己、面對現實課題的壓力與成長',
+  Uranus: '想打破常規、追求自由與與眾不同的渴望',
+  Neptune: '容易被觸動、追尋夢想與理想，有時也容易感到迷惘的敏感',
+  Pluto: '想掌控全局、經歷深刻蛻變、在極端情況中展現力量的驅動力',
+  Node: '這一世想要學習、想要成長突破的方向',
+  SNode: '與生俱來就很熟悉，卻也容易安於現狀而需要放下的舒適圈',
+  Lilith: '不想被馴服、想忠於原始慾望與真實自我的那一面',
+  Chiron: '曾經受過傷、也因此特別能同理與療癒他人的敏感點',
+  Fortune: '不太費力就能感受到幸福、資源自然匯聚的地方',
+  Vertex: '命中注定般的相遇與轉折，容易發生的地方',
+};
 function planetHouseMeaning(def, houseNum) {
-  return def.zh + '代表你的' + def.meaning + '。它主要會透過第' + houseNum + '宮所象徵的「' + HOUSE_MEANINGS[houseNum - 1] + '」這個生活領域展現出來——也就是說，比起其他地方，你更容易在這個領域感受到' + def.zh + '帶來的影響。';
+  var drive = PLANET_DRIVE[def.key] || def.meaning;
+  var scenarios = HOUSE_SCENARIOS[houseNum - 1] || [];
+  var scenarioText = scenarios.length ? scenarios.join('、') : HOUSE_MEANINGS[houseNum - 1];
+  return def.zh + '在第' + houseNum + '宮，代表你「' + drive + '」，會具體展現在這些地方：' + scenarioText + '。換句話說，這些生活片段，就是你最容易感受到' + def.zh + '這股力量在起作用的時刻。';
 }
 function openPlanetSignModal(key) { state.astroPlacementModal = { type: 'sign', key: key }; render(); }
 function openPlanetHouseModal(key, houseNum) { state.astroPlacementModal = { type: 'house', key: key, house: houseNum }; render(); }
