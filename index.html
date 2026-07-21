@@ -5156,7 +5156,8 @@ function renderAstro() {
     h += renderAngleAndHouseBeginner(chart);
     h += renderElementQualitySummary(chart);
 
-    h += '<div style="margin-top:22px;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase">行星落點 Placements</div>';
+    h += '<details style="margin-top:22px" ontoggle="this.querySelector(\'.astro-caret\').textContent=this.open?\'▾\':\'▸\'"><summary style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;cursor:pointer;list-style:none"><span class="astro-caret" style="display:inline-block;width:12px">▸</span>行星落點 Placements</summary>';
+    h += '<div style="margin-top:2px">';
     PLANET_DEFS.forEach(function (def) {
       var p = chart.planets[def.key];
       var sign = ZODIAC_SIGNS[p.sign];
@@ -5169,8 +5170,10 @@ function renderAstro() {
       h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.7);margin-top:5px;line-height:1.7">' + esc(preview.oneLine) + '</div><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:5px">點一下看生活例子、優勢與提醒 →</div>';
       h += '</button>';
     });
+    h += '</div></details>';
 
-    h += '<div style="margin-top:22px;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase">額外本命點 Additional Points</div>';
+    h += '<details style="margin-top:14px" ontoggle="this.querySelector(\'.astro-caret\').textContent=this.open?\'▾\':\'▸\'"><summary style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;cursor:pointer;list-style:none"><span class="astro-caret" style="display:inline-block;width:12px">▸</span>額外本命點 Additional Points</summary>';
+    h += '<div style="margin-top:2px">';
     EXTRA_POINT_DEFS.forEach(function (def) {
       if (state.astroUnknownTime && (def.key === 'Fortune' || def.key === 'Vertex')) return;
       var p = chart.points[def.key];
@@ -5188,15 +5191,18 @@ function renderAstro() {
       h += '</div>';
     });
     h += '<details style="margin-top:9px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.38);cursor:pointer">查看額外本命點的算法與精度</summary><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);line-height:1.7;margin-top:5px">凱龍星座標為簡化軌道模型估算，精度約在 0.2° 以內；莉莉絲／福點／交點採用平均點（mean）算法，屬主流占星軟體常見標準之一；出生地與時間的時區換算已自動套用當地歷史上的日光節約時間規則，不需要自行手動校正。</div></details>';
+    h += '</div></details>';
 
     var usableAspects = astroUsableAspects(chart);
     if (usableAspects.length) {
-      h += '<details style="margin-top:22px"><summary style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);cursor:pointer">查看專業相位總表 Aspect Grid</summary>';
+      h += '<details style="margin-top:14px" ontoggle="this.querySelector(\'.astro-caret\').textContent=this.open?\'▾\':\'▸\'"><summary style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;cursor:pointer;list-style:none"><span class="astro-caret" style="display:inline-block;width:12px">▸</span>主要相位 Aspects</summary>';
+      h += '<div style="margin-top:2px">';
+      h += '<details style="margin-top:8px"><summary style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;color:rgba(240,233,216,.5);cursor:pointer">查看專業相位總表 Aspect Grid</summary>';
       h += renderAspectGrid(chart)+'</details>';
-      h += '<div style="margin-top:14px;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase">主要相位 Aspects</div>';
       usableAspects.slice().sort(function (x, y) { return x.orb - y.orb; }).forEach(function (asp) {
         h += renderAspectBeginnerCard(asp);
       });
+      h += '</div></details>';
     }
 
     h += '<button id="astro-copy-btn" onclick="astroCopyForAI()" style="width:100%;margin-top:24px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製給 AI 解讀 Copy for AI</button>';
