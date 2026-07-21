@@ -359,7 +359,7 @@ var state = {
   phase: 'setup',      // setup | shuffling | picking | result
   pickOrder: [],       // shuffled indices of the full deck (picking pool)
   picked: [],          // pool cell indices the user has tapped, in order
-  dailyFlipped: false,
+  dailyFlipped: true,
   history: [],
   libDeck: 'tarot',
   libSuit: 'all',
@@ -377,7 +377,6 @@ var state = {
   aboutOpen: false,
   copied: false,
   tlGuideOpen: false,
-  dailyRevealed: false,
   homeMoreOpen: false,
   astroY: '', astroM: '', astroD: '', astroH: '', astroMin: '',
   astroCityQuery: '', astroCityIdx: null, astroCityUsed: null,
@@ -1575,58 +1574,59 @@ function startQuestionFlow() {
   go('reading', state.deck || 'tarot');
 }
 
-function toggleDailyReveal() {
-  state.dailyRevealed = !state.dailyRevealed;
-  render();
-  if (state.dailyRevealed) {
-    setTimeout(function () {
-      var el = document.getElementById('daily-card-block');
-      if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 60);
-  }
-}
-
 function toggleHomeMore() { state.homeMoreOpen = !state.homeMoreOpen; render(); }
+
+/* daily card's full meaning text: prefer the rich (upright/reversed) paragraph,
+   fall back to the short zh meaning if no rich entry exists for this card */
+function dailyFullMeaning(c, reversed) {
+  if (c.rich) return reversed ? c.rich.r : c.rich.u;
+  return reversed ? c.revZh : c.upZh;
+}
 
 function renderHome() {
   var h = '';
   h += '<div style="padding:0 24px">';
 
-  // ---- two primary entry points ----
+  // ---- primary entry point ----
   h += '<div style="display:flex;flex-direction:column;gap:12px;margin-top:6px">';
   h += '<button onclick="startQuestionFlow()" style="font:600 16px \'Noto Serif TC\',serif;letter-spacing:.04em;background:linear-gradient(120deg,#c9a96e,#e6cd9a);color:#1a1622;border:none;padding:22px 22px;border-radius:14px;cursor:pointer;text-align:left">';
   h += '<div>我想問一個問題 →</div><div style="font:italic 11px \'EB Garamond\',serif;opacity:.7;margin-top:3px;font-weight:400">I have a question — start a guided reading</div>';
   h += '</button>';
-  h += '<button onclick="toggleDailyReveal()" style="font:600 16px \'Noto Serif TC\',serif;letter-spacing:.04em;background:rgba(201,169,110,.12);color:#f0e9d8;border:1px solid rgba(201,169,110,.5);padding:22px 22px;border-radius:14px;cursor:pointer;text-align:left">';
-  h += '<div>我想抽今日指引 →</div><div style="font:italic 11px \'EB Garamond\',serif;opacity:.6;margin-top:3px;font-weight:400">Just draw today\'s single card</div>';
-  h += '</button>';
   h += '</div>';
 
-  // ---- daily card, revealed on demand ----
-  if (state.dailyRevealed) {
-    var c = dailyCard;
-    var meaningZh = dailyReversed ? c.revZh : c.upZh;
-    var meaningEn = dailyReversed ? c.revEn : c.upEn;
-    var todayLabel = new Date().toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' });
-    h += '<div id="daily-card-block" style="margin-top:28px">';
-    h += '<div style="text-align:center;font:italic 12px \'EB Garamond\',serif;color:rgba(240,233,216,.5);margin-bottom:16px">' + esc(todayLabel) + '・今日一牌 Daily Card</div>';
-    var frontInner = '<div style="position:absolute;inset:4px;border:1px solid #d8b96c;border-radius:7px;overflow:hidden;display:flex;flex-direction:column">'
-      + cardImgHtml(c.img, c.nameZh + ' ' + c.nameEn)
-      + '<div style="flex:none;background:#f2e9d8;padding:8px 6px 10px;text-align:center;border-top:1px solid #d8b96c">'
-      + '<div style="font:600 11px \'Noto Serif TC\',serif;color:#8a6f47">' + esc(c.num) + '</div>'
-      + '<div style="font:600 15px \'Noto Serif TC\',serif;color:#4a3826;margin-top:2px">' + esc(c.nameZh) + '</div>'
-      + '<div style="font:italic 10px \'EB Garamond\',serif;color:#a9784f">' + esc(c.nameEn) + '</div>'
-      + '<div style="font:500 10px \'Noto Sans TC\',sans-serif;color:#8a6f47;margin-top:4px">' + (dailyReversed ? '逆位 Reversed' : '正位 Upright') + '</div>'
-      + '</div></div>';
-    h += '<div onclick="toggleDailyFlip()" style="margin:0 auto;width:170px;height:262px;cursor:pointer;position:relative">';
-    h += flipBox('daily', state.dailyFlipped, 10, sigil(76, 76), frontInner);
-    h += '</div>';
-    h += '<div id="daily-meaning" style="text-align:center;margin-top:16px;padding:0 20px;display:' + (state.dailyFlipped ? 'block' : 'none') + '">';
-    h += '<div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + esc(meaningZh) + '</div>';
-    h += '<div style="font:italic 12px \'EB Garamond\',serif;color:rgba(240,233,216,.5);margin-top:3px">' + esc(meaningEn) + '</div>';
-    h += '</div>';
-    h += '</div>';
-  }
+  // ---- daily card, always shown, no click needed ----
+  var c = dailyCard;
+  var meaningZh = dailyReversed ? c.revZh : c.upZh;
+  var meaningEn = dailyReversed ? c.revEn : c.upEn;
+  var todayLabel = new Date().toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' });
+  h += '<div id="daily-card-block" style="margin-top:28px">';
+  h += '<div style="text-align:center;font:italic 12px \'EB Garamond\',serif;color:rgba(240,233,216,.5);margin-bottom:16px">' + esc(todayLabel) + '・今日一牌 Daily Card</div>';
+  var frontInner = '<div style="position:absolute;inset:4px;border:1px solid #d8b96c;border-radius:7px;overflow:hidden;display:flex;flex-direction:column">'
+    + cardImgHtml(c.img, c.nameZh + ' ' + c.nameEn)
+    + '<div style="flex:none;background:#f2e9d8;padding:8px 6px 10px;text-align:center;border-top:1px solid #d8b96c">'
+    + '<div style="font:600 11px \'Noto Serif TC\',serif;color:#8a6f47">' + esc(c.num) + '</div>'
+    + '<div style="font:600 15px \'Noto Serif TC\',serif;color:#4a3826;margin-top:2px">' + esc(c.nameZh) + '</div>'
+    + '<div style="font:italic 10px \'EB Garamond\',serif;color:#a9784f">' + esc(c.nameEn) + '</div>'
+    + '<div style="font:500 10px \'Noto Sans TC\',sans-serif;color:#8a6f47;margin-top:4px">' + (dailyReversed ? '逆位 Reversed' : '正位 Upright') + '</div>'
+    + '</div></div>';
+  h += '<div onclick="toggleDailyFlip()" style="margin:0 auto;width:170px;height:262px;cursor:pointer;position:relative">';
+  h += flipBox('daily', state.dailyFlipped, 10, sigil(76, 76), frontInner);
+  h += '</div>';
+  h += '<div id="daily-meaning" style="text-align:center;margin-top:16px;padding:0 20px;display:' + (state.dailyFlipped ? 'block' : 'none') + '">';
+  h += '<div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + esc(meaningZh) + '</div>';
+  h += '<div style="font:italic 12px \'EB Garamond\',serif;color:rgba(240,233,216,.5);margin-top:3px">' + esc(meaningEn) + '</div>';
+  h += '</div>';
+  h += '<div style="margin-top:18px;display:flex;flex-direction:column;gap:10px;padding:0 4px">';
+  h += '<div style="border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:12px 15px;background:rgba(255,255,255,.02)">';
+  h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;color:#c9a96e">為什麼是這張牌 <span style="opacity:.55;font-style:italic">Why this card</span></div>';
+  h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);margin-top:6px;line-height:1.85;text-align:justify">今天是「' + esc(todayLabel) + '」，宇宙把這一天的訊息，摺進了這張牌裡。它不是隨機翻出來的——今天無論你什麼時候打開，遇見的都會是它；等到明天，時間翻頁，才會換下一張牌與你相遇。就把它當作今天專屬於你的一次低語。</div>';
+  h += '</div>';
+  h += '<div style="border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:12px 15px;background:rgba(255,255,255,.02)">';
+  h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;color:#c9a96e">這張牌的意義 <span style="opacity:.55;font-style:italic">Card Meaning</span></div>';
+  h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);margin-top:6px;line-height:1.85;text-align:justify">' + esc(dailyFullMeaning(c, dailyReversed)) + '</div>';
+  h += '</div>';
+  h += '</div>';
+  h += '</div>';
 
   // ---- everything else, collapsed by default ----
   h += '<div style="margin-top:32px;border-top:1px solid rgba(201,169,110,.15);padding-top:16px">';
