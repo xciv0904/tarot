@@ -3164,6 +3164,26 @@ var POINT_BEGINNER = {
   Vertex:{plain:'這是比較容易出現重要相遇、意外邀請或關係轉折的領域。',strength:'它提醒你留意那些改變觀點與人生方向的互動。',watch:'不是每次相遇都注定長久，也不代表完全無法選擇。'}
 };
 var EXTRA_POINT_KEYS = EXTRA_POINT_DEFS.map(function (p) { return p.key; });
+/* 額外本命點：一樣用多種句子骨架＋seed 挑選，避免同星座的不同本命點讀起來像複製貼上 */
+var POINT_INTRO_TPL = [
+  '{plain}落在{S}，會帶上一點「{trait}」的色彩。',
+  '{plain}而{S}的映照，讓它多了幾分「{trait}」的味道。',
+  '{plain}在{S}的位置上，這件事常用「{trait}」的方式呈現出來。',
+  '{plain}到了{S}，表現得更「{trait}」一些。',
+];
+var POINT_HOUSE_TPL = [
+  '最容易出現在{area}——像是{example}這類情境。',
+  '你最常在{area}感受到它——例如{example}的時候。',
+  '{example}時，往往就是它最常浮現出來的時刻，主要體現在{area}。',
+];
+function pointBeginnerParagraph(def, chart, hb) {
+  var p = chart.points[def.key], sign = ZODIAC_SIGNS[p.sign];
+  var beginner = POINT_BEGINNER[def.key];
+  var seed = def.key + '|' + p.sign + '|' + (hb ? p.house : '');
+  var intro = fillTpl(astroSeededPick(seed + 'pintro', POINT_INTRO_TPL), { plain: beginner.plain, S: sign.zh, trait: sign.trait });
+  var houseSentence = hb ? fillTpl(astroSeededPick(seed + 'phouse', POINT_HOUSE_TPL), { area: hb.area, example: hb.example }) : '';
+  return intro + (houseSentence ? houseSentence : '');
+}
 
 function astroJulianCenturiesTT(time) { return time.tt / 36525; }
 /* 平均北交點（Mean Node），Meeus 公式 */
@@ -3414,22 +3434,61 @@ function planetPlacementText(planetDef, chart) {
   var houseText = state.astroUnknownTime ? '。由於出生時間未知，本次不解讀宮位' : '；坐落於第' + p.house + '宮，主要體現在' + HOUSE_MEANINGS[p.house - 1] + '上';
   return planetDef.zh + '代表' + planetDef.meaning + '。在' + sign.zh + '的映照下，這股能量傾向' + sign.trait + houseText + '。' + (p.retro ? '目前為逆行狀態，這股能量的展現較為內化，需要多一層自我覺察才會顯現在外。' : '');
 }
+/* 用不同的句子骨架組合行星＋星座＋宮位資訊，讓「同一顆行星」在不同盤裡讀起來
+   像一段有溫度的完整敘述，而不是套用同一個公式；每個佔位符用 seed 決定要挑
+   哪一種骨架，同一個人重讀時文字穩定，但不同行星/星座/宮位組合不會撞句型 */
+var PLACEMENT_INTRO_TPL = [
+  '你的{P}落在{S}，核心任務是{verb}；你的性格帶著一點「{trait}」，行動上習慣「{mode}」。',
+  '{P}進到{S}，最在意的是「{verb}」這件事，個性上有「{trait}」的底色，做法偏向「{mode}」。',
+  '當{P}遇上{S}，你會很自然地想要{verb}，同時展現出「{trait}」，習慣用「{mode}」的方式進行。',
+  '{S}的{P}，讓你對「{verb}」特別上心；帶著「{trait}」的味道，行事風格是「{mode}」。',
+];
+var PLACEMENT_HOUSE_TPL = [
+  '這股力量最常出現在{area}，尤其是{example}的時候。',
+  '你最容易在{area}感受到它的存在——像是{example}這類情境。',
+  '{example}時，通常就是這份特質正在運作的時刻，主要體現在{area}。',
+];
+var PLACEMENT_STRENGTH_TPL = [
+  '你的優勢是{pbS}，再加上{sbS}，讓你比別人多一份底氣。',
+  '好處是，你通常能{pbS}——同時也{sbS}。',
+  '這讓你比較容易{pbS}，也{sbS}。',
+  '值得肯定的是，你能{pbS}，而且{sbS}。',
+];
+var PLACEMENT_WATCH_TPL = [
+  '不過也要留意，{sbW}；同時別忘了{pbW}。',
+  '比較需要練習的是{sbW}，另外{pbW}也值得注意。',
+  '容易卡住的地方是{sbW}——提醒自己{pbW}。',
+  '需要放在心上的是{sbW}，加上{pbW}，會更平衡。',
+];
+var PLACEMENT_EVERYDAY_TPL = [
+  '例如{example}時，你的目標通常是{result}，實際做法是「{behavior}」。',
+  '像是{example}的時候，你想要的其實是{result}——你會用「{behavior}」來處理。',
+  '你可以觀察{example}的時刻：目標是{result}，習慣的做法是「{behavior}」。',
+];
+var PLACEMENT_EVERYDAY_NOHOUSE_TPL = [
+  '生活中，你的目標通常是{result}，實際做法是「{behavior}」。',
+  '你想要的其實是{result}——具體來說，你會用「{behavior}」去達成。',
+];
 function planetBeginnerDetail(planetDef, chart) {
   var p = chart.planets[planetDef.key], sign = ZODIAC_SIGNS[p.sign];
   var pb = PLANET_BEGINNER[planetDef.key], sb = SIGN_BEGINNER[p.sign];
   var hb = state.astroUnknownTime ? null : HOUSE_BEGINNER[p.house - 1];
-  /* lead with the planet-specific task (differs every time) rather than the
-     sign "mode" phrase (identical for any two placements sharing a sign) —
-     otherwise two placements in the same sign read as near-identical */
-  var oneLine = '這裡的核心任務是' + pb.verb + '；你習慣用「' + sb.mode + '」的方式進行' + (hb ? '，尤其容易在' + hb.area + '這件事上感受到' : '') + '。';
-  var everyday = hb ? '例如，當' + hb.example + '時，你的目標通常是' + pb.result + '——實際做法是' + sb.behavior + '。' : '生活中，你的目標通常是' + pb.result + '——實際做法是' + sb.behavior + '。';
+  var seed = planetDef.key + '|' + p.sign + '|' + (hb ? p.house : '');
+  var intro = fillTpl(astroSeededPick(seed + 'intro', PLACEMENT_INTRO_TPL), { P: planetDef.zh, S: sign.zh, verb: pb.verb, trait: sign.trait, mode: sb.mode });
+  var houseSentence = hb ? fillTpl(astroSeededPick(seed + 'house', PLACEMENT_HOUSE_TPL), { area: hb.area, example: hb.example }) : '';
+  var oneLine = intro + (houseSentence ? ' ' + houseSentence : '');
+  var everyday = hb
+    ? fillTpl(astroSeededPick(seed + 'everyday', PLACEMENT_EVERYDAY_TPL), { example: hb.example, result: pb.result, behavior: sb.behavior })
+    : fillTpl(astroSeededPick(seed + 'everyday', PLACEMENT_EVERYDAY_NOHOUSE_TPL), { result: pb.result, behavior: sb.behavior });
+  var strength = fillTpl(astroSeededPick(seed + 'strength', PLACEMENT_STRENGTH_TPL), { pbS: pb.strength, sbS: sb.strength });
+  var watch = fillTpl(astroSeededPick(seed + 'watch', PLACEMENT_WATCH_TPL), { sbW: sb.watch, pbW: pb.watch });
   return {
     title: planetDef.sym + ' ' + planetDef.zh + '在' + sign.zh + (hb ? '｜第' + p.house + '宮' : ''),
     question: pb.question,
     oneLine: oneLine,
     everyday: everyday,
-    strength: pb.strength + '；' + sb.strength + '。',
-    watch: sb.watch + '，也要記得' + pb.watch + '。',
+    strength: strength,
+    watch: watch,
     technical: planetDef.zh + '＝' + planetDef.meaning + '；' + sign.zh + '＝表現方式；' + (hb ? '第' + p.house + '宮＝' + hb.area : '出生時間未知，因此不採用宮位') + '。'
   };
 }
@@ -3471,36 +3530,98 @@ function aspectPlacementText(asp) {
 }
 /* 每個相位類型都用 {Akw}/{Bkw} 帶入實際的兩個點，避免不同組合出現一模一樣的
    優勢／容易卡住／可以怎麼練習，讓文字真正跟這兩個特質有關，而不是套版 */
+/* 每種相位類型提供多種句子骨架（不只是換關鍵字），實際使用哪一種由這一對
+   點的 seed 決定 —— 這樣就算兩組都是「三分相」，讀起來也不會是同一套模板 */
 var ASPECT_BEGINNER = {
   conjunction: {
-    lead: '「{Akw}」與「{Bkw}」緊密疊加在一起，力量集中，幾乎變成同一種反應。',
-    strength: '你在展現「{Akw}」的同時，很自然也會帶出「{Bkw}」，這種集中的力量容易形成鮮明的個人風格。',
-    watch: '因為兩者太黏在一起，你可能很難分清楚此刻自己真正需要的是「{Akw}」還是「{Bkw}」。',
-    practice: '練習先分別說出「{Akw}」與「{Bkw}」各自的需求，再決定此刻要讓哪一個帶頭。',
+    lead: [
+      '「{Akw}」與「{Bkw}」緊密疊加在一起，力量集中，幾乎變成同一種反應。',
+      '「{Akw}」與「{Bkw}」黏得很近，兩股力量幾乎同時發動，很難分開看待。',
+    ],
+    strength: [
+      '你在展現「{Akw}」的同時，很自然也會帶出「{Bkw}」，這種集中的力量容易形成鮮明的個人風格。',
+      '正因為兩者合而為一，你在「{Akw}」與「{Bkw}」上常有超乎預期的爆發力與辨識度。',
+    ],
+    watch: [
+      '因為兩者太黏在一起，你可能很難分清楚此刻自己真正需要的是「{Akw}」還是「{Bkw}」。',
+      '力量太集中時，「{Akw}」可能會蓋過「{Bkw}」（或反過來），讓你忽略了另一邊真正的需求。',
+    ],
+    practice: [
+      '練習先分別說出「{Akw}」與「{Bkw}」各自的需求，再決定此刻要讓哪一個帶頭。',
+      '試著把「{Akw}」與「{Bkw}」暫時拆開來看，各自給它們一點單獨被照顧的空間。',
+    ],
   },
   sextile: {
-    lead: '「{Akw}」與「{Bkw}」容易互相幫忙，但需要你主動使用才會出現。',
-    strength: '只要你願意跨出一小步，「{Akw}」與「{Bkw}」就能自然搭配、互相加分。',
-    watch: '因為用起來很順、不費力，你可能沒有特別練習或珍惜「{Akw}」與「{Bkw}」這組合。',
-    practice: '有機會的時候，主動多用一點「{Akw}」去搭配「{Bkw}」，優勢才會真正變成具體的成果。',
+    lead: [
+      '「{Akw}」與「{Bkw}」容易互相幫忙，但需要你主動使用才會出現。',
+      '「{Akw}」與「{Bkw}」之間有一條友善的通道，平常安靜，但一用就順。',
+    ],
+    strength: [
+      '只要你願意跨出一小步，「{Akw}」與「{Bkw}」就能自然搭配、互相加分。',
+      '你稍微留意一下，就能讓「{Akw}」順勢帶動「{Bkw}」，兩者相輔相成。',
+    ],
+    watch: [
+      '因為用起來很順、不費力，你可能沒有特別練習或珍惜「{Akw}」與「{Bkw}」這組合。',
+      '這股助力不會主動敲門，如果你太被動，「{Akw}」與「{Bkw}」的潛力就容易被浪費。',
+    ],
+    practice: [
+      '有機會的時候，主動多用一點「{Akw}」去搭配「{Bkw}」，優勢才會真正變成具體的成果。',
+      '可以刻意安排一個場合，讓「{Akw}」與「{Bkw}」一起派上用場，慢慢就會變成你的習慣招式。',
+    ],
   },
   trine: {
-    lead: '當「{Akw}」遇上「{Bkw}」，兩者搭配得很自然，幾乎不用刻意練習。',
-    strength: '你在需要同時展現「{Akw}」與「{Bkw}」的場合，通常能不假思索地找到節奏，這是別人可能要練很久才有的天賦組合。',
-    watch: '正因為太順手，你可能沒有察覺「{Akw}」與「{Bkw}」合起來的力量有多大，容易視為理所當然而缺乏挑戰。',
-    practice: '試著主動把「{Akw}」與「{Bkw}」用在一件更具體、更有企圖心的目標上，而不是任由它自然發生。',
+    lead: [
+      '當「{Akw}」遇上「{Bkw}」，兩者搭配得很自然，幾乎不用刻意練習。',
+      '「{Akw}」與「{Bkw}」天生合拍，兩者之間幾乎沒有阻力。',
+    ],
+    strength: [
+      '你在需要同時展現「{Akw}」與「{Bkw}」的場合，通常能不假思索地找到節奏，這是別人可能要練很久才有的天賦組合。',
+      '這組合讓你做起與「{Akw}」、「{Bkw}」相關的事時特別得心應手，旁人常會覺得你毫不費力。',
+    ],
+    watch: [
+      '正因為太順手，你可能沒有察覺「{Akw}」與「{Bkw}」合起來的力量有多大，容易視為理所當然而缺乏挑戰。',
+      '太舒服的組合有時會讓人偷懶，「{Akw}」與「{Bkw}」的潛力可能因此一直停在「還不錯」，沒有再往上。',
+    ],
+    practice: [
+      '試著主動把「{Akw}」與「{Bkw}」用在一件更具體、更有企圖心的目標上，而不是任由它自然發生。',
+      '可以刻意挑戰一個更高難度的場合，讓「{Akw}」與「{Bkw}」這個天賦組合被真正看見。',
+    ],
   },
   square: {
-    lead: '當「{Akw}」遇上「{Bkw}」，兩者常常互相卡住，也因此逼著你成長。',
-    strength: '「{Akw}」與「{Bkw}」之間的摩擦，練久了反而會鍛鍊出很強的應變能力與行動力。',
-    watch: '壓力大時，你可能覺得「{Akw}」與「{Bkw}」怎麼選都不對，或是用力過猛想一次解決。',
-    practice: '別急著犧牲其中一邊，先為「{Akw}」與「{Bkw}」各安排一個能同時被照顧到的小行動。',
+    lead: [
+      '當「{Akw}」遇上「{Bkw}」，兩者常常互相卡住，也因此逼著你成長。',
+      '「{Akw}」與「{Bkw}」之間有股拉扯的張力，常常同時出現、卻互相踩線。',
+    ],
+    strength: [
+      '「{Akw}」與「{Bkw}」之間的摩擦，練久了反而會鍛鍊出很強的應變能力與行動力。',
+      '這種張力逼你不斷調整，久而久之，你處理「{Akw}」與「{Bkw}」衝突時會比別人更有韌性。',
+    ],
+    watch: [
+      '壓力大時，你可能覺得「{Akw}」與「{Bkw}」怎麼選都不對，或是用力過猛想一次解決。',
+      '緊張的時候，「{Akw}」與「{Bkw}」容易互扯後腿，讓你陷入兩頭燒的焦慮感。',
+    ],
+    practice: [
+      '別急著犧牲其中一邊，先為「{Akw}」與「{Bkw}」各安排一個能同時被照顧到的小行動。',
+      '試著把衝突拆成小步驟，讓「{Akw}」與「{Bkw}」輪流各退一步，而不是一次分出勝負。',
+    ],
   },
   opposition: {
-    lead: '當「{Akw}」遇上「{Bkw}」，兩者常像拔河一樣，在你身上或人我之間來回擺盪。',
-    strength: '你能看見「{Akw}」與「{Bkw}」各自的道理，這種視野最後會發展成協調與整合的能力。',
-    watch: '你可能一度只認同「{Akw}」，把「{Bkw}」的部分投射到別人身上，因而產生誤解或衝突。',
-    practice: '遇到相關情境時，練習問自己「{Bkw}」那一端現在需要什麼，讓兩邊都保留一點空間。',
+    lead: [
+      '當「{Akw}」遇上「{Bkw}」，兩者常像拔河一樣，在你身上或人我之間來回擺盪。',
+      '「{Akw}」與「{Bkw}」像蹺蹺板的兩端，你常常在兩者之間找平衡點。',
+    ],
+    strength: [
+      '你能看見「{Akw}」與「{Bkw}」各自的道理，這種視野最後會發展成協調與整合的能力。',
+      '因為同時理解兩端，你往往比別人更擅長替「{Akw}」與「{Bkw}」的立場找到中間地帶。',
+    ],
+    watch: [
+      '你可能一度只認同「{Akw}」，把「{Bkw}」的部分投射到別人身上，因而產生誤解或衝突。',
+      '關係中容易出現一人扮演「{Akw}」、另一人扮演「{Bkw}」的局面，變成互相拉扯而非合作。',
+    ],
+    practice: [
+      '遇到相關情境時，練習問自己「{Bkw}」那一端現在需要什麼，讓兩邊都保留一點空間。',
+      '試著把「{Akw}」與「{Bkw}」都當成自己的一部分，而不是把其中一邊丟給別人來扮演。',
+    ],
   },
 };
 function fillAspectTemplate(tpl, aKw, bKw) {
@@ -3508,12 +3629,17 @@ function fillAspectTemplate(tpl, aKw, bKw) {
 }
 function aspectBeginnerData(asp) {
   var a = findAnyPointDef(asp.a), b = findAnyPointDef(asp.b), base = ASPECT_BEGINNER[asp.type];
+  var seedBase = asp.a + '|' + asp.b + '|' + asp.type;
+  function pickField(name) {
+    var tpl = astroSeededPick(seedBase + '|' + name, base[name]);
+    return fillAspectTemplate(tpl, a.kw, b.kw);
+  }
   return {
     title: a.zh + ' × ' + b.zh,
-    lead: fillAspectTemplate(base.lead, a.kw, b.kw),
-    strength: fillAspectTemplate(base.strength, a.kw, b.kw),
-    watch: fillAspectTemplate(base.watch, a.kw, b.kw),
-    practice: fillAspectTemplate(base.practice, a.kw, b.kw),
+    lead: pickField('lead'),
+    strength: pickField('strength'),
+    watch: pickField('watch'),
+    practice: pickField('practice'),
   };
 }
 function renderAspectBeginnerCard(asp) {
@@ -4537,6 +4663,16 @@ function astroSeededPickN(rng, arr, n) {
   }
   return out;
 }
+/* deterministic pick of ONE item from arr, keyed off an arbitrary string —
+   used so the same placement/pair always reads the same way, but different
+   placements/pairs don't all share the exact same sentence skeleton */
+function astroSeededPick(seedStr, arr) {
+  var rng = astroMulberry32(astroHashSeed(seedStr));
+  return arr[Math.floor(rng() * arr.length)];
+}
+function fillTpl(tpl, map) {
+  return Object.keys(map).reduce(function (s, k) { return s.split('{' + k + '}').join(map[k]); }, tpl);
+}
 
 /* ---- daily narrative / advice / avoid banks ---- */
 var NARRATIVE_WEAK = {
@@ -5429,14 +5565,17 @@ function renderAstro() {
     PLANET_DEFS.forEach(function (def) {
       var p = chart.planets[def.key];
       var sign = ZODIAC_SIGNS[p.sign];
-      h += '<button aria-label="查看'+def.zh+'的白話解讀" onclick="astroSelectDetail(\''+def.key+'\')" style="display:block;width:100%;text-align:left;border:0;border-top:1px solid rgba(201,169,110,.15);padding:12px 0;background:none;color:inherit;cursor:pointer">';
+      var d = planetBeginnerDetail(def, chart);
+      h += '<div style="border-top:1px solid rgba(201,169,110,.15);padding:12px 0">';
       h += '<div style="display:flex;justify-content:space-between;align-items:baseline">';
       h += '<span style="font:500 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + def.sym + ' ' + def.zh + '</span>';
       h += '<span style="font:400 11px \'EB Garamond\',serif;color:#c9a96e">' + sign.sym + ' ' + sign.zh + ' ' + p.deg.toFixed(1) + '°' + (state.astroUnknownTime ? '' : '　第' + p.house + '宮') + (p.retro ? '　℞' : '') + '</span>';
       h += '</div>';
-      var preview = planetBeginnerDetail(def, chart);
-      h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.7);margin-top:5px;line-height:1.7">' + esc(preview.oneLine) + '</div><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:5px">點一下看生活例子、優勢與提醒 →</div>';
-      h += '</button>';
+      h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);margin-top:5px;line-height:1.75">' + esc(d.oneLine) + ' ' + esc(d.everyday) + '</div>';
+      h += '<div style="margin-top:5px;font:400 11px \'Noto Sans TC\',sans-serif;color:#9bc5a3;line-height:1.65">可以發揮：'+esc(d.strength)+'</div><div style="margin-top:3px;font:400 11px \'Noto Sans TC\',sans-serif;color:#d9a0a0;line-height:1.65">需要留意：'+esc(d.watch)+'</div>';
+      if (p.retro) h += '<div style="margin-top:3px;font:400 11px \'Noto Sans TC\',sans-serif;color:#b7a4d8;line-height:1.65">逆行：這股能量的展現較為內化，需要多一層自我覺察才會顯現在外，不代表不好或比較弱。</div>';
+      h += '<details style="margin-top:7px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);cursor:pointer">查看度數、宮位與專業解讀</summary><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.7;margin-top:6px">'+esc(planetPlacementText(def,chart))+'</div></details>';
+      h += '</div>';
     });
     h += '</div></details>';
 
@@ -5453,11 +5592,10 @@ function renderAstro() {
       h += '</div>';
       var beginner=POINT_BEGINNER[def.key], hb=state.astroUnknownTime?null:HOUSE_BEGINNER[p.house-1];
       /* lead with the point-specific meaning, then tie it to the sign's
-         personality colour (trait) and a concrete house example — the old
-         version forced a "sign mode" behavioural phrase written for planets'
-         actions, which read as an odd non-sequitur on abstract points like
-         Lilith/南交點, and repeated verbatim for any two points sharing a sign */
-      h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);margin-top:5px;line-height:1.75">' + esc(beginner.plain) + ' 落在' + sign.zh + '，會帶上一點「' + esc(sign.trait) + '」的色彩' + (hb ? '，最容易出現在' + esc(hb.area) + '——像是' + esc(hb.example) + '這類情境' : '') + '。</div>';
+         personality colour (trait) and a concrete house example, using varied
+         sentence skeletons (POINT_INTRO_TPL/POINT_HOUSE_TPL) so two points
+         sharing a sign don't read like copy-pasted text */
+      h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);margin-top:5px;line-height:1.75">' + esc(pointBeginnerParagraph(def, chart, hb)) + '</div>';
       h += '<div style="margin-top:5px;font:400 11px \'Noto Sans TC\',sans-serif;color:#9bc5a3;line-height:1.65">可以發揮：'+esc(beginner.strength)+'</div><div style="margin-top:3px;font:400 11px \'Noto Sans TC\',sans-serif;color:#d9a0a0;line-height:1.65">需要留意：'+esc(beginner.watch)+'</div>';
       if(p.retro) h += '<div style="margin-top:3px;font:400 11px \'Noto Sans TC\',sans-serif;color:#b7a4d8;line-height:1.65">逆行：這項主題較常先在內心消化，不代表不好或比較弱。</div>';
       h += '<details style="margin-top:7px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);cursor:pointer">查看度數、宮位與專業解讀</summary><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.7;margin-top:6px">'+esc(pointPlacementText(def,chart))+'</div></details>';
