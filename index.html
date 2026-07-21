@@ -3089,6 +3089,14 @@ var EXTRA_POINT_DEFS = [
   { key: 'Fortune', zh: '福點', sym: '⊕', meaning: '外在幸福感與資源自然匯聚之處', kw: '幸福資源' },
   { key: 'Vertex', zh: '命定點', sym: 'Vx', meaning: '命定般的相遇、帶來轉折的關係與際遇', kw: '命定相遇' },
 ];
+var POINT_BEGINNER = {
+  Node:{plain:'這是你還不太熟悉，但人生會一次次邀請你練習的方向。',strength:'願意跨出舒適圈後，會感覺自己持續在成長。',watch:'不必逼自己立刻做到；它本來就是需要時間練習的課題。'},
+  SNode:{plain:'這是你很自然就會使用的舊習慣與熟悉能力。',strength:'遇到壓力時，它能讓你快速找到熟悉的處理方式。',watch:'太依賴它可能讓你一直待在安全但沒有新發展的位置。'},
+  Lilith:{plain:'這是你不想被規定、控制，或被要求乖乖配合的部分。',strength:'它保護你的真實慾望、界線與不願妥協的力量。',watch:'被壓抑太久時，可能用極端、突然或防衛的方式爆發。'},
+  Chiron:{plain:'這是你特別容易覺得不足或受傷，也最可能理解別人痛苦的地方。',strength:'當你學會照顧這個傷口，常會發展出幫助別人的能力。',watch:'它不是缺陷，也不代表一定會受傷；重點是如何與敏感共處。'},
+  Fortune:{plain:'這是事情比較容易自然順起來、你也較容易感到滿足的生活領域。',strength:'投入這裡時，資源與機會較容易被你注意和接住。',watch:'它不是保證幸運，仍需要你實際參與與選擇。'},
+  Vertex:{plain:'這是比較容易出現重要相遇、意外邀請或關係轉折的領域。',strength:'它提醒你留意那些改變觀點與人生方向的互動。',watch:'不是每次相遇都注定長久，也不代表完全無法選擇。'}
+};
 var EXTRA_POINT_KEYS = EXTRA_POINT_DEFS.map(function (p) { return p.key; });
 
 function astroJulianCenturiesTT(time) { return time.tt / 36525; }
@@ -3370,6 +3378,7 @@ function renderAstroDetailModal(chart) {
   h+='<div style="display:flex;justify-content:space-between;gap:12px"><div><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:#c9a96e;letter-spacing:.12em">不用背術語，先看生活中的你</div><h3 style="margin:4px 0 0;font:600 18px \'Noto Serif TC\',serif;color:#f0e9d8">'+esc(d.title)+'</h3></div><button aria-label="關閉解讀" onclick="astroSelectDetail(null)" style="background:none;border:0;color:rgba(240,233,216,.55);font-size:24px;line-height:1;cursor:pointer">×</button></div>';
   h+='<div style="margin-top:14px;padding:12px 13px;border-radius:11px;background:rgba(201,169,110,.1);border:1px solid rgba(201,169,110,.22)"><div style="font:600 11px \'Noto Sans TC\',sans-serif;color:#e6cd9a">一句話先看懂</div><div style="font:500 14px \'Noto Sans TC\',sans-serif;color:#f0e9d8;line-height:1.85;margin-top:4px">'+esc(d.oneLine)+'</div></div>';
   h+=section('它其實在回答',d.question)+section('生活中可能怎麼出現',d.everyday)+section('你的優勢',d.strength,'#9bc5a3')+section('容易卡住的地方',d.watch,'#d9a0a0');
+  if (chart.planets[def.key].retro) h+=section('逆行，用白話說','你可能比較常先在心裡反覆整理這項能力，確認過後才表現出來。這不是不好或比較弱，只是運作方式比較內在。','#b7a4d8');
   h+='<details style="margin-top:14px;border-top:1px solid rgba(201,169,110,.18);padding-top:10px"><summary style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);cursor:pointer">想知道占星術語怎麼組合？</summary><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.75;margin-top:7px">'+esc(d.technical)+'</div></details>';
   return h+'</section></div>';
 }
@@ -3391,6 +3400,21 @@ function aspectPlacementText(asp) {
   var body = def.tpl.replace('{A}', aDef.zh).replace('{B}', bDef.zh).replace('{ak}', aDef.kw).replace('{bk}', bDef.kw);
   return aDef.zh + def.zh + bDef.zh + '（誤差 ' + asp.orb.toFixed(1) + '°）：' + body + '。';
 }
+var ASPECT_BEGINNER = {
+  conjunction:{lead:'這兩種傾向常會一起出現，力量很集中。',strength:'能把兩股力量放在同一件事上，形成鮮明特色。',watch:'有時很難分清楚自己真正需要的是哪一邊。',practice:'先分別說出兩種需要，再決定此刻要讓哪一種帶頭。'},
+  sextile:{lead:'這兩種傾向容易互相幫忙，但需要你主動使用。',strength:'稍微跨出一步，就容易找到資源與合作方式。',watch:'因為用起來順，可能沒有特別珍惜或練習。',practice:'有機會時主動多做一點，優勢才會真正變成成果。'},
+  trine:{lead:'這兩種傾向配合得很自然，是不太費力的能力。',strength:'面對相關事情時，通常能順勢找到自己的節奏。',watch:'太習慣這項能力，反而可能低估它或缺少挑戰。',practice:'有意識地把這份天賦用在更重要、更具體的目標上。'},
+  square:{lead:'這兩種需要常互相卡住，也會推著你想辦法成長。',strength:'摩擦能帶來行動力，練熟後往往成為很強的能力。',watch:'壓力大時容易覺得怎麼選都不對，或用力過頭。',practice:'別急著消滅其中一邊，先安排兩邊都能被照顧的小步驟。'},
+  opposition:{lead:'這兩種需要像拔河，常在自己與他人之間來回擺動。',strength:'能看見不同立場，最後發展出協調與平衡能力。',watch:'可能一度只認同一邊，把另一邊投射到別人身上。',practice:'問自己「另一端也需要什麼」，練習兩邊各保留一點空間。'}
+};
+function aspectBeginnerData(asp) {
+  var a=findAnyPointDef(asp.a), b=findAnyPointDef(asp.b), base=ASPECT_BEGINNER[asp.type];
+  return {title:a.zh+' × '+b.zh, lead:'當「'+a.kw+'」遇上「'+b.kw+'」：'+base.lead, strength:base.strength, watch:base.watch, practice:base.practice};
+}
+function renderAspectBeginnerCard(asp) {
+  var d=aspectBeginnerData(asp);
+  return '<article style="border-top:1px solid rgba(201,169,110,.15);padding:12px 0"><div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">'+esc(d.title)+'</div><div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.75;margin-top:5px">'+esc(d.lead)+'</div><div style="margin-top:7px;font:400 11px \'Noto Sans TC\',sans-serif;color:#9bc5a3;line-height:1.65">優勢：'+esc(d.strength)+'</div><div style="margin-top:3px;font:400 11px \'Noto Sans TC\',sans-serif;color:#d9a0a0;line-height:1.65">容易卡住：'+esc(d.watch)+'</div><div style="margin-top:3px;font:400 11px \'Noto Sans TC\',sans-serif;color:#e6cd9a;line-height:1.65">可以怎麼練習：'+esc(d.practice)+'</div><details style="margin-top:8px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);cursor:pointer">查看相位名稱、容許度與專業解讀</summary><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.7;margin-top:6px">'+esc(aspectPlacementText(asp))+'</div></details></article>';
+}
 
 /* ---- 元素／性質總覽 ---- */
 var ZODIAC_QUALITY = ['本位', '固定', '變動'];
@@ -3405,15 +3429,15 @@ function computeElementQualityBalance(chart) {
   return { elem: elem, qual: qual };
 }
 var ELEMENT_DOMINANT_TEXT = {
-  火: '行動與熱情主導：妳習慣直接表達、渴望立即的回饋與體驗，行動力是妳最鮮明的底色。',
-  土: '務實穩健主導：妳重視實際成果、安全感與可靠的節奏，習慣把想法落實成看得見的東西。',
-  風: '思考與交流主導：妳習慣用邏輯與溝通理解世界，重視社交連結與資訊流動。',
-  水: '情感與直覺主導：妳對氛圍特別敏感，重視內在感受與深層的情感連結。',
+  火: '你習慣直接表達、立刻行動，也希望很快看見回應。',
+  土: '你重視實際成果、安全感與可靠節奏，習慣把想法一步步做出來。',
+  風: '你習慣用思考、討論與蒐集資訊來理解事情。',
+  水: '你對氣氛與感受較敏銳，重視內在感受和深層連結。',
 };
 var QUALITY_DOMINANT_TEXT = {
-  本位: '妳習慣主動發起、開創新局，是天生的起頭者，但也可能因為戰線太多而分身乏術。',
-  固定: '妳重視穩定與堅持，一旦投入便很難輕易被說服放棄，也因此有時會顯得固執。',
-  變動: '妳靈活善變、適應力強，容易根據情況調整方向，但也可能缺乏長期的定性。',
+  本位: '你習慣主動開始；要留意別一次開太多戰線。',
+  固定: '你擅長持續投入；要留意卡住時是否太不願改變。',
+  變動: '你擅長順勢調整；要留意方向是否換得太快。',
 };
 function renderElementQualitySummary(chart) {
   var eq = computeElementQualityBalance(chart);
@@ -3421,8 +3445,15 @@ function renderElementQualitySummary(chart) {
   var elemColor = { 火: '#e07850', 土: '#c9a96e', 風: '#8fc7f4', 水: '#6fa8d8' };
   var topElem = elemKeys.reduce(function (best, k) { return eq.elem[k] > eq.elem[best] ? k : best; }, elemKeys[0]);
   var topQual = qualKeys.reduce(function (best, k) { return eq.qual[k] > eq.qual[best] ? k : best; }, qualKeys[0]);
+  var lowElem = elemKeys.reduce(function (best, k) { return eq.elem[k] < eq.elem[best] ? k : best; }, elemKeys[0]);
+  var qualityPlain={本位:'先開始、主動開局',固定:'持續做、守住方向',變動:'彈性調整、跟著情況變通'};
+  var elementPractice={火:'練習先做一小步、直接表達想要什麼',土:'用固定作息、清單或具體步驟讓自己安定',風:'把想法說出來、寫下來，或找人交換觀點',水:'先承認自己的感受，留一點安靜與休息空間'};
   var h = '<div style="margin-top:18px;border:1px solid rgba(201,169,110,.2);border-radius:12px;padding:14px">';
-  h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;text-align:center">元素／性質總覽</div>';
+  h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-align:center">你習慣怎麼反應與行動</div>';
+  h += '<div style="margin-top:10px;font:500 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;line-height:1.8">你最常用「'+topElem+'元素」處理事情，行動節奏偏向「'+qualityPlain[topQual]+'」。</div>';
+  h += '<div style="margin-top:6px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.8">'+esc(ELEMENT_DOMINANT_TEXT[topElem])+' '+esc(QUALITY_DOMINANT_TEXT[topQual])+'</div>';
+  h += '<div style="margin-top:9px;padding:9px 10px;border-radius:9px;background:rgba(201,169,110,.08);font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.7">比較少自動使用的是「'+lowElem+'元素」；需要時可以'+elementPractice[lowElem]+'。</div>';
+  h += '<details style="margin-top:11px"><summary style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;cursor:pointer">查看元素與性質數字</summary>';
   h += '<div style="display:flex;justify-content:center;gap:14px;margin-top:10px">';
   elemKeys.forEach(function (k) {
     h += '<div style="text-align:center"><div style="font:700 16px \'Noto Serif TC\',serif;color:' + elemColor[k] + '">' + eq.elem[k] + '</div><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">' + k + '</div></div>';
@@ -3433,8 +3464,21 @@ function renderElementQualitySummary(chart) {
     h += '<div style="text-align:center"><div style="font:700 16px \'Noto Serif TC\',serif;color:#e6cd9a">' + eq.qual[k] + '</div><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">' + k + '</div></div>';
   });
   h += '</div>';
-  h += '<div style="margin-top:12px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.8">' + esc(ELEMENT_DOMINANT_TEXT[topElem]) + ' ' + esc(QUALITY_DOMINANT_TEXT[topQual]) + '</div>';
+  h += '<div style="margin-top:9px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.48);line-height:1.7">本位＝先開始；固定＝持續做；變動＝彈性調整。數字是十大行星落入各類星座的數量，不代表分數高低。</div></details>';
   h += '</div>';
+  return h;
+}
+function renderAngleAndHouseBeginner(chart) {
+  if (state.astroUnknownTime) return '';
+  var asc=ZODIAC_SIGNS[chart.ascSign], mc=ZODIAC_SIGNS[Math.floor(chart.mc/30)];
+  var counts={}, names={}; for(var i=1;i<=12;i++){counts[i]=0;names[i]=[];}
+  PLANET_DEFS.forEach(function(d){var p=chart.planets[d.key];counts[p.house]++;names[p.house].push(d.zh);});
+  var top=Object.keys(counts).filter(function(k){return counts[k]>0;}).sort(function(a,b){return counts[b]-counts[a];}).slice(0,3);
+  var h='<section style="margin-top:14px;border:1px solid rgba(201,169,110,.2);border-radius:12px;padding:14px"><div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#e6cd9a">別人怎麼認識你，以及人生重心</div>';
+  h+='<div style="margin-top:8px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.8"><strong style="color:#f0e9d8">第一印象：</strong>別人剛認識你時，容易感受到你'+esc(SIGN_BEGINNER[chart.ascSign].behavior)+'。</div>';
+  h+='<div style="margin-top:5px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.8"><strong style="color:#f0e9d8">工作與公共形象：</strong>你傾向用「'+esc(SIGN_BEGINNER[Math.floor(chart.mc/30)].mode)+'」的方式建立專業形象。</div>';
+  if(top.length) h+='<div style="margin-top:10px;font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e">能量最常出現的生活領域</div>'+top.map(function(k){var hb=HOUSE_BEGINNER[parseInt(k,10)-1];return '<div style="margin-top:5px;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.7);line-height:1.7">第 '+k+' 宮：'+esc(hb.area)+'（'+counts[k]+' 顆行星）</div>';}).join('');
+  h+='<details style="margin-top:10px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);cursor:pointer">查看 ASC、MC 與宮位分布</summary><div style="margin-top:6px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.75">ASC '+asc.zh+' '+(chart.asc%30).toFixed(1)+'°；MC '+mc.zh+' '+(chart.mc%30).toFixed(1)+'°。'+top.map(function(k){return '第'+k+'宮：'+names[k].join('、');}).join('；')+'。宮位數量代表關注集中處，不代表吉凶。</div></details></section>';
   return h;
 }
 
@@ -3959,13 +4003,18 @@ function renderProgressionMonths(natal, city) {
     var d = progressionAddMonths(base, m), p = charts[m], next = charts[m + 1];
     var moon = ZODIAC_SIGNS[p.planets.Moon.sign], moonShift = p.planets.Moon.sign !== next.planets.Moon.sign;
     var aspects = progressionAspects(natal, p), top = aspects[0];
-    h += '<div style="border:1px solid '+(moonShift?'rgba(230,205,154,.5)':'rgba(201,169,110,.18)')+';border-radius:9px;padding:8px 9px;background:rgba(255,255,255,.018)"><div style="display:flex;justify-content:space-between;gap:5px"><span style="font:600 11px \'Noto Sans TC\',sans-serif;color:#e6cd9a">'+d.getFullYear()+'/'+pad2(d.getMonth()+1)+'</span>'+(moonShift?'<span style="font:500 8px \'Noto Sans TC\',sans-serif;color:#211b15;background:#e6cd9a;border-radius:8px;padding:2px 5px">換座</span>':'')+'</div><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:4px">☽ '+moon.zh+' '+p.planets.Moon.deg.toFixed(1)+'°</div>'+(top?'<div style="font:400 9px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-top:4px;line-height:1.45">'+esc(crossAspectText(top,'本命','推運').split('：')[0])+'</div>':'')+'</div>';
+    var monthPlain=top?progressionAspectPlain(top):null;
+    h += '<div style="border:1px solid '+(moonShift?'rgba(230,205,154,.5)':'rgba(201,169,110,.18)')+';border-radius:9px;padding:8px 9px;background:rgba(255,255,255,.018)"><div style="display:flex;justify-content:space-between;gap:5px"><span style="font:600 11px \'Noto Sans TC\',sans-serif;color:#e6cd9a">'+d.getFullYear()+'/'+pad2(d.getMonth()+1)+'</span>'+(moonShift?'<span style="font:500 8px \'Noto Sans TC\',sans-serif;color:#211b15;background:#e6cd9a;border-radius:8px;padding:2px 5px">內在節奏換檔</span>':'')+'</div><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.68);margin-top:4px">情緒節奏：'+esc(SIGN_BEGINNER[p.planets.Moon.sign].mode)+'</div>'+(monthPlain?'<div style="font:400 9px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:4px;line-height:1.5">'+esc(monthPlain.title)+'：'+esc(monthPlain.text)+'</div>':'')+'<details style="margin-top:5px"><summary style="font:400 8px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);cursor:pointer">精確位置與相位</summary><div style="font:400 8px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);line-height:1.5;margin-top:3px">推運月亮 '+moon.zh+' '+p.planets.Moon.deg.toFixed(1)+'°'+(top?'；'+esc(crossAspectText(top,'本命','推運')):'')+'</div></details></div>';
   }
   return h + '</div>';
 }
 function progSetYears(n) { state.progYears = n; state.progExpandedYear = 0; state.progOnlyTransitions = false; render(); window.scrollTo(0, 0); }
 function progToggleYear(i) { state.progExpandedYear = state.progExpandedYear === i ? null : i; render(); }
 function progToggleTransitions() { state.progOnlyTransitions = !state.progOnlyTransitions; render(); }
+function progressionAspectPlain(a) {
+  var natal=findAnyPointDef(a.aKey), moving=findAnyPointDef(a.bKey), base=ASPECT_BEGINNER[a.type];
+  return {title:natal.zh+'與'+moving.zh, text:'你原本的「'+natal.kw+'」，正和正在發展的「'+moving.kw+'」互相影響。'+base.lead, strength:base.strength, practice:base.practice};
+}
 function renderProgressionYearCard(row, natal) {
   var p = row.prog, moon = ZODIAC_SIGNS[p.planets.Moon.sign], sun = ZODIAC_SIGNS[p.planets.Sun.sign];
   var open = state.progExpandedYear === row.index;
@@ -3974,13 +4023,14 @@ function renderProgressionYearCard(row, natal) {
   h += '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div style="font:600 17px \'Noto Serif TC\',serif;color:#e6cd9a">' + row.year + '</div><div style="display:flex;gap:6px;align-items:center">' + (row.isTransition ? '<span style="font:600 10px \'Noto Sans TC\',sans-serif;color:#211b15;background:#e6cd9a;border-radius:10px;padding:3px 7px">轉折年</span>' : '') + '<span style="font:400 15px sans-serif;color:rgba(240,233,216,.45)">' + (open ? '−' : '＋') + '</span></div></div>';
   h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.82);margin-top:5px;line-height:1.65">' + esc(row.theme) + '</div>';
   h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"><span style="font:400 10px \'Noto Sans TC\',sans-serif;color:#c9a96e">☽ ' + moon.zh + '</span><span style="font:400 10px \'Noto Sans TC\',sans-serif;color:#c9a96e">☉ ' + sun.zh + '</span>' + row.focuses.map(function(f){return '<span style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);border:1px solid rgba(201,169,110,.2);border-radius:10px;padding:2px 6px">'+f+'</span>';}).join('') + '</div>';
-  if (row.aspects.length) h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);margin-top:8px;line-height:1.6">重點：' + esc(crossAspectText(row.aspects[0], '本命', '推運').split('：')[0]) + '</div>';
+  if (row.aspects.length) { var firstPlain=progressionAspectPlain(row.aspects[0]); h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:8px;line-height:1.6">今年重點：' + esc(firstPlain.text) + '</div>'; }
   h += '</button>';
   if (open) {
     h += '<div style="border-top:1px solid rgba(201,169,110,.15);padding:12px 14px">';
-    h += '<div style="display:flex;gap:8px;text-align:center"><div style="flex:1;border:1px solid rgba(201,169,110,.18);border-radius:9px;padding:8px"><div style="font:400 9px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4)">推運月亮</div><div style="font:600 12px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:2px">' + moon.sym + moon.zh + ' ' + p.planets.Moon.deg.toFixed(1) + '°</div></div><div style="flex:1;border:1px solid rgba(201,169,110,.18);border-radius:9px;padding:8px"><div style="font:400 9px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4)">推運太陽</div><div style="font:600 12px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:2px">' + sun.sym + sun.zh + ' ' + p.planets.Sun.deg.toFixed(1) + '°</div></div></div>';
+    h += '<div style="padding:10px 11px;border-radius:9px;background:rgba(201,169,110,.07);font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.75">內心的安全感正用「'+esc(SIGN_BEGINNER[p.planets.Moon.sign].mode)+'」的方式調整；長期自我方向則帶著「'+esc(SIGN_BEGINNER[p.planets.Sun.sign].mode)+'」的色彩。</div>';
     if (row.moonChanged || row.sunChanged) h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:#e6cd9a;margin-top:10px;line-height:1.7">' + (row.moonChanged ? '• 這一年推運月亮將換座，內在需求會出現階段轉換。<br>' : '') + (row.sunChanged ? '• 這一年推運太陽將換座，是較少見的長期自我轉型。' : '') + '</div>';
-    row.aspects.slice(0, 6).forEach(function (a) { h += '<div style="border-top:1px solid rgba(201,169,110,.12);padding:8px 0;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.7);line-height:1.65">' + esc(crossAspectText(a, '本命', '推運')) + '</div>'; });
+    row.aspects.slice(0, 6).forEach(function (a) { var d=progressionAspectPlain(a); h += '<div style="border-top:1px solid rgba(201,169,110,.12);padding:9px 0"><div style="font:600 11px \'Noto Sans TC\',sans-serif;color:#f0e9d8">'+esc(d.title)+'</div><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.7;margin-top:4px">'+esc(d.text)+'</div><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:#e6cd9a;line-height:1.65;margin-top:4px">建議：'+esc(d.practice)+'</div><details style="margin-top:6px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);cursor:pointer">查看推運相位、容許度與專業解讀</summary><div style="margin-top:5px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.52);line-height:1.65">'+esc(crossAspectText(a,'本命','推運'))+'</div></details></div>'; });
+    h += '<details style="margin-top:8px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);cursor:pointer">查看推運太陽、月亮精確位置</summary><div style="margin-top:5px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.7">推運月亮：'+moon.zh+' '+p.planets.Moon.deg.toFixed(1)+'°；推運太陽：'+sun.zh+' '+p.planets.Sun.deg.toFixed(1)+'°。</div></details>';
     if (!row.aspects.length) h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);line-height:1.7">這一年沒有容許度內特別緊密的主要相位，適合延續既有節奏。</div>';
     h += '</div>';
   }
@@ -4660,8 +4710,8 @@ var RETURN_HIGHLIGHT_LABEL = { wealth: '財運', love: '感情', career: '事業
 function renderReturnHighlight(returnChart, kindLabel, dateLabel, topCatKey) {
   var ascDef = ZODIAC_SIGNS[returnChart.ascSign], mcDef = ZODIAC_SIGNS[returnChart.mcSign];
   var h = '<div style="margin-top:14px;border:1px solid rgba(201,169,110,.25);border-radius:12px;padding:12px 14px;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.65);line-height:1.8">';
-  h += '<span style="color:#e6cd9a;font-weight:600">' + kindLabel + '</span>　' + dateLabel + '　上升 ' + ascDef.sym + ascDef.zh + '　天頂 ' + mcDef.sym + mcDef.zh;
-  h += '<br>這段時間反覆被強化的舞台：<span style="color:#e6cd9a">' + RETURN_HIGHLIGHT_LABEL[topCatKey] + '</span>';
+  h += '這段時間反覆被強化的生活領域：<span style="color:#e6cd9a;font-weight:600">' + RETURN_HIGHLIGHT_LABEL[topCatKey] + '</span>。適合把注意力先放在這裡，不代表其他領域一定不好。';
+  h += '<details style="margin-top:8px"><summary style="color:rgba(240,233,216,.45);cursor:pointer">查看回歸盤日期、上升與天頂</summary><div style="margin-top:5px"><span style="color:#e6cd9a;font-weight:600">' + kindLabel + '</span>　' + dateLabel + '　上升 ' + ascDef.sym + ascDef.zh + '　天頂 ' + mcDef.sym + mcDef.zh + '</div></details>';
   h += '</div>';
   return h;
 }
@@ -4745,6 +4795,10 @@ function renderPeriodDashboard(chart, transitPlanets, periodKey, periodCfg, now,
     var aspectCfgUsed = periodKey === 'monthly' ? LUNAR_RETURN_ASPECT_CFG : SOLAR_RETURN_ASPECT_CFG;
     HOROSCOPE_SCORE_CATS.forEach(function (cat) { periodScoreBasis[cat.key] = astroReturnCategoryAspectBasis(cat.key, chart, returnChart, aspectCfgUsed); });
   }
+
+  h += '<details style="margin-top:8px;border:1px solid rgba(201,169,110,.18);border-radius:10px;padding:10px 12px"><summary style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;cursor:pointer">為什麼會得到這些分數？</summary><div style="margin-top:8px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.75">分數從基準值出發，再依行運或回歸盤和你的本命盤互動調整；它是整理趨勢的指標，不是事件發生機率。</div>';
+  HOROSCOPE_SCORE_CATS.forEach(function(cat){var basis=periodScoreBasis[cat.key]||[];h+='<div style="margin-top:8px;font:600 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72)">'+cat.zh+' '+scores[cat.key]+' 分</div><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.48);line-height:1.65">'+esc(basis.length?basis.slice(0,5).join('；'):'這段期間沒有明顯相位被觸發，因此接近基準分數。')+'</div>';});
+  h += '</details>';
 
   var periodLabelZh = periodKey === 'weekly' ? '本週運勢' : periodKey === 'monthly' ? '本月運勢' : '年度運勢報告';
   LAST_HORO[periodKey] = {
@@ -4996,7 +5050,7 @@ function renderAstroQuickSummary(chart) {
   var major = astroUsableAspects(chart).filter(function(a){return ASTRO_PLANET_BODY_KEYS.indexOf(a.a)>=0&&ASTRO_PLANET_BODY_KEYS.indexOf(a.b)>=0;}).sort(function(a,b){return a.orb-b.orb;}).slice(0,3);
   var h = '<section style="margin-top:16px;border:1px solid rgba(201,169,110,.38);border-radius:12px;padding:15px 17px;background:rgba(201,169,110,.07)"><h3 style="font:600 14px \'Noto Serif TC\',serif;color:#e6cd9a;margin:0">三分鐘看懂你的星盤</h3>';
   h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.82);line-height:1.85;margin-top:9px">你的核心自我帶有<strong>' + sun.zh + '</strong>的' + sun.trait + '；情緒需求偏向<strong>' + moon.zh + '</strong>的' + moon.trait + '。整體以<strong>' + topElem + '元素</strong>最突出。' + (state.astroUnknownTime ? '出生時間未知，因此本摘要不採用上升與宮位。' : '你給人的第一印象則帶有<strong>' + ZODIAC_SIGNS[chart.ascSign].zh + '上升</strong>的色彩。') + '</div>';
-  if (major.length) h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:10px">最重要的三個相位</div>' + major.map(function(a){return '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.68);line-height:1.7;margin-top:4px">• ' + esc(aspectPlacementText(a)) + '</div>';}).join('');
+  if (major.length) h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:10px">最明顯的三組性格互動</div>' + major.map(function(a){var d=aspectBeginnerData(a);return '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.68);line-height:1.7;margin-top:4px">• <strong>'+esc(d.title)+'</strong>：'+esc(d.lead)+'</div>';}).join('')+'<details style="margin-top:7px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);cursor:pointer">查看三組相位的專業名稱與容許度</summary><div style="margin-top:5px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);line-height:1.7">'+major.map(function(a){return esc(aspectPlacementText(a));}).join('<br>')+'</div></details>';
   return h + '</section>';
 }
 
@@ -5099,6 +5153,7 @@ function renderAstro() {
     }
 
     h += renderAstroQuickSummary(chart);
+    h += renderAngleAndHouseBeginner(chart);
     h += renderElementQualitySummary(chart);
 
     h += '<div style="margin-top:22px;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase">行星落點 Placements</div>';
@@ -5125,18 +5180,22 @@ function renderAstro() {
       h += '<span style="font:500 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + def.sym + ' ' + def.zh + '</span>';
       h += '<span style="font:400 11px \'EB Garamond\',serif;color:#c9a96e">' + sign.sym + ' ' + sign.zh + ' ' + p.deg.toFixed(1) + '°' + (state.astroUnknownTime ? '' : '　第' + p.house + '宮') + (p.retro ? '　℞' : '') + '</span>';
       h += '</div>';
-      h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.7);margin-top:5px;line-height:1.7">' + esc(pointPlacementText(def, chart)) + '</div>';
+      var beginner=POINT_BEGINNER[def.key], sb=SIGN_BEGINNER[p.sign], hb=state.astroUnknownTime?null:HOUSE_BEGINNER[p.house-1];
+      h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);margin-top:5px;line-height:1.75">' + esc(beginner.plain) + ' 它會用「'+esc(sb.mode)+'」的方式出現'+(hb?'，在'+esc(hb.area)+'特別明顯':'')+'。</div>';
+      h += '<div style="margin-top:5px;font:400 11px \'Noto Sans TC\',sans-serif;color:#9bc5a3;line-height:1.65">可以發揮：'+esc(beginner.strength)+'</div><div style="margin-top:3px;font:400 11px \'Noto Sans TC\',sans-serif;color:#d9a0a0;line-height:1.65">需要留意：'+esc(beginner.watch)+'</div>';
+      if(p.retro) h += '<div style="margin-top:3px;font:400 11px \'Noto Sans TC\',sans-serif;color:#b7a4d8;line-height:1.65">逆行：這項主題較常先在內心消化，不代表不好或比較弱。</div>';
+      h += '<details style="margin-top:7px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);cursor:pointer">查看度數、宮位與專業解讀</summary><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.7;margin-top:6px">'+esc(pointPlacementText(def,chart))+'</div></details>';
       h += '</div>';
     });
-    h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.3);margin-top:8px">＊凱龍星座標為簡化軌道模型估算，精度約在 0.2° 以內；莉莉絲／福點／交點採用平均點（mean）算法，屬主流占星軟體常見標準之一；出生地與時間的時區換算已自動套用當地歷史上的日光節約時間規則（例如台灣 1945–1961 年間、以及歐美許多地區實施夏令時的年份），不需要自行手動校正。</div>';
+    h += '<details style="margin-top:9px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.38);cursor:pointer">查看額外本命點的算法與精度</summary><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);line-height:1.7;margin-top:5px">凱龍星座標為簡化軌道模型估算，精度約在 0.2° 以內；莉莉絲／福點／交點採用平均點（mean）算法，屬主流占星軟體常見標準之一；出生地與時間的時區換算已自動套用當地歷史上的日光節約時間規則，不需要自行手動校正。</div></details>';
 
     var usableAspects = astroUsableAspects(chart);
     if (usableAspects.length) {
-      h += '<div style="margin-top:22px;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase">相位總表 Aspect Grid</div>';
-      h += renderAspectGrid(chart);
+      h += '<details style="margin-top:22px"><summary style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);cursor:pointer">查看專業相位總表 Aspect Grid</summary>';
+      h += renderAspectGrid(chart)+'</details>';
       h += '<div style="margin-top:14px;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase">主要相位 Aspects</div>';
       usableAspects.slice().sort(function (x, y) { return x.orb - y.orb; }).forEach(function (asp) {
-        h += '<div style="border-top:1px solid rgba(201,169,110,.15);padding:10px 0;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.7);line-height:1.7">' + esc(aspectPlacementText(asp)) + '</div>';
+        h += renderAspectBeginnerCard(asp);
       });
     }
 
