@@ -381,7 +381,7 @@ var state = {
   astroY: '', astroM: '', astroD: '', astroH: '', astroMin: '',
   astroCityQuery: '', astroCityIdx: null, astroCityUsed: null,
   astroUnknownTime: false, astroResult: null, astroView: 'chart', astroGenerating: false, astroTourDismissed: false,
-  astroHouseSystem: 'placidus', astroDetail: null, astroMethodOpen: false,
+  astroHouseSystem: 'placidus', astroDetail: null, astroMethodOpen: false, astroPlacementModal: null,
   astroReturnCityIdx: null, synRelationship: 'love',
   progYears: 1, progExpandedYear: 0, progOnlyTransitions: false,
   horoDayAnchor: null, horoWeekOffset: 0, horoMonthOffset: 0, horoYearOffset: 0, horoYearRange: 1,
@@ -3304,6 +3304,48 @@ function pointPlacementText(pointDef, chart) {
   var houseText = state.astroUnknownTime ? '。出生時間未知，本次不解讀宮位' : '；坐落於第' + p.house + '宮，主要體現在' + HOUSE_MEANINGS[p.house - 1] + '上';
   return pointDef.zh + '代表' + pointDef.meaning + '。落在' + sign.zh + '，帶有' + sign.trait + '的色彩' + houseText + '。' + retroTxt;
 }
+/* ---- tap-in detail text: planet+sign only, and planet+house only ---- */
+var ELEMENT_FLAVOR = {
+  '火': '你會用比較直接、主動出擊的方式來表現這股力量，重視當下能不能立刻行動，勝過長遠的計畫',
+  '土': '你會用穩紮穩打、講求實際成果的方式來表現這股力量，重視看得到、摸得到的踏實感',
+  '風': '你會用理性思考、樂於交流分享的方式來表現這股力量，重視想法上的激盪與人際連結',
+  '水': '你會用細膩感受、順著直覺走的方式來表現這股力量，重視內在情緒有沒有被理解',
+};
+function planetSignMeaning(def, sign) {
+  var flavor = ELEMENT_FLAVOR[sign.elem] || '';
+  return def.zh + '代表你的' + def.meaning + '。當這股特質落在' + sign.zh + '，會揉合「' + sign.trait + '」這種性格色彩——' + flavor + '。簡單來說，這就是你展現' + def.kw + '時，最自然會用上的方式。';
+}
+function planetHouseMeaning(def, houseNum) {
+  return def.zh + '代表你的' + def.meaning + '。它主要會透過第' + houseNum + '宮所象徵的「' + HOUSE_MEANINGS[houseNum - 1] + '」這個生活領域展現出來——也就是說，比起其他地方，你更容易在這個領域感受到' + def.zh + '帶來的影響。';
+}
+function openPlanetSignModal(key) { state.astroPlacementModal = { type: 'sign', key: key }; render(); }
+function openPlanetHouseModal(key, houseNum) { state.astroPlacementModal = { type: 'house', key: key, house: houseNum }; render(); }
+function closePlacementModal() { state.astroPlacementModal = null; render(); }
+function renderPlacementModal(chart) {
+  var m = state.astroPlacementModal;
+  if (!m) return '';
+  var def = findAnyPointDef(m.key);
+  if (!def) return '';
+  var p = chart.planets[m.key] || chart.points[m.key];
+  var sign = ZODIAC_SIGNS[p.sign];
+  var title, body;
+  if (m.type === 'sign') {
+    title = def.sym + ' ' + def.zh + ' ' + sign.zh;
+    body = planetSignMeaning(def, sign);
+  } else {
+    title = def.sym + ' ' + def.zh + ' 第' + m.house + '宮';
+    body = planetHouseMeaning(def, m.house);
+  }
+  var h = '<div onclick="closePlacementModal()" style="position:fixed;inset:0;background:rgba(10,8,14,.72);z-index:40;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box">';
+  h += '<div onclick="event.stopPropagation()" style="width:100%;max-width:360px;background:#1f1a28;border:1px solid rgba(201,169,110,.4);border-radius:16px;padding:22px 20px;box-shadow:0 12px 40px rgba(0,0,0,.5)">';
+  h += '<div style="display:flex;justify-content:space-between;align-items:center">';
+  h += '<div style="font:600 16px \'Noto Serif TC\',serif;color:#f0e9d8">' + esc(title) + '</div>';
+  h += '<button onclick="closePlacementModal()" aria-label="關閉" style="background:none;border:none;color:rgba(240,233,216,.5);font-size:20px;cursor:pointer;line-height:1;padding:2px 4px">×</button>';
+  h += '</div>';
+  h += '<div style="font:400 13px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.85);margin-top:14px;line-height:1.9;text-align:justify">' + esc(body) + '</div>';
+  h += '</div></div>';
+  return h;
+}
 function findAnyPointDef(key) {
   return PLANET_DEFS.find(function (x) { return x.key === key; }) || EXTRA_POINT_DEFS.find(function (x) { return x.key === key; });
 }
@@ -5038,7 +5080,11 @@ function renderAstro() {
       h += '<div style="border-top:1px solid rgba(201,169,110,.15);padding:12px 0">';
       h += '<div style="display:flex;justify-content:space-between;align-items:baseline">';
       h += '<span style="font:500 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + def.sym + ' ' + def.zh + '</span>';
-      h += '<span style="font:400 11px \'EB Garamond\',serif;color:#c9a96e">' + sign.sym + ' ' + sign.zh + ' ' + p.deg.toFixed(1) + '°' + (state.astroUnknownTime ? '' : '　第' + p.house + '宮') + (p.retro ? '　℞' : '') + '</span>';
+      h += '<span style="font:400 11px \'EB Garamond\',serif;color:#c9a96e">';
+      h += '<span onclick="openPlanetSignModal(\'' + def.key + '\')" style="cursor:pointer;border-bottom:1px dotted #c9a96e" aria-label="查看' + esc(def.zh) + esc(sign.zh) + '的意思">' + sign.sym + ' ' + sign.zh + ' ' + p.deg.toFixed(1) + '°</span>';
+      if (!state.astroUnknownTime) h += '　<span onclick="openPlanetHouseModal(\'' + def.key + '\',' + p.house + ')" style="cursor:pointer;border-bottom:1px dotted #c9a96e" aria-label="查看' + esc(def.zh) + '第' + p.house + '宮的意思">第' + p.house + '宮</span>';
+      if (p.retro) h += '　℞';
+      h += '</span>';
       h += '</div>';
       h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.7);margin-top:5px;line-height:1.7">' + esc(planetPlacementText(def, chart)) + '</div>';
       h += '</div>';
@@ -5052,7 +5098,11 @@ function renderAstro() {
       h += '<div style="border-top:1px solid rgba(201,169,110,.15);padding:12px 0">';
       h += '<div style="display:flex;justify-content:space-between;align-items:baseline">';
       h += '<span style="font:500 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + def.sym + ' ' + def.zh + '</span>';
-      h += '<span style="font:400 11px \'EB Garamond\',serif;color:#c9a96e">' + sign.sym + ' ' + sign.zh + ' ' + p.deg.toFixed(1) + '°' + (state.astroUnknownTime ? '' : '　第' + p.house + '宮') + (p.retro ? '　℞' : '') + '</span>';
+      h += '<span style="font:400 11px \'EB Garamond\',serif;color:#c9a96e">';
+      h += '<span onclick="openPlanetSignModal(\'' + def.key + '\')" style="cursor:pointer;border-bottom:1px dotted #c9a96e" aria-label="查看' + esc(def.zh) + esc(sign.zh) + '的意思">' + sign.sym + ' ' + sign.zh + ' ' + p.deg.toFixed(1) + '°</span>';
+      if (!state.astroUnknownTime) h += '　<span onclick="openPlanetHouseModal(\'' + def.key + '\',' + p.house + ')" style="cursor:pointer;border-bottom:1px dotted #c9a96e" aria-label="查看' + esc(def.zh) + '第' + p.house + '宮的意思">第' + p.house + '宮</span>';
+      if (p.retro) h += '　℞';
+      h += '</span>';
       h += '</div>';
       h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.7);margin-top:5px;line-height:1.7">' + esc(pointPlacementText(def, chart)) + '</div>';
       h += '</div>';
@@ -5075,6 +5125,7 @@ function renderAstro() {
     h += '<button onclick="astroExportProfile()" style="background:none;border:none;color:rgba(240,233,216,.3);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">匯出星盤資料備份</button>';
     h += '<button onclick="astroForget()" style="background:none;border:none;color:rgba(240,233,216,.3);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">清除已儲存的星盤資料</button>';
     h += '</div>';
+    if (state.astroPlacementModal) h += renderPlacementModal(chart);
   }
 
   h += '</div>';
