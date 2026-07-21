@@ -382,6 +382,7 @@ var state = {
   astroCityQuery: '', astroCityIdx: null, astroCityUsed: null,
   astroUnknownTime: false, astroResult: null, astroView: 'chart', astroGenerating: false, astroTourDismissed: false,
   astroHouseSystem: 'placidus', astroDetail: null, astroMethodOpen: false,
+  astroOpenPlacements: false, astroOpenPoints: false, astroOpenAspects: false,
   astroReturnCityIdx: null, synRelationship: 'love',
   progYears: 1, progExpandedYear: 0, progOnlyTransitions: false,
   horoDayAnchor: null, horoWeekOffset: 0, horoMonthOffset: 0, horoYearOffset: 0, horoYearRange: 1,
@@ -3352,8 +3353,11 @@ function planetBeginnerDetail(planetDef, chart) {
   var p = chart.planets[planetDef.key], sign = ZODIAC_SIGNS[p.sign];
   var pb = PLANET_BEGINNER[planetDef.key], sb = SIGN_BEGINNER[p.sign];
   var hb = state.astroUnknownTime ? null : HOUSE_BEGINNER[p.house - 1];
-  var oneLine = '你通常會用「' + sb.mode + '」的方式來' + pb.verb + (hb ? '；這項特質在' + hb.area + '特別明顯。' : '。');
-  var everyday = hb ? '例如，當' + hb.example + '時，你可能會' + sb.behavior + '，藉此' + pb.result + '。' : '生活中，你可能會' + sb.behavior + '，藉此' + pb.result + '。';
+  /* lead with the planet-specific task (differs every time) rather than the
+     sign "mode" phrase (identical for any two placements sharing a sign) —
+     otherwise two placements in the same sign read as near-identical */
+  var oneLine = '這裡的核心任務是' + pb.verb + '；你習慣用「' + sb.mode + '」的方式進行' + (hb ? '，尤其容易在' + hb.area + '這件事上感受到' : '') + '。';
+  var everyday = hb ? '例如，當' + hb.example + '時，你的目標通常是' + pb.result + '——實際做法是' + sb.behavior + '。' : '生活中，你的目標通常是' + pb.result + '——實際做法是' + sb.behavior + '。';
   return {
     title: planetDef.sym + ' ' + planetDef.zh + '在' + sign.zh + (hb ? '｜第' + p.house + '宮' : ''),
     question: pb.question,
@@ -5347,7 +5351,7 @@ function renderAstro() {
     h += renderAngleAndHouseBeginner(chart);
     h += renderElementQualitySummary(chart);
 
-    h += '<details style="margin-top:22px" ontoggle="this.querySelector(\'.astro-caret\').textContent=this.open?\'▾\':\'▸\'"><summary style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;cursor:pointer;list-style:none"><span class="astro-caret" style="display:inline-block;width:12px">▸</span>行星落點 Placements</summary>';
+    h += '<details' + (state.astroOpenPlacements ? ' open' : '') + ' style="margin-top:22px" ontoggle="state.astroOpenPlacements=this.open;render()"><summary style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;cursor:pointer;list-style:none"><span class="astro-caret" style="display:inline-block;width:12px">' + (state.astroOpenPlacements ? '▾' : '▸') + '</span>行星落點 Placements</summary>';
     h += '<div style="margin-top:2px">';
     PLANET_DEFS.forEach(function (def) {
       var p = chart.planets[def.key];
@@ -5363,7 +5367,7 @@ function renderAstro() {
     });
     h += '</div></details>';
 
-    h += '<details style="margin-top:14px" ontoggle="this.querySelector(\'.astro-caret\').textContent=this.open?\'▾\':\'▸\'"><summary style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;cursor:pointer;list-style:none"><span class="astro-caret" style="display:inline-block;width:12px">▸</span>額外本命點 Additional Points</summary>';
+    h += '<details' + (state.astroOpenPoints ? ' open' : '') + ' style="margin-top:14px" ontoggle="state.astroOpenPoints=this.open;render()"><summary style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;cursor:pointer;list-style:none"><span class="astro-caret" style="display:inline-block;width:12px">' + (state.astroOpenPoints ? '▾' : '▸') + '</span>額外本命點 Additional Points</summary>';
     h += '<div style="margin-top:2px">';
     EXTRA_POINT_DEFS.forEach(function (def) {
       if (state.astroUnknownTime && (def.key === 'Fortune' || def.key === 'Vertex')) return;
@@ -5374,8 +5378,13 @@ function renderAstro() {
       h += '<span style="font:500 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + def.sym + ' ' + def.zh + '</span>';
       h += '<span style="font:400 11px \'EB Garamond\',serif;color:#c9a96e">' + sign.sym + ' ' + sign.zh + ' ' + p.deg.toFixed(1) + '°' + (state.astroUnknownTime ? '' : '　第' + p.house + '宮') + (p.retro ? '　℞' : '') + '</span>';
       h += '</div>';
-      var beginner=POINT_BEGINNER[def.key], sb=SIGN_BEGINNER[p.sign], hb=state.astroUnknownTime?null:HOUSE_BEGINNER[p.house-1];
-      h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);margin-top:5px;line-height:1.75">' + esc(beginner.plain) + ' 它會用「'+esc(sb.mode)+'」的方式出現'+(hb?'，在'+esc(hb.area)+'特別明顯':'')+'。</div>';
+      var beginner=POINT_BEGINNER[def.key], hb=state.astroUnknownTime?null:HOUSE_BEGINNER[p.house-1];
+      /* lead with the point-specific meaning, then tie it to the sign's
+         personality colour (trait) and a concrete house example — the old
+         version forced a "sign mode" behavioural phrase written for planets'
+         actions, which read as an odd non-sequitur on abstract points like
+         Lilith/南交點, and repeated verbatim for any two points sharing a sign */
+      h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);margin-top:5px;line-height:1.75">' + esc(beginner.plain) + ' 落在' + sign.zh + '，會帶上一點「' + esc(sign.trait) + '」的色彩' + (hb ? '，最容易出現在' + esc(hb.area) + '——像是' + esc(hb.example) + '這類情境' : '') + '。</div>';
       h += '<div style="margin-top:5px;font:400 11px \'Noto Sans TC\',sans-serif;color:#9bc5a3;line-height:1.65">可以發揮：'+esc(beginner.strength)+'</div><div style="margin-top:3px;font:400 11px \'Noto Sans TC\',sans-serif;color:#d9a0a0;line-height:1.65">需要留意：'+esc(beginner.watch)+'</div>';
       if(p.retro) h += '<div style="margin-top:3px;font:400 11px \'Noto Sans TC\',sans-serif;color:#b7a4d8;line-height:1.65">逆行：這項主題較常先在內心消化，不代表不好或比較弱。</div>';
       h += '<details style="margin-top:7px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);cursor:pointer">查看度數、宮位與專業解讀</summary><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.7;margin-top:6px">'+esc(pointPlacementText(def,chart))+'</div></details>';
@@ -5386,7 +5395,7 @@ function renderAstro() {
 
     var usableAspects = astroUsableAspects(chart);
     if (usableAspects.length) {
-      h += '<details style="margin-top:14px" ontoggle="this.querySelector(\'.astro-caret\').textContent=this.open?\'▾\':\'▸\'"><summary style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;cursor:pointer;list-style:none"><span class="astro-caret" style="display:inline-block;width:12px">▸</span>主要相位 Aspects</summary>';
+      h += '<details' + (state.astroOpenAspects ? ' open' : '') + ' style="margin-top:14px" ontoggle="state.astroOpenAspects=this.open;render()"><summary style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;cursor:pointer;list-style:none"><span class="astro-caret" style="display:inline-block;width:12px">' + (state.astroOpenAspects ? '▾' : '▸') + '</span>主要相位 Aspects</summary>';
       h += '<div style="margin-top:2px">';
       h += '<details style="margin-top:8px"><summary style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;color:rgba(240,233,216,.5);cursor:pointer">查看專業相位總表 Aspect Grid</summary>';
       h += renderAspectGrid(chart)+'</details>';
