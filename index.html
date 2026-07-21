@@ -3400,16 +3400,52 @@ function aspectPlacementText(asp) {
   var body = def.tpl.replace('{A}', aDef.zh).replace('{B}', bDef.zh).replace('{ak}', aDef.kw).replace('{bk}', bDef.kw);
   return aDef.zh + def.zh + bDef.zh + '（誤差 ' + asp.orb.toFixed(1) + '°）：' + body + '。';
 }
+/* 每個相位類型都用 {Akw}/{Bkw} 帶入實際的兩個點，避免不同組合出現一模一樣的
+   優勢／容易卡住／可以怎麼練習，讓文字真正跟這兩個特質有關，而不是套版 */
 var ASPECT_BEGINNER = {
-  conjunction:{lead:'這兩種傾向常會一起出現，力量很集中。',strength:'能把兩股力量放在同一件事上，形成鮮明特色。',watch:'有時很難分清楚自己真正需要的是哪一邊。',practice:'先分別說出兩種需要，再決定此刻要讓哪一種帶頭。'},
-  sextile:{lead:'這兩種傾向容易互相幫忙，但需要你主動使用。',strength:'稍微跨出一步，就容易找到資源與合作方式。',watch:'因為用起來順，可能沒有特別珍惜或練習。',practice:'有機會時主動多做一點，優勢才會真正變成成果。'},
-  trine:{lead:'這兩種傾向配合得很自然，是不太費力的能力。',strength:'面對相關事情時，通常能順勢找到自己的節奏。',watch:'太習慣這項能力，反而可能低估它或缺少挑戰。',practice:'有意識地把這份天賦用在更重要、更具體的目標上。'},
-  square:{lead:'這兩種需要常互相卡住，也會推著你想辦法成長。',strength:'摩擦能帶來行動力，練熟後往往成為很強的能力。',watch:'壓力大時容易覺得怎麼選都不對，或用力過頭。',practice:'別急著消滅其中一邊，先安排兩邊都能被照顧的小步驟。'},
-  opposition:{lead:'這兩種需要像拔河，常在自己與他人之間來回擺動。',strength:'能看見不同立場，最後發展出協調與平衡能力。',watch:'可能一度只認同一邊，把另一邊投射到別人身上。',practice:'問自己「另一端也需要什麼」，練習兩邊各保留一點空間。'}
+  conjunction: {
+    lead: '「{Akw}」與「{Bkw}」緊密疊加在一起，力量集中，幾乎變成同一種反應。',
+    strength: '你在展現「{Akw}」的同時，很自然也會帶出「{Bkw}」，這種集中的力量容易形成鮮明的個人風格。',
+    watch: '因為兩者太黏在一起，你可能很難分清楚此刻自己真正需要的是「{Akw}」還是「{Bkw}」。',
+    practice: '練習先分別說出「{Akw}」與「{Bkw}」各自的需求，再決定此刻要讓哪一個帶頭。',
+  },
+  sextile: {
+    lead: '「{Akw}」與「{Bkw}」容易互相幫忙，但需要你主動使用才會出現。',
+    strength: '只要你願意跨出一小步，「{Akw}」與「{Bkw}」就能自然搭配、互相加分。',
+    watch: '因為用起來很順、不費力，你可能沒有特別練習或珍惜「{Akw}」與「{Bkw}」這組合。',
+    practice: '有機會的時候，主動多用一點「{Akw}」去搭配「{Bkw}」，優勢才會真正變成具體的成果。',
+  },
+  trine: {
+    lead: '當「{Akw}」遇上「{Bkw}」，兩者搭配得很自然，幾乎不用刻意練習。',
+    strength: '你在需要同時展現「{Akw}」與「{Bkw}」的場合，通常能不假思索地找到節奏，這是別人可能要練很久才有的天賦組合。',
+    watch: '正因為太順手，你可能沒有察覺「{Akw}」與「{Bkw}」合起來的力量有多大，容易視為理所當然而缺乏挑戰。',
+    practice: '試著主動把「{Akw}」與「{Bkw}」用在一件更具體、更有企圖心的目標上，而不是任由它自然發生。',
+  },
+  square: {
+    lead: '當「{Akw}」遇上「{Bkw}」，兩者常常互相卡住，也因此逼著你成長。',
+    strength: '「{Akw}」與「{Bkw}」之間的摩擦，練久了反而會鍛鍊出很強的應變能力與行動力。',
+    watch: '壓力大時，你可能覺得「{Akw}」與「{Bkw}」怎麼選都不對，或是用力過猛想一次解決。',
+    practice: '別急著犧牲其中一邊，先為「{Akw}」與「{Bkw}」各安排一個能同時被照顧到的小行動。',
+  },
+  opposition: {
+    lead: '當「{Akw}」遇上「{Bkw}」，兩者常像拔河一樣，在你身上或人我之間來回擺盪。',
+    strength: '你能看見「{Akw}」與「{Bkw}」各自的道理，這種視野最後會發展成協調與整合的能力。',
+    watch: '你可能一度只認同「{Akw}」，把「{Bkw}」的部分投射到別人身上，因而產生誤解或衝突。',
+    practice: '遇到相關情境時，練習問自己「{Bkw}」那一端現在需要什麼，讓兩邊都保留一點空間。',
+  },
 };
+function fillAspectTemplate(tpl, aKw, bKw) {
+  return tpl.split('{Akw}').join(aKw).split('{Bkw}').join(bKw);
+}
 function aspectBeginnerData(asp) {
-  var a=findAnyPointDef(asp.a), b=findAnyPointDef(asp.b), base=ASPECT_BEGINNER[asp.type];
-  return {title:a.zh+' × '+b.zh, lead:'當「'+a.kw+'」遇上「'+b.kw+'」：'+base.lead, strength:base.strength, watch:base.watch, practice:base.practice};
+  var a = findAnyPointDef(asp.a), b = findAnyPointDef(asp.b), base = ASPECT_BEGINNER[asp.type];
+  return {
+    title: a.zh + ' × ' + b.zh,
+    lead: fillAspectTemplate(base.lead, a.kw, b.kw),
+    strength: fillAspectTemplate(base.strength, a.kw, b.kw),
+    watch: fillAspectTemplate(base.watch, a.kw, b.kw),
+    practice: fillAspectTemplate(base.practice, a.kw, b.kw),
+  };
 }
 function renderAspectBeginnerCard(asp) {
   var d=aspectBeginnerData(asp);
