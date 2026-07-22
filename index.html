@@ -3891,14 +3891,17 @@ function validateBirthDate(yRaw, mRaw, dRaw, hRaw, minRaw, unknownTime) {
   var daysInMonth = new Date(y, m, 0).getDate();
   if (d > daysInMonth) return y + ' 年 ' + m + ' 月只有 ' + daysInMonth + ' 天，請確認日期';
   if (!unknownTime) {
-    if (hRaw !== '' && hRaw != null) {
-      var hh = parseInt(hRaw, 10);
-      if (isNaN(hh) || hh < 0 || hh > 23) return '時間請輸入 0–23';
-    }
-    if (minRaw !== '' && minRaw != null) {
-      var mm = parseInt(minRaw, 10);
-      if (isNaN(mm) || mm < 0 || mm > 59) return '分鐘請輸入 0–59';
-    }
+    /* previously an EMPTY hour/minute silently passed validation, and
+       astroGenerate()/synGenerate() then defaulted it to 0 via `parseInt('')||0`
+       — so a half-filled form quietly produced a chart as if born at
+       00:00, with no warning that the time was actually missing. Now an
+       empty field is treated the same as an invalid one. */
+    if (hRaw === '' || hRaw == null) return '請輸入完整的出生時間（時），或勾選「不確定時間」';
+    var hh = parseInt(hRaw, 10);
+    if (isNaN(hh) || hh < 0 || hh > 23) return '時間請輸入 0–23';
+    if (minRaw === '' || minRaw == null) return '請輸入完整的出生時間（分），或勾選「不確定時間」';
+    var mm = parseInt(minRaw, 10);
+    if (isNaN(mm) || mm < 0 || mm > 59) return '分鐘請輸入 0–59';
   }
   return null;
 }
