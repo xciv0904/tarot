@@ -392,7 +392,7 @@ var state = {
   synUnknownTime: false, synResult: null,
   xiuMode: 'personal', xiuY: '', xiuM: '', xiuD: '',
   xiuPartnerY: '', xiuPartnerM: '', xiuPartnerD: '',
-  xiuDayAnchor: null, xiuWikiOpen: null,
+  xiuDayAnchor: null, xiuWikiOpen: null, xiuSavedPartners: [],
 };
 
 var SPREAD_GROUPS = [
@@ -417,6 +417,7 @@ var SPREAD_GROUPS = [
 })();
 
 try { state.history = JSON.parse(localStorage.getItem('tl_history') || '[]'); } catch (e) {}
+try { state.xiuSavedPartners = JSON.parse(localStorage.getItem('tl_xiu_partners') || '[]'); } catch (e) {}
 
 /* attach the rich meaning database (78-card) onto the tarot deck */
 if (typeof RICH !== 'undefined') {
@@ -4554,13 +4555,56 @@ function xiuPrefillFromAstro() {
     state.xiuPartnerY = state.synY; state.xiuPartnerM = state.synM; state.xiuPartnerD = state.synD;
   }
 }
-function xiuBirthInputBlock(prefix, label) {
+/* 常用對象：把比對過的朋友生日存起來，下次合盤不用重新輸入 */
+function xiuSaveSavedPartnersToStorage() {
+  try { localStorage.setItem('tl_xiu_partners', JSON.stringify(state.xiuSavedPartners)); } catch (e) {}
+}
+function xiuSavePartner() {
+  if (!xiuBirthReady('xiuPartner')) return;
+  var name = '';
+  try { name = window.prompt('幫這位朋友取個名字，方便下次快速選取（例如：小美）', '') || ''; } catch (e) {}
+  name = String(name).trim();
+  if (!name) return;
+  var entry = { name: name, y: state.xiuPartnerY, m: state.xiuPartnerM, d: state.xiuPartnerD };
+  var idx = -1;
+  for (var i = 0; i < state.xiuSavedPartners.length; i++) { if (state.xiuSavedPartners[i].name === name) { idx = i; break; } }
+  if (idx >= 0) state.xiuSavedPartners[idx] = entry; else state.xiuSavedPartners.push(entry);
+  xiuSaveSavedPartnersToStorage();
+  render();
+}
+function xiuSelectSavedPartner(idx) {
+  var p = state.xiuSavedPartners[idx];
+  if (!p) return;
+  state.xiuPartnerY = p.y; state.xiuPartnerM = p.m; state.xiuPartnerD = p.d;
+  render();
+}
+function xiuDeleteSavedPartner(idx, ev) {
+  if (ev && ev.stopPropagation) ev.stopPropagation();
+  try { if (!confirm('刪除這位朋友的存檔？')) return; } catch (e) {}
+  state.xiuSavedPartners.splice(idx, 1);
+  xiuSaveSavedPartnersToStorage();
+  render();
+}
+function renderXiuSavedPartnerPicker() {
+  if (!state.xiuSavedPartners.length) return '';
+  var h = '<div style="margin-top:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-bottom:5px">常用對象，點一下快速帶入</div><div style="display:flex;flex-wrap:wrap;gap:6px">';
+  state.xiuSavedPartners.forEach(function (p, idx) {
+    h += '<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.03);border:1px solid rgba(201,169,110,.3);border-radius:14px;padding:4px 5px 4px 11px">';
+    h += '<button onclick="xiuSelectSavedPartner(' + idx + ')" style="background:none;border:none;color:rgba(240,233,216,.75);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;padding:0">' + esc(p.name) + '</button>';
+    h += '<button onclick="xiuDeleteSavedPartner(' + idx + ',event)" aria-label="刪除存檔" style="background:none;border:none;color:rgba(240,233,216,.3);font:400 13px sans-serif;cursor:pointer;padding:0 4px;line-height:1">×</button>';
+    h += '</span>';
+  });
+  h += '</div></div>';
+  return h;
+}
+function xiuBirthInputBlock(prefix, label, nextIdAfterD) {
   var h = '<div style="margin-top:14px">';
   h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">' + label + '</div>';
   h += '<div style="display:flex;gap:8px;margin-top:6px">';
+  var fieldMeta = { Y: ['年 YYYY', 1900, 2100, 4, prefix + '-m'], M: ['月 MM', 1, 12, 2, prefix + '-d'], D: ['日 DD', 1, 31, 2, nextIdAfterD || ''] };
   ['Y', 'M', 'D'].forEach(function (f) {
-    var ph = f === 'Y' ? '年 YYYY' : (f === 'M' ? '月 MM' : '日 DD');
-    h += '<input aria-label="' + label + ph + '" inputmode="numeric" type="number" placeholder="' + ph + '" value="' + esc(state[prefix + f]) + '" oninput="xiuDateInput(\'' + prefix + '\',\'' + f + '\',this.value)" onblur="render()" style="width:33%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+    var meta = fieldMeta[f], ph = meta[0], id = prefix + '-' + f.toLowerCase(), nextId = meta[4], digits = meta[3];
+    h += '<input id="' + id + '" aria-label="' + label + ph + '" inputmode="numeric" min="' + meta[1] + '" max="' + meta[2] + '" type="number" placeholder="' + ph + '" value="' + esc(state[prefix + f]) + '" oninput="xiuDateInput(\'' + prefix + '\',\'' + f + '\',this.value);' + (nextId ? 'birthAutoNext(this,\'' + nextId + '\',' + digits + ')' : '') + '" onblur="render()" style="width:33%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
   });
   h += '</div>';
   var y = state[prefix + 'Y'], m = state[prefix + 'M'], d = state[prefix + 'D'];
@@ -4605,14 +4649,16 @@ function renderXiu28() {
       h += xiuMansionCard(idx, '你的本命星宿 · ');
       h += renderPersonaPicker();
       h += '<button id="xiu-copy-btn" onclick="xiuCopyForAI()" style="width:100%;margin-top:16px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製給 AI 解讀 Copy for AI</button>';
+      h += '<button onclick="xiuSetMode(\'compat\')" style="width:100%;margin-top:10px;padding:11px;border-radius:12px;border:1px solid rgba(201,169,110,.3);background:rgba(255,255,255,.02);color:rgba(240,233,216,.6);font:500 12px \'Noto Sans TC\',sans-serif;cursor:pointer">想知道你跟另一半／朋友的星宿關係嗎？點這裡試試合盤比較 →</button>';
     } else {
       h += '<div style="margin-top:14px;text-align:center;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4)">請輸入完整的出生年月日</div>';
     }
     h += '<div style="margin-top:16px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);line-height:1.8">＊本命星宿採用「連續 28 日循環」直接對照你的陽曆生日計算，跟每日／擇日用的是同一套邏輯；這跟少數命理流派另外使用的農曆演禽本命宿表是不同的系統，兩者可能對不上，這裡選擇邏輯一致、可驗證的版本。</div>';
 
   } else if (state.xiuMode === 'compat') {
-    h += xiuBirthInputBlock('xiu', '你的生日（陽曆）');
+    h += xiuBirthInputBlock('xiu', '你的生日（陽曆）', 'xiuPartner-y');
     h += xiuBirthInputBlock('xiuPartner', '對方的生日（陽曆）');
+    h += renderXiuSavedPartnerPicker();
     if (xiuBirthReady('xiu') && xiuBirthReady('xiuPartner')) {
       var idxA = xiuIndexForYMD(parseInt(state.xiuY, 10), parseInt(state.xiuM, 10), parseInt(state.xiuD, 10));
       var idxB = xiuIndexForYMD(parseInt(state.xiuPartnerY, 10), parseInt(state.xiuPartnerM, 10), parseInt(state.xiuPartnerD, 10));
@@ -4631,7 +4677,9 @@ function renderXiu28() {
       h += '<div style="font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:6px;line-height:1.85">' + esc(lrel.meaning.gist) + '</div>';
       h += '<div style="margin-top:8px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.8">' + esc(lrel.meaning.detail) + '</div>';
       h += '<div style="margin-top:8px;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);line-height:1.7">對方是你的「' + esc(lrel.otherIsYour) + '星」，你是對方的「' + esc(lrel.youAreOthers) + '星」。</div>';
+      h += '<details style="margin-top:8px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);cursor:pointer">六戀關係是怎麼換算出來的？</summary><div style="margin-top:6px;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.75">傳統「六戀」命名法用的是「演禽廿七宿」系統：把牛宿和女宿併成同一個位置，共 27 個位置排成一圈，再看兩人的位置相差幾格決定屬於哪一種六戀關係。這裡日常用的本命星宿則是 28 個位置（牛、女分開，每天換一格，可回推日期驗證），所以會先把兩人的 28 宿位置換算成這套 27 宿系統的位置，再套用六戀表——這也是上面同時看得到「關係類型」（28 宿邏輯）與「傳統六戀關係」（27 宿邏輯）兩種分類的原因。</div></details>';
       h += '</div>';
+      h += '<button onclick="xiuSavePartner()" style="width:100%;margin-top:10px;padding:11px;border-radius:12px;border:1px solid rgba(201,169,110,.3);background:rgba(255,255,255,.02);color:rgba(240,233,216,.6);font:500 12px \'Noto Sans TC\',sans-serif;cursor:pointer">💾 存下對方資料，下次快速選取</button>';
       h += renderPersonaPicker();
       h += '<button id="xiu-copy-btn" onclick="xiuCopyForAI()" style="width:100%;margin-top:16px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製給 AI 解讀 Copy for AI</button>';
     } else {
@@ -4650,14 +4698,19 @@ function renderXiu28() {
     if (!isToday) h += '<button onclick="xiuSetDayAnchor(null)" style="background:none;border:1px solid rgba(201,169,110,.3);border-radius:14px;padding:7px 12px;color:#c9a96e;font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer">回到今天</button>';
     h += '</div>';
     h += xiuMansionCard(dIdx, xiuDateStr(ay, am, ad) + ' · ');
+    h += renderXiuWeekStrip(ay, am, ad);
+    h += '<button id="xiu-copy-btn" onclick="xiuCopyForAI()" style="width:100%;margin-top:16px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製給 AI 解讀 Copy for AI</button>';
 
   } else if (state.xiuMode === 'wiki') {
+    var _wikiNow = new Date();
+    var _wikiTodayIdx = xiuIndexForYMD(_wikiNow.getFullYear(), _wikiNow.getMonth() + 1, _wikiNow.getDate());
     ['東方青龍', '北方玄武', '西方白虎', '南方朱雀'].forEach(function (dir) {
       h += '<div style="margin-top:16px;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:' + XIU_DIR_COLOR[dir] + '">' + esc(dir) + '七宿</div>';
       XIU_DEFS.forEach(function (x, idx) {
         if (x.dir !== dir) return;
         var open = state.xiuWikiOpen === idx;
-        h += '<details' + (open ? ' open' : '') + ' style="margin-top:8px;border-top:1px solid rgba(201,169,110,.15);padding-top:8px" ontoggle="state.xiuWikiOpen=this.open?' + idx + ':null;var c=this.querySelector(\'.xiu-caret\');if(c)c.textContent=this.open?\'▾\':\'▸\'"><summary style="cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center"><span style="font:500 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8"><span class="xiu-caret" style="display:inline-block;width:14px">' + (open ? '▾' : '▸') + '</span>' + esc(x.zh) + '宿 · ' + esc(x.animal) + '（' + esc(x.elem) + '曜）</span></summary>';
+        var isToday = idx === _wikiTodayIdx;
+        h += '<details' + (open ? ' open' : '') + ' style="margin-top:8px;border-top:1px solid ' + (isToday ? '#c9a96e' : 'rgba(201,169,110,.15)') + ';padding-top:8px" ontoggle="state.xiuWikiOpen=this.open?' + idx + ':null;var c=this.querySelector(\'.xiu-caret\');if(c)c.textContent=this.open?\'▾\':\'▸\'"><summary style="cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center"><span style="font:500 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8"><span class="xiu-caret" style="display:inline-block;width:14px">' + (open ? '▾' : '▸') + '</span>' + esc(x.zh) + '宿 · ' + esc(x.animal) + '（' + esc(x.elem) + '曜）' + (isToday ? ' <span style="font:500 9px \'Noto Sans TC\',sans-serif;color:#1a1410;background:#c9a96e;border-radius:8px;padding:1px 6px;margin-left:4px">今天</span>' : '') + '</span></summary>';
         h += '<div style="margin-top:6px;padding-left:14px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.8">' + esc(x.trait) + '</div>';
         h += '<div style="margin-top:4px;padding-left:14px;font:400 11px \'Noto Sans TC\',sans-serif;color:#9bc5a3;line-height:1.65">適合：' + esc(x.good) + '</div>';
         h += '<div style="margin-top:2px;padding-left:14px;font:400 11px \'Noto Sans TC\',sans-serif;color:#d9a0a0;line-height:1.65">不適合：' + esc(x.avoid) + '</div>';
@@ -4668,6 +4721,27 @@ function renderXiu28() {
   return h;
 }
 function xiuSetDayAnchor(v) { state.xiuDayAnchor = v; render(); }
+/* 每日參考的「未來 7 天一覽」：從目前查詢的日期開始，方便擇日時一次比較好幾天 */
+function renderXiuWeekStrip(ay, am, ad) {
+  var base = new Date(ay, am - 1, ad);
+  var wdNames = ['日', '一', '二', '三', '四', '五', '六'];
+  var h = '<div style="margin-top:16px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-bottom:6px;text-align:center">未來 7 天一覽 · 點一下可切換查詢日</div><div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px">';
+  for (var i = 0; i < 7; i++) {
+    var d = new Date(base.getTime());
+    d.setDate(base.getDate() + i);
+    var yy = d.getFullYear(), mm = d.getMonth() + 1, dd = d.getDate();
+    var idx = xiuIndexForYMD(yy, mm, dd);
+    var x = XIU_DEFS[idx];
+    var isFirst = i === 0;
+    h += '<button onclick="xiuSetDayAnchor(\'' + yy + '-' + pad2(mm) + '-' + pad2(dd) + '\')" style="flex:0 0 auto;min-width:62px;text-align:center;border:1px solid ' + (isFirst ? '#c9a96e' : XIU_DIR_COLOR[x.dir]) + ';border-radius:10px;padding:8px 5px;background:' + (isFirst ? 'rgba(201,169,110,.14)' : 'rgba(255,255,255,.02)') + ';cursor:pointer">';
+    h += '<div style="font:400 9px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">週' + wdNames[d.getDay()] + ' ' + mm + '/' + dd + '</div>';
+    h += '<div style="font:600 13px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + esc(x.zh) + '宿</div>';
+    h += '<div style="font:400 9px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-top:1px">' + esc(x.elem) + '曜</div>';
+    h += '</button>';
+  }
+  h += '</div></div>';
+  return h;
+}
 function xiuFlashCopied() {
   var btn = document.getElementById('xiu-copy-btn');
   if (btn) btn.textContent = '已複製！Copied';
