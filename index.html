@@ -3274,6 +3274,65 @@ function xiuRelationData(idxA, idxB) {
     advice: astroSeededPick(seed + 'advice', tpl.advice),
   };
 }
+
+/* 傳統「六戀」關係命名（榮親／友衰／危成／安壞／業胎／命之星）：
+   這套命名與配對規則來自演禽廿七宿系統（把牛宿併入女宿，共 27 個位置一圈），
+   跟多個命理站台交叉核對過規則一致，不是我自己編的。因為本站的本命星宿是用
+   「連續 28 日循環」計算（跟每日／擇日同一套邏輯，可回溯驗證），這裡把 28 宿
+   位置換算成 27 宿系統的位置（牛、女併成同一格）後，再套用六戀關係表——所以
+   你會同時看到兩套資訊：日常用、可驗證的 28 宿本命，以及這裡附加的傳統六戀
+   命名，兩者算法不同，這點會在畫面上跟你說清楚。 */
+var XIU_COMPAT27 = (function () {
+  var m = [];
+  for (var i = 0; i < 28; i++) {
+    if (i <= 7) m[i] = i;
+    else if (i === 8) m[i] = 8;      // 牛
+    else if (i === 9) m[i] = 8;      // 女（跟牛併成同一格）
+    else m[i] = i - 1;
+  }
+  return m;
+})();
+var XIU_LEGACY_OFFSET_CODE = {
+  '-13': '危', '-12': '安', '-11': '衰', '-10': '榮', '-9': '業', '-8': '親', '-7': '友', '-6': '壞', '-5': '成',
+  '-4': '危', '-3': '安', '-2': '衰', '-1': '榮', '0': '命',
+  '1': '親', '2': '友', '3': '壞', '4': '成', '5': '危', '6': '安', '7': '衰', '8': '榮', '9': '胎',
+  '10': '親', '11': '友', '12': '壞', '13': '成',
+};
+var XIU_LEGACY_PAIR_NAME = { '榮': '榮親關係', '親': '榮親關係', '友': '友衰關係', '衰': '友衰關係', '危': '危成關係', '成': '危成關係', '安': '安壞關係', '壞': '安壞關係', '業': '業胎關係', '胎': '業胎關係', '命': '命之星' };
+var XIU_LEGACY_MEANING = {
+  '榮親關係': { gist: '互相欣賞、彼此拉抬的關係，容易在對方身上看到自己欣賞或嚮往的樣子。', detail: '一方是對方的「榮星」（帶來光彩、提拔的一方），另一方是「親星」（帶來親近、扶持的一方）。相處起來容易互相佩服、互相靠近，是六戀裡偏向加分、順緣的組合。' },
+  '友衰關係': { gist: '一方在給、一方在耗，像朋友互相幫忙，但容易有一邊付出比較多。', detail: '一方是對方的「友星」（願意伸出援手的一方），另一方是「衰星」（容易耗損、需要被照顧的一方）。感情很真，也需要留意別讓某一邊一直單方面付出。' },
+  '危成關係': { gist: '一個帶來波折與提醒，一個帶來成果與收穫，關係裡有明顯的張力，也有明顯的成長。', detail: '一方是對方的「危星」（容易帶來考驗、警惕的一方），另一方是「成星」（帶來突破、成就的一方）。這組合不算輕鬆，但撐過磨合期常常會有實質的收穫。' },
+  '安壞關係': { gist: '一方帶來穩定安心，一方容易打亂步調，需要花點心思維持平衡。', detail: '一方是對方的「安星」（帶來安定、守成的一方），另一方是「壞星」（容易帶來破壞、變動的一方）。相處需要多一點耐心與溝通，才能把「變動」轉成「刺激」而不是「消耗」。' },
+  '業胎關係': { gist: '一個帶來責任與行動的推力，一個帶來新的想法與可能性，像是共同孕育些什麼。', detail: '一方是對方的「業星」（帶來責任、驅動力的一方），另一方是「胎星」（帶來新想法、新開始的一方）。適合一起投入需要耐心醞釀的計畫或創作。' },
+  '命之星': { gist: '兩人換算後落在同一個位置，像是同一個原型，彼此非常好懂。', detail: '你們在這套系統裡對應同一個位置，性格底色很像，一見面就容易有「原來你也這樣」的熟悉感，但也要留意雙方可能會有一樣的盲點。' },
+};
+function xiuLegacyOffset(idxA, idxB) {
+  var a = XIU_COMPAT27[idxA], b = XIU_COMPAT27[idxB];
+  var diff = b - a;
+  return ((diff + 13) % 27 + 27) % 27 - 13;
+}
+function xiuLegacyDistLabel(off) {
+  var ad = Math.abs(off);
+  if (ad === 0 || ad === 9) return '';
+  if (ad <= 4) return '近距離';
+  if (ad <= 8) return '中距離';
+  return '遠距離';
+}
+function xiuLegacyRelation(idxA, idxB) {
+  var offAB = xiuLegacyOffset(idxA, idxB); // 對方相對於你的位置 → 對方是你的什麼星
+  var offBA = xiuLegacyOffset(idxB, idxA); // 你相對於對方的位置 → 你是對方的什麼星
+  var codeForA = XIU_LEGACY_OFFSET_CODE[String(offAB)];
+  var codeForB = XIU_LEGACY_OFFSET_CODE[String(offBA)];
+  var pairName = XIU_LEGACY_PAIR_NAME[codeForA];
+  return {
+    pairName: pairName,
+    meaning: XIU_LEGACY_MEANING[pairName],
+    otherIsYour: codeForA,
+    youAreOthers: codeForB,
+    dist: xiuLegacyDistLabel(offAB),
+  };
+}
 /* 額外本命點：一樣用多種句子骨架＋seed 挑選，避免同星座的不同本命點讀起來像複製貼上 */
 var POINT_INTRO_TPL = [
   '{plain}落在{S}，會帶上一點「{trait}」的色彩。',
@@ -4221,6 +4280,23 @@ function crossAspectText(asp, labelA, labelB) {
   var body = def.tpl.replace('{A}', labelA + aDef.zh).replace('{B}', labelB + bDef.zh).replace('{ak}', aDef.kw).replace('{bk}', bDef.kw);
   return labelA + aDef.zh + def.zh + labelB + bDef.zh + '（誤差 ' + asp.orb.toFixed(1) + '°）：' + body + '。';
 }
+/* 合盤原本用上面那段 crossAspectText（術語堆砌、每種相位類型只有一套固定敘述）
+   直接顯示給使用者看，這正是個人星盤在任務 #61/#63 修過的同一個問題——現在
+   改用跟本命盤同一套 aspectBeginnerData／ASPECT_BEGINNER 白話系統，只是標題
+   加上「本人／對方」以區分這是兩個人之間的交叉相位，其餘的白話敘述、關鍵字
+   代入與多種句型輪替完全共用同一份邏輯，不用另外重寫一份。 */
+function renderCrossAspectBeginnerCard(asp) {
+  var aDef = findAnyPointDef(asp.aKey), bDef = findAnyPointDef(asp.bKey);
+  var base = ASPECT_BEGINNER[asp.type];
+  var seedBase = 'cross|' + asp.aKey + '|' + asp.bKey + '|' + asp.type;
+  function pickField(name) {
+    var tpl = astroSeededPick(seedBase + '|' + name, base[name]);
+    return fillAspectTemplate(tpl, '本人的' + aDef.kw, '對方的' + bDef.kw);
+  }
+  var title = '本人' + aDef.zh + ' × 對方' + bDef.zh;
+  var lead = pickField('lead'), strength = pickField('strength'), watch = pickField('watch'), practice = pickField('practice');
+  return '<article style="border-top:1px solid rgba(201,169,110,.15);padding:12px 0"><div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + esc(title) + '</div><div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.75;margin-top:5px">' + esc(lead) + '</div><div style="margin-top:7px;font:400 11px \'Noto Sans TC\',sans-serif;color:#9bc5a3;line-height:1.65">優勢：' + esc(strength) + '</div><div style="margin-top:3px;font:400 11px \'Noto Sans TC\',sans-serif;color:#d9a0a0;line-height:1.65">容易卡住：' + esc(watch) + '</div><div style="margin-top:3px;font:400 11px \'Noto Sans TC\',sans-serif;color:#e6cd9a;line-height:1.65">可以怎麼練習：' + esc(practice) + '</div><details style="margin-top:8px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);cursor:pointer">查看相位名稱、容許度與專業解讀</summary><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.7;margin-top:6px">' + esc(crossAspectText(asp, '本人', '對方')) + '</div></details></article>';
+}
 function synastryFlashCopied() {
   var btn = document.getElementById('syn-copy-btn');
   if (btn) btn.textContent = '已複製！Copied';
@@ -4284,7 +4360,7 @@ function renderSynastry() {
 
   h += '<div style="margin-top:18px;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;text-align:center">重點交叉相位</div>';
   aspects.slice(0, 10).forEach(function (asp) {
-    h += '<div style="border-top:1px solid rgba(201,169,110,.15);padding:10px 0;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.7">' + esc(crossAspectText(asp, '本人', '對方')) + '</div>';
+    h += renderCrossAspectBeginnerCard(asp);
   });
 
   h += renderPersonaPicker();
@@ -4545,12 +4621,19 @@ function renderXiu28() {
       h += '<div style="font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:6px;line-height:1.85">' + esc(rel.lead) + '</div>';
       h += '<div style="margin-top:8px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.8">' + esc(rel.advice) + '</div>';
       h += '</div>';
+      var lrel = xiuLegacyRelation(idxA, idxB);
+      h += '<div style="margin-top:12px;border:1px solid rgba(201,169,110,.4);border-radius:12px;padding:14px 16px;background:rgba(201,169,110,.05)">';
+      h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:#c9a96e;letter-spacing:.1em">傳統六戀關係 · ' + esc(lrel.pairName) + (lrel.dist ? '（' + esc(lrel.dist) + '）' : '') + '</div>';
+      h += '<div style="font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:6px;line-height:1.85">' + esc(lrel.meaning.gist) + '</div>';
+      h += '<div style="margin-top:8px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.8">' + esc(lrel.meaning.detail) + '</div>';
+      h += '<div style="margin-top:8px;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);line-height:1.7">對方是你的「' + esc(lrel.otherIsYour) + '星」，你是對方的「' + esc(lrel.youAreOthers) + '星」。</div>';
+      h += '</div>';
       h += renderPersonaPicker();
       h += '<button id="xiu-copy-btn" onclick="xiuCopyForAI()" style="width:100%;margin-top:16px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製給 AI 解讀 Copy for AI</button>';
     } else {
       h += '<div style="margin-top:14px;text-align:center;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4)">請輸入兩人完整的出生年月日</div>';
     }
-    h += '<div style="margin-top:16px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);line-height:1.8">＊關係分類是根據星宿在四象／七曜上的結構性關係（同宿、同曜、同象、對象、鄰象）設計的簡化版本，不是逐一對照古籍演禽相配表——那套表格版本眾多、彼此矛盾，找不到單一可靠出處，因此改用邏輯清楚、能驗證的分類方式，供參考娛樂用。</div>';
+    h += '<div style="margin-top:16px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);line-height:1.8">＊「關係類型」是根據星宿在四象／七曜上的結構性關係（同宿、同曜、同象、對象、鄰象）設計的簡化版本；「傳統六戀關係」則是換算成演禽廿七宿系統（牛、女併同一格）後套用的古典命名法（榮親／友衰／危成／安壞／業胎／命之星），兩套系統算法不同，可以互相參考。</div>';
 
   } else if (state.xiuMode === 'daily') {
     var now = new Date();
@@ -4597,11 +4680,13 @@ function xiuCopyForAI() {
     var idxB = xiuIndexForYMD(parseInt(state.xiuPartnerY, 10), parseInt(state.xiuPartnerM, 10), parseInt(state.xiuPartnerD, 10));
     var xA = XIU_DEFS[idxA], xB = XIU_DEFS[idxB];
     var rel = xiuRelationData(idxA, idxB);
+    var lrel2 = xiuLegacyRelation(idxA, idxB);
     lines.push('你：生日 ' + xiuDateStr(state.xiuY, state.xiuM, state.xiuD) + '，' + xA.zh + '宿（' + xA.animal + '，' + xA.elem + '曜，' + xA.dir + '）');
     lines.push('特質：' + xA.trait + ' 適合：' + xA.good + '　不適合：' + xA.avoid);
     lines.push('對方：生日 ' + xiuDateStr(state.xiuPartnerY, state.xiuPartnerM, state.xiuPartnerD) + '，' + xB.zh + '宿（' + xB.animal + '，' + xB.elem + '曜，' + xB.dir + '）');
     lines.push('特質：' + xB.trait + ' 適合：' + xB.good + '　不適合：' + xB.avoid);
     lines.push('關係類型：' + rel.lead + ' ' + rel.advice);
+    lines.push('傳統六戀關係：' + lrel2.pairName + '。' + lrel2.meaning.gist + ' ' + lrel2.meaning.detail + '（對方是你的「' + lrel2.otherIsYour + '星」，你是對方的「' + lrel2.youAreOthers + '星」）');
     lines.push('');
     lines.push('請根據以上兩人的星宿特質與關係類型，幫我分析這段關係的相處建議。');
   } else if (state.xiuMode === 'daily') {
