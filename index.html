@@ -390,6 +390,9 @@ var state = {
   synY: '', synM: '', synD: '', synH: '', synMin: '', synGenerating: false,
   synCityQuery: '', synCityIdx: null, synCityUsed: null,
   synUnknownTime: false, synResult: null,
+  xiuMode: 'personal', xiuY: '', xiuM: '', xiuD: '',
+  xiuPartnerY: '', xiuPartnerM: '', xiuPartnerD: '',
+  xiuDayAnchor: null, xiuWikiOpen: null,
 };
 
 var SPREAD_GROUPS = [
@@ -3174,6 +3177,103 @@ var POINT_BEGINNER = {
   Vertex:{plain:'這是比較容易出現重要相遇、意外邀請或關係轉折的領域。',strength:'它提醒你留意那些改變觀點與人生方向的互動。',watch:'不是每次相遇都注定長久，也不代表完全無法選擇。'}
 };
 var EXTRA_POINT_KEYS = EXTRA_POINT_DEFS.map(function (p) { return p.key; });
+
+/* ================= 二十八星宿 28 Lunar Mansions ================= */
+/* 順序、四象分組、對應動物、七曜均已對照維基百科與多個現行黃曆網站交叉核對；
+   每宿的「曜」與星期對應關係固定不變（水曜＝週三、木曜＝週四...），並用
+   2026-07-22（週三＝軫水蚓）與 2026-07-23（週四＝角木蛟，正好循環回到起點）
+   兩個即時查證到的黃曆真實資料互相驗證過，確認排列與週期連續無誤，
+   才把 2026-07-23 定為角宿（第0位）的計算基準日。
+   本命／合盤的判定不是用農曆生日對照的密教演禽表（那套系統另需一整套農曆
+   換算引擎，且找不到能完全交叉驗證的可靠版本），而是直接用陽曆生日代入
+   跟「每日／擇日」相同的連續 28 天循環——好處是同一套邏輯前後一致、每一步
+   都能驗證，代價是跟少數命理流派慣用的農曆演禽本命宿可能對不上，這點會在
+   介面上跟使用者說清楚。 */
+var XIU_DEFS = [
+  { zh: '角', dir: '東方青龍', animal: '蛟', elem: '木', weekday: 4, trait: '你有開創的衝勁，喜歡走在前面把方向定出來，像蛟龍探頭那樣勇於嘗試新局面。', good: '簽約、開會、談新合作、開始一項計畫', avoid: '拖延決定、猶豫不決' },
+  { zh: '亢', dir: '東方青龍', animal: '龍', elem: '金', weekday: 5, trait: '你做事講究氣勢與品質，不喜歡將就，對自己與別人都有一定的高標準。', good: '談判、爭取權益、正式場合亮相', avoid: '硬碰硬的衝突、意氣用事' },
+  { zh: '氐', dir: '東方青龍', animal: '貉', elem: '土', weekday: 6, trait: '你重視根基與安全感，喜歡把事情一步步扎實地做穩，不愛冒進。', good: '整理居家、存錢規劃、修復關係', avoid: '倉促搬遷、貿然投資' },
+  { zh: '房', dir: '東方青龍', animal: '兔', elem: '日', weekday: 0, trait: '你溫和敏銳，重視家庭與親密關係，很在意彼此之間是否被好好對待。', good: '家庭聚會、談心、表達感謝', avoid: '冷戰、忽略對方感受' },
+  { zh: '心', dir: '東方青龍', animal: '狐', elem: '月', weekday: 1, trait: '你情感細膩、直覺敏銳，容易察覺別人沒說出口的情緒。', good: '獨處沉澱、藝術創作、傾聽他人', avoid: '過度多疑、悶著不說' },
+  { zh: '尾', dir: '東方青龍', animal: '虎', elem: '火', weekday: 2, trait: '你行動力強、敢衝敢拼，面對挑戰時反而更有精神。', good: '運動健身、處理積壓已久的事、主動出擊', avoid: '逞強硬撐、不顧後果衝動行事' },
+  { zh: '箕', dir: '東方青龍', animal: '豹', elem: '水', weekday: 3, trait: '你反應快、善於整合資訊，能在複雜狀況中找到自己的位置。', good: '溝通協調、資料整理、學習新技能', avoid: '三心二意、資訊過載時亂了陣腳' },
+  { zh: '斗', dir: '北方玄武', animal: '獬', elem: '木', weekday: 4, trait: '你重公平正義，遇到不合理的事會很有主見地表達立場。', good: '主持公道、伸張正義的場合、立定新目標', avoid: '過度較真、得理不饒人' },
+  { zh: '牛', dir: '北方玄武', animal: '牛', elem: '金', weekday: 5, trait: '你踏實肯做、任勞任怨，是那種默默把事情完成的人。', good: '踏實推進手邊工作、累積存款', avoid: '過度壓榨自己、不懂拒絕' },
+  { zh: '女', dir: '北方玄武', animal: '蝠', elem: '土', weekday: 6, trait: '你心思細膩、擅長照顧他人，也重視自己內在的成長。', good: '學習進修、照顧家人、自我充電', avoid: '過度犧牲自己配合別人' },
+  { zh: '虛', dir: '北方玄武', animal: '鼠', elem: '日', weekday: 0, trait: '你想像力豐富，容易被新奇的點子吸引，也擅長從無到有生出東西。', good: '發想企劃、寫作、規劃未來', avoid: '好高騖遠、光說不做' },
+  { zh: '危', dir: '北方玄武', animal: '燕', elem: '月', weekday: 1, trait: '你警覺性高，做重大決定前會反覆確認，不喜歡毫無準備地行動。', good: '風險評估、簽重要文件前的最後確認', avoid: '在準備不足時貿然行動' },
+  { zh: '室', dir: '北方玄武', animal: '豬', elem: '火', weekday: 2, trait: '你重視居家與生活品質，喜歡把生活過得安穩舒適。', good: '裝修佈置、家庭理財、休養生息', avoid: '大興土木、頻繁搬動' },
+  { zh: '壁', dir: '北方玄武', animal: '貐', elem: '水', weekday: 3, trait: '你博學而好整理知識，喜歡把零散的東西系統化。', good: '讀書進修、整理資料檔案、規劃長期計畫', avoid: '鑽牛角尖、想太多卻不行動' },
+  { zh: '奎', dir: '西方白虎', animal: '狼', elem: '木', weekday: 4, trait: '你獨立性強，習慣靠自己的判斷做事，不喜歡被過度干涉。', good: '獨立作業的任務、開創個人事業', avoid: '過度固執己見、拒絕合作' },
+  { zh: '婁', dir: '西方白虎', animal: '狗', elem: '金', weekday: 5, trait: '你忠誠可靠，一旦認定的人事物就會全力守護。', good: '團隊合作、維繫長期關係、盡忠職守的工作', avoid: '愚忠不懂變通、被人利用' },
+  { zh: '胃', dir: '西方白虎', animal: '雉', elem: '土', weekday: 6, trait: '你注重外在形象與生活品質，懂得為自己創造舒適與美感。', good: '購物、打扮、佈置環境', avoid: '過度虛榮、入不敷出' },
+  { zh: '昴', dir: '西方白虎', animal: '雞', elem: '日', weekday: 0, trait: '你勤奮準時、紀律感強，習慣把生活安排得井井有條。', good: '規律作息、準時赴約、監督進度', avoid: '過度苛求細節、不知變通' },
+  { zh: '畢', dir: '西方白虎', animal: '烏', elem: '月', weekday: 1, trait: '你聰明機警，擅長觀察局勢、抓住時機。', good: '策略規劃、談判、把握機會出手', avoid: '算計太多、失去信任' },
+  { zh: '觜', dir: '西方白虎', animal: '猴', elem: '火', weekday: 2, trait: '你反應靈活、點子多，擅長隨機應變解決突發狀況。', good: '臨場應變、創意發想、快速學習', avoid: '三分鐘熱度、缺乏耐性' },
+  { zh: '參', dir: '西方白虎', animal: '猿', elem: '水', weekday: 3, trait: '你行動敏捷、好奇心旺盛，喜歡到處探索新事物。', good: '旅行、學習新領域、拓展人脈', avoid: '過度分心、承諾太多做不到' },
+  { zh: '井', dir: '南方朱雀', animal: '犴', elem: '木', weekday: 4, trait: '你重視是非對錯，喜歡把事情攤開來講清楚。', good: '溝通協商、公開發言、釐清誤會', avoid: '得理不饒人、在公開場合起衝突' },
+  { zh: '鬼', dir: '南方朱雀', animal: '羊', elem: '金', weekday: 5, trait: '你心思纖細、重感情，很在意人與人之間的情分。', good: '探望親友、處理家族事務、緬懷紀念', avoid: '過度感傷、放不下過去' },
+  { zh: '柳', dir: '南方朱雀', animal: '獐', elem: '土', weekday: 6, trait: '你隨和有彈性，懂得在不同場合調整自己的姿態。', good: '社交應酬、調解糾紛、隨機應變的安排', avoid: '沒有原則地一味迎合' },
+  { zh: '星', dir: '南方朱雀', animal: '馬', elem: '日', weekday: 0, trait: '你活力充沛、喜歡被看見，天生就有舞台魅力。', good: '公開展演、簡報提案、社交曝光', avoid: '過度逞強愛面子' },
+  { zh: '張', dir: '南方朱雀', animal: '鹿', elem: '月', weekday: 1, trait: '你溫和優雅，懂得用柔軟的方式化解緊張的氣氛。', good: '團隊協調、款待客人、居中調停', avoid: '一味討好而委屈自己' },
+  { zh: '翼', dir: '南方朱雀', animal: '蛇', elem: '火', weekday: 2, trait: '你敏銳而善於察言觀色，懂得抓住時機表現自己。', good: '公開表現、行銷宣傳、抓緊機會出手', avoid: '心機算計過了頭、失去信任' },
+  { zh: '軫', dir: '南方朱雀', animal: '蚓', elem: '水', weekday: 3, trait: '你重情重義、韌性十足，即使環境艱難也能默默耕耘。', good: '團隊合作、累積口碑、長期經營的事', avoid: '過度隱忍委屈自己' },
+];
+var XIU_DIR_COLOR = { '東方青龍': '#8fc7f4', '北方玄武': '#9bc5a3', '西方白虎': '#e6cd9a', '南方朱雀': '#d99b5f' };
+/* 校驗過的計算基準：2026-07-23（週四）＝角宿（索引0），2026-07-22（週三）＝軫宿（索引27，循環銜接） */
+var XIU_EPOCH_UTC = Date.UTC(2026, 6, 23);
+function xiuIndexForYMD(y, m, d) {
+  var target = Date.UTC(y, m - 1, d);
+  var diffDays = Math.round((target - XIU_EPOCH_UTC) / 86400000);
+  return ((diffDays % 28) + 28) % 28;
+}
+function xiuDateStr(y, m, d) { return y + '/' + pad2(m) + '/' + pad2(d); }
+
+/* 兩宿關係：用「同宿／同曜（每7宿共用一種曜）／同象（四象每象各7宿）／
+   對象（四象中相對的那一象）／鄰象」這五種可驗證的結構關係分類，
+   不採用坊間流傳、版本彼此矛盾、找不到單一可靠出處的演禽相配吉凶表——
+   這點跟本命／每日一樣，選擇「說得清楚、站得住腳」優先於「看起來很古典」。 */
+var XIU_RELATION_TPL = {
+  same: {
+    lead: ['你們是同一個星宿，性格底色幾乎是同一個模子刻出來的，一見面就有種「原來你也這樣」的熟悉感。', '同宿代表你們對生活的直覺反應很相似，很多時候不用解釋，對方就懂你在想什麼。'],
+    advice: ['優點是彼此很好懂，要留意的是兩人容易同時踩進一樣的盲點，最好找個性格互補的朋友幫忙補位。', '相處起來很輕鬆，但也要提醒自己：對方看不到的死角，你大概也看不到，遇到重大決定不妨多問問旁人意見。'],
+  },
+  sameElem: {
+    lead: ['你們雖然不同宿，但共用同一種「曜」，骨子裡的步調和價值觀其實很合拍，像是同一種頻率在共振。', '同曜代表你們雖然表現方式不同，但在意的核心很像，相處起來會有一種說不上來的默契。'],
+    advice: ['可以善用這份共鳴一起訂目標、互相打氣；只是也要記得練習說出彼此不同的地方，別誤以為對方什麼都跟你想的一樣。', '建議偶爾刻意聊聊彼此的差異，同頻率固然舒服，但也可能讓你們忽略了需要被看見的分歧。'],
+  },
+  sameDir: {
+    lead: ['你們同屬一個象限（同樣的青龍／玄武／白虎／朱雀），做事的大方向和節奏很類似，合作起來不太需要磨合期。', '同象代表你們對生活的優先順序很接近，很容易一拍即合，不用花太多時間對齊步調。'],
+    advice: ['適合一起推動需要長期投入的事，只是要留意會不會太像、缺少互補的角色，記得刻意引入不同觀點。', '相處順暢是優點，但也要提醒自己主動接觸跟你們風格不同的人事物，才不會視野越走越窄。'],
+  },
+  oppositeDir: {
+    lead: ['你們分屬相對的兩個象限，看事情的角度常常正好相反，一開始可能會覺得對方「怎麼想的跟我完全不一樣」。', '對象關係代表你們的性格像蹺蹺板的兩端，一個往前衝，另一個習慣先觀察，需要多花點心思才能對上頻率。'],
+    advice: ['這種差異如果磨合得好，反而會變成很強的互補，一個顧全局、一個顧細節；建議溝通時多問「你為什麼會這樣想」，而不是急著爭對錯。', '不用急著改變對方或自己，先練習理解彼此出發點不同，很多摩擦其實只是節奏不同步，不是誰不對。'],
+  },
+  neighborDir: {
+    lead: ['你們的象限相鄰，個性有一部分重疊、也有一部分明顯不同，屬於「大方向合得來，細節要磨合」的組合。', '鄰象關係代表你們合作起來不會太陌生，但仍需要一點時間熟悉彼此不一樣的做事方式。'],
+    advice: ['建議一開始先從小事情培養默契，等信任建立後再一起處理更重要的合作或決定。', '重疊的部分可以直接合作無間，不同的部分則值得保持好奇，多聽聽對方的角度會有意外收穫。'],
+  },
+};
+function xiuGroupOf(idx) { return Math.floor(idx / 7); }
+function xiuRelationCategory(idxA, idxB) {
+  if (idxA === idxB) return 'same';
+  if (idxA % 7 === idxB % 7) return 'sameElem';
+  var gd = ((xiuGroupOf(idxB) - xiuGroupOf(idxA)) % 4 + 4) % 4;
+  if (gd === 0) return 'sameDir';
+  if (gd === 2) return 'oppositeDir';
+  return 'neighborDir';
+}
+function xiuRelationData(idxA, idxB) {
+  var cat = xiuRelationCategory(idxA, idxB);
+  var tpl = XIU_RELATION_TPL[cat];
+  var seed = 'xiu|' + idxA + '|' + idxB;
+  return {
+    category: cat,
+    lead: astroSeededPick(seed + 'lead', tpl.lead),
+    advice: astroSeededPick(seed + 'advice', tpl.advice),
+  };
+}
 /* 額外本命點：一樣用多種句子骨架＋seed 挑選，避免同星座的不同本命點讀起來像複製貼上 */
 var POINT_INTRO_TPL = [
   '{plain}落在{S}，會帶上一點「{trait}」的色彩。',
@@ -4358,6 +4458,182 @@ function progressionCopyForAI() {
   }
 }
 
+/* ---------- 二十八星宿 render + interactions ---------- */
+function xiuSetMode(m) { state.xiuMode = m; render(); window.scrollTo(0, 0); }
+function xiuDateInput(prefix, field, v) { state[prefix + field] = v; }
+function xiuBirthReady(prefix) {
+  var y = state[prefix + 'Y'], m = state[prefix + 'M'], d = state[prefix + 'D'];
+  return y && m && d && !validateBirthDate(y, m, d, '12', '0', true);
+}
+/* 如果本命星盤或合盤已經填過生日，直接借用那組資料當預設值，不用使用者重打一次 */
+function xiuPrefillFromAstro() {
+  if (!state.xiuY && state.astroY && state.astroM && state.astroD) {
+    state.xiuY = state.astroY; state.xiuM = state.astroM; state.xiuD = state.astroD;
+  }
+  if (!state.xiuPartnerY && state.synY && state.synM && state.synD) {
+    state.xiuPartnerY = state.synY; state.xiuPartnerM = state.synM; state.xiuPartnerD = state.synD;
+  }
+}
+function xiuBirthInputBlock(prefix, label) {
+  var h = '<div style="margin-top:14px">';
+  h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">' + label + '</div>';
+  h += '<div style="display:flex;gap:8px;margin-top:6px">';
+  ['Y', 'M', 'D'].forEach(function (f) {
+    var ph = f === 'Y' ? '年 YYYY' : (f === 'M' ? '月 MM' : '日 DD');
+    h += '<input aria-label="' + label + ph + '" inputmode="numeric" type="number" placeholder="' + ph + '" value="' + esc(state[prefix + f]) + '" oninput="xiuDateInput(\'' + prefix + '\',\'' + f + '\',this.value)" onblur="render()" style="width:33%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+  });
+  h += '</div>';
+  var y = state[prefix + 'Y'], m = state[prefix + 'M'], d = state[prefix + 'D'];
+  if (y && m && d) {
+    var err = validateBirthDate(y, m, d, '12', '0', true);
+    if (err) h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:#d67878;margin-top:6px">⚠ ' + esc(err) + '</div>';
+  }
+  h += '</div>';
+  return h;
+}
+function xiuMansionCard(idx, titlePrefix) {
+  var x = XIU_DEFS[idx];
+  var h = '<div style="margin-top:14px;border:1px solid ' + XIU_DIR_COLOR[x.dir] + ';border-radius:12px;padding:14px 16px;background:rgba(255,255,255,.02)">';
+  h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:' + XIU_DIR_COLOR[x.dir] + ';letter-spacing:.1em">' + esc(titlePrefix || '') + esc(x.dir) + '</div>';
+  h += '<div style="font:600 20px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:4px">' + esc(x.zh) + '宿 · ' + esc(x.animal) + '（' + esc(x.elem) + '曜）</div>';
+  h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.8);margin-top:8px;line-height:1.85">' + esc(x.trait) + '</div>';
+  h += '<div style="margin-top:8px;font:400 11px \'Noto Sans TC\',sans-serif;color:#9bc5a3;line-height:1.65">適合：' + esc(x.good) + '</div>';
+  h += '<div style="margin-top:3px;font:400 11px \'Noto Sans TC\',sans-serif;color:#d9a0a0;line-height:1.65">不適合：' + esc(x.avoid) + '</div>';
+  h += '</div>';
+  return h;
+}
+function renderXiuModeNav() {
+  var modes = [['personal', '本命星宿'], ['compat', '合盤比較'], ['daily', '每日參考'], ['wiki', '星宿百科']];
+  var h = '<div style="display:flex;gap:6px;margin-top:14px;flex-wrap:wrap;justify-content:center">';
+  modes.forEach(function (mo) {
+    var on = state.xiuMode === mo[0];
+    h += '<button aria-pressed="' + on + '" onclick="xiuSetMode(\'' + mo[0] + '\')" style="font:500 11px \'Noto Sans TC\',sans-serif;background:' + (on ? 'rgba(201,169,110,.2)' : 'rgba(255,255,255,.03)') + ';border:1px solid ' + (on ? '#c9a96e' : 'rgba(201,169,110,.25)') + ';color:' + (on ? '#f0e9d8' : 'rgba(240,233,216,.55)') + ';padding:6px 13px;border-radius:14px;cursor:pointer">' + mo[1] + '</button>';
+  });
+  h += '</div>';
+  return h;
+}
+function renderXiu28() {
+  xiuPrefillFromAstro();
+  var h = '<div style="font:600 16px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:6px;text-align:center">二十八星宿 28 Lunar Mansions</div>';
+  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);text-align:center;margin-top:6px;line-height:1.6">中國古代天文將黃道分成 28 個區域，自古用於擇日與命理參考</div>';
+  h += renderXiuModeNav();
+
+  if (state.xiuMode === 'personal') {
+    h += xiuBirthInputBlock('xiu', '你的生日（陽曆）');
+    if (xiuBirthReady('xiu')) {
+      var idx = xiuIndexForYMD(parseInt(state.xiuY, 10), parseInt(state.xiuM, 10), parseInt(state.xiuD, 10));
+      h += xiuMansionCard(idx, '你的本命星宿 · ');
+      h += renderPersonaPicker();
+      h += '<button id="xiu-copy-btn" onclick="xiuCopyForAI()" style="width:100%;margin-top:16px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製給 AI 解讀 Copy for AI</button>';
+    } else {
+      h += '<div style="margin-top:14px;text-align:center;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4)">請輸入完整的出生年月日</div>';
+    }
+    h += '<div style="margin-top:16px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);line-height:1.8">＊本命星宿採用「連續 28 日循環」直接對照你的陽曆生日計算，跟每日／擇日用的是同一套邏輯；這跟少數命理流派另外使用的農曆演禽本命宿表是不同的系統，兩者可能對不上，這裡選擇邏輯一致、可驗證的版本。</div>';
+
+  } else if (state.xiuMode === 'compat') {
+    h += xiuBirthInputBlock('xiu', '你的生日（陽曆）');
+    h += xiuBirthInputBlock('xiuPartner', '對方的生日（陽曆）');
+    if (xiuBirthReady('xiu') && xiuBirthReady('xiuPartner')) {
+      var idxA = xiuIndexForYMD(parseInt(state.xiuY, 10), parseInt(state.xiuM, 10), parseInt(state.xiuD, 10));
+      var idxB = xiuIndexForYMD(parseInt(state.xiuPartnerY, 10), parseInt(state.xiuPartnerM, 10), parseInt(state.xiuPartnerD, 10));
+      h += xiuMansionCard(idxA, '你 · ');
+      h += xiuMansionCard(idxB, '對方 · ');
+      var rel = xiuRelationData(idxA, idxB);
+      var relLabel = { same: '同宿', sameElem: '同曜共鳴', sameDir: '同象呼應', oppositeDir: '對宮張力', neighborDir: '鄰象互補' }[rel.category];
+      h += '<div style="margin-top:14px;border:1px solid #c9a96e;border-radius:12px;padding:14px 16px;background:rgba(201,169,110,.08)">';
+      h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:#c9a96e;letter-spacing:.1em">關係類型 · ' + esc(relLabel) + '</div>';
+      h += '<div style="font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:6px;line-height:1.85">' + esc(rel.lead) + '</div>';
+      h += '<div style="margin-top:8px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.8">' + esc(rel.advice) + '</div>';
+      h += '</div>';
+      h += renderPersonaPicker();
+      h += '<button id="xiu-copy-btn" onclick="xiuCopyForAI()" style="width:100%;margin-top:16px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製給 AI 解讀 Copy for AI</button>';
+    } else {
+      h += '<div style="margin-top:14px;text-align:center;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4)">請輸入兩人完整的出生年月日</div>';
+    }
+    h += '<div style="margin-top:16px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);line-height:1.8">＊關係分類是根據星宿在四象／七曜上的結構性關係（同宿、同曜、同象、對象、鄰象）設計的簡化版本，不是逐一對照古籍演禽相配表——那套表格版本眾多、彼此矛盾，找不到單一可靠出處，因此改用邏輯清楚、能驗證的分類方式，供參考娛樂用。</div>';
+
+  } else if (state.xiuMode === 'daily') {
+    var now = new Date();
+    var anchor = state.xiuDayAnchor ? new Date(state.xiuDayAnchor + 'T00:00:00') : now;
+    var ay = anchor.getFullYear(), am = anchor.getMonth() + 1, ad = anchor.getDate();
+    var dIdx = xiuIndexForYMD(ay, am, ad);
+    var isToday = xiuDateStr(ay, am, ad) === xiuDateStr(now.getFullYear(), now.getMonth() + 1, now.getDate());
+    h += '<div style="margin-top:14px;display:flex;gap:8px;align-items:center;justify-content:center">';
+    h += '<input type="date" aria-label="查詢日期" value="' + ay + '-' + pad2(am) + '-' + pad2(ad) + '" onchange="xiuSetDayAnchor(this.value)" style="background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:8px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+    if (!isToday) h += '<button onclick="xiuSetDayAnchor(null)" style="background:none;border:1px solid rgba(201,169,110,.3);border-radius:14px;padding:7px 12px;color:#c9a96e;font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer">回到今天</button>';
+    h += '</div>';
+    h += xiuMansionCard(dIdx, xiuDateStr(ay, am, ad) + ' · ');
+
+  } else if (state.xiuMode === 'wiki') {
+    ['東方青龍', '北方玄武', '西方白虎', '南方朱雀'].forEach(function (dir) {
+      h += '<div style="margin-top:16px;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:' + XIU_DIR_COLOR[dir] + '">' + esc(dir) + '七宿</div>';
+      XIU_DEFS.forEach(function (x, idx) {
+        if (x.dir !== dir) return;
+        var open = state.xiuWikiOpen === idx;
+        h += '<details' + (open ? ' open' : '') + ' style="margin-top:8px;border-top:1px solid rgba(201,169,110,.15);padding-top:8px" ontoggle="state.xiuWikiOpen=this.open?' + idx + ':null;var c=this.querySelector(\'.xiu-caret\');if(c)c.textContent=this.open?\'▾\':\'▸\'"><summary style="cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center"><span style="font:500 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8"><span class="xiu-caret" style="display:inline-block;width:14px">' + (open ? '▾' : '▸') + '</span>' + esc(x.zh) + '宿 · ' + esc(x.animal) + '（' + esc(x.elem) + '曜）</span></summary>';
+        h += '<div style="margin-top:6px;padding-left:14px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.8">' + esc(x.trait) + '</div>';
+        h += '<div style="margin-top:4px;padding-left:14px;font:400 11px \'Noto Sans TC\',sans-serif;color:#9bc5a3;line-height:1.65">適合：' + esc(x.good) + '</div>';
+        h += '<div style="margin-top:2px;padding-left:14px;font:400 11px \'Noto Sans TC\',sans-serif;color:#d9a0a0;line-height:1.65">不適合：' + esc(x.avoid) + '</div>';
+        h += '</details>';
+      });
+    });
+  }
+  return h;
+}
+function xiuSetDayAnchor(v) { state.xiuDayAnchor = v; render(); }
+function xiuFlashCopied() {
+  var btn = document.getElementById('xiu-copy-btn');
+  if (btn) btn.textContent = '已複製！Copied';
+  clearTimeout(_astroCopyTimer);
+  _astroCopyTimer = setTimeout(function () {
+    var b = document.getElementById('xiu-copy-btn');
+    if (b) b.textContent = '複製給 AI 解讀 Copy for AI';
+  }, 2000);
+}
+function xiuCopyForAI() {
+  var lines = ['二十八星宿資料 28 Lunar Mansions'];
+  if (state.xiuMode === 'compat' && xiuBirthReady('xiu') && xiuBirthReady('xiuPartner')) {
+    var idxA = xiuIndexForYMD(parseInt(state.xiuY, 10), parseInt(state.xiuM, 10), parseInt(state.xiuD, 10));
+    var idxB = xiuIndexForYMD(parseInt(state.xiuPartnerY, 10), parseInt(state.xiuPartnerM, 10), parseInt(state.xiuPartnerD, 10));
+    var xA = XIU_DEFS[idxA], xB = XIU_DEFS[idxB];
+    var rel = xiuRelationData(idxA, idxB);
+    lines.push('你：生日 ' + xiuDateStr(state.xiuY, state.xiuM, state.xiuD) + '，' + xA.zh + '宿（' + xA.animal + '，' + xA.elem + '曜，' + xA.dir + '）');
+    lines.push('特質：' + xA.trait + ' 適合：' + xA.good + '　不適合：' + xA.avoid);
+    lines.push('對方：生日 ' + xiuDateStr(state.xiuPartnerY, state.xiuPartnerM, state.xiuPartnerD) + '，' + xB.zh + '宿（' + xB.animal + '，' + xB.elem + '曜，' + xB.dir + '）');
+    lines.push('特質：' + xB.trait + ' 適合：' + xB.good + '　不適合：' + xB.avoid);
+    lines.push('關係類型：' + rel.lead + ' ' + rel.advice);
+    lines.push('');
+    lines.push('請根據以上兩人的星宿特質與關係類型，幫我分析這段關係的相處建議。');
+  } else if (state.xiuMode === 'daily') {
+    var now2 = new Date();
+    var anchor2 = state.xiuDayAnchor ? new Date(state.xiuDayAnchor + 'T00:00:00') : now2;
+    var ay2 = anchor2.getFullYear(), am2 = anchor2.getMonth() + 1, ad2 = anchor2.getDate();
+    var dIdx2 = xiuIndexForYMD(ay2, am2, ad2);
+    var xD = XIU_DEFS[dIdx2];
+    lines.push('日期：' + xiuDateStr(ay2, am2, ad2) + '，值宿：' + xD.zh + '宿（' + xD.animal + '，' + xD.elem + '曜，' + xD.dir + '）');
+    lines.push('適合：' + xD.good + '　不適合：' + xD.avoid);
+    lines.push('');
+    lines.push('請根據今天的值宿特性，幫我整理今天適合安排的事與該避免的事。');
+  } else if (xiuBirthReady('xiu')) {
+    var idx2 = xiuIndexForYMD(parseInt(state.xiuY, 10), parseInt(state.xiuM, 10), parseInt(state.xiuD, 10));
+    var x2 = XIU_DEFS[idx2];
+    lines.push('生日：' + xiuDateStr(state.xiuY, state.xiuM, state.xiuD) + '，本命星宿：' + x2.zh + '宿（' + x2.animal + '，' + x2.elem + '曜，' + x2.dir + '）');
+    lines.push('特質：' + x2.trait);
+    lines.push('適合：' + x2.good + '　不適合：' + x2.avoid);
+    lines.push('');
+    lines.push('請根據以上本命星宿特質，幫我做個性與生活建議的解讀。');
+  } else {
+    return;
+  }
+  lines.push(personaInstructionLine());
+  var text = lines.join('\n');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(xiuFlashCopied).catch(function () { fallbackCopy(text, xiuFlashCopied); });
+  } else {
+    fallbackCopy(text, xiuFlashCopied);
+  }
+}
+
 function astroFlashCopied() {
   var btn = document.getElementById('astro-copy-btn');
   if (btn) btn.textContent = '已複製！Copied';
@@ -5535,7 +5811,7 @@ function renderAstro() {
   } else {
     var chart = state.astroResult;
 
-    var viewTabs = [['chart', '本命星盤'], ['daily', '每日'], ['weekly', '本週'], ['monthly', '本月'], ['yearly', '年度'], ['synastry', '合盤'], ['progression', '推運'], ['method', '計算方式']];
+    var viewTabs = [['chart', '本命星盤'], ['daily', '每日'], ['weekly', '本週'], ['monthly', '本月'], ['yearly', '年度'], ['synastry', '合盤'], ['progression', '推運'], ['xiu28', '28星宿'], ['method', '計算方式']];
     h += '<div style="display:flex;gap:6px;margin-top:16px;flex-wrap:wrap;justify-content:center">';
     viewTabs.forEach(function (vt) {
       var on = (state.astroView || 'chart') === vt[0];
@@ -5561,6 +5837,12 @@ function renderAstro() {
       return h;
     }
     if (state.astroView === 'method') { h += renderAstroMethodology(); h += '</div>'; return h; }
+    if (state.astroView === 'xiu28') {
+      h += renderXiu28();
+      h += '<button onclick="astroSetView(\'chart\')" style="width:100%;margin-top:10px;padding:12px;border-radius:12px;border:1px solid rgba(201,169,110,.3);background:rgba(255,255,255,.02);color:rgba(240,233,216,.6);font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">← 回到本命星盤</button>';
+      h += '</div>';
+      return h;
+    }
     if (state.astroView && state.astroView !== 'chart') {
       h += renderHoroscope(state.astroView);
       h += '</div>';
