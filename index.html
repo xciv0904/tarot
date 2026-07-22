@@ -4203,6 +4203,9 @@ function renderBirthInputForm(prefix, promptText, genFnName) {
   h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">出生時間</div>';
   h += '<label style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" ' + (state[prefix + 'UnknownTime'] ? 'checked' : '') + ' onchange="' + prefix + 'ToggleUnknownTime()">不確定時間（以正午 12:00 估算）</label>';
   h += '</div>';
+  if (state[prefix + 'UnknownTime']) {
+    h += '<div style="margin-top:6px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);line-height:1.7">勾選後：這個人的上升／宮位與月亮相關的比對會被省略，其餘行星星座的比對仍然準確——如果對方不確定自己的出生時間，一樣可以照這樣繼續。</div>';
+  }
   if (!state[prefix + 'UnknownTime']) {
     h += '<div style="display:flex;gap:8px;margin-top:6px">';
     h += '<input id="'+prefix+'-h" aria-label="出生小時" inputmode="numeric" min="0" max="23" type="number" placeholder="時 HH (0-23)" value="' + esc(state[prefix + 'H']) + '" oninput="state.' + prefix + 'H=this.value;birthAutoNext(this,\''+prefix+'-min\',2)" onblur="render()" style="width:50%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
@@ -4340,7 +4343,7 @@ function renderSynastry() {
   [['love','戀愛／伴侶'],['family','親子／家人'],['friend','朋友'],['work','工作夥伴']].forEach(function(r){var on=state.synRelationship===r[0];h+='<button aria-pressed="'+on+'" onclick="synSetRelationship(\''+r[0]+'\')" style="background:'+(on?'rgba(201,169,110,.18)':'rgba(255,255,255,.02)')+';border:1px solid '+(on?'#c9a96e':'rgba(201,169,110,.3)')+';color:'+(on?'#f0e9d8':'rgba(240,233,216,.6)')+';padding:7px 11px;border-radius:15px;cursor:pointer">'+r[1]+'</button>';});
   h += '</div>';
   if (!state.synResult) {
-    h += renderBirthInputForm('syn', '輸入對方的出生資料，看看兩人的星盤如何互動——合盤會比對雙方的行星關係，適合用來理解一段感情或關係的默契與課題。', 'synGenerate');
+    h += renderBirthInputForm('syn', '輸入對方的出生資料，看看兩人的星盤如何互動——合盤會比對雙方的行星關係，適合用來理解一段感情或關係的默契與課題。兩人都有出生時間時比對最完整；如果對方不確定時間，下面一樣可以勾選「不確定時間」繼續。', 'synGenerate');
     return h;
   }
   var chartA = state.astroResult, chartB = state.synResult;
@@ -4473,8 +4476,9 @@ function renderProgression() {
   [1,3,5,10].forEach(function(n){var on=state.progYears===n;h+='<button aria-pressed="'+on+'" onclick="progSetYears('+n+')" style="padding:8px 4px;border-radius:10px;border:1px solid '+(on?'#c9a96e':'rgba(201,169,110,.28)')+';background:'+(on?'rgba(201,169,110,.18)':'rgba(255,255,255,.02)')+';color:'+(on?'#f0e9d8':'rgba(240,233,216,.55)')+';font:500 11px \'Noto Sans TC\',sans-serif;cursor:pointer">'+n+' 年</button>';});
   h += '</div>';
 
-  h += '<details style="margin-top:12px;border:1px solid rgba(201,169,110,.2);border-radius:12px;padding:11px 14px;background:rgba(255,255,255,.02)">';
-  h += '<summary style="font:600 12px \'Noto Sans TC\',sans-serif;color:#e6cd9a;cursor:pointer">推運在算什麼？</summary>';
+  var progExplainOpen = state.progExplainOpen !== false;
+  h += '<details' + (progExplainOpen ? ' open' : '') + ' style="margin-top:12px;border:1px solid rgba(201,169,110,.2);border-radius:12px;padding:11px 14px;background:rgba(255,255,255,.02)" ontoggle="state.progExplainOpen=this.open">';
+  h += '<summary style="font:600 12px \'Noto Sans TC\',sans-serif;color:#e6cd9a;cursor:pointer">推運在算什麼？（第一次來看這裡）</summary>';
   h += '<div style="margin-top:8px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.9">推運用的是「一天等於一年」的技術：把你出生後第幾天的星象，拿來對應你現在活到的年紀。例如你現在 30 歲，看的就是你出生後第 30 天當下太陽、月亮、上升的位置。這不是在算「今天會發生什麼事」，而是描繪你目前所在的人生階段、內心正在慢慢展開、轉變的主題。</div>';
   h += '<div style="margin-top:10px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.9">推運月亮大約每 2–3 年換一個星座，代表情緒需求與安全感來源；推運太陽通常要 28–30 年才換一次星座，是核心自我認同的長期轉型。' + (state.astroUnknownTime ? '出生時間未知，因此不顯示推運上升。' : '推運上升則反映目前對外展現自己的方式。') + '</div>';
   h += '</details>';
@@ -5175,9 +5179,11 @@ function astroShowTour() {
 function renderAstroTourCard() {
   var items = [
     ['本命星盤', '十大行星、上升／宮位、相位、元素比例的完整分析'],
-    ['每日／週／月／年', '依真實行運與太陽／月亮回歸算出的評分與解讀，可切換日期'],
+    ['每日／本週／本月／年度', '依真實行運與太陽／月亮回歸算出的評分與解讀，可切換日期'],
     ['合盤', '輸入另一人的資料，比對兩人的星盤相性'],
     ['推運', '用「一天等於一年」技法看你現在的心境演變'],
+    ['28星宿', '中國古代的另一套系統，可看本命星宿、跟另一人的關係、每日擇日'],
+    ['計算方式', '說明每一項數字背後用的計算方法與限制，供想了解細節的人查閱'],
   ];
   var h = '<div style="margin-top:16px;border:1px solid rgba(201,169,110,.3);border-radius:12px;padding:14px 16px;background:rgba(201,169,110,.05)">';
   h += '<div style="display:flex;justify-content:space-between;align-items:center">';
@@ -5865,6 +5871,7 @@ function renderAstro() {
 
   if (!state.astroResult) {
     h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);margin-top:14px;line-height:1.7;text-align:center">輸入出生日期、時間與地點，生成完整的西洋占星本命星盤——十大行星、上升／天頂、十二宮位與主要相位。</div>';
+    h += '<div style="margin-top:12px;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:11px 13px;background:rgba(255,255,255,.02);font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.6);line-height:1.85">第一次用嗎？開始前你需要知道：①需要出生年月日、時間、地點三項資料；②不確定精確時間也沒關係，下面可以勾選「不確定時間」，一樣能生成星盤；③出生資料只會存在你自己的瀏覽器裡，不會上傳到任何伺服器。</div>';
     h += '<div style="text-align:center;margin-top:10px">';
     h += '<label style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">換新裝置了嗎？點此匯入之前備份的星盤資料<input type="file" accept="application/json,.json" onchange="astroImportProfileFile(this)" style="display:none"></label>';
     h += '</div>';
@@ -5882,6 +5889,9 @@ function renderAstro() {
     h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">出生時間</div>';
     h += '<label style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" ' + (state.astroUnknownTime ? 'checked' : '') + ' onchange="astroToggleUnknownTime()">不確定時間（產生無時間星盤）</label>';
     h += '</div>';
+    if (state.astroUnknownTime) {
+      h += '<div style="margin-top:6px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);line-height:1.7">勾選後：不會顯示上升／天頂／宮位，也會省略跟月亮相關的相位；十大行星本身的星座位置仍然準確。</div>';
+    }
     if (!state.astroUnknownTime) {
       h += '<div style="display:flex;gap:8px;margin-top:6px">';
       h += '<input id="astro-h" aria-label="出生小時" inputmode="numeric" min="0" max="23" type="number" placeholder="時 HH (0-23)" value="' + esc(state.astroH) + '" oninput="state.astroH=this.value;birthAutoNext(this,\'astro-min\',2)" onblur="render()" style="width:50%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
@@ -5939,20 +5949,24 @@ function renderAstro() {
     if (!state.astroUnknownTime) h += '<div style="margin-top:16px">' + renderNatalWheel(chart) + '</div>';
     else h += '<div style="margin-top:16px;padding:13px 15px;border:1px solid rgba(201,169,110,.3);border-radius:10px;background:rgba(201,169,110,.06);font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.8">這是無出生時間星盤：不顯示可能誤導的星盤輪盤、上升、天頂、宮位、福點與宿命點。月亮當日可能範圍：<strong style="color:#e6cd9a">' + esc(astroMoonRangeText()) + '</strong></div>';
 
+    if (state.astroUnknownTime) {
+      h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-top:10px;text-align:center">＊出生時間未知：行星度數以當日中點呈現，月亮請以上方範圍為準。</div>';
+    }
+
+    /* 白話摘要排在星盤輪圖正下方、上升／天頂與宮位制這些專有名詞卡片之前，
+       讓第一次使用、不懂占星的人先看得懂的內容，再往下看細節與技術選項 */
+    h += renderAstroQuickSummary(chart);
+
     if (!state.astroUnknownTime) {
-    h += '<div style="display:flex;gap:10px;margin-top:10px;justify-content:center;text-align:center">';
+    h += '<div style="display:flex;gap:10px;margin-top:16px;justify-content:center;text-align:center">';
     h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">上升星座 ASC</div><div style="font:600 15px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + ascSignDef.sym + ' ' + ascSignDef.zh + '</div><div style="font:400 10px \'EB Garamond\',serif;color:rgba(240,233,216,.4)">' + (chart.asc % 30).toFixed(1) + '°</div></div>';
     h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">天頂 MC</div><div style="font:600 15px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + mcSignDef.sym + ' ' + mcSignDef.zh + '</div><div style="font:400 10px \'EB Garamond\',serif;color:rgba(240,233,216,.4)">' + (chart.mc % 30).toFixed(1) + '°</div></div>';
     h += '</div>';
     h += '<div style="text-align:center;margin-top:6px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.3)">宮位制：' + (state.astroHouseSystem === 'whole' ? '整宮制 Whole Sign' : '普拉西德制 Placidus') + '</div>';
     h += '<div style="display:flex;justify-content:center;gap:7px;margin-top:8px"><button aria-pressed="' + (state.astroHouseSystem==='placidus') + '" onclick="astroSetHouseSystem(\'placidus\')" style="background:none;border:1px solid rgba(201,169,110,.3);color:#c9a96e;padding:5px 9px;border-radius:12px;cursor:pointer">普拉西德</button><button aria-pressed="' + (state.astroHouseSystem==='whole') + '" onclick="astroSetHouseSystem(\'whole\')" style="background:none;border:1px solid rgba(201,169,110,.3);color:#c9a96e;padding:5px 9px;border-radius:12px;cursor:pointer">整宮制</button></div>';
+    h += '<div style="text-align:center;margin-top:4px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.32)">不確定選哪個？多數人用預設的「普拉西德制」就好，這裡切換只會改變宮位分法，行星星座不會變。</div>';
     }
 
-    if (state.astroUnknownTime) {
-      h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-top:10px;text-align:center">＊出生時間未知：行星度數以當日中點呈現，月亮請以上方範圍為準。</div>';
-    }
-
-    h += renderAstroQuickSummary(chart);
     h += renderAngleAndHouseBeginner(chart);
     h += renderElementQualitySummary(chart);
 
