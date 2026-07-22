@@ -420,6 +420,7 @@ var state = {
   wizardStep: 1,       // 1=類別 2=牌陣 3=問題 4=確認
   question: '',
   target: '',
+  subtopic: '',        // 具體問題 key（目前僅 love 類別有對應 UI／解讀，見 SUBTOPICS）
   timeframe: 'month',
   drawn: [],
   phase: 'setup',      // setup | shuffling | picking | result
@@ -1643,6 +1644,7 @@ function startQuestionFlow() {
   state.category = null;
   state.question = '';
   state.target = '';
+  state.subtopic = '';
   go('reading', state.deck || 'tarot');
 }
 
@@ -1750,6 +1752,22 @@ function wizBtns(showBack, nextOk, nextLabel, nextFn) {
   return h + '</div>';
 }
 
+/* Phase 1A：愛情分類的具體子問題選擇器（只在 category==='love' 時於問題輸入步驟顯示）。
+   只列出 SUBTOPICS.love 中 modes 包含 'cards' 的項目；再次點選同一個可取消選取。
+   其他分類完全不受影響，不呼叫這個函式。 */
+function renderLoveSubtopicPicker() {
+  var options = (SUBTOPICS.love || []).filter(function (s) { return s.modes.indexOf('cards') !== -1; });
+  if (!options.length) return '';
+  var h = '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:14px">想深入了解的具體問題（選填，可再次點選取消）</div>';
+  h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">';
+  options.forEach(function (s) {
+    var active = state.subtopic === s.key;
+    h += '<button type="button" aria-pressed="' + active + '" onclick="wizToggleSubtopic(\'' + s.key + '\')" style="font:400 11px \'Noto Sans TC\',sans-serif;background:' + (active ? 'rgba(201,169,110,.22)' : 'rgba(201,169,110,.08)') + ';border:1px solid ' + (active ? '#e6cd9a' : 'rgba(201,169,110,.3)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.7)') + ';padding:6px 12px;border-radius:14px;cursor:pointer">' + (active ? '✓ ' : '') + esc(s.zh) + '</button>';
+  });
+  h += '</div>';
+  return h;
+}
+
 function renderWizard(spreads, isTarot) {
   var h = wizProgress();
   h += '<div style="font:500 10px \'Noto Sans TC\',sans-serif;letter-spacing:.18em;color:#c9a96e;margin-top:20px">STEP ' + state.wizardStep + ' / 4</div>';
@@ -1802,6 +1820,9 @@ function renderWizard(spreads, isTarot) {
       h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:14px">' + targetCfg.label + '</div>';
       h += '<input id="target-input" value="' + esc(state.target) + '" oninput="state.target=this.value" placeholder="' + targetCfg.placeholder + '" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:10px 13px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
     }
+    if (state.category === 'love') {
+      h += renderLoveSubtopicPicker();
+    }
     h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:14px">具體問題（選填，可點下方範例）</div>';
     h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">';
     tmpl.chips.forEach(function (c2, i2) {
@@ -1846,7 +1867,11 @@ function wizSetDeck(d) {
   render();
 }
 function wizSetCat(k) {
-  if (state.category !== k) { state.category = k; state.target = ''; }
+  if (state.category !== k) { state.category = k; state.target = ''; state.subtopic = ''; }
+  render();
+}
+function wizToggleSubtopic(key) {
+  state.subtopic = (state.subtopic === key) ? '' : key;
   render();
 }
 function wizSetSpread(k) { state.spread = k; render(); }
@@ -1863,7 +1888,7 @@ function wizNext() {
 }
 function wizBack() { state.wizardStep = Math.max(1, state.wizardStep - 1); render(); }
 function wizRestart() {
-  state.wizardStep = 1; state.category = null; state.question = ''; state.target = '';
+  state.wizardStep = 1; state.category = null; state.question = ''; state.target = ''; state.subtopic = '';
   resetReading(); render(); window.scrollTo(0, 0);
 }
 function wizChip(i) {
@@ -2017,6 +2042,10 @@ function renderReading() {
     h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:#e6cd9a;text-transform:uppercase">✦ 綜合解讀 Overall Reading</div>';
     h += '<div style="font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:8px;line-height:1.9;text-align:justify">' + esc(overallReading()) + '</div>';
     h += '</div>';
+    if (state.category === 'love' && state.subtopic) {
+      var loveSubDef = (SUBTOPICS.love || []).filter(function (s) { return s.key === state.subtopic; })[0];
+      if (loveSubDef) h += renderSubtopicResultPanel(loveSubDef, cardSubtopicReading('love', state.subtopic, state.drawn));
+    }
     if (!isTarot && state.spread === 'grand') {
       h += grandPanel();
     }
@@ -2258,6 +2287,252 @@ function cardReminder(d, isTarot) {
   return REMINDER_TEMPLATES[role] || REMINDER_TEMPLATES.generic;
 }
 
+/* ================= Phase 1A：愛情分類的具體子問題解讀（牌卡面，塔羅＋雷諾曼皆支援）=================
+   只支援 catKey === 'love'；其他分類一律安全回傳 available:false，不產生內容。
+   所有敘述都由「實際抽到的牌」動態決定：牌組（塔羅／雷諾曼）、正逆位、牌位角色、
+   花色／宮廷牌階級／大牌，以及既有 RICH／LEN_RICH 資料，透過 hashStr 做確定性挑句——
+   同一組抽牌重新整理會得到一樣的內容，不同牌組合則會挑到不同的措辭。 */
+
+/* 花色／音調分組：塔羅用花色＋大牌，雷諾曼沒有花色，改用既有 LEN_RICH.tone（吉/中性/凶）分組 */
+function loveCardGroup(card, isTarot) {
+  if (isTarot) return card.arcana === 'major' ? 'major' : card.suit;
+  var rich = LEN_RICH[card.n];
+  var tone = rich && rich.tone;
+  if (tone === '吉') return 'len_good';
+  if (tone === '凶') return 'len_bad';
+  return 'len_neutral';
+}
+/* 年齡／成熟度傾向：塔羅用宮廷牌階級與數字大小判斷成熟度，大牌另成一組；
+   雷諾曼沒有宮廷牌，改用少數幾張與「年輕／成熟」意象直接相關的牌，其餘預設為 peer（相仿） */
+var LEN_AGE_BAND = { 13: 'young', 28: 'peer', 29: 'peer', 4: 'mature', 5: 'mature', 15: 'mature', 19: 'mature', 30: 'mature' };
+function loveMaturityBand(card, isTarot) {
+  if (isTarot) {
+    if (card.arcana === 'major') return 'major';
+    if (card.num === 'Page') return 'young';
+    if (card.num === 'Knight') return 'peer';
+    if (card.num === 'Queen' || card.num === 'King') return 'mature';
+    var n = card.num === 'A' ? 1 : parseInt(card.num, 10);
+    if (n <= 4) return 'young';
+    if (n <= 7) return 'peer';
+    return 'mature';
+  }
+  return LEN_AGE_BAND[card.n] || 'peer';
+}
+/* 依子問題挑出最能代表答案的那張牌：優先找牌位角色相符的位置，找不到就用陣型中最後一張
+  （多數牌陣的最後一個位置最接近「未來／結果」），單張牌陣自然就是那張牌 */
+var LOVE_ROLE_PRIORITY = {
+  'partner-type': ['other', 'future', 'bond'],
+  'partner-profile': ['other', 'bond', 'future'],
+  'meet-scene': ['other', 'past', 'bond'],
+  'pace-pattern': ['bond', 'future', 'present'],
+  crush: ['other', 'future', 'bond'],
+  reunion: ['future', 'other', 'past'],
+  'marriage-longterm': ['future', 'bond', 'other'],
+};
+function loveFocusCard(drawnCards, subtopicKey) {
+  var priorities = LOVE_ROLE_PRIORITY[subtopicKey] || ['future', 'other', 'bond'];
+  for (var i = 0; i < priorities.length; i++) {
+    for (var j = 0; j < drawnCards.length; j++) {
+      if (posRole(drawnCards[j].pos.zh) === priorities[i]) return drawnCards[j];
+    }
+  }
+  return drawnCards[drawnCards.length - 1];
+}
+/* 整體牌陣語氣（正向／中性／挑戰）：沿用 overallReading() 同一套加減分邏輯與門檻，
+   只是獨立算一份給子問題解讀用，不去更動 overallReading() 本身 */
+function loveToneBucket(drawnCards, isTarot) {
+  var score = 0;
+  drawnCards.forEach(function (d) {
+    if (isTarot) {
+      var neg = NEG_TAROT_IDS.indexOf(d.card.id) !== -1;
+      if (neg && !d.reversed) score -= 1;
+      else if (!neg && d.reversed) score -= 1;
+      else if (!neg && !d.reversed) score += 1;
+    } else {
+      score += NEG_LEN_NS.indexOf(d.card.n) !== -1 ? -1 : 1;
+    }
+  });
+  var ratio = drawnCards.length ? score / drawnCards.length : 0;
+  return ratio > 0.34 ? 'positive' : (ratio < -0.34 ? 'challenging' : 'neutral');
+}
+
+/* 每個子問題的「核心結論」導語（挑一句接在既有 RICH.ctx.love／LEN_RICH.love 的真實牌義句子前面）。
+   partner-profile 不用這個導語庫——它的核心結論改用下面的 LOVE_PORTRAIT_TAG 組成專屬的
+   「人物輪廓」句式，其餘子問題維持原本的導語＋牌義句組合方式。 */
+var LOVE_SUBTOPIC_LEAD = {
+  'partner-type': ['從你目前抽到的牌來看，', '這次牌面透露的訊息是，'],
+  'meet-scene': ['關於可能相遇的場合，牌面提示：', '這張牌對相遇情境的暗示是：'],
+  'pace-pattern': ['關於這段關係的節奏與相處，牌面顯示：', '從整體牌陣來看，這段關係的走向是：'],
+  crush: ['關於這段曖昧，牌面透露：', '這張牌對曖昧對象的態度提示：'],
+  reunion: ['關於復合的可能性，牌面顯示：', '這張牌對這段關係的提醒是：'],
+  'marriage-longterm': ['關於長期關係與適婚傾向，牌面顯示：', '這張牌對關係走向的象徵是：'],
+};
+/* partner-profile 專用：用代表牌的花色／大牌／雷諾曼吉凶分組，挑一句簡短的人物輪廓形容詞組，
+   套進「牌面首先呈現的是一位……傾向的人」的句式，取代過於一般化的導語 */
+var LOVE_PORTRAIT_TAG = {
+  wands: ['行動派、熱情直接', '充滿活力、敢衝敢闖', '陽光外向、有衝勁'],
+  cups: ['細膩重情、體貼溫柔', '感性浪漫、重視連結', '情感豐富、容易被打動'],
+  swords: ['理性獨立、思路清晰', '有主見、話說得直接', '冷靜自持、善於分析'],
+  pentacles: ['務實可靠、腳踏實地', '沉穩踏實、重視安全感', '低調務實、重承諾'],
+  major: ['氣場鮮明、份量十足', '特質強烈、不落俗套', '帶著某種命定感的氣質'],
+  len_good: ['開朗正向、容易親近', '明亮溫暖、討人喜歡', '氣場順遂、給人好感'],
+  len_neutral: ['低調平實、需要時間認識', '中規中矩、耐看型', '平穩內斂、不張揚'],
+  len_bad: ['帶點防備、需要耐心靠近', '神秘難懂、步調謹慎', '複雜深沉、需要時間磨合'],
+};
+/* 「人物／環境特徵」欄位由哪些 TRAIT_POOL 軸心組成——只有列在這裡的子問題才會產生 traits 內容。
+   partner-profile 固定六個維度：年齡傾向／外貌氣質／個性相處／職業類型／經濟觀念／家庭背景，
+   financeStyle（金錢觀／消費／收入穩定度）與 familyBg（家庭氛圍／成長環境）分開，避免混在一起、
+   也避免用「家庭背景」暗示確定的財產或階級。partner-type／meet-scene 維持原本的少數軸心，不強加。 */
+var LOVE_TRAIT_AXES_BY_SUBTOPIC = {
+  'partner-type': ['appearance', 'personality'],
+  'partner-profile': ['ageHint', 'appearance', 'personality', 'jobType', 'financeStyle', 'familyBg'],
+  'meet-scene': ['meetScene'],
+};
+/* traits 欄位輸出時的維度標籤，讓使用者能清楚辨認「年齡傾向：……；外貌氣質：……」這種分項敘述 */
+var TRAIT_AXIS_LABELS = {
+  ageHint: '年齡傾向',
+  appearance: '外貌氣質',
+  personality: '個性相處',
+  jobType: '職業類型',
+  financeStyle: '經濟觀念',
+  familyBg: '家庭背景',
+  meetScene: '相遇場合',
+};
+
+/* 依整體牌陣語氣挑句：trend／favor／risk／action／timing 這幾個欄位在所有愛情子問題間共用同一套
+   語氣措辭池（只有子問題的 fields 有要求該欄位時才會用到），差異來自實際抽牌的正逆位與吉凶比例 */
+var LOVE_TONE_POOL = {
+  trend: {
+    positive: ['整體發展的走向偏向順利，關係有機會穩定往前推進', '牌面能量偏正向，事情有機會比預期更快出現進展', '目前的趨勢對你有利，順著現有的節奏走下去即可'],
+    neutral: ['發展走向還在醞釀中，順與不順都各有一些，需要再觀察一段時間', '目前處於過渡階段，趨勢尚未完全明朗，建議保持彈性', '事情的走向取決於接下來雙方的互動，暫時沒有絕對的定論'],
+    challenging: ['目前的趨勢帶有一些阻力，進展可能比預期慢一些', '牌面顯示這段時間需要多一點耐心，不宜期待立即的變化', '發展走向暫時卡在某個環節，建議先處理眼前的課題再往前'],
+  },
+  favor: {
+    positive: ['你目前的狀態與心態是最大的助力，保持現有的步調即可', '身邊的機會與人脈都對你有利，適合主動一點', '整體氛圍站在你這邊，坦然表現真實的自己會加分'],
+    neutral: ['真誠與耐心會是這段時間最實際的助力', '保持開放的心態，願意多了解對方會帶來加分', '穩定的生活步調本身就是一種優勢，不必刻意強求'],
+    challenging: ['願意誠實面對問題本身就是一種助力，別急著逃避', '過去累積的信任與耐心，會是撐過這段時期的關鍵', '願意先調整自己的心態，會比等對方改變更有幫助'],
+  },
+  risk: {
+    positive: ['順利時也別忽略溝通，避免因為太順而少了確認彼此的心意', '留意別因為進展快就忽略了解對方真正的需求', '好的開始也需要持續經營，避免三分鐘熱度'],
+    neutral: ['猶豫不決可能讓機會悄悄流失，建議別拖太久', '資訊不對等容易造成誤會，適時主動確認會比悶著猜更好', '過度分析反而可能錯過感受當下的機會'],
+    challenging: ['要留意逃避溝通或累積情緒，反而讓問題越滾越大', '容易因為缺乏安全感而想太多，建議別把小事放大檢視', '過去未解決的心結若不處理，可能持續影響這段關係'],
+  },
+  action: {
+    positive: ['可以主動一點，把握現有的好氛圍往前推進一步', '適合把心裡的想法說出口，坦誠會帶來更好的結果', '順勢而為，同時也記得肯定對方在這段關係中的付出'],
+    neutral: ['建議先觀察一陣子，同時保持開放而不勉強的心態', '可以先從小的互動開始，慢慢累積彼此的了解與信任', '給彼此一點時間，同時誠實表達自己真正的需求'],
+    challenging: ['建議先照顧好自己的情緒，再決定下一步怎麼走', '找一個平靜的時機，坦誠地把心裡的擔憂說出來', '暫時放慢腳步，把注意力放在能自己掌握的部分'],
+  },
+  timing: {
+    positive: ['如果雙方都有意願，關係往更穩定的方向發展，時機點可能比想像中更快到來', '牌面顯示現在是相對適合往前一步的時機', '近期到中期都是相對有利的時間段，可以順勢而為'],
+    neutral: ['時機尚未完全成熟，可能需要再多一段時間醞釀', '沒有明確的急迫性，順其自然、水到渠成會比刻意設定期限更好', '關鍵時間點還需要視雙方後續的互動而定，暫時無法斷定'],
+    challenging: ['目前不是勉強推進的好時機，操之過急反而容易適得其反', '建議先把眼前的課題處理好，時機自然會比較清楚', '短期內可能仍有變數，適合抱持觀望但不放棄的態度'],
+  },
+};
+
+/* cardSubtopicReading(catKey, subtopicKey, drawnCards)
+   目前只支援 catKey==='love'；drawnCards 需為 state.drawn 這種 {card, reversed, pos, flipped} 陣列。
+   塔羅／雷諾曼皆由 drawnCards[0].card.arcana 是否存在自動判斷，不需要另外傳 isTarot。
+   回傳結構化物件，只有實際有內容的欄位才會被填入；catKey/subtopicKey 不支援或沒有抽牌時
+   安全回傳 available:false，不捏造任何內容。 */
+function cardSubtopicReading(catKey, subtopicKey, drawnCards) {
+  var out = { available: false, reason: '', catKey: catKey, subtopicKey: subtopicKey, conclusion: '', traits: '', trend: '', favor: '', risk: '', timing: '', action: '', caveat: '' };
+  if (catKey !== 'love') { out.reason = 'unsupported-category'; return out; }
+  var subtopic = (SUBTOPICS.love || []).filter(function (s) { return s.key === subtopicKey; })[0];
+  if (!subtopic) { out.reason = 'unknown-subtopic'; return out; }
+  if (subtopic.modes.indexOf('cards') === -1) { out.reason = 'mode-not-supported'; return out; }
+  if (!drawnCards || !drawnCards.length) { out.reason = 'no-cards'; return out; }
+
+  var isTarot = typeof drawnCards[0].card.arcana !== 'undefined';
+  var focus = loveFocusCard(drawnCards, subtopicKey);
+  var seedBase = subtopicKey + '|' + drawnCards.map(function (d) {
+    return (isTarot ? d.card.id : ('l' + d.card.n)) + (d.reversed ? 'R' : 'U');
+  }).join(',');
+
+  /* 核心結論：兩種組法都以「代表牌真實的 RICH.ctx.love／LEN_RICH.love 牌義句子」為底，不捏造內容——
+     partner-profile 額外套上「人物輪廓」句式，避免只出現像「看清關係問題」這種跟人物無關的一般敘述；
+     其餘子問題維持原本的導語＋牌義句組合方式。 */
+  var baseMeaning;
+  if (isTarot && focus.card.rich && focus.card.rich.ctx && focus.card.rich.ctx.love) {
+    baseMeaning = focus.card.rich.ctx.love[focus.reversed ? 1 : 0];
+  } else if (isTarot) {
+    baseMeaning = focus.reversed ? focus.card.revZh : focus.card.upZh;
+  } else {
+    var lr = LEN_RICH[focus.card.n];
+    baseMeaning = (lr && lr.love) ? lr.love : focus.card.mZh;
+  }
+  if (subtopicKey === 'partner-profile') {
+    var tagPool = LOVE_PORTRAIT_TAG[loveCardGroup(focus.card, isTarot)] || LOVE_PORTRAIT_TAG.major;
+    var tag = tagPool[hashStr(seedBase + '|tag') % tagPool.length];
+    var baseMeaningZh = baseMeaning.replace(/,/g, '，');
+    out.conclusion = '牌面首先呈現的是一位較' + tag + '的人；代表牌同時提醒你，' + baseMeaningZh;
+  } else {
+    var leadPool = LOVE_SUBTOPIC_LEAD[subtopicKey] || LOVE_SUBTOPIC_LEAD['partner-type'];
+    var lead = leadPool[hashStr(seedBase + '|lead') % leadPool.length];
+    out.conclusion = lead + baseMeaning;
+  }
+
+  /* 人物／環境特徵：依子問題對應的軸心，用「代表牌」的花色／成熟度分組，從 TRAIT_POOL 挑句組合，
+     並加上 TRAIT_AXIS_LABELS 的維度標籤，讓多維度的敘述（例如 partner-profile）能清楚分項辨認 */
+  var axes = LOVE_TRAIT_AXES_BY_SUBTOPIC[subtopicKey];
+  if (axes && subtopic.fields.indexOf('traits') !== -1) {
+    var group = loveCardGroup(focus.card, isTarot);
+    var parts = axes.map(function (axis) {
+      var g = axis === 'ageHint' ? loveMaturityBand(focus.card, isTarot) : group;
+      var text = traitPoolPick(axis, g, seedBase + '|' + axis);
+      if (!text) return '';
+      var label = TRAIT_AXIS_LABELS[axis] || axis;
+      return label + '：' + text;
+    }).filter(function (t) { return !!t; });
+    out.traits = parts.join('；');
+  }
+
+  /* 發展趨勢／有利因素／風險阻礙／可執行建議／時間傾向：依整體牌陣語氣挑句，只填子問題有要求的欄位 */
+  var tone = loveToneBucket(drawnCards, isTarot);
+  ['trend', 'favor', 'risk', 'action', 'timing'].forEach(function (f) {
+    if (subtopic.fields.indexOf(f) === -1) return;
+    var pool = (LOVE_TONE_POOL[f] && LOVE_TONE_POOL[f][tone]) || [];
+    if (!pool.length) return;
+    out[f] = pool[hashStr(seedBase + '|' + f) % pool.length];
+  });
+
+  if (subtopic.fields.indexOf('caveat') !== -1) {
+    out.caveat = '以上描述是牌面象徵與可能傾向，並非對現實人物或事件的確定預測，實際情況仍需以你自己的觀察與相處為準。';
+  }
+
+  out.available = true;
+  return out;
+}
+
+/* UI：把 cardSubtopicReading() 的結構化結果畫成「具體問題解讀」區塊，只在選了 subtopic 時呼叫；
+   只顯示該子問題 fields 有列出、且實際有內容的欄位，不製造空標題。 */
+var SUBTOPIC_FIELD_LABELS = {
+  conclusion: ['核心結論', 'Conclusion'],
+  traits: ['人物／環境特徵', 'Traits'],
+  trend: ['發展趨勢', 'Trend'],
+  favor: ['有利因素', 'Favorable'],
+  risk: ['風險或阻礙', 'Risk'],
+  timing: ['時間傾向', 'Timing'],
+  action: ['可執行建議', 'Action'],
+  caveat: ['不確定性提醒', 'Caveat'],
+};
+var SUBTOPIC_FIELD_ORDER = ['conclusion', 'traits', 'trend', 'favor', 'risk', 'timing', 'action', 'caveat'];
+function renderSubtopicResultPanel(subtopicDef, result) {
+  if (!result || !result.available) return '';
+  var h = '<div style="border:1px solid rgba(201,169,110,.4);border-radius:10px;padding:15px 17px;background:rgba(255,255,255,.02);margin-top:12px">';
+  h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:#e6cd9a;text-transform:uppercase">✦ 具體問題解讀 · ' + esc(subtopicDef.zh) + '</div>';
+  h += '<div style="margin-top:9px;display:flex;flex-direction:column;gap:9px">';
+  SUBTOPIC_FIELD_ORDER.forEach(function (f) {
+    if (subtopicDef.fields.indexOf(f) === -1) return;
+    var val = result[f];
+    if (!val) return;
+    var label = SUBTOPIC_FIELD_LABELS[f];
+    h += '<div><span style="font:500 10px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;color:#c9a96e">' + label[0] + ' <span style="font:italic 9px \'EB Garamond\',serif;color:rgba(201,169,110,.6)">' + label[1] + '</span></span>';
+    h += '<div style="font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:3px;line-height:1.8;text-align:justify">' + esc(val) + '</div></div>';
+  });
+  h += '</div></div>';
+  return h;
+}
+
 /* ---- classic card combos: theme stacking regardless of orientation ---- */
 var CLASSIC_COMBOS = [
   { ids: ['m13', 'm16'], text: '死神與高塔同時出現，顯示變動的力道非常強烈——這不是漸進式的調整，而是舊有結構被連根拔起的劇烈轉折。建議做好心理準備，而非抗拒它的發生。' },
@@ -2490,6 +2765,12 @@ function buildDrawn() {
           action: cardAction(d, isTarot), reminder: cardReminder(d, isTarot),
         };
       }),
+      /* Phase 1A：新增欄位，僅在愛情分類且選了具體子問題時才有值；不影響既有欄位／舊歷史紀錄格式，
+         歷史列表畫面（renderHistory／historyCopyForAI／分享圖片）本階段尚未讀取這個欄位，留待後續階段。 */
+      subtopic: (state.category === 'love' && state.subtopic) ? (function () {
+        var def = (SUBTOPICS.love || []).filter(function (s) { return s.key === state.subtopic; })[0];
+        return def ? { key: state.subtopic, zh: def.zh, reading: cardSubtopicReading('love', state.subtopic, state.drawn) } : null;
+      })() : null,
     },
   };
   state.history = [entry].concat(state.history).slice(0, 30);
@@ -2679,6 +2960,19 @@ function copyForAI() {
   lines.push('初步綜合解讀：' + overallReading());
   var _an = analyzeSpread(state.drawn, isTarot);
   if (_an.length) lines.push('牌陣分析：' + _an.join(' '));
+  /* Phase 1A：純新增段落，只有愛情分類且選了具體子問題時才會輸出，不影響既有輸出內容 */
+  if (state.category === 'love' && state.subtopic) {
+    var loveSubDef2 = (SUBTOPICS.love || []).filter(function (s) { return s.key === state.subtopic; })[0];
+    var subRes = loveSubDef2 ? cardSubtopicReading('love', state.subtopic, state.drawn) : null;
+    if (subRes && subRes.available) {
+      lines.push('');
+      lines.push('具體問題解讀：' + loveSubDef2.zh);
+      SUBTOPIC_FIELD_ORDER.forEach(function (f) {
+        if (loveSubDef2.fields.indexOf(f) === -1 || !subRes[f]) return;
+        lines.push('　' + SUBTOPIC_FIELD_LABELS[f][0] + '：' + subRes[f]);
+      });
+    }
+  }
   lines.push('');
   lines.push('請根據以上牌陣，幫我解讀這次占卜的整體意義。');
   lines.push(personaInstructionLine());
@@ -3045,7 +3339,7 @@ function go(tab, deck) {
 }
 
 function selectSpread(sp) { state.spread = sp; resetReading(); render(); }
-function selectCategory(cat) { state.category = cat; resetReading(); render(); }
+function selectCategory(cat) { state.category = cat; state.subtopic = ''; resetReading(); render(); }
 function setLibDeck(d) { state.libDeck = d; state.libSuit = 'all'; state.libSelected = null; state.libQuiz = false; render(); }
 function setLibSuit(su) { state.libSuit = su; state.libSelected = null; render(); }
 function selectLibCard(key) { state.libSelected = key; render(); window.scrollTo(0, 0); }
@@ -5004,14 +5298,84 @@ function astroAvailableFocus(ctx, catKey) {
   return out;
 }
 
-/* Phase 0：只先定義未來需要的資料形狀，尚未撰寫任何實際文案——各措辭池保持空陣列。
-   在正式文案完成前，讀取端一律必須透過 traitPoolPick() 存取，任何路徑都不得把
-   TODO／待補之類的內部標記文字顯示給使用者。 */
+/* Phase 1A：愛情分類「具體人物／環境特徵」所需的措辭池，供 cardSubtopicReading() 使用。
+   讀取端一律必須透過 traitPoolPick() 存取——尚未撰寫文案的分類／分組仍保持空陣列，
+   絕不外洩 TODO／待補之類的內部標記文字。
+   分組鍵：
+     塔羅：wands／cups／swords／pentacles（花色）、major（大阿爾克那）
+     雷諾曼：len_good／len_neutral／len_bad（依既有 LEN_RICH.tone 吉／中性／凶分組）
+   ageHint 例外：分組鍵是 young／peer／mature（＋塔羅大牌另有 major），
+   因為年齡傾向由宮廷牌階級／數字大小或雷諾曼少數牌義判斷，而非花色。
+   目前只有「愛情」用得到的軸心與分組已填入正式文案；其他分類／未來軸心留待後續階段擴充。 */
 var TRAIT_POOL = {
-  ageHint: { wands: [], cups: [], swords: [], pentacles: [], major: [] },
-  jobType: { wands: [], cups: [], swords: [], pentacles: [], major: [] },
-  familyBg: { wands: [], cups: [], swords: [], pentacles: [], major: [] },
-  meetScene: { wands: [], cups: [], swords: [], pentacles: [], major: [] },
+  ageHint: {
+    young: ['對方可能比你年輕一些，或帶著剛起步、充滿好奇心的心態靠近你', '這段緣分裡的對方，心態或年齡都偏向較年輕、還在摸索方向的階段', '對方可能還在學習如何經營關係，年齡或心態都偏向初期階段'],
+    peer: ['年齡或人生階段可能與你相仿，彼此的步調容易同步', '對方較可能與你年齡相近，帶著積極主動、想要靠近的行動力', '這段關係裡雙方的成熟度接近，年齡差距應該不算明顯'],
+    mature: ['對方可能年齡稍長，或心態遠比實際年齡成熟穩重', '即使年齡相近，對方待人處世的方式也可能顯得比較老練、有分寸', '對方較可能在關係中扮演照顧、引導的角色，心態上偏向成熟'],
+    major: ['這段緣分更像是牌面呈現的一個人生階段，年齡差距不宜從單一象徵直接判斷', '牌面反映的是這段關係整體的份量與意義，實際年齡需要以現實資訊為準', '象徵意義大於年齡指標，對方的成熟度可能超出表面年紀給人的印象'],
+  },
+  appearance: {
+    wands: ['氣質偏向陽光、有活力，給人熱情主動的第一印象', '外在可能帶點率性與衝勁，眼神或談吐透露出行動派的氣場', '整體氣質明亮、有存在感，容易在人群中被注意到'],
+    cups: ['氣質溫柔、帶有情感豐富的感覺，眼神容易流露真實情緒', '外在給人親切、有同理心的印象，相處起來讓人感覺被理解', '整體氛圍柔和、浪漫，可能帶著藝術或感性的氣息'],
+    swords: ['氣質俐落、理性，談吐清晰，給人聰明幹練的印象', '外在可能顯得有點距離感或冷靜，但思路清楚、有主見', '整體氣場偏向知性，眼神銳利，善於觀察與分析'],
+    pentacles: ['氣質沉穩務實，給人可靠、安定的第一印象', '外在打扮偏向簡單實在，不追求浮誇，讓人感覺踏實', '整體氛圍低調穩重，行事作風腳踏實地'],
+    major: ['整體氣場較為突出、有份量，容易讓人留下深刻印象', '這個人可能帶有某種鮮明的個人風格，氣質難以用單一詞彙概括', '給人的感覺超出一般日常互動的份量，帶著某種命定般的氣場'],
+    len_good: ['氣質明亮開朗，給人容易親近、舒服自在的感覺', '整體氛圍正向、溫暖，相處起來讓人感覺輕鬆', '外在氣場帶著好運與生氣，容易讓人產生好感'],
+    len_neutral: ['氣質偏向低調內斂，需要多相處才會慢慢認識真實的一面', '外在給人的印象中規中矩，特質需要花時間觀察才會顯現', '整體氛圍平實不張揚，第一印象可能普通但耐看'],
+    len_bad: ['氣質可能帶點防備或疏離感，需要時間才能卸下心防', '外在或第一印象可能不容易掌握，帶著一些神秘或難以捉摸的成分', '整體氛圍偏向沉重或複雜，相處初期可能需要多一點耐心理解'],
+  },
+  personality: {
+    wands: ['個性直接、有行動力，喜歡主動追求、不喜歡拖泥帶水', '相處起來充滿活力，但也可能因為急躁而需要多留意耐心', '個性樂觀進取，容易帶動關係的節奏往前推進'],
+    cups: ['個性感性、重視情感連結，相處時很在意彼此的感受', '容易投入感情，也期待對方能給予相對的情感回應', '個性體貼細膩，但也可能因為太敏感而容易多想'],
+    swords: ['個性理性、重視溝通的邏輯，喜歡把話說清楚', '相處起來可能較有距離感，需要透過對話慢慢建立信任', '個性獨立、有主見，也可能因為太直接而顯得少了點溫度'],
+    pentacles: ['個性務實穩定，重視關係中實際的付出與長期的安全感', '相處步調偏慢但踏實，喜歡用行動而非言語證明心意', '個性可靠負責，但也可能因為太謹慎而錯過表達心意的時機'],
+    major: ['個性帶有某種鮮明的主軸，相處模式可能不落於一般常規', '這段關係的相處模式，可能牽動著比日常更深層的課題', '個性特質鮮明，相處起來容易讓人印象深刻，也可能需要多一層理解'],
+    len_good: ['個性開朗隨和，相處起來輕鬆自在，容易一拍即合', '相處模式傾向正向支持，願意主動維繫這段關係', '個性帶著好運與熱情，容易讓關係順勢往好的方向發展'],
+    len_neutral: ['個性中規中矩，相處模式需要雙方一起慢慢磨合出默契', '對關係的態度不算積極也不算消極，走向取決於後續互動', '相處起來平穩，但也提醒別因為太習慣而忽略經營'],
+    len_bad: ['個性可能帶著一些糾結或防衛，相處上需要更多耐心與溝通', '相處模式可能出現反覆或猶豫，建議把話說開會比悶著更好', '這段互動可能存在需要留意的課題，別急著下定論，先觀察再說'],
+  },
+  jobType: {
+    wands: ['工作型態可能偏向業務、創業或需要主動出擊的行業', '較可能從事步調快、需要衝勁與行動力的工作環境', '職業類型或許與推廣、開發、體能相關的領域有關'],
+    cups: ['工作型態可能與人際、關懷、藝術或情感相關的領域有關', '較可能從事需要同理心與溝通的工作，例如助人、創作或服務業', '職業類型或許與美感、療癒或情感陪伴相關的領域有關'],
+    swords: ['工作型態可能偏向需要邏輯分析、規劃或溝通協調的領域', '較可能從事與資訊、法律、教育或策略相關的工作', '職業類型或許需要清晰思路與精準表達，例如專業顧問類角色'],
+    pentacles: ['工作型態可能偏向穩定務實，例如財務、工程或管理相關領域', '較可能從事需要長期累積、講求實際成果的工作', '職業類型或許與資源管理、不動產或傳統產業有關'],
+    major: ['職業樣貌可能不落於單一產業，更接近某種使命感或人生志業', '工作型態或許牽動著較大的格局，例如帶領、開創或轉型的角色', '這個人的事業樣貌可能正經歷重要的階段性轉變'],
+    len_good: ['工作發展順利，可能從事讓人容易看見成果、被肯定的領域', '職業型態偏向明朗上升，機會與資源相對充足', '較可能從事與人脈、社交或公開曝光相關、發展順暢的工作'],
+    len_neutral: ['工作型態普通穩定，暫時看不出特別突出或特別辛苦的跡象', '職業樣貌中規中矩，發展取決於接下來的選擇與努力', '目前的工作狀態平穩，尚在觀察與調整的階段'],
+    len_bad: ['工作上可能正經歷一些壓力或不穩定，需要多一點耐心撐過', '職業型態或許正面臨轉換、調整或收尾的階段', '目前的工作環境可能存在需要留意的挑戰，建議謹慎評估'],
+  },
+  /* financeStyle：金錢觀、消費習慣、工作收入穩定傾向——不宣稱具體資產或收入數字 */
+  financeStyle: {
+    wands: ['金錢觀較為大膽，願意為機會冒險投資，但也可能因衝動而消費較快', '收入來源可能不只一份，帶點闖蕩、敢賺敢花的風格', '對財務決策行動力強，但宜留意衝動下的花費'],
+    cups: ['金錢觀重視生活品質與情感層面的滿足，不只看數字', '花錢態度較隨心，願意為在乎的人事物付出', '收入穩定度普通，但重視花在關係與體驗上的價值'],
+    swords: ['金錢觀理性，習慣先分析利弊再決定，不輕易衝動花費', '對收支有清楚的規劃與盤算，重視長遠的財務評估', '消費習慣偏向精打細算，但也可能因想太多而猶豫不決'],
+    pentacles: ['金錢觀保守務實，重視儲蓄與長期累積的安全感', '收入穩定度較高，消費習慣偏向量入為出', '對財務規劃謹慎踏實，重視資源的穩固勝過短期享受'],
+    major: ['財務樣貌不落於一般規律，可能正經歷重要的轉折或翻轉', '金錢觀帶著某種較大格局的意義，難以用一般收支衡量', '收入與資源的樣貌，象徵意義大於具體數字'],
+    len_good: ['金錢觀正向，收入穩定度偏高，消費也相對從容', '財務狀況相對寬裕，資源運用順暢', '收入來源穩定，且帶有成長空間'],
+    len_neutral: ['金錢觀普通中庸，收入穩定度中規中矩', '消費習慣沒有特別突出的傾向，仍在摸索中', '財務狀態平穩，暫無明顯壓力也無明顯優勢'],
+    len_bad: ['金錢觀可能較緊繃，收入穩定度暫時需要留意', '消費或財務上可能正經歷一些壓力或不穩定期', '財務狀況可能需要更謹慎的規劃與應對'],
+  },
+  /* familyBg：只描述家庭氛圍、成長環境與家人互動模式，不宣稱確定的財產、階級或身分 */
+  familyBg: {
+    wands: ['家庭氛圍可能較為活潑、步調快，成員彼此有各自的空間', '成長環境可能鼓勵獨立與嘗試，家人互動直接坦率', '家庭互動偏向熱絡，但也可能各自忙碌、聚少離多'],
+    cups: ['家庭氛圍溫暖，重視情感連結，可能與家人關係緊密', '成長環境重視情感表達，家人之間習慣互相關心', '家庭互動細膩體貼，但也可能情感牽絆較深、不易切割'],
+    swords: ['家庭氛圍可能重視溝通與規則，或彼此保有各自的獨立空間', '成長環境偏向理性務實，家人相處講求道理多於情感', '家庭互動可能保持一定距離感，習慣就事論事'],
+    pentacles: ['家庭氛圍務實傳統，重視責任分工與實際的支持', '成長環境穩定規律，家人關係重視長期的陪伴', '家庭互動樸實低調，重視實際行動勝過言語表達'],
+    major: ['家庭背景可能牽涉較深的家族故事，難以三言兩語概括', '成長過程或許正經歷重要的家庭轉折或世代傳承', '家庭氛圍象徵意義大於表面樣貌，實際情況需另外了解'],
+    len_good: ['家庭氛圍偏向和樂正向，成長過程相對受到支持', '家人互動溫暖融洽，整體家庭氣氛順遂', '成長環境給予的支持感較強，家庭關係穩定'],
+    len_neutral: ['家庭氛圍普通平穩，沒有特別突出也沒有明顯隱憂', '家人互動中規中矩，實際情況仍需進一步認識', '成長背景看不出明顯議題，建議多花時間了解'],
+    len_bad: ['家庭氛圍可能存在一些壓力或需要磨合的課題', '成長過程或家人互動可能正經歷一些緊繃或調整期', '這方面可能有需要謹慎看待的地方，建議多觀察、別急著下結論'],
+  },
+  meetScene: {
+    wands: ['可能在活動、運動場合或需要主動社交的場所相遇', '相遇場景或許與工作衝勁、競賽或共同挑戰有關', '較可能在步調快、氣氛熱絡的場合中認識對方'],
+    cups: ['可能在聚會、聯誼或朋友介紹等重視情感連結的場合相遇', '相遇場景或許與藝文活動、療癒或情感交流的空間有關', '較可能透過共同的朋友圈或情感支持的場合認識'],
+    swords: ['可能在職場、學習或需要理性交流的場合相遇', '相遇場景或許與討論、辯論或知識交流的環境有關', '較可能在需要動腦、溝通協調的場合中認識對方'],
+    pentacles: ['可能在工作、日常生活或穩定的社交圈中相遇', '相遇場景或許與長期經營的環境有關，例如同事、鄰居或熟人介紹', '較可能在務實、規律的日常場合中慢慢熟識'],
+    major: ['相遇的方式可能帶點命定感，難以用一般社交場合概括', '這段緣分或許透過重要的人生節點或轉折時刻展開', '相遇場景象徵意義大於實際地點，重點在於那個時機點的意義'],
+    len_good: ['相遇場合可能明朗順利，例如公開活動、聚會或朋友介紹', '較可能在氣氛正向、充滿好消息的場合認識對方', '相遇的契機可能來得突然但美好，值得保持開放心態'],
+    len_neutral: ['相遇場合可能很日常，例如平常的生活圈或例行的社交場合', '目前還看不出特別的場景線索，建議保持觀察、順其自然', '相遇方式可能普通平淡，重點在後續互動而非初次印象'],
+    len_bad: ['相遇場合可能帶點波折，或在彼此都不算輕鬆的情境下認識', '初次認識的過程可能不太順利，建議別因此就否定這段緣分', '相遇的時機點可能不是最理想的階段，需要多一點耐心與時間'],
+  },
 };
 /* 安全存取 TRAIT_POOL：對應措辭池為空（尚未撰稿）時一律回傳空字串，絕不外洩佔位文字。
    seedStr 由呼叫端組出（例如卡片 id＋子問題 key），供之後改用確定性挑句時使用；
