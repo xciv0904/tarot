@@ -338,6 +338,72 @@ var TARGET_FIELD_CONFIG = {
   study: { label: '科目／考試名稱（選填）', placeholder: '例如：微積分期末考、申請研究所' },
 };
 
+/* ================= Phase 0：具體問題題庫骨架（資料結構，尚未接入畫面／解讀邏輯）=================
+   SUBTOPICS：分類 → 具體問題清單。每個子問題只定義 key／中文名稱／需要哪些輸出欄位，
+   實際文案留待後續階段再撰寫並接入 renderReading()。不取代、不刪除既有 QUESTION_TEMPLATES
+  （自由文字範例 chip 仍照舊使用）。
+   fields 可能值：
+     conclusion 核心結論／traits 具體人物或環境特徵／trend 發展趨勢／
+     favor 有利因素／risk 風險或阻礙／timing 時間傾向／action 可執行建議／caveat 不確定性提醒 */
+/* modes：這個子問題允許在哪些「解讀來源」模式下使用（尚未接入 UI，僅先定義規則）。
+     cards    純牌卡／雷諾曼解讀也能回答
+     astro    需要星盤資料才能回答
+     combined 牌卡＋星盤綜合解讀
+   一般問題預設 ['cards','astro','combined']；凡是以「星盤中的……」命名、或明確需要
+   星盤結構才能回答的子問題（例如健康的 self-care-symbolic），只允許 ['astro','combined']。 */
+var SUBTOPICS = {
+  love: [
+    { key: 'partner-type', zh: '未來可能遇到什麼類型的人', fields: ['conclusion', 'traits', 'trend', 'favor', 'risk', 'action', 'caveat'], modes: ['cards', 'astro', 'combined'] },
+    { key: 'partner-profile', zh: '對方可能的年齡差距、外貌氣質、個性、職業類型、經濟狀況與家庭背景', fields: ['conclusion', 'traits', 'favor', 'risk', 'caveat'], modes: ['cards', 'astro', 'combined'] },
+    { key: 'meet-scene', zh: '可能在哪種場合認識', fields: ['conclusion', 'traits', 'trend', 'caveat'], modes: ['cards', 'astro', 'combined'] },
+    { key: 'pace-pattern', zh: '關係發展速度、相處模式與阻礙', fields: ['conclusion', 'trend', 'favor', 'risk', 'action', 'caveat'], modes: ['cards', 'astro', 'combined'] },
+    { key: 'crush', zh: '曖昧對象的態度及未來發展', fields: ['conclusion', 'trend', 'favor', 'risk', 'action', 'caveat'], modes: ['cards', 'astro', 'combined'] },
+    { key: 'reunion', zh: '復合可能性與需要改善的問題', fields: ['conclusion', 'trend', 'risk', 'action', 'caveat'], modes: ['cards', 'astro', 'combined'] },
+    { key: 'marriage-longterm', zh: '適婚傾向及長期關係', fields: ['conclusion', 'trend', 'timing', 'favor', 'risk', 'caveat'], modes: ['cards', 'astro', 'combined'] },
+  ],
+  career: [
+    { key: 'industry-fit', zh: '適合的產業、職務、工作內容與工作環境', fields: ['conclusion', 'traits', 'favor', 'action', 'caveat'], modes: ['cards', 'astro', 'combined'] },
+    { key: 'work-style-fit', zh: '適合受雇、接案、創業、管理、創意或技術型工作', fields: ['conclusion', 'traits', 'favor', 'risk', 'caveat'], modes: ['cards', 'astro', 'combined'] },
+    { key: 'career-timing', zh: '升遷、轉職、離職與求職趨勢', fields: ['conclusion', 'trend', 'timing', 'favor', 'risk', 'action', 'caveat'], modes: ['cards', 'astro', 'combined'] },
+    { key: 'workplace-strength-weakness', zh: '職場優勢、弱點、主管及團隊類型', fields: ['conclusion', 'traits', 'favor', 'risk', 'action', 'caveat'], modes: ['cards', 'astro', 'combined'] },
+    { key: 'career-talent', zh: '星盤中的職業傾向、天賦與發展方式', fields: ['conclusion', 'traits', 'favor', 'action', 'caveat'], modes: ['astro', 'combined'] },
+  ],
+  family: [
+    { key: 'family-dynamics', zh: '原生家庭與家庭互動模式', fields: ['conclusion', 'traits', 'favor', 'risk', 'caveat'], modes: ['cards', 'astro', 'combined'] },
+    { key: 'family-relations', zh: '與父母、手足、伴侶的關係', fields: ['conclusion', 'trend', 'risk', 'action', 'caveat'], modes: ['cards', 'astro', 'combined'] },
+    { key: 'living-responsibility', zh: '居住、搬家、家庭責任與情緒壓力', fields: ['conclusion', 'trend', 'risk', 'action', 'caveat'], modes: ['cards', 'astro', 'combined'] },
+    { key: 'family-improve', zh: '家庭關係的改善方向', fields: ['conclusion', 'favor', 'action', 'caveat'], modes: ['cards', 'astro', 'combined'] },
+  ],
+  health: [
+    { key: 'body-lifestyle', zh: '近期較需要留意的身體系統、壓力來源與生活習慣', fields: ['conclusion', 'trend', 'risk', 'action', 'caveat'], modes: ['cards', 'astro', 'combined'] },
+    { key: 'daily-balance', zh: '睡眠、飲食、情緒、運動及身心平衡', fields: ['conclusion', 'trend', 'favor', 'action', 'caveat'], modes: ['cards', 'astro', 'combined'] },
+    { key: 'self-care-symbolic', zh: '可參考星盤象徵提供日常保養提醒', fields: ['conclusion', 'action', 'caveat'], modes: ['astro', 'combined'] },
+  ],
+  wealth: [
+    { key: 'cashflow-risk', zh: '收入、支出、現金流與破財風險', fields: ['conclusion', 'trend', 'risk', 'action', 'caveat'], modes: ['cards', 'astro', 'combined'] },
+    { key: 'risk-approach', zh: '適合保守管理、觀望，或在可承受風險內積極行動', fields: ['conclusion', 'trend', 'favor', 'risk', 'caveat'], modes: ['cards', 'astro', 'combined'] },
+    { key: 'opportunity-source', zh: '財務機會可能來自工作、副業、人脈、合作或創意', fields: ['conclusion', 'traits', 'favor', 'action', 'caveat'], modes: ['cards', 'astro', 'combined'] },
+    { key: 'money-pattern', zh: '星盤中的金錢態度、資源模式與近期財務趨勢', fields: ['conclusion', 'traits', 'trend', 'caveat'], modes: ['astro', 'combined'] },
+  ],
+  social: [
+    { key: 'attract-type', zh: '容易吸引或遇到的人', fields: ['conclusion', 'traits', 'favor', 'risk', 'caveat'], modes: ['cards', 'astro', 'combined'] },
+    { key: 'interpersonal-style', zh: '人際優勢、盲點、界線與溝通方式', fields: ['conclusion', 'traits', 'favor', 'risk', 'action', 'caveat'], modes: ['cards', 'astro', 'combined'] },
+    { key: 'ally-conflict', zh: '貴人、合作關係、競爭及誤解', fields: ['conclusion', 'traits', 'favor', 'risk', 'action', 'caveat'], modes: ['cards', 'astro', 'combined'] },
+    { key: 'social-need-pattern', zh: '星盤中的社交需求與群體互動模式', fields: ['conclusion', 'traits', 'caveat'], modes: ['astro', 'combined'] },
+  ],
+  study: [
+    { key: 'major-fit', zh: '適合的科系、技能與學習方式', fields: ['conclusion', 'traits', 'favor', 'action', 'caveat'], modes: ['cards', 'astro', 'combined'] },
+    { key: 'exam-application', zh: '考試、申請、留學與證照準備', fields: ['conclusion', 'trend', 'timing', 'risk', 'action', 'caveat'], modes: ['cards', 'astro', 'combined'] },
+    { key: 'focus-execution', zh: '專注力、時間安排、理解及表達模式', fields: ['conclusion', 'risk', 'action', 'caveat'], modes: ['cards', 'astro', 'combined'] },
+    { key: 'learning-trait', zh: '星盤中的學習特質與適合發展的能力', fields: ['conclusion', 'traits', 'favor', 'caveat'], modes: ['astro', 'combined'] },
+  ],
+  /* general 維持現狀，不新增具體問題 */
+};
+
+/* 健康／財運為合規敏感分類，輸出時一律附加固定免責句（非動態生成、不可省略） */
+var HEALTH_DISCLAIMER = '健康相關的解讀僅供自我觀察與生活提醒參考，不能用來診斷疾病、預測病情，也不能取代醫師的專業判斷；如有實際症狀或不適，請務必尋求合格醫療人員協助。';
+var FINANCE_DISCLAIMER = '財運相關的解讀僅為象徵性參考，不構成投資建議，也不提供任何個別證券、加密貨幣或金融商品的買賣指示；實際財務決策請自行評估風險或諮詢專業人士。';
+
 function isQuestionVague(q) {
   var trimmed = q.trim().replace(/[?？!！。.]/g, '');
   if (trimmed.length < 6) return 'short';
@@ -4890,6 +4956,123 @@ var HOROSCOPE_PERIODS = {
   monthly: { zh: '本月運勢', en: 'Monthly', transits: [['Sun', 6], ['Venus', 6], ['Mars', 6], ['Jupiter', 4], ['Saturn', 3]] },
   yearly: { zh: '年度運勢報告', en: 'Yearly', transits: [['Jupiter', 8], ['Saturn', 6], ['Uranus', 4], ['Neptune', 4], ['Pluto', 4]] },
 };
+
+/* ================= Phase 0：星盤分類重點與綜合解讀骨架（資料結構＋函式骨架，尚未接入畫面）=================
+   ASTRO_CATEGORY_FOCUS 是「本命結構描述」專用的分類→行星／宮位對照表，
+   刻意與上面 ASTRO_CATEGORY_RULERS（運勢行運算分專用）分開，不影響既有運勢分數邏輯。
+   symbolicOnly 為 true（健康）表示行星／宮位只能當作生活習慣的象徵性參考，
+   不得延伸為疾病或身體部位的診斷式對應。 */
+var ASTRO_CATEGORY_FOCUS = {
+  love: { planets: ['Venus', 'Mars', 'Moon'], houses: [5, 7], useAsc: false, useMC: false, symbolicOnly: false },
+  career: { planets: ['Sun', 'Saturn', 'Jupiter'], houses: [2, 6, 10], useAsc: false, useMC: true, symbolicOnly: false },
+  family: { planets: ['Moon'], houses: [4], useAsc: false, useMC: false, symbolicOnly: false },
+  health: { planets: ['Sun', 'Moon'], houses: [6], useAsc: true, useMC: false, symbolicOnly: true },
+  wealth: { planets: ['Venus', 'Jupiter', 'Saturn'], houses: [2, 8], useAsc: false, useMC: false, symbolicOnly: false },
+  social: { planets: ['Mercury', 'Venus'], houses: [11], useAsc: false, useMC: false, symbolicOnly: false },
+  study: { planets: ['Mercury', 'Jupiter'], houses: [3, 9], useAsc: false, useMC: false, symbolicOnly: false },
+  /* general 維持現狀，不提供分類專屬的星盤重點 */
+};
+
+/* ---- 可用性檢查：任何解讀文案在組句前都必須先過這幾道閘門，絕不推測缺少的星盤資料 ----
+   統一改為接收「ctx」物件（{chart, unknownTime, synChart}），不再讀取 state.* ——
+   同一個 chart 進來，所有可用性判斷都只針對這個 chart，不會有一部分讀 ctx、一部分暗中讀
+   state.astroResult 的情況。未來 UI 呼叫時自行組出 ctx，例如：
+     astroHasChart({ chart: state.astroResult })
+     astroTimeKnown({ chart: state.astroResult, unknownTime: state.astroUnknownTime })
+     astroHasSynastry({ chart: state.astroResult, synChart: state.synResult }) */
+function astroHasChart(ctx) { return !!(ctx && ctx.chart); }
+function astroTimeKnown(ctx) { return astroHasChart(ctx) && !ctx.unknownTime; }
+function astroHasSynastry(ctx) { return astroHasChart(ctx) && !!(ctx && ctx.synChart); }
+/* Fortune（福點）／Vertex（宿命點）本身的算法依賴上升，出生時間未知時一律視為不可用 */
+function astroPointAvailable(ctx, pointKey) {
+  if (!astroHasChart(ctx)) return false;
+  if (!astroTimeKnown(ctx) && (pointKey === 'Fortune' || pointKey === 'Vertex')) return false;
+  return true;
+}
+/* 依「未知出生時間不可用上升／天頂／宮位／福點／宿命點」的規則，
+   把 ASTRO_CATEGORY_FOCUS 的設定收斂成「這張星盤現在實際可用」的重點清單；
+   沒有星盤時回傳全空，不得杜撰。 */
+function astroAvailableFocus(ctx, catKey) {
+  var focus = ASTRO_CATEGORY_FOCUS[catKey];
+  var out = { planets: [], houses: [], useAsc: false, useMC: false, symbolicOnly: !!(focus && focus.symbolicOnly) };
+  if (!focus || !astroHasChart(ctx)) return out;
+  var timeKnown = astroTimeKnown(ctx);
+  out.planets = focus.planets.slice();
+  out.houses = timeKnown ? focus.houses.slice() : [];
+  out.useAsc = timeKnown && !!focus.useAsc;
+  out.useMC = timeKnown && !!focus.useMC;
+  return out;
+}
+
+/* Phase 0：只先定義未來需要的資料形狀，尚未撰寫任何實際文案——各措辭池保持空陣列。
+   在正式文案完成前，讀取端一律必須透過 traitPoolPick() 存取，任何路徑都不得把
+   TODO／待補之類的內部標記文字顯示給使用者。 */
+var TRAIT_POOL = {
+  ageHint: { wands: [], cups: [], swords: [], pentacles: [], major: [] },
+  jobType: { wands: [], cups: [], swords: [], pentacles: [], major: [] },
+  familyBg: { wands: [], cups: [], swords: [], pentacles: [], major: [] },
+  meetScene: { wands: [], cups: [], swords: [], pentacles: [], major: [] },
+};
+/* 安全存取 TRAIT_POOL：對應措辭池為空（尚未撰稿）時一律回傳空字串，絕不外洩佔位文字。
+   seedStr 由呼叫端組出（例如卡片 id＋子問題 key），供之後改用確定性挑句時使用；
+   目前措辭池皆為空陣列，此函式恆回傳 ''，僅先定義呼叫介面。 */
+function traitPoolPick(axis, group, seedStr) {
+  var pool = TRAIT_POOL[axis] && TRAIT_POOL[axis][group];
+  if (!pool || !pool.length) return '';
+  var idx = seedStr ? (hashStr(String(seedStr)) % pool.length) : 0;
+  return pool[idx];
+}
+
+/* ---- 生成函式骨架：只定義輸入／輸出格式與資料閘門，不產生大量實際文案，也尚未接入 renderReading() ---- */
+
+/* astroCategoryReading(catKey, subtopicKey, chart, unknownTime)
+   星盤面的分類解讀骨架。chart 需為 computeNatalChart() 的真實回傳值；unknownTime 由呼叫端
+   明確傳入（例如 state.astroUnknownTime），內部一律以「這個 chart ＋ 這個 unknownTime」組成
+   單一 ctx 物件，交給 astroHasChart／astroTimeKnown／astroAvailableFocus 判斷，
+   不會另外讀取 state.astroResult／state.astroUnknownTime，避免兩份資料互相混用。
+   資料不足（沒有星盤／該分類無對應重點）時回傳 available:false 並附上原因，絕不捏造內容。 */
+function astroCategoryReading(catKey, subtopicKey, chart, unknownTime) {
+  var out = {
+    available: false, reason: '', catKey: catKey, subtopicKey: subtopicKey,
+    conclusion: '', traits: '', trend: '', favor: '', risk: '', timing: '', action: '', caveat: '',
+  };
+  if (!chart) { out.reason = 'no-chart'; return out; }
+  var ctx = { chart: chart, unknownTime: !!unknownTime };
+  var focus = astroAvailableFocus(ctx, catKey);
+  if (!focus.planets.length && !focus.houses.length && !focus.useAsc && !focus.useMC) {
+    out.reason = 'no-focus-data';
+    return out;
+  }
+  /* TODO（後續階段）：依 focus.planets／focus.houses 從 ctx.chart 讀出真實行星星座／宮位／相位，
+     用 astroSeededPick 從對應措辭池挑句組成 conclusion／traits／trend 等欄位；
+     嚴禁在 !astroTimeKnown(ctx) 時填入 useAsc／useMC／houses 相關描述。 */
+  out.available = true;
+  if (!astroTimeKnown(ctx)) {
+    out.caveat = '出生時間未知，本次僅採用行星星座作為參考，未使用上升、天頂與宮位等時間敏感資料。';
+  }
+  return out;
+}
+
+/* combinedReading(cardResult, astroResult, catKey, subtopicKey)
+   牌卡＋星盤的綜合解讀骨架。cardResult 代表既有抽牌解讀的彙整結果（可為 null／undefined），
+   astroResult 應為 astroCategoryReading() 的回傳值。目前只判斷資料齊備度與模式，
+   一致／分歧的文案比對邏輯留待後續階段實作。 */
+function combinedReading(cardResult, astroResult, catKey, subtopicKey) {
+  var out = {
+    available: false, reason: '', catKey: catKey, subtopicKey: subtopicKey,
+    mode: 'none', // none | cards-only | astro-only | combined
+    conclusion: '', traits: '', trend: '', favor: '', risk: '', timing: '', action: '', caveat: '',
+  };
+  var hasCard = !!cardResult;
+  var hasAstro = !!(astroResult && astroResult.available);
+  if (!hasCard && !hasAstro) { out.reason = 'no-input'; return out; }
+  out.mode = hasCard && hasAstro ? 'combined' : (hasAstro ? 'astro-only' : 'cards-only');
+  out.available = true;
+  /* TODO（後續階段）：比較 cardResult 與 astroResult 的語氣分數／關鍵字，
+     一致時輸出「共同主題」句型、分歧時輸出「長期傾向（星盤）與目前狀態（牌卡）不同」句型，
+     兩者皆須透過 seeded pick 從措辭池動態組合，不得使用單一固定字串。 */
+  return out;
+}
 
 function computeTransitPlanets(dateObj) {
   var time = Astronomy.MakeTime(dateObj);
