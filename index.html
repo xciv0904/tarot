@@ -5297,6 +5297,18 @@ function astroAvailableFocus(ctx, catKey) {
   out.useMC = timeKnown && !!focus.useMC;
   return out;
 }
+/* 純函式版本的「可用相位」過濾——只依傳入的 chart／unknownTime 判斷，不讀取 state。
+   既有的 astroUsableAspects(chart)（定義在星盤頁面渲染區）直接讀取 state.astroUnknownTime，
+   是專供 UI 使用的舊函式；分類解讀引擎（例如 Phase 1B 的愛情星盤引擎）必須改用這一份，
+   避免引擎的可用性判斷暗中跟全域 state 綁在一起。過濾規則與既有 astroUsableAspects 一致：
+   出生時間未知時排除任一端是 Moon／Fortune／Vertex 的相位。 */
+function pureUsableAspects(chart, unknownTime) {
+  var aspects = (chart && chart.aspects) || [];
+  if (!unknownTime) return aspects;
+  return aspects.filter(function (a) {
+    return ['Moon', 'Fortune', 'Vertex'].indexOf(a.a) < 0 && ['Moon', 'Fortune', 'Vertex'].indexOf(a.b) < 0;
+  });
+}
 
 /* Phase 1A：愛情分類「具體人物／環境特徵」所需的措辭池，供 cardSubtopicReading() 使用。
    讀取端一律必須透過 traitPoolPick() 存取——尚未撰寫文案的分類／分組仍保持空陣列，
@@ -5387,33 +5399,344 @@ function traitPoolPick(axis, group, seedStr) {
   return pool[idx];
 }
 
-/* ---- 生成函式骨架：只定義輸入／輸出格式與資料閘門，不產生大量實際文案，也尚未接入 renderReading() ---- */
+/* ================= Phase 1B：愛情分類的星盤具體解讀引擎 ================= */
+
+/* loveAstroEvidence(chart, unknownTime)
+   純函式：整理「愛情」分類可以動用的真實星盤依據，供 astroCategoryReading() 組句使用。
+   只讀傳入的 chart／unknownTime，透過 astroAvailableFocus(ctx,'love') 沿用 Phase 0 的
+   ASTRO_CATEGORY_FOCUS.love 設定（Venus／Mars／Moon、第五宮、第七宮），不重新混用全域 state。
+   月亮的處理比 Phase 0 的宮位規則更保守：出生時間未知時，月亮移動快（約每天 13 度），
+   當天實際星座可能已經跨界，因此不只略過月亮的宮位與相位（既有規則），這裡連月亮的星座
+   敘述也一併排除，整個 Moon 從 planets 中省略，並記錄在 skipped 裡，避免用不可靠的資料組句。 */
+function loveAstroEvidence(chart, unknownTime) {
+  var out = { available: false, planets: {}, houses: {}, aspects: [], skipped: [], seed: '' };
+  if (!chart) return out;
+  out.available = true;
+  var ctx = { chart: chart, unknownTime: !!unknownTime };
+  var focus = astroAvailableFocus(ctx, 'love'); // { planets:['Venus','Mars','Moon'], houses:[5,7]或[] ... }
+  var timeKnown = astroTimeKnown(ctx);
+
+  /* 唯一的資料驗證入口：行星 sign 必須是 0-11 之間、且能在 ZODIAC_SIGNS 找到對應星座，
+     否則視為資料不足直接跳過（記錄原因），不讓無效的 sign 流到下游的措辭池查找或證據字串。 */
+  function validSignIdx(idx) { return typeof idx === 'number' && !isNaN(idx) && idx >= 0 && idx <= 11 && !!ZODIAC_SIGNS[idx]; }
+
+  focus.planets.forEach(function (key) {
+    if (key === 'Moon' && !timeKnown) {
+      out.skipped.push({ item: 'Moon', reason: 'unknown-time-unreliable' });
+      return;
+    }
+    var p = chart.planets && chart.planets[key];
+    if (!p) { out.skipped.push({ item: key, reason: 'not-in-chart' }); return; }
+    if (!validSignIdx(p.sign)) { out.skipped.push({ item: key, reason: 'invalid-sign-data' }); return; }
+    out.planets[key] = { sign: p.sign, deg: p.deg, retro: !!p.retro, house: timeKnown ? p.house : null };
+  });
+
+  focus.houses.forEach(function (h) {
+    if (!chart.houseCusps || chart.houseCusps.length !== 12) { out.skipped.push({ item: 'house' + h, reason: 'no-house-data' }); return; }
+    var cusp = chart.houseCusps[h - 1];
+    var signIdx = (typeof cusp === 'number' && !isNaN(cusp)) ? Math.floor(astroNormDeg(cusp) / 30) : NaN;
+    if (!validSignIdx(signIdx)) { out.skipped.push({ item: 'house' + h, reason: 'invalid-house-data' }); return; }
+    out.houses[h] = { sign: signIdx };
+  });
+  if (!timeKnown) {
+    [5, 7].forEach(function (h) { out.skipped.push({ item: 'house' + h, reason: 'unknown-time' }); });
+  }
+
+  var relevantKeys = timeKnown ? ['Venus', 'Mars', 'Moon'] : ['Venus', 'Mars'];
+  out.aspects = pureUsableAspects(chart, unknownTime)
+    .filter(function (a) { return relevantKeys.indexOf(a.a) !== -1 || relevantKeys.indexOf(a.b) !== -1; })
+    .map(function (a) { return { a: a.a, b: a.b, type: a.type, orb: a.orb }; });
+  if (!timeKnown) {
+    var rawMoonAspects = (chart.aspects || []).filter(function (a) { return a.a === 'Moon' || a.b === 'Moon'; });
+    if (rawMoonAspects.length) out.skipped.push({ item: 'moon-aspects', reason: 'unknown-time-unreliable', count: rawMoonAspects.length });
+  }
+
+  var seedParts = ['Venus', 'Mars', 'Moon'].map(function (key) {
+    var p = out.planets[key];
+    return key + ':' + (p ? (p.sign + '-' + Math.round(p.deg)) : 'na');
+  });
+  seedParts.push('h5:' + (out.houses[5] ? out.houses[5].sign : 'na'));
+  seedParts.push('h7:' + (out.houses[7] ? out.houses[7].sign : 'na'));
+  seedParts.push('asp:' + out.aspects.map(function (a) { return a.a + a.type + a.b + Math.round(a.orb * 10); }).sort().join(','));
+  out.seed = seedParts.join('|');
+  return out;
+}
+
+/* 依實際相位的和諧／緊張比例，把 Venus／Mars／Moon 相關的可用相位歸成三檔語氣——
+   跟 cardSubtopicReading() 的 loveToneBucket() 用同一套「正向/中性/挑戰」語言，方便未來
+   combinedReading() 比對兩邊語氣，但這裡完全獨立計算，不呼叫也不修改牌卡那一份。 */
+function loveAstroValence(aspects) {
+  if (!aspects || !aspects.length) return 'neutral';
+  var score = 0;
+  aspects.forEach(function (a) {
+    if (a.type === 'trine' || a.type === 'sextile') score += 1;
+    else if (a.type === 'square' || a.type === 'opposition') score -= 1;
+    /* conjunction：能量集中但正負不定，不計入正負分數 */
+  });
+  var ratio = score / aspects.length;
+  return ratio > 0.2 ? 'positive' : (ratio < -0.2 ? 'challenging' : 'neutral');
+}
+
+/* ---- 由元素（火／土／風／水）分組的措辭池：金星＝感情價值與被吸引的特質，
+   火星＝主動方式、慾望與衝突反應，月亮＝情緒需求與安全感（unknownTime 時整組不使用），
+   第五宮＝戀愛與約會風格，第七宮＝伴侶與長期關係模式。全部使用「可能／傾向」語氣。 ---- */
+var ASTRO_LOVE_VENUS_ATTRACT = {
+  火: ['金星落在火象星座，你可能容易被主動、有行動力且敢於表達好感的對象吸引', '感情價值傾向重視熱情與新鮮感，容易對敢於率先展現心意的人有好感', '你在關係中可能偏好直接明快的互動，容易被自信、有存在感的特質吸引'],
+  土: ['金星落在土象星座，你可能較重視關係中的穩定與實際付出，容易被可靠務實的特質吸引', '感情價值傾向重視長期的安全感，容易對願意腳踏實地經營關係的人有好感', '你在關係中可能偏好穩健的步調，重視對方是否值得信賴勝過一時的浪漫'],
+  風: ['金星落在風象星座，你可能重視心靈交流與話題契合，容易被聰明風趣的特質吸引', '感情價值傾向重視理解與溝通，容易對善於表達、思路清晰的人有好感', '你在關係中可能需要一定的自由與空間，重視被理解勝過形式上的黏膩'],
+  水: ['金星落在水象星座，你可能重視情感深度與直覺共鳴，容易被溫柔體貼的特質吸引', '感情價值傾向重視氛圍與感受，容易對細膩、能同理你情緒的人有好感', '你在關係中可能容易投入深刻的情感連結，也容易被浪漫的氣氛打動'],
+};
+var ASTRO_LOVE_MARS_PURSUIT = {
+  火: ['火星落在火象星座，追求節奏可能直接明快，想到就容易主動行動', '慾望的表達較為直白，遇到心動的對象傾向盡快讓對方知道', '衝突發生時傾向當下正面表態，不喜歡拖泥帶水，但也要留意別太衝動'],
+  土: ['火星落在土象星座，追求節奏可能偏慢但持續，習慣用實際行動一步步靠近', '慾望的表達較為內斂，傾向透過穩定的付出展現心意', '衝突發生時傾向先冷靜下來，用實際做法而非爭辯處理問題'],
+  風: ['火星落在風象星座，追求方式可能偏向智取，習慣先用言語或巧思引起對方注意', '慾望與好奇心緊密相連，容易對新鮮有趣的互動感興趣', '衝突發生時傾向先講道理、釐清邏輯，重視對話勝過情緒對抗'],
+  水: ['火星落在水象星座，追求節奏可能較含蓄，習慣先用情感上的貼近試探對方心意', '慾望的表達較委婉，重視氣氛與感受勝過直球行動', '衝突發生時容易情緒化，可能需要一些時間消化才能好好溝通'],
+};
+var ASTRO_LOVE_MOON_NEED = {
+  火: ['月亮落在火象星座，情緒來得快去得也快，安全感建立在被肯定與被需要的感覺上', '需要關係裡持續有新鮮感與熱度，才容易感到安心', '情緒需求較為直接，開心或不安都容易表現在外'],
+  土: ['月亮落在土象星座，安全感可能來自穩定的陪伴與可預期的相處模式', '情緒起伏不算大，重視關係裡實際的支持而非言語上的保證', '需要透過長期的穩定感，才容易真正放心投入一段關係'],
+  風: ['月亮落在風象星座，安全感可能來自能自由表達想法、被理解而非被限制', '情緒需求偏向理性化，習慣用談話梳理感受', '需要一定的個人空間，太過黏膩的相處反而可能讓你感到不安'],
+  水: ['月亮落在水象星座，情緒細膩敏感，安全感建立在深層的情感連結上', '容易被氣氛與對方的情緒狀態牽動', '需要透過情感上的坦誠與陪伴，才容易感到真正安心'],
+};
+var ASTRO_LOVE_HOUSE5_DATING = {
+  火: ['第五宮落在火象星座，戀愛與約會風格可能偏向主動熱烈，喜歡帶點新鮮感或冒險成分的浪漫互動', '在戀愛裡可能容易展現自信與熱情，也享受被關注、被追求的感覺', '約會風格可能傾向即興、有活力，不喜歡一成不變的相處'],
+  土: ['第五宮落在土象星座，戀愛與約會風格可能偏向務實穩健，浪漫表達透過實際的陪伴與付出呈現', '可能喜歡循序漸進地培養感情，不急於一時的激情或表面的浪漫', '約會風格可能偏向規律、可預期，重視實際相處勝過華麗的形式'],
+  風: ['第五宮落在風象星座，戀愛與約會風格可能重視話題與心靈交流，浪漫表達偏向有趣的互動與新鮮體驗', '可能喜歡透過對話與共同興趣拉近距離，勝過單純的肢體或物質表現', '約會風格可能偏向輕鬆多元，喜歡嘗試不同類型的活動'],
+  水: ['第五宮落在水象星座，戀愛與約會風格可能偏向浪漫細膩，重視氣氛與情感的深度連結', '可能容易在戀愛中投入豐富的情感與想像，享受氛圍感強的約會方式', '約會風格可能偏向私密、溫馨，重視兩人之間的情感交流勝過熱鬧場面'],
+};
+var ASTRO_LOVE_HOUSE7_PARTNER = {
+  火: ['第七宮落在火象星座，對長期伴侶的期待可能偏向有活力、能一起冒險成長的關係', '在一對一關係裡可能重視彼此的獨立性與行動力，不喜歡一方過於被動', '長期關係中可能容易主動推動彼此共同成長，也期待對方有自己的目標'],
+  土: ['第七宮落在土象星座，對長期伴侶的期待可能偏向穩定可靠、能共同建立生活基礎的關係', '重視承諾與長期經營，可能喜歡循序漸進、按部就班的關係發展', '在一對一關係裡可能重視實際的責任分工與長期的支持'],
+  風: ['第七宮落在風象星座，對長期伴侶的期待可能偏向能溝通、能當朋友的關係', '重視關係中的平等與心靈交流，可能勝過形式上的承諾', '可能喜歡與伴侶保持各自獨立又能深入對話的相處模式'],
+  水: ['第七宮落在水象星座，對長期伴侶的期待可能偏向情感深刻、彼此扶持的關係', '重視關係中的情感連結與被理解的感覺', '在一對一關係裡可能容易投入深厚的情感與包容'],
+};
+
+/* ---- partner-profile 專用：六個標籤化維度。外貌／個性用金星／火星元素；
+   職業／經濟觀念是金星／火星特質的「象徵性延伸」（並非實際職業或收支判斷，caveat 會特別註明）；
+   家庭與關係價值用第七宮元素（標示為「家庭價值傾向」，見下方 ASTRO_LOVE_FAMILY_VALUE_LABEL）。
+   沿用 Phase 1A 的 TRAIT_AXIS_LABELS 做「外貌氣質／個性相處／職業類型／經濟觀念」欄位標籤，
+   維持牌卡／星盤兩邊用語一致；「年齡傾向」與「家庭背景」則刻意不沿用 TRAIT_AXIS_LABELS，
+   理由見下方兩段說明。 ---- */
+
+/* 年齡／成熟度傾向：不可再用整體和諧／緊張比例（loveAstroValence）推測——那只反映整體相位氣氛，
+   不是年齡訊號。改用 loveSaturnAspect() 純函式明確檢查金星／火星／（時間已知時的）月亮
+   是否與土星形成主要相位：土星代表時間、責任與人生歷練，是傳統占星裡與「年齡、成熟度、
+   人生階段落差」最直接相關的行星，才有資格作為這個維度的依據。沒有土星相關相位時，
+   固定回傳「資料不足」的說明，不得從一般相位和諧度反推同齡／年長／年輕。 */
+function loveSaturnAspect(evAspects) {
+  if (!evAspects || !evAspects.length) return null;
+  var hits = evAspects.filter(function (a) { return a.a === 'Saturn' || a.b === 'Saturn'; });
+  if (!hits.length) return null;
+  return hits.slice().sort(function (x, y) { return x.orb - y.orb; })[0];
+}
+var ASTRO_LOVE_PP_AGE_SATURN = [
+  '金星或火星與土星形成主要相位，你可能容易被較成熟、責任感較強，或人生階段與你不同的人吸引，這段關係可能帶有時間、責任或承諾方面的課題',
+  '土星與感情相關的行星有主要相位，象徵上你較容易被年齡稍長、心態穩重或責任感明顯的對象吸引，關係中也可能需要面對時間、承諾或責任的考驗',
+  '土星牽動了金星或火星（或月亮）的能量，這段緣分可能涉及成熟度、人生階段或責任感的落差，也可能帶有需要長期承諾的課題',
+];
+var ASTRO_LOVE_PP_AGE_INSUFFICIENT = '目前星盤依據不足以可靠判斷年齡差距，這部分無法從行星角度推測同齡、年長或年輕，建議以實際認識為準。';
+
+/* 家庭與關係價值：第七宮是「使用者本人」對伴侶與長期關係的期待傾向，不是對方的真實家庭資料，
+   因此星盤這一維度刻意不叫「家庭背景」（避免暗示已知道對方的原生家庭），改標示為「家庭價值傾向」；
+   這個標籤只在星盤引擎內使用，Phase 1A 牌卡端的 TRAIT_AXIS_LABELS.familyBg（家庭背景）維持不動。 */
+var ASTRO_LOVE_FAMILY_VALUE_LABEL = '家庭價值傾向';
+var ASTRO_LOVE_PP_APPEARANCE = {
+  火: ['外貌氣質的象徵傾向偏向鮮明、有存在感，給人熱情有活力的第一印象', '氣場可能明亮直接，眼神或談吐容易展現自信', '整體氣質可能帶點率性與衝勁，容易讓人一眼注意到'],
+  土: ['外貌氣質的象徵傾向偏向沉穩，給人可靠踏實的第一印象', '氣場可能低調務實，不追求浮誇但耐看', '整體氣質可能透出一種安定感，讓人感覺值得信賴'],
+  風: ['外貌氣質的象徵傾向偏向清爽俐落，談吐給人聰明伶俐的印象', '氣場可能帶點知性，眼神靈活，善於用言語表達自己', '整體氣質可能顯得輕盈、有距離感中帶著親和力'],
+  水: ['外貌氣質的象徵傾向偏向柔和，帶點朦朧浪漫的感覺', '氣場可能溫柔細膩，眼神容易流露真實情緒', '整體氣質可能給人夢幻、易親近的印象'],
+};
+var ASTRO_LOVE_PP_PERSONALITY = {
+  火: ['個性與相處方式可能直接主動，喜歡明快表態、不喜歡拖泥帶水', '相處起來可能充滿行動力，但也需要留意衝動與急躁', '個性可能樂觀進取，容易帶動關係的節奏往前推進'],
+  土: ['個性與相處方式可能務實穩健，重視實際的付出勝過言語承諾', '相處步調可能偏慢但持續，習慣用行動證明心意', '個性可能可靠負責，但也可能因為太謹慎而慢半拍'],
+  風: ['個性與相處方式可能理性靈活，喜歡把話說清楚、就事論事', '相處起來可能需要一定的空間感，不喜歡被過度掌控', '個性可能獨立善變，容易對新的互動方式感興趣'],
+  水: ['個性與相處方式可能感性細膩，很在意彼此的情緒與感受', '相處起來可能容易投入深刻的情感，也容易因小事而多想', '個性可能體貼溫柔，但情緒起伏也可能較大'],
+};
+var ASTRO_LOVE_PP_JOBTYPE = {
+  火: ['工作型態的象徵傾向可能偏向需要行動力與挑戰性的節奏，喜歡有明確目標感的環境', '象徵上較適合步調快、能即時看到成果的工作方式', '可能傾向需要主動出擊、體力或行動力較吃重的工作型態'],
+  土: ['工作型態的象徵傾向可能偏向穩定務實，喜歡按部就班、能長期累積的工作方式', '象徵上較適合規律、講求紀律與耐性的工作節奏', '可能傾向重視長期成果、不急於求快的工作型態'],
+  風: ['工作型態的象徵傾向可能偏向需要溝通與腦力激盪的節奏，喜歡有變化與交流的環境', '象徵上較適合需要邏輯思考、資訊處理或協調的工作方式', '可能傾向多工並行、步調靈活的工作型態'],
+  水: ['工作型態的象徵傾向可能偏向需要同理心與感受力的節奏，喜歡有情感連結的工作環境', '象徵上較適合創作、療癒或需要細膩感受的工作方式', '可能傾向重視氛圍與意義感、勝過單純效率的工作型態'],
+};
+var ASTRO_LOVE_PP_FINANCE = {
+  火: ['經濟觀念的象徵傾向可能較勇於嘗試，重視當下的滿足感，也可能需要留意衝動消費', '金錢態度象徵上偏向主動，願意為喜歡的事物或機會投入', '花費風格可能較隨性，重視體驗勝過精打細算'],
+  土: ['經濟觀念的象徵傾向可能偏向務實保守，重視儲蓄與長期的安全感', '金錢態度象徵上偏向穩健，喜歡量入為出、按部就班累積', '花費風格可能較謹慎，重視資源的穩固勝過短期享受'],
+  風: ['經濟觀念的象徵傾向可能偏向靈活，會多方比較後再決定，重視資訊與效率', '金錢態度象徵上偏向理性，喜歡先了解清楚再花費', '花費風格可能較多元，容易因為新鮮的想法而調整預算'],
+  水: ['經濟觀念的象徵傾向可能偏向感性，重視花費是否能帶來情感上的滿足', '金錢態度象徵上偏向隨心，願意為在乎的人事物付出', '花費風格可能較受情緒與氛圍影響，需要留意衝動性的消費'],
+};
+var ASTRO_LOVE_PP_FAMILYVALUE = {
+  火: ['家庭與關係價值的象徵傾向可能重視彼此的成長與活力，不喜歡一成不變的相處模式', '對未來家庭生活的期待可能偏向有目標、能共同冒險的樣貌', '關係價值觀可能重視彼此的獨立性，勝過緊密依附'],
+  土: ['家庭與關係價值的象徵傾向可能重視穩定與傳承，喜歡按部就班建立生活基礎', '對未來家庭生活的期待可能偏向務實安穩，重視責任與長期陪伴', '關係價值觀可能重視承諾與可靠，勝過一時的浪漫'],
+  風: ['家庭與關係價值的象徵傾向可能重視溝通與平等，喜歡能當彼此朋友的關係', '對未來家庭生活的期待可能偏向開放、有彈性，不拘泥傳統形式', '關係價值觀可能重視理解與空間，勝過形式上的緊密'],
+  水: ['家庭與關係價值的象徵傾向可能重視情感連結與彼此扶持', '對未來家庭生活的期待可能偏向溫暖、重視情感氛圍的樣貌', '關係價值觀可能重視包容與陪伴，勝過現實條件'],
+};
+
+/* ---- 依整體語氣（positive／neutral／challenging）挑句：trend／favor／risk／action／timing
+   在所有愛情子問題間共用同一套星盤語氣措辭池，差異來自實際可用相位算出的 loveAstroValence。 ---- */
+var ASTRO_LOVE_TONE_POOL = {
+  trend: {
+    positive: ['整體行星角度偏向和諧，感情發展有機會順勢往前推進', '星盤能量流動順暢，這段時間的感情走向偏向樂觀', '相關的星象角度支持，事情有機會比預期更快出現進展'],
+    neutral: ['行星角度有順有逆，發展走向還在醞釀，需要再觀察一段時間', '星盤能量處於過渡狀態，趨勢尚未完全明朗，宜保持彈性', '目前的星象組合中性，走向取決於接下來的實際互動'],
+    challenging: ['整體行星角度帶有一些張力，發展可能比預期慢一些，需要多一點耐心', '星盤能量顯示這段時間需要先處理內在或現實的課題，才能往前推進', '相關角度偏向緊張，進展容易卡在某個環節，需要主動整合'],
+  },
+  favor: {
+    positive: ['金星與火星的能量狀態是你目前最大的優勢，順著這股特質發揮即可', '整體星象對你有利，適合展現真實的自己、主動一點也無妨', '你的行星組合在感情面向上偏向加分，保持現有的狀態就好'],
+    neutral: ['真誠面對自己的感情需求，會是這段時間最實際的助力', '願意花時間了解自己的相處模式，會帶來加分', '穩定的生活步調本身就是一種優勢，不需要刻意強求改變'],
+    challenging: ['願意誠實面對星盤顯示的課題，本身就是一種助力，別急著逃避', '願意先調整自己習慣的相處模式，會比等待外在條件改變更有幫助', '過去累積的自我覺察，會是撐過這段緊張期的關鍵'],
+  },
+  risk: {
+    positive: ['順利時也別忽略溝通，避免因為太順而少了確認彼此真正的需求', '留意別因為星象順風就過度樂觀，仍需要實際的經營', '好的星象狀態也需要持續投入，避免三分鐘熱度'],
+    neutral: ['猶豫不決可能讓機會悄悄流失，建議別把星盤當成唯一的判斷依據', '資訊不足時容易過度解讀，適時回到現實互動確認會更實際', '過度分析星盤反而可能忽略當下真實的感受'],
+    challenging: ['金星或火星的緊張角度容易放大不安全感，建議別把小摩擦放大檢視', '容易因為星盤顯示的張力而過度擔心，實際情況仍需以現實互動為準', '未整合的情緒或慾望若不處理，可能持續影響關係的品質'],
+  },
+  action: {
+    positive: ['可以主動一點，順著目前有利的星象狀態往前推進一步', '適合把心裡真實的感受說出口，坦誠會帶來更好的結果', '順勢而為，同時也記得肯定自己在這段關係中的成長'],
+    neutral: ['建議先觀察一陣子，多留意自己與對方實際的互動，而非只看星盤', '可以從了解自己的感情需求開始，慢慢建立更清楚的方向', '給自己一點時間消化星盤訊息，同時保持開放但不勉強的心態'],
+    challenging: ['建議先照顧好自己的情緒與安全感，再決定下一步怎麼走', '找一個平靜的時機，誠實面對星盤提醒你需要留意的課題', '暫時放慢腳步，把注意力放在自己能調整的部分'],
+  },
+  timing: {
+    positive: ['如果你願意主動，行星角度顯示近期到中期都是相對有利的時間段', '整體星象偏向支持，時機點可能比想像中更快到來', '目前的行星狀態適合順勢往前一步，不需要刻意等待'],
+    neutral: ['星盤上沒有特別急迫的時間訊號，關係的進展節奏可能取決於雙方的實際互動', '時機尚未完全成熟，可能需要再多一段時間醞釀', '沒有明確的星象急迫性，順其自然會比刻意設定期限更實際'],
+    challenging: ['目前的行星角度不是勉強推進的好時機，操之過急反而容易適得其反', '星盤顯示這段時間仍有變數，適合抱持觀望但不放棄的態度', '建議先把星盤提醒的課題處理好，時機自然會比較清楚'],
+  },
+};
+
+function astroLovePlanetEvidenceStr(key, p) {
+  var sign = ZODIAC_SIGNS[p.sign];
+  return key + '：' + sign.zh + '（' + sign.elem + '）' + (p.house ? '，第' + p.house + '宮' : '');
+}
+function astroLoveHouseEvidenceStr(h, houseObj) {
+  var sign = ZODIAC_SIGNS[houseObj.sign];
+  return '第' + h + '宮頭：' + sign.zh + '（' + sign.elem + '）';
+}
+function astroLoveAspectEvidenceStr(a) {
+  var aDef = PLANET_DEFS.filter(function (d) { return d.key === a.a; })[0];
+  var bDef = PLANET_DEFS.filter(function (d) { return d.key === a.b; })[0];
+  var aspectDef = ASPECT_DEFS[a.type];
+  var orbText = (typeof a.orb === 'number' && !isNaN(a.orb)) ? a.orb.toFixed(1) + '°' : '未知';
+  return (aDef ? aDef.zh : a.a) + (aspectDef ? aspectDef.zh : a.type) + (bDef ? bDef.zh : a.b) + '（誤差' + orbText + '）';
+}
 
 /* astroCategoryReading(catKey, subtopicKey, chart, unknownTime)
-   星盤面的分類解讀骨架。chart 需為 computeNatalChart() 的真實回傳值；unknownTime 由呼叫端
-   明確傳入（例如 state.astroUnknownTime），內部一律以「這個 chart ＋ 這個 unknownTime」組成
-   單一 ctx 物件，交給 astroHasChart／astroTimeKnown／astroAvailableFocus 判斷，
-   不會另外讀取 state.astroResult／state.astroUnknownTime，避免兩份資料互相混用。
-   資料不足（沒有星盤／該分類無對應重點）時回傳 available:false 並附上原因，絕不捏造內容。 */
+   目前只支援 catKey==='love'；chart 需為 computeNatalChart() 的真實回傳值，unknownTime 由
+   呼叫端明確傳入。內部一律以 loveAstroEvidence(chart, unknownTime) 整理出的真實依據組句，
+   不讀取 state.astroResult／state.astroUnknownTime，也不呼叫依賴全域 state 的
+   astroUsableAspects()。資料不足時回傳 available:false 並附上原因，絕不捏造內容；
+   available:true 時 conclusion／caveat 一定非空，其餘欄位依 SUBTOPICS.love 的 fields 填入。 */
 function astroCategoryReading(catKey, subtopicKey, chart, unknownTime) {
   var out = {
     available: false, reason: '', catKey: catKey, subtopicKey: subtopicKey,
     conclusion: '', traits: '', trend: '', favor: '', risk: '', timing: '', action: '', caveat: '',
+    evidence: null,
   };
+  if (catKey !== 'love') { out.reason = 'unsupported-category'; return out; }
+  var subtopic = (SUBTOPICS.love || []).filter(function (s) { return s.key === subtopicKey; })[0];
+  if (!subtopic) { out.reason = 'unknown-subtopic'; return out; }
+  if (subtopic.modes.indexOf('astro') === -1) { out.reason = 'mode-not-supported'; return out; }
   if (!chart) { out.reason = 'no-chart'; return out; }
-  var ctx = { chart: chart, unknownTime: !!unknownTime };
-  var focus = astroAvailableFocus(ctx, catKey);
-  if (!focus.planets.length && !focus.houses.length && !focus.useAsc && !focus.useMC) {
-    out.reason = 'no-focus-data';
-    return out;
+
+  var ev = loveAstroEvidence(chart, unknownTime);
+  if (!ev.planets.Venus && !ev.planets.Mars) { out.reason = 'no-focus-data'; return out; }
+
+  var seed = subtopicKey + '|' + ev.seed;
+  var used = []; // 這次輸出實際引用了哪些真實星盤依據，供測試／未來 UI 顯示
+  function note(str) { used.push(str); }
+
+  var venusP = ev.planets.Venus, marsP = ev.planets.Mars, moonP = ev.planets.Moon;
+  var venusElem = venusP ? ZODIAC_SIGNS[venusP.sign].elem : null;
+  var marsElem = marsP ? ZODIAC_SIGNS[marsP.sign].elem : null;
+  var moonElem = moonP ? ZODIAC_SIGNS[moonP.sign].elem : null;
+  var house5 = ev.houses[5], house7 = ev.houses[7];
+  var house5Elem = house5 ? ZODIAC_SIGNS[house5.sign].elem : null;
+  var house7Elem = house7 ? ZODIAC_SIGNS[house7.sign].elem : null;
+  var valence = loveAstroValence(ev.aspects);
+
+  if (venusP) note(astroLovePlanetEvidenceStr('Venus', venusP));
+  if (marsP) note(astroLovePlanetEvidenceStr('Mars', marsP));
+  if (moonP) note(astroLovePlanetEvidenceStr('Moon', moonP));
+  if (house5) note(astroLoveHouseEvidenceStr(5, house5));
+  if (house7) note(astroLoveHouseEvidenceStr(7, house7));
+  ev.aspects.forEach(function (a) { note('相位：' + astroLoveAspectEvidenceStr(a)); });
+
+  function venusLine(seedTag) { return venusElem ? astroSeededPick(seed + seedTag, ASTRO_LOVE_VENUS_ATTRACT[venusElem]) : ''; }
+  function marsLine(seedTag) { return marsElem ? astroSeededPick(seed + seedTag, ASTRO_LOVE_MARS_PURSUIT[marsElem]) : ''; }
+  function moonLine(seedTag) { return moonElem ? astroSeededPick(seed + seedTag, ASTRO_LOVE_MOON_NEED[moonElem]) : ''; }
+  function house5Line(seedTag) { return house5Elem ? astroSeededPick(seed + seedTag, ASTRO_LOVE_HOUSE5_DATING[house5Elem]) : ''; }
+  function house7Line(seedTag) { return house7Elem ? astroSeededPick(seed + seedTag, ASTRO_LOVE_HOUSE7_PARTNER[house7Elem]) : ''; }
+  function toneField(fieldKey) { return astroSeededPick(seed + '|' + fieldKey, ASTRO_LOVE_TONE_POOL[fieldKey][valence]); }
+
+  var noPartnerDataNote = '沒有對方的出生資料，無法解讀對方目前的心意，也無法判斷是否會有具體結果；以下僅反映你自身在這類情境中的傾向。';
+  var baseCaveat = '以上為本命星盤的象徵性傾向，反映的是你自身容易展現或吸引的特質，並非對真實人物或事件的確定預測。';
+  var caveatParts = [baseCaveat];
+  if (ev.skipped.some(function (s) { return s.item === 'Moon'; })) caveatParts.push('出生時間未知，本次不使用月亮的星座、宮位與相位資料。');
+  if (ev.skipped.some(function (s) { return s.item === 'house5' || s.item === 'house7'; })) caveatParts.push('出生時間未知，第五宮與第七宮的宮位資料本次未使用。');
+
+  if (subtopicKey === 'partner-type') {
+    var vLine = venusLine('|venus'), mLine = marsLine('|mars');
+    out.conclusion = (vLine || '感情價值傾向暫時缺乏足夠資料判斷') + (mLine ? '；同時，' + mLine : '');
+    var ppApp = venusElem ? astroSeededPick(seed + '|pp-app', ASTRO_LOVE_PP_APPEARANCE[venusElem]) : '';
+    var ppPer = marsElem ? astroSeededPick(seed + '|pp-per', ASTRO_LOVE_PP_PERSONALITY[marsElem]) : '';
+    out.traits = [ppApp && (TRAIT_AXIS_LABELS.appearance + '：' + ppApp), ppPer && (TRAIT_AXIS_LABELS.personality + '：' + ppPer)].filter(Boolean).join('；');
+    out.trend = toneField('trend'); out.favor = toneField('favor'); out.risk = toneField('risk'); out.action = toneField('action');
+    caveatParts.push('星盤能反映的是你容易被吸引、或容易展現的特質範圍，不是對某個特定未來對象的確定描述。');
+  } else if (subtopicKey === 'partner-profile') {
+    var tagVenus = venusElem ? astroSeededPick(seed + '|tag', ASTRO_LOVE_PP_APPEARANCE[venusElem]) : '';
+    out.conclusion = '星盤傾向呈現的是一種較' + (venusElem ? ZODIAC_SIGNS[venusP.sign].trait : '難以從目前資料判斷') + '的吸引力；' + (tagVenus || '外貌與氣質的象徵傾向暫時缺乏足夠資料判斷');
+    var dims = [];
+    var saturnAsp = loveSaturnAspect(ev.aspects);
+    if (saturnAsp) note('相位（年齡依據）：' + astroLoveAspectEvidenceStr(saturnAsp));
+    var ageLine = saturnAsp ? astroSeededPick(seed + '|pp-age-saturn', ASTRO_LOVE_PP_AGE_SATURN) : ASTRO_LOVE_PP_AGE_INSUFFICIENT;
+    dims.push(TRAIT_AXIS_LABELS.ageHint + '：' + ageLine);
+    if (venusElem) dims.push(TRAIT_AXIS_LABELS.appearance + '：' + astroSeededPick(seed + '|pp-app2', ASTRO_LOVE_PP_APPEARANCE[venusElem]));
+    if (marsElem) dims.push(TRAIT_AXIS_LABELS.personality + '：' + astroSeededPick(seed + '|pp-per2', ASTRO_LOVE_PP_PERSONALITY[marsElem]));
+    if (marsElem) dims.push(TRAIT_AXIS_LABELS.jobType + '：' + astroSeededPick(seed + '|pp-job', ASTRO_LOVE_PP_JOBTYPE[marsElem]));
+    if (venusElem) dims.push(TRAIT_AXIS_LABELS.financeStyle + '：' + astroSeededPick(seed + '|pp-fin', ASTRO_LOVE_PP_FINANCE[venusElem]));
+    if (house7Elem) dims.push(ASTRO_LOVE_FAMILY_VALUE_LABEL + '：' + astroSeededPick(seed + '|pp-fam', ASTRO_LOVE_PP_FAMILYVALUE[house7Elem]));
+    out.traits = dims.join('；');
+    out.favor = toneField('favor'); out.risk = toneField('risk');
+    caveatParts.push('年齡／成熟度傾向只在金星或火星（或月亮）與土星形成主要相位時才判斷，其餘情況不從一般相位和諧度推測同齡、年長或年輕，也不提供精確年齡。');
+    caveatParts.push('職業與經濟觀念部分是金星／火星特質的象徵性延伸，並非對實際職業、收入或資產的判斷；完整的職業與財務傾向還需要第二、第六、第十宮與土星等本次未使用的資料。');
+    caveatParts.push('「' + ASTRO_LOVE_FAMILY_VALUE_LABEL + '」描述的是你自己對伴侶與家庭的期待傾向；沒有對方本人的出生資料，無法判斷其真實原生家庭、家庭條件或家庭互動。');
+    if (!house7Elem) caveatParts.push('出生時間未知或缺少第七宮資料，「' + ASTRO_LOVE_FAMILY_VALUE_LABEL + '」這項本次未提供。');
+  } else if (subtopicKey === 'meet-scene') {
+    var h5Line = house5Line('|house5');
+    var venusFallback = venusLine('|venus-fallback') || '感情價值傾向暫時缺乏足夠資料判斷';
+    out.conclusion = h5Line ? ('關於可能相遇的場合，' + h5Line) : venusFallback;
+    out.traits = TRAIT_AXIS_LABELS.meetScene + '：' + (h5Line || venusFallback);
+    out.trend = toneField('trend');
+    if (!h5Line) caveatParts.push('出生時間未知，無法使用第五宮位置，相遇場合的描述改以金星特質概略推估，範圍較廣泛。');
+  } else if (subtopicKey === 'pace-pattern') {
+    var mLine2 = marsLine('|mars'), h7Line = house7Line('|house7');
+    out.conclusion = (mLine2 || '追求節奏傾向暫時缺乏足夠資料判斷') + (h7Line ? '；在長期相處上，' + h7Line : '');
+    out.trend = toneField('trend'); out.favor = toneField('favor'); out.risk = toneField('risk'); out.action = toneField('action');
+    if (!h7Line) caveatParts.push('出生時間未知，無法使用第七宮位置，相處模式的長期傾向本次未描述。');
+  } else if (subtopicKey === 'crush') {
+    var vLine2 = venusLine('|venus'), mLine3 = marsLine('|mars');
+    out.conclusion = '星盤能反映的是你自己的感情需求與行動傾向，而不是對方目前的心意——' + (vLine2 || '') + (mLine3 ? (vLine2 ? '，同時，' : '') + mLine3 : '');
+    out.trend = toneField('trend'); out.favor = toneField('favor'); out.risk = toneField('risk'); out.action = toneField('action');
+    caveatParts.push(noPartnerDataNote);
+  } else if (subtopicKey === 'reunion') {
+    var h7Line2 = house7Line('|house7'), mLine4 = marsLine('|mars');
+    out.conclusion = '星盤無法判斷是否會復合，能反映的是你自身在這段關係裡的課題與慣性——' + (h7Line2 || mLine4 || '相關傾向暫時缺乏足夠資料判斷');
+    out.trend = toneField('trend'); out.risk = toneField('risk'); out.action = toneField('action');
+    caveatParts.push(noPartnerDataNote);
+    if (!h7Line2) caveatParts.push('出生時間未知，無法使用第七宮位置，長期關係模式的描述改以火星特質概略推估。');
+  } else if (subtopicKey === 'marriage-longterm') {
+    var h7Line3 = house7Line('|house7'), mnLine = moonLine('|moon');
+    out.conclusion = (h7Line3 || '長期關係模式的傾向暫時缺乏足夠資料判斷') + (mnLine ? '；在情感需求上，' + mnLine : '');
+    out.trend = toneField('trend'); out.timing = toneField('timing'); out.favor = toneField('favor'); out.risk = toneField('risk');
+    caveatParts.push('星盤無法預測是否必然步入婚姻或確切時間，以上僅反映長期關係中的需求與課題傾向。');
+    if (!h7Line3) caveatParts.push('出生時間未知，無法使用第七宮位置，長期關係模式的描述改以其他可用依據推估，準確度較低。');
   }
-  /* TODO（後續階段）：依 focus.planets／focus.houses 從 ctx.chart 讀出真實行星星座／宮位／相位，
-     用 astroSeededPick 從對應措辭池挑句組成 conclusion／traits／trend 等欄位；
-     嚴禁在 !astroTimeKnown(ctx) 時填入 useAsc／useMC／houses 相關描述。 */
+
+  /* 只保留該子問題 fields 有列出的欄位，其餘清空——不得輸出未被要求的內容 */
+  ['conclusion', 'traits', 'trend', 'favor', 'risk', 'timing', 'action'].forEach(function (f) {
+    if (subtopic.fields.indexOf(f) === -1) out[f] = '';
+  });
+  if (!out.conclusion) out.conclusion = '目前可用的星盤依據不足以針對「' + subtopic.zh + '」給出具體描述，建議先確認出生資料是否完整。';
+  out.caveat = caveatParts.join('');
+  out.evidence = { used: used, skipped: ev.skipped, seed: ev.seed };
   out.available = true;
-  if (!astroTimeKnown(ctx)) {
-    out.caveat = '出生時間未知，本次僅採用行星星座作為參考，未使用上升、天頂與宮位等時間敏感資料。';
-  }
   return out;
 }
 
