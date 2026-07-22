@@ -1637,16 +1637,16 @@ function renderHome() {
   h += '<span style="color:#c9a96e;font-size:12px">' + (state.homeMoreOpen ? '︿ 收合' : '﹀ 展開') + '</span>';
   h += '</div>';
   if (state.homeMoreOpen) {
+    /* 塔羅百科／星盤已經各自是底部導覽列的獨立分頁，這裡不再重複列出同一個
+       目的地，避免使用者以為底部「更多」跟這裡是兩份不一樣的清單 */
     h += '<div style="display:flex;flex-direction:column;gap:10px;margin-top:14px">';
     h += '<button onclick="go(\'reading\',\'tarot\')" style="font:500 14px \'Noto Sans TC\',sans-serif;background:rgba(255,255,255,.02);color:#f0e9d8;border:1px solid rgba(201,169,110,.3);padding:13px 16px;border-radius:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"><span>塔羅牌占卜 <span style="font:italic 10px \'EB Garamond\',serif;opacity:.5">Tarot Reading</span></span><span>›</span></button>';
     h += '<button onclick="go(\'reading\',\'lenormand\')" style="font:500 14px \'Noto Sans TC\',sans-serif;background:rgba(255,255,255,.02);color:#f0e9d8;border:1px solid rgba(201,169,110,.3);padding:13px 16px;border-radius:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"><span>雷諾曼占卜 <span style="font:italic 10px \'EB Garamond\',serif;opacity:.5">Lenormand Reading</span></span><span>›</span></button>';
-    h += '<button onclick="go(\'library\')" style="font:500 14px \'Noto Sans TC\',sans-serif;background:rgba(255,255,255,.02);color:#f0e9d8;border:1px solid rgba(201,169,110,.3);padding:13px 16px;border-radius:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"><span>塔羅百科 <span style="font:italic 10px \'EB Garamond\',serif;opacity:.5">Encyclopedia</span></span><span>›</span></button>';
-    h += '<button onclick="go(\'astro\')" style="font:500 14px \'Noto Sans TC\',sans-serif;background:rgba(255,255,255,.02);color:#f0e9d8;border:1px solid rgba(201,169,110,.3);padding:13px 16px;border-radius:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"><span>星盤 <span style="font:italic 10px \'EB Garamond\',serif;opacity:.5">Natal Chart</span></span><span>›</span></button>';
     h += '<button onclick="go(\'history\')" style="font:500 14px \'Noto Sans TC\',sans-serif;background:rgba(255,255,255,.02);color:#f0e9d8;border:1px solid rgba(201,169,110,.3);padding:13px 16px;border-radius:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"><span>歷史紀錄 <span style="font:italic 10px \'EB Garamond\',serif;opacity:.5">History</span></span><span>›</span></button>';
     h += '</div>';
     h += renderTarotLenormandGuide();
     h += renderStudyWidget();
-    h += '<div style="text-align:center;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:18px;line-height:1.8;padding:0 10px">初次接觸塔羅嗎？建議先到「塔羅百科」認識大阿爾克那 22 張牌，<br>再回來開始占卜，解讀會更容易上手。</div>';
+    h += '<div style="text-align:center;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:18px;line-height:1.8;padding:0 10px">初次接觸塔羅嗎？建議先到底部導覽列的「牌典」認識大阿爾克那 22 張牌，<br>再回來開始占卜，解讀會更容易上手。</div>';
     h += renderAbout();
   }
   h += '</div>';
@@ -2561,15 +2561,21 @@ function setAiPersona(key) {
 }
 /* 放在每個「複製給 AI 解讀」按鈕正上方的小選擇器，所有風格（含隨機的擲筊）共用同一套 state.aiPersona */
 function renderPersonaPicker() {
+  /* tagline used to live only in the title="" attribute, which mobile touch
+     browsers never show (no hover, no long-press tooltip) — so on phones
+     every non-selected persona was just an unexplained name. Each option now
+     prints its own tagline underneath, always visible regardless of device. */
   var h = '<div style="margin-top:16px">';
   h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-bottom:6px">解讀語氣 AI Tone</div>';
-  h += '<div style="display:flex;gap:6px;flex-wrap:wrap">';
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">';
   AI_PERSONAS.forEach(function (p) {
     var on = state.aiPersona === p.key;
-    h += '<button type="button" aria-pressed="' + on + '" title="' + esc(p.tagline) + '" onclick="setAiPersona(\'' + p.key + '\')" style="padding:6px 12px;border-radius:14px;border:1px solid ' + (on ? '#c9a96e' : 'rgba(201,169,110,.28)') + ';background:' + (on ? 'rgba(201,169,110,.18)' : 'rgba(255,255,255,.02)') + ';color:' + (on ? '#f0e9d8' : 'rgba(240,233,216,.55)') + ';font:500 11px \'Noto Sans TC\',sans-serif;cursor:pointer">' + esc(p.name) + '</button>';
+    h += '<button type="button" aria-pressed="' + on + '" onclick="setAiPersona(\'' + p.key + '\')" style="text-align:left;padding:8px 10px;border-radius:10px;border:1px solid ' + (on ? '#c9a96e' : 'rgba(201,169,110,.28)') + ';background:' + (on ? 'rgba(201,169,110,.18)' : 'rgba(255,255,255,.02)') + ';cursor:pointer">';
+    h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;color:' + (on ? '#f0e9d8' : 'rgba(240,233,216,.72)') + '">' + esc(p.name) + '</div>';
+    h += '<div style="font:400 9px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);margin-top:2px;line-height:1.4">' + esc(p.tagline) + '</div>';
+    h += '</button>';
   });
   h += '</div>';
-  h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:5px">' + esc(findAiPersona(state.aiPersona).tagline) + '</div>';
   h += '</div>';
   return h;
 }
@@ -3004,7 +3010,11 @@ function renderMore() {
     ['占卜歷史紀錄','Reading History',"go('history')"]
   ];
   items.forEach(function (it) { h += '<button onclick="' + it[2] + '" style="width:100%;display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.02);border:1px solid rgba(201,169,110,.28);color:#f0e9d8;padding:14px 15px;border-radius:10px;margin-bottom:9px;cursor:pointer;text-align:left"><span>' + it[0] + '<span style="display:block;font:italic 10px \'EB Garamond\',serif;opacity:.45;margin-top:2px">' + it[1] + '</span></span><span aria-hidden="true">›</span></button>'; });
-  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);line-height:1.8;margin-top:18px">占卜內容僅供自我探索與娛樂參考；健康、財務與法律問題請諮詢合格專業人士。</div></div>';
+  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);line-height:1.8;margin-top:18px">占卜內容僅供自我探索與娛樂參考；健康、財務與法律問題請諮詢合格專業人士。</div>';
+  /* 關於本站／隱私／清除資料原本只藏在首頁「更多功能」展開後才看得到；
+     底部導覽列「更多」是更常被點的入口，這裡也要能直接找到 */
+  h += renderAbout();
+  h += '</div>';
   return h;
 }
 
@@ -3997,6 +4007,9 @@ function astroGenerate() {
   }, 30);
 }
 function astroReset() {
+  try {
+    if (!confirm('確定要重新輸入嗎？\n目前算好的星盤解讀會被清除（出生日期／時間／地點資料還在，可以直接修改後重新生成）。')) return;
+  } catch (e) {}
   state.astroResult = null;
   state.astroHouseSystem = 'placidus';
   render();
@@ -4784,6 +4797,15 @@ function astroDismissTour() {
   try { localStorage.setItem('tl_astro_tour_seen', '1'); } catch (e) {}
   render();
 }
+/* dismissing the tour used to be permanent — the only way back was the
+   nuclear "清除所有紀錄" button, which also wipes reading history and the
+   birth chart itself. This gives a lightweight way back in. */
+function astroShowTour() {
+  state.astroTourDismissed = false;
+  try { localStorage.removeItem('tl_astro_tour_seen'); } catch (e) {}
+  render();
+  window.scrollTo(0, 0);
+}
 /* 星盤功能現在有 7 個子頁面，第一次生成星盤時用一張小卡簡短導覽，避免新用戶
    不知道除了本命盤之外還有這些功能；只顯示一次，關掉後記在 localStorage 不會再跳出來 */
 function renderAstroTourCard() {
@@ -5517,7 +5539,11 @@ function renderAstro() {
       h += '<button aria-pressed="' + on + '" onclick="astroSetView(\'' + vt[0] + '\')" style="font:500 11px \'Noto Sans TC\',sans-serif;background:' + (on ? 'rgba(201,169,110,.2)' : 'rgba(255,255,255,.03)') + ';border:1px solid ' + (on ? '#c9a96e' : 'rgba(201,169,110,.25)') + ';color:' + (on ? '#f0e9d8' : 'rgba(240,233,216,.55)') + ';padding:6px 13px;border-radius:14px;cursor:pointer">' + vt[1] + '</button>';
     });
     h += '</div>';
-    if (!state.astroTourDismissed) h += renderAstroTourCard();
+    if (!state.astroTourDismissed) {
+      h += renderAstroTourCard();
+    } else {
+      h += '<div style="text-align:center;margin-top:8px"><button onclick="astroShowTour()" style="background:none;border:none;color:rgba(240,233,216,.35);font:400 10px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">星盤功能小導覽 · 再看一次</button></div>';
+    }
 
     if (state.astroView === 'synastry') {
       h += renderSynastry();
