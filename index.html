@@ -3867,7 +3867,7 @@ var PLANET_BEGINNER = {
   Uranus:{question:'你在哪裡最不想照別人的規則走？',verb:'打破舊做法、保有自由並嘗試改變',result:'活出更真實而有選擇的自己',strength:'能提出新方法，看見別人沒想到的可能',watch:'不要只為了反對而改變，或突然切斷重要連結',
     coreNeed:['照自己的方式活、保有選擇的自由','在既有框架外找到自己的路'],function:'打破慣性、引入改變並保留選擇的自由',matureAim:'保有步調仍維繫關係',imbalance:'為了反對而反對，或突然切斷關係'},
   Neptune:{question:'你在哪裡最容易有想像、同理與直覺？',verb:'感受氣氛、想像可能並追尋理想',result:'與內在感受、創意或信念連結',strength:'有細膩的同理心、創意與直覺感受力',watch:'需要分清楚理想與現實，避免過度投射或逃避',
-    coreNeed:['貼近說不清楚但真實的感受','把心裡朦朧的感覺具體活出來'],function:'感受氛圍、想像可能性並靠近理想',matureAim:'把感受轉化為實際貢獻',imbalance:'分不清楚理想與現實，用逃避或幻想迴避問題'},
+    coreNeed:['貼近說不清楚但真實的感受','把心裡朦朧的感覺具體活出來'],function:'感受氛圍、想像可能性並靠近理想',matureAim:'把感受化為實際貢獻',imbalance:'分不清理想與現實，轉而逃避問題'},
   Pluto:{question:'你在哪裡會經歷「不能再照舊」的深層改變？',verb:'面對真相、放下控制並重新建立力量',result:'從危機或執著中長出更穩定的內在力量',strength:'能看見問題核心，也有走過低谷後重生的韌性',watch:'留意過度控制、猜疑，或把事情逼到非黑即白',
     coreNeed:['在危機中找回真正能掌握的力量','穿越低潮、重新拿回主導權'],function:'直視真相、放下無法控制的部分並重新整合力量',matureAim:'看穿核心、走出低潮',imbalance:'用控制或猜疑，避免再次感覺失控'}
 };
@@ -4231,18 +4231,18 @@ var POINT_PRIMARY_TPL = {
   },
 };
 var FUSE_POINT_LIFE_HOUSE_TPL = [
-  '{activation}，你通常會{behavior}。',
-  '{activation}，你往往{behavior}。',
+  '在{lifeArea}，{P}常表現為：{pointExpression}。',
+  '{P}在{lifeArea}被啟動時，常出現「{pointExpression}」的經驗。',
 ];
 var FUSE_POINT_LIFE_NOHOUSE_TPL = [
-  '日常裡，你通常會{behavior}。',
-  '不特別看情境時，你也傾向{behavior}。',
+  '{P}在生活中常表現為：{pointExpression}。',
+  '這個位置常帶來「{pointExpression}」的經驗。',
 ];
 /* 卡片 UI 會在這段文字前面固定加上「需要留意：」標籤，所以模板本身不能再用
    「需要留意」開頭，否則會變成「需要留意：需要留意……」的重複標籤。 */
 var FUSE_POINT_CAUTION_HOUSE_TPL = [
-  '較容易{imbalance}；不妨{growthTask}。',
-  '{imbalance}；可以{growthTask}。',
+  '在{lifeArea}，盲點是「{imbalance}」；提醒自己：{growthDirection}。',
+  '{P}在{lifeArea}失衡時，可能{imbalance}；{growthDirection}。',
 ];
 var FUSE_POINT_CAUTION_NOHOUSE_TPL = [
   '較容易{imbalance}；{growthDirection}。',
@@ -4314,10 +4314,10 @@ function extraPointReading(pointDef, placement, chart, unknownTime) {
     ? fillTpl(astroSeededPick(seed + 'pri', primaryTpl.house), { S: S, motivation: sb.motivation, lifeArea: hb.lifeArea })
     : fillTpl(astroSeededPick(seed + 'pri', primaryTpl.nohouse), { S: S, motivation: sb.motivation });
   var lifeExpression = useHouse
-    ? fillTpl(astroSeededPick(seed + 'life', FUSE_POINT_LIFE_HOUSE_TPL), { activation: hb.activation, behavior: sb.behavior })
-    : fillTpl(astroSeededPick(seed + 'life', FUSE_POINT_LIFE_NOHOUSE_TPL), { behavior: sb.behavior });
+    ? fillTpl(astroSeededPick(seed + 'life', FUSE_POINT_LIFE_HOUSE_TPL), { P: P, lifeArea: hb.lifeArea, pointExpression: pb.expression })
+    : fillTpl(astroSeededPick(seed + 'life', FUSE_POINT_LIFE_NOHOUSE_TPL), { P: P, pointExpression: pb.expression });
   var caution = useHouse
-    ? fillTpl(astroSeededPick(seed + 'cau', FUSE_POINT_CAUTION_HOUSE_TPL), { imbalance: pb.imbalance, growthTask: hb.growthTask })
+    ? fillTpl(astroSeededPick(seed + 'cau', FUSE_POINT_CAUTION_HOUSE_TPL), { P: P, lifeArea: hb.lifeArea, imbalance: pb.imbalance, growthDirection: pb.growthDirection })
     : fillTpl(astroSeededPick(seed + 'cau', FUSE_POINT_CAUTION_NOHOUSE_TPL), { imbalance: pb.imbalance, growthDirection: pb.growthDirection });
 
   var coreFunctionText = fillTpl(astroSeededPick(seed + 'fn', FUSE_POINT_FUNCTION_TPL), { P: P, coreFunction: pb.coreFunction, motivation: pb.motivation });
@@ -4640,17 +4640,17 @@ var FUSE_SUMMARY_NOHOUSE_TPL = [
    宮位內容就讓 summary 省略它。刻意不用「當{P}遇上{S}」這個句型，避免十顆行星
    x十二星座都套同一種開頭讀起來很像罐頭文字。 */
 var FUSE_SUMMARY_HOUSE_TPL = [
-  '你的{P}在{S}，會透過「{method}」，在{lifeArea}中{coreNeed}。',
-  '{P}進到{S}時，你想{coreNeed}，做法是「{method}」，場景常在{lifeArea}。',
-  '{S}的{P}讓你在{lifeArea}裡，用「{method}」去{coreNeed}。',
+  '你的{P}在{S}，會用「{method}」處理{lifeArea}；核心是在這些情境中{coreNeed}。',
+  '{P}進到{S}時，你會在{lifeArea}以「{method}」運作，藉此{coreNeed}。',
+  '{S}的{P}把「{method}」帶進{lifeArea}，讓你在這個領域{coreNeed}。',
 ];
-/* lifeExpression 聚焦具體生活情境與常見行為：用 house.activation（何時被啟動）
-   ＋sign.behavior（生活化的具體行為，而非 sign.method 那套「運作方式」的措辭）組成，
-   不加引號、不逐字複製 summary 已經用過的 method 原文，避免同一句話讀者要看兩遍。 */
+/* lifeExpression 聚焦「宮位何時被啟動＋該行星在現實中做什麼」。星座的運作方式
+   已在 summary 顯示，這裡不再重複 method/behavior，避免相同星座的每張卡片都出現
+   同一句，也避免手機預設摘要過長。 */
 var FUSE_LIFE_HOUSE_TPL = [
-  '{activation}，你通常會{behavior}。',
-  '{activation}，你往往{behavior}。',
-  '{activation}，你習慣{behavior}。',
+  '{activation}，{P}會推動你{planetVerb}。',
+  '在{lifeArea}，{P}讓你更常{planetVerb}。',
+  '{P}在{lifeArea}被啟動時，你傾向{planetVerb}。',
 ];
 var FUSE_LIFE_NOHOUSE_TPL = [
   '日常裡，你通常會{behavior}。',
@@ -4669,23 +4669,22 @@ var FUSE_STRENGTH_NOHOUSE_TPL = [
    多半已經帶了一個「也」（例如「能享受被關注，也能把光分給身邊的人」），因此接
    matureAim 一律用「並」而不是「也」，避免同一句裡出現兩次「也」。 */
 var FUSE_STRENGTH_HOUSE_TPL = [
-  '你{matureExpression}，並{matureAim}。',
-  '面對{lifeArea}的處境，你{matureExpression}。',
-  '在{lifeArea}裡，你往往{matureExpression}。',
+  '在{lifeArea}，你{matureExpression}，並{matureAim}。',
+  '面對{lifeArea}，你{matureExpression}，同時{matureAim}。',
+  '{lifeArea}中，你{matureExpression}，並逐步做到「{matureAim}」。',
 ];
 var FUSE_CAUTION_NOHOUSE_TPL = [
   '常見的模式是{shadow}；可以練習{pbW}。',
   '失衡時，你可能{imbalance}；提醒自己{sbW}。',
   '失衡時可能{imbalance}；可以練習{pbW}。',
 ];
-/* caution 用 sign.shadow＋簡短的 house.growthTask 融合而成，且不用「調整方向是」
-   「這裡的功課是」這類制式標題直接冠在 growthTask 前面——growthTask 本身已經是
-   「練習...」的完整建議句，用「不妨／可以／慢慢」這類輕量副詞接上就足夠自然，不需
-   要額外的標籤。三個變體都固定帶 shadow，確保換星座時 caution 一定會變。 */
+/* caution 聚焦「行星失衡模式＋宮位調整方向」。星座的成熟／失衡表現已分別出現在
+   strength 與 summary/lifeExpression，這裡不再把三套長句全塞在一起，避免手機卡片
+   過長；整張卡片合併後仍完整包含行星、星座與宮位三軸。 */
 var FUSE_CAUTION_HOUSE_TPL = [
-  '較容易{shadow}，不妨{growthTask}。',
-  '失衡時可能{shadow}；可以{growthTask}。',
-  '有時會{shadow}，可以慢慢{growthTask}。',
+  '壓力下可能{imbalance}；可以{growthTask}。',
+  '{P}失衡時，較容易{imbalance}；不妨{growthTask}。',
+  '有時可能{imbalance}；可以慢慢{growthTask}。',
 ];
 var FUSE_FUNCTION_TPL = [
   '{P}負責{function}；它想回答：{question}',
@@ -4713,12 +4712,12 @@ var FUSE_SYNTHESIS_NOHOUSE_TPL = [
    （逐步練習…／成長方向是…／這裡的課題是…）。growthTask 本身已是完整的「練習...」
    建議句，因此用「接下來可以」這種不含「練習／功課／方向」字眼的接法承接它。 */
 var FUSE_GROWTH_TPL = [
-  '成熟時，你{matureExpression}，也{matureAim}；接下來可以{growthTask}。',
+  '成熟時，你{matureExpression}，並{matureAim}；接下來可以{growthTask}。',
   '往成熟的方向走，你{matureExpression}；接下來可以{growthTask}。',
 ];
 var FUSE_GROWTH_NOHOUSE_TPL = [
-  '成熟時，你{matureExpression}，也{matureAim}。',
-  '往成熟的方向走，你{matureExpression}，也{matureAim}。',
+  '成熟時，你{matureExpression}，並{matureAim}。',
+  '往成熟的方向走，你{matureExpression}，並{matureAim}。',
 ];
 /* 純函式：不讀取 state／全域星盤設定，只依 planetDef 定義與傳入的落點資料
    （placement＝chart.planets[key] 的形狀 {sign,deg,retro,house}）與 unknownTime
@@ -4740,13 +4739,13 @@ function planetPlacementReading(planetDef, placement, unknownTime) {
     ? fillTpl(astroSeededPick(seed + 'sum', FUSE_SUMMARY_HOUSE_TPL), { P: planetDef.zh, S: sign.zh, coreNeed: coreNeed, method: sb.method, lifeArea: hb.lifeArea })
     : fillTpl(astroSeededPick(seed + 'sum', FUSE_SUMMARY_NOHOUSE_TPL), { P: planetDef.zh, S: sign.zh, coreNeed: coreNeed, method: sb.method });
   var lifeExpression = useHouse
-    ? fillTpl(astroSeededPick(seed + 'life', FUSE_LIFE_HOUSE_TPL), { activation: hb.activation, behavior: sb.behavior })
+    ? fillTpl(astroSeededPick(seed + 'life', FUSE_LIFE_HOUSE_TPL), { P: planetDef.zh, activation: hb.activation, lifeArea: hb.lifeArea, method: sb.method, planetVerb: pb.verb, behavior: sb.behavior })
     : fillTpl(astroSeededPick(seed + 'life', FUSE_LIFE_NOHOUSE_TPL), { behavior: sb.behavior });
   var strength = useHouse
-    ? fillTpl(astroSeededPick(seed + 'str', FUSE_STRENGTH_HOUSE_TPL), { matureExpression: sb.matureExpression, matureAim: pb.matureAim, lifeArea: hb.lifeArea })
+    ? fillTpl(astroSeededPick(seed + 'str', FUSE_STRENGTH_HOUSE_TPL), { P: planetDef.zh, matureExpression: sb.matureExpression, matureAim: pb.matureAim, lifeArea: hb.lifeArea })
     : fillTpl(astroSeededPick(seed + 'str', FUSE_STRENGTH_NOHOUSE_TPL), { matureExpression: sb.matureExpression, matureAim: pb.matureAim });
   var caution = useHouse
-    ? fillTpl(astroSeededPick(seed + 'cau', FUSE_CAUTION_HOUSE_TPL), { shadow: sb.shadow, growthTask: hb.growthTask })
+    ? fillTpl(astroSeededPick(seed + 'cau', FUSE_CAUTION_HOUSE_TPL), { P: planetDef.zh, lifeArea: hb.lifeArea, imbalance: pb.imbalance, shadow: sb.shadow, growthTask: hb.growthTask })
     : fillTpl(astroSeededPick(seed + 'cau', FUSE_CAUTION_NOHOUSE_TPL), { imbalance: pb.imbalance, shadow: sb.shadow, pbW: pb.watch, sbW: sb.watch });
 
   var planetFunction = fillTpl(astroSeededPick(seed + 'fn', FUSE_FUNCTION_TPL), { P: planetDef.zh, 'function': pb['function'], question: pb.question });
@@ -4946,6 +4945,180 @@ function aspectBeginnerData(asp) {
 function renderAspectBeginnerCard(asp) {
   var d=aspectBeginnerData(asp);
   return '<article style="border-top:1px solid rgba(201,169,110,.15);padding:12px 0"><div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">'+esc(d.title)+'</div><div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.75;margin-top:5px">'+esc(d.lead)+'</div><div style="margin-top:7px;font:400 11px \'Noto Sans TC\',sans-serif;color:#9bc5a3;line-height:1.65">優勢：'+esc(d.strength)+'</div><div style="margin-top:3px;font:400 11px \'Noto Sans TC\',sans-serif;color:#d9a0a0;line-height:1.65">容易卡住：'+esc(d.watch)+'</div><div style="margin-top:3px;font:400 11px \'Noto Sans TC\',sans-serif;color:#e6cd9a;line-height:1.65">可以怎麼練習：'+esc(d.practice)+'</div><details style="margin-top:8px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);cursor:pointer">查看相位名稱、容許度與專業解讀</summary><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.7;margin-top:6px">'+esc(aspectPlacementText(asp))+'</div></details></article>';
+}
+
+/* 本命盤相位專用解讀。舊 ASPECT_BEGINNER 保留給合盤與推運使用。 */
+var NATAL_ASPECT_DYNAMICS = {
+  conjunction: {
+    summary: [
+      '{A}會{Aplace}{Agift}，{B}則會{Bplace}{Bgift}；兩者常在同一時間啟動。',
+      '當你{Aplace}{Agift}時，也會同時{Bplace}{Bgift}，兩股力量很難完全分開。',
+      '{Aplace}{Agift}，常與{Bplace}{Bgift}一併出現，力量集中而直接。',
+    ],
+    principle: '合相讓兩股心理功能融合成一套反應；其中一邊被啟動時，另一邊通常立刻跟上。',
+    strength: '能把「{Agift}」與「{Bgift}」集中成一致行動。',
+    challenge: '可能同時出現「{Arisk}」與「{Brisk}」，卻難以分開處理。',
+    integration: '先練習「{Apractice}」，再練習「{Bpractice}」，確認此刻先回應哪一邊。',
+  },
+  sextile: {
+    summary: [
+      '{A}會{Aplace}{Agift}，並協助你{Bplace}{Bgift}，但需要主動串連。',
+      '{Aplace}{Agift}，與{Bplace}{Bgift}之間有可運用的通道。',
+      '只要願意跨出一步，{Aplace}{Agift}便能協助你{Bplace}{Bgift}。',
+    ],
+    principle: '六分相提供可運用的通道，但不會自動替你完成事情；它需要選擇、練習與具體行動。',
+    strength: '主動時，能用「{Agift}」協助「{Bgift}」。',
+    challenge: '可能看見合作機會，卻受「{Arisk}」或「{Brisk}」影響而沒有使用。',
+    integration: '安排一個小情境，先練習「{Apractice}」，再練習「{Bpractice}」。',
+  },
+  trine: {
+    summary: [
+      '你較容易一邊{Aplace}{Agift}，一邊{Bplace}{Bgift}，兩種能力自然接力。',
+      '{Aplace}{Agift}，會自然帶動{Bplace}{Bgift}，不必太用力就能配合。',
+      '當你{Aplace}{Agift}，通常也能順勢地{Bplace}{Bgift}，兩者容易形成穩定優勢。',
+    ],
+    principle: '三分相讓兩種心理功能彼此支持，通常不必經過強烈衝突就能找到共同節奏。',
+    strength: '能自然{Agift}，也能{Bgift}，兩種能力彼此支持。',
+    challenge: '即使配合自然，仍可能出現「{Arisk}」及「{Brisk}」。',
+    integration: '選一個稍有難度的共同目標，同時練習「{Apractice}」與「{Bpractice}」。',
+  },
+  square: {
+    summary: [
+      '{Aplace}{Agift}，與{Bplace}{Bgift}的節奏不同，容易卡住，也會逼出調整能力。',
+      '{A}會{Aplace}{Agift}，{B}則推動你{Bplace}{Bgift}；兩邊互相施壓，需要重新安排。',
+      '當你試著{Aplace}{Agift}，又必須{Bplace}{Bgift}時，摩擦會推動你發展新做法。',
+    ],
+    principle: '四分相讓兩種需求用不同節奏爭取主導權；摩擦會反覆出現，直到你找到新的行動方式。',
+    strength: '能在「{Agift}」與「{Bgift}」的摩擦中練出解題能力。',
+    challenge: '壓力下可能同時出現「{Arisk}」與「{Brisk}」，反而更難行動。',
+    integration: '把衝突拆小，先練習「{Apractice}」，再練習「{Bpractice}」，不必一次分出勝負。',
+  },
+  opposition: {
+    summary: [
+      '你容易在兩種反應間擺盪：一端是{Aplace}{Agift}，另一端是{Bplace}{Bgift}。',
+      '{A}推動你{Aplace}{Agift}，{B}則拉向{Bplace}{Bgift}；兩端都需要被看見。',
+      '生活中可能輪流出現兩種反應：{Aplace}{Agift}，以及{Bplace}{Bgift}。',
+    ],
+    principle: '對分相會放大兩端的差異；你可能先認同其中一邊，再透過關係或事件遇見另一邊。',
+    strength: '能理解「{Agift}」和「{Bgift}」各自重要，逐步找到平衡。',
+    challenge: '可能在「{Arisk}」與「{Brisk}」之間擺盪，或把其中一端投射給別人。',
+    integration: '察覺偏向哪端後，先練習「{Apractice}」，再練習「{Bpractice}」，讓兩邊都有位置。',
+  },
+};
+var NATAL_ASPECT_TITLE_VERBS = { conjunction:'合', sextile:'六分', trine:'拱', square:'四分', opposition:'對分' };
+var NATAL_ASPECT_SYMBOLS = { conjunction:'☌', sextile:'⚹', trine:'△', square:'□', opposition:'☍' };
+var NATAL_ASPECT_ANGLES = { conjunction:0, sextile:60, trine:120, square:90, opposition:180 };
+var NATAL_ASPECT_FUNCTION_LABELS = {
+  Sun:'自我認同與人生方向', Moon:'情緒需求與安全感', Mercury:'思考、學習與表達',
+  Venus:'關係價值、喜好與吸引', Mars:'行動、欲望與界線', Jupiter:'信念、成長與擴張',
+  Saturn:'責任、限制與長期建立', Uranus:'自由、突破與改革', Neptune:'想像、共感與理想',
+  Pluto:'權力、危機與深層轉化', Node:'尚在發展的成長方向', SNode:'熟悉而容易依賴的模式',
+  Lilith:'不願被壓抑的自主需求', Chiron:'容易受傷與不足的敏感點',
+  Fortune:'感到順流與投入的方式', Vertex:'被關係或事件推動的經驗',
+};
+var NATAL_ASPECT_FUNCTION_BEHAVIORS = {
+  Sun:{gift:'清楚表達自己的方向',risk:'把價值感綁在表現上',practice:'確認真正想成為誰'},
+  Moon:{gift:'辨認並安頓情緒需求',risk:'被情緒與不安全感牽動',practice:'先照顧當下的感受'},
+  Mercury:{gift:'把資訊整理成清楚語言',risk:'過度分析或急著下結論',practice:'確認資訊後再表達'},
+  Venus:{gift:'衡量關係與價值是否協調',risk:'為維持和諧而迎合',practice:'說清楚喜好與界線'},
+  Mars:{gift:'把欲望化為行動並守住界線',risk:'衝動出手或壓住怒氣',practice:'先辨認目標與力道'},
+  Jupiter:{gift:'看見機會並擴大視野',risk:'過度樂觀而忽略細節',practice:'把信念落成可行步驟'},
+  Saturn:{gift:'承擔責任並建立長期能力',risk:'怕犯錯而過度緊縮',practice:'訂出可持續的規則'},
+  Uranus:{gift:'跳脫框架並提出新做法',risk:'為自由突然切斷連結',practice:'保留改變也說明理由'},
+  Neptune:{gift:'感受氛圍並轉化想像',risk:'混淆理想、投射與現實',practice:'用事實檢查直覺'},
+  Pluto:{gift:'看穿核心並承受深層轉變',risk:'用控制或猜疑防衛',practice:'分清能掌握與不能掌握'},
+  Node:{gift:'嘗試尚不熟悉的成長方向',risk:'因陌生而放棄或躁進',practice:'用小步驟練習新能力'},
+  SNode:{gift:'調用熟悉而穩定的資源',risk:'只靠老方法拒絕調整',practice:'保留資源也嘗試新做法'},
+  Lilith:{gift:'辨認自主需求並守住界線',risk:'壓抑太久後激烈反彈',practice:'提早說出真實需求'},
+  Chiron:{gift:'辨認敏感與不足被觸發之處',risk:'把敏感藏起來或過度防衛',practice:'允許敏感存在而不急著修好'},
+  Fortune:{gift:'找到容易投入與順流的方式',risk:'等待順利卻沒有投入',practice:'持續參與並觀察回饋'},
+  Vertex:{gift:'從重要際遇中調整方向',risk:'把轉折當成唯一劇本',practice:'保留選擇再回應事件'},
+};
+var NATAL_PERSONAL_KEYS = ['Sun','Moon','Mercury','Venus','Mars'];
+function natalAspectPosition(chart, key) {
+  return (chart.planets && chart.planets[key]) || (chart.points && chart.points[key]) || null;
+}
+function natalAspectProfile(key) {
+  var def=findAnyPointDef(key);
+  if (!def) return null;
+  var pb=PLANET_BEGINNER[key], pt=POINT_BEGINNER[key];
+  var behavior=NATAL_ASPECT_FUNCTION_BEHAVIORS[key] || {gift:'運用這項功能',risk:'忽略這項功能的限制',practice:'有意識地調整這項功能'};
+  return {
+    key:key,
+    name:EXTRA_POINT_DEFS.some(function(x){return x.key===key;}) ? pointDisplayName(def) : def.zh,
+    func:NATAL_ASPECT_FUNCTION_LABELS[key] || (pb && pb.function) || (pt && pt.coreFunction) || def.kw,
+    motive:(pb && (Array.isArray(pb.coreNeed) ? pb.coreNeed[0] : pb.coreNeed)) || (pt && pt.motivation) || def.meaning || def.kw,
+    gift:behavior.gift, risk:behavior.risk, practice:behavior.practice,
+  };
+}
+function natalAspectPriority(asp) {
+  var bothPersonal=NATAL_PERSONAL_KEYS.indexOf(asp.a)>=0 && NATAL_PERSONAL_KEYS.indexOf(asp.b)>=0;
+  var luminaryTight=(asp.a==='Sun'||asp.a==='Moon'||asp.b==='Sun'||asp.b==='Moon') && asp.orb<=4;
+  return (bothPersonal || luminaryTight || asp.orb<=2) ? 'core' : 'secondary';
+}
+function natalAspectExactDistance(chart, asp) {
+  var a=natalAspectPosition(chart,asp.a), b=natalAspectPosition(chart,asp.b);
+  if (!a || !b || typeof a.lon!=='number' || typeof b.lon!=='number') return null;
+  var diff=Math.abs(a.lon-b.lon)%360;
+  return diff>180 ? 360-diff : diff;
+}
+function natalAspectContext(profile, position, unknownTime) {
+  if (!profile || !position || typeof position.sign!=='number' || isNaN(position.sign) || position.sign<0 || position.sign>11 || !ZODIAC_SIGNS[position.sign]) return '';
+  var sign=ZODIAC_SIGNS[position.sign], sb=SIGN_BEGINNER[position.sign];
+  var txt=profile.name+'以'+sign.zh+'式的「'+sb.method+'」運作';
+  if (!unknownTime && position.house && HOUSE_BEGINNER[position.house-1]) txt+='，主要在'+HOUSE_BEGINNER[position.house-1].lifeArea+'被啟動';
+  return txt;
+}
+function natalAspectPlacementPhrase(position, unknownTime) {
+  if (!position || typeof position.sign!=='number' || isNaN(position.sign) || position.sign<0 || position.sign>11 || !SIGN_BEGINNER[position.sign]) return '';
+  var signName=ZODIAC_SIGNS[position.sign].zh;
+  if (!unknownTime && position.house && HOUSE_BEGINNER[position.house-1]) {
+    return '在「'+HOUSE_BEGINNER[position.house-1].lifeArea+'」以'+signName+'方式';
+  }
+  return '以'+signName+'方式';
+}
+function natalAspectReading(asp, chart, unknownTime) {
+  var dynamic=NATAL_ASPECT_DYNAMICS[asp.type], a=natalAspectProfile(asp.a), b=natalAspectProfile(asp.b);
+  var pa=natalAspectPosition(chart,asp.a), pb=natalAspectPosition(chart,asp.b);
+  if (!dynamic || !a || !b || !pa || !pb) return {available:false,reason:'missing-data'};
+  var exact=natalAspectExactDistance(chart,asp), nominal=NATAL_ASPECT_ANGLES[asp.type];
+  var priority=natalAspectPriority(asp);
+  var title=a.name+NATAL_ASPECT_TITLE_VERBS[asp.type]+b.name;
+  var pairVars={ A:a.name, Afunc:a.func, Agift:a.gift, Arisk:a.risk, Apractice:a.practice, Aplace:natalAspectPlacementPhrase(pa,unknownTime), B:b.name, Bfunc:b.func, Bgift:b.gift, Brisk:b.risk, Bpractice:b.practice, Bplace:natalAspectPlacementPhrase(pb,unknownTime) };
+  var summaryTpl=Array.isArray(dynamic.summary) ? astroSeededPick(asp.a+'|'+asp.b+'|'+asp.type+'|summary',dynamic.summary) : dynamic.summary;
+  var summary=fillTpl(summaryTpl,pairVars);
+  var strength='可以發揮：'+fillTpl(dynamic.strength,pairVars);
+  var challenge='需要留意：'+fillTpl(dynamic.challenge,pairVars);
+  var contextA=natalAspectContext(a,pa,unknownTime), contextB=natalAspectContext(b,pb,unknownTime);
+  var expression='生活中，這組互動可能出現在你一邊想回應「'+a.motive+'」，一邊也要照顧「'+b.motive+'」的時刻。';
+  var exactText=exact===null ? '未提供' : exact.toFixed(1)+'°';
+  return {
+    available:true, priority:priority, title:title,
+    subtitle:NATAL_ASPECT_SYMBOLS[asp.type]+' '+ASPECT_DEFS[asp.type].zh+'　容許度 '+asp.orb.toFixed(1)+'°',
+    summary:summary, strength:strength, challenge:challenge,
+    advanced:{
+      functions:a.name+'代表'+a.func+'；'+b.name+'代表'+b.func+'。',
+      principle:dynamic.principle,
+      context:contextA+'；'+contextB+'。',
+      expression:expression,
+      integration:fillTpl(dynamic.integration,pairVars),
+    },
+    technical:'實際角距 '+exactText+'；標準相位角 '+nominal+'°；容許度 '+asp.orb.toFixed(1)+'°。容許度只表示相位接近精確角度的程度，不代表吉凶。',
+  };
+}
+function renderNatalAspectCard(asp, chart, unknownTime) {
+  var d=natalAspectReading(asp,chart,unknownTime);
+  if (!d.available) return '';
+  var core=d.priority==='core';
+  var h='<article data-aspect-priority="'+d.priority+'" style="border-top:1px solid rgba(201,169,110,.15);padding:12px 0">';
+  h+='<div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap"><div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">'+esc(d.title)+'</div><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:#c9a96e">'+esc(d.subtitle)+'</div></div>';
+  h+='<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.75;margin-top:5px">'+esc(d.summary)+'</div>';
+  if(core) {
+    h+='<div style="margin-top:7px;font:400 11px \'Noto Sans TC\',sans-serif;color:#9bc5a3;line-height:1.65">'+esc(d.strength)+'</div>';
+    h+='<div style="margin-top:3px;font:400 11px \'Noto Sans TC\',sans-serif;color:#d9a0a0;line-height:1.65">'+esc(d.challenge)+'</div>';
+  }
+  h+='<details style="margin-top:7px"><summary style="min-height:44px;display:flex;align-items:center;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);cursor:pointer">查看相位原理與整合方式</summary><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.6);line-height:1.8;margin-top:2px"><div>'+esc(d.advanced.functions)+'</div><div style="margin-top:5px">'+esc(d.advanced.principle)+'</div><div style="margin-top:5px">'+esc(d.advanced.context)+'</div><div style="margin-top:5px">'+esc(d.advanced.expression)+'</div><div style="margin-top:5px;color:#e6cd9a">整合方式：'+esc(d.advanced.integration)+'</div><div style="margin-top:5px;color:rgba(240,233,216,.45)">'+esc(d.technical)+'</div></div></details>';
+  return h+'</article>';
 }
 
 /* ---- 元素／性質總覽 ---- */
@@ -8188,12 +8361,15 @@ function renderAstro() {
 
     var usableAspects = astroUsableAspects(chart);
     if (usableAspects.length) {
-      h += '<details' + (state.astroOpenAspects ? ' open' : '') + ' style="margin-top:14px" ontoggle="state.astroOpenAspects=this.open;var c=this.querySelector(\'.astro-caret\');if(c)c.textContent=this.open?\'▾\':\'▸\'"><summary style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;cursor:pointer;list-style:none"><span class="astro-caret" style="display:inline-block;width:12px">' + (state.astroOpenAspects ? '▾' : '▸') + '</span>主要相位 Aspects</summary>';
+      h += '<details' + (state.astroOpenAspects ? ' open' : '') + ' style="margin-top:14px" ontoggle="state.astroOpenAspects=this.open;var c=this.querySelector(\'.astro-caret\');if(c)c.textContent=this.open?\'▾\':\'▸\'"><summary style="min-height:44px;display:flex;align-items:center;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;cursor:pointer;list-style:none"><span class="astro-caret" style="display:inline-block;width:12px">' + (state.astroOpenAspects ? '▾' : '▸') + '</span>主要相位 Aspects</summary>';
       h += '<div style="margin-top:2px">';
-      h += '<details style="margin-top:8px"><summary style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;color:rgba(240,233,216,.5);cursor:pointer">查看專業相位總表 Aspect Grid</summary>';
+      h += '<details style="margin-top:8px"><summary style="min-height:44px;display:flex;align-items:center;font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;color:rgba(240,233,216,.5);cursor:pointer">查看專業相位總表 Aspect Grid</summary>';
       h += renderAspectGrid(chart)+'</details>';
-      usableAspects.slice().sort(function (x, y) { return x.orb - y.orb; }).forEach(function (asp) {
-        h += renderAspectBeginnerCard(asp);
+      usableAspects.slice().sort(function (x, y) {
+        var px=natalAspectPriority(x)==='core'?0:1, py=natalAspectPriority(y)==='core'?0:1;
+        return px-py || x.orb-y.orb;
+      }).forEach(function (asp) {
+        h += renderNatalAspectCard(asp, chart, !!state.astroUnknownTime);
       });
       h += '</div></details>';
     }
