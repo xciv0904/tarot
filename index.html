@@ -22,6 +22,7 @@
 <meta name="twitter:image" content="https://xciv0904.github.io/tarot/assets/og.png">
 <title>塔羅 · 占星 | Mystic Deck</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;600&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,500&family=EB+Garamond:ital@0;1&display=swap" rel="stylesheet">
 <style>
   @keyframes cardIn { from { opacity:0; transform:translateY(10px) scale(.97);} to { opacity:1; transform:translateY(0) scale(1);} }
@@ -489,8 +490,14 @@ var SPREAD_GROUPS = [
   document.head.appendChild(st);
 })();
 
-try { state.history = JSON.parse(localStorage.getItem('tl_history') || '[]'); } catch (e) {}
-try { state.xiuSavedPartners = JSON.parse(localStorage.getItem('tl_xiu_partners') || '[]'); } catch (e) {}
+try {
+  var _savedHistory = JSON.parse(localStorage.getItem('tl_history') || '[]');
+  state.history = Array.isArray(_savedHistory) ? _savedHistory.slice(0, 30) : [];
+} catch (e) { state.history = []; }
+try {
+  var _savedXiuPartners = JSON.parse(localStorage.getItem('tl_xiu_partners') || '[]');
+  state.xiuSavedPartners = Array.isArray(_savedXiuPartners) ? _savedXiuPartners.slice(0, 50) : [];
+} catch (e) { state.xiuSavedPartners = []; }
 
 /* attach the rich meaning database (78-card) onto the tarot deck */
 if (typeof RICH !== 'undefined') {
@@ -676,7 +683,7 @@ function mnSetTab(k) { state.mnTab = k; render(); }
 
 function renderMnemonic() {
   var h = '<div style="border:1px solid rgba(201,169,110,.3);border-radius:10px;margin-top:14px;background:rgba(255,255,255,.02);overflow:hidden">';
-  h += '<button onclick="mnToggle()" style="width:100%;background:none;border:none;padding:12px 15px;cursor:pointer;display:flex;justify-content:space-between;align-items:center">';
+  h += '<button type="button" onclick="mnToggle()" style="min-height:44px;width:100%;background:none;border:none;padding:12px 15px;cursor:pointer;display:flex;justify-content:space-between;align-items:center">';
   h += '<span style="font:500 13px \'Noto Sans TC\',sans-serif;color:#e6cd9a">🧠 記憶心法 <span style="font:italic 10px \'EB Garamond\',serif;color:rgba(240,233,216,.4)">Mnemonics</span></span>';
   h += '<span style="color:#c9a96e;font-size:11px">' + (state.mnOpen ? '▲ 收起' : '▼ 展開') + '</span>';
   h += '</button>';
@@ -685,7 +692,7 @@ function renderMnemonic() {
     h += '<div style="display:flex;gap:7px">';
     [['suit', '花色領域'], ['number', '數字公式'], ['court', '宮廷角色'], ['confuse', '易混淆']].forEach(function (t) {
       var active = state.mnTab === t[0];
-      h += '<button onclick="mnSetTab(\'' + t[0] + '\')" style="flex:1;background:' + (active ? 'rgba(201,169,110,.18)' : 'transparent') + ';border:1px solid ' + (active ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.5)') + ';padding:7px 4px;border-radius:8px;cursor:pointer;font:500 12px \'Noto Sans TC\',sans-serif">' + t[1] + '</button>';
+      h += '<button type="button" onclick="mnSetTab(\'' + t[0] + '\')" style="min-height:44px;flex:1;background:' + (active ? 'rgba(201,169,110,.18)' : 'transparent') + ';border:1px solid ' + (active ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.5)') + ';padding:7px 4px;border-radius:8px;cursor:pointer;font:500 12px \'Noto Sans TC\',sans-serif">' + t[1] + '</button>';
     });
     h += '</div>';
     if (state.mnTab === 'suit') {
@@ -1109,7 +1116,10 @@ var CONFUSE_DATA = [
 
 /* ---- 學習進度(掌握度)資料 ---- */
 var learnData = {};
-try { learnData = JSON.parse(localStorage.getItem('tl_learn') || '{}'); } catch (e) {}
+try {
+  var _savedLearn = JSON.parse(localStorage.getItem('tl_learn') || '{}');
+  learnData = _savedLearn && typeof _savedLearn === 'object' && !Array.isArray(_savedLearn) ? _savedLearn : {};
+} catch (e) { learnData = {}; }
 function learnSave() { try { localStorage.setItem('tl_learn', JSON.stringify(learnData)); } catch (e) {} }
 function learnScore(key) { return (learnData[key] && learnData[key].s) || 0; }
 function learnMark(key, correct) {
@@ -1282,7 +1292,13 @@ function renderQuiz() {
 
 /* ---- 22 天大牌學習計畫 ---- */
 var studyData = { start: null, done: {} };
-try { studyData = JSON.parse(localStorage.getItem('tl_study') || '{"start":null,"done":{}}'); } catch (e) {}
+try {
+  var _savedStudy = JSON.parse(localStorage.getItem('tl_study') || '{"start":null,"done":{}}');
+  studyData = _savedStudy && typeof _savedStudy === 'object' && !Array.isArray(_savedStudy)
+    ? { start: typeof _savedStudy.start === 'string' ? _savedStudy.start : null,
+        done: _savedStudy.done && typeof _savedStudy.done === 'object' && !Array.isArray(_savedStudy.done) ? _savedStudy.done : {} }
+    : { start: null, done: {} };
+} catch (e) { studyData = { start: null, done: {} }; }
 function studySave() { try { localStorage.setItem('tl_study', JSON.stringify(studyData)); } catch (e) {} }
 function studyDay() {
   if (!studyData.start) return 0;
@@ -1471,7 +1487,7 @@ var LEN_CONFUSE_DATA = [
 
 function renderLenMnemonic() {
   var h = '<div style="border:1px solid rgba(201,169,110,.3);border-radius:10px;margin-top:14px;background:rgba(255,255,255,.02);overflow:hidden">';
-  h += '<button onclick="mnToggle()" style="width:100%;background:none;border:none;padding:12px 15px;cursor:pointer;display:flex;justify-content:space-between;align-items:center">';
+  h += '<button type="button" onclick="mnToggle()" style="min-height:44px;width:100%;background:none;border:none;padding:12px 15px;cursor:pointer;display:flex;justify-content:space-between;align-items:center">';
   h += '<span style="font:500 13px \'Noto Sans TC\',sans-serif;color:#e6cd9a">🧠 記憶心法 <span style="font:italic 10px \'EB Garamond\',serif;color:rgba(240,233,216,.4)">Mnemonics</span></span>';
   h += '<span style="color:#c9a96e;font-size:11px">' + (state.mnOpen ? '▲ 收起' : '▼ 展開') + '</span>';
   h += '</button>';
@@ -1480,7 +1496,7 @@ function renderLenMnemonic() {
     h += '<div style="display:flex;gap:7px">';
     [['tone', '吉凶速覽'], ['theme', '主題牌組'], ['confuse', '易混淆']].forEach(function (t) {
       var active = state.mnTabLen === t[0];
-      h += '<button onclick="mnSetTabLen(\'' + t[0] + '\')" style="flex:1;background:' + (active ? 'rgba(201,169,110,.18)' : 'transparent') + ';border:1px solid ' + (active ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.5)') + ';padding:7px 4px;border-radius:8px;cursor:pointer;font:500 12px \'Noto Sans TC\',sans-serif">' + t[1] + '</button>';
+      h += '<button type="button" onclick="mnSetTabLen(\'' + t[0] + '\')" style="min-height:44px;flex:1;background:' + (active ? 'rgba(201,169,110,.18)' : 'transparent') + ';border:1px solid ' + (active ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.5)') + ';padding:7px 4px;border-radius:8px;cursor:pointer;font:500 12px \'Noto Sans TC\',sans-serif">' + t[1] + '</button>';
     });
     h += '</div>';
     function chip(n, color) {
@@ -1647,7 +1663,7 @@ function clearAllData() {
 }
 function renderAbout() {
   var h = '<div style="text-align:center;margin-top:22px">';
-  h += '<button onclick="aboutToggle()" style="background:none;border:none;color:rgba(240,233,216,.4);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">關於本站 · 隱私與版權 About</button>';
+  h += '<button type="button" onclick="aboutToggle()" style="min-height:44px;background:none;border:none;color:rgba(240,233,216,.4);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:8px 4px">關於本站 · 隱私與版權 About</button>';
   h += '</div>';
   if (state.aboutOpen) {
     h += '<div style="border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:15px 17px;margin-top:12px;background:rgba(255,255,255,.02);text-align:left">';
@@ -1669,7 +1685,7 @@ function renderAbout() {
 function tlGuideToggle() { state.tlGuideOpen = !state.tlGuideOpen; render(); }
 function renderTarotLenormandGuide() {
   var h = '<div style="margin-top:16px;border:1px solid rgba(201,169,110,.25);border-radius:12px;padding:14px 16px;background:rgba(255,255,255,.02)">';
-  h += '<div onclick="tlGuideToggle()" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer">';
+  h += '<div role="button" tabindex="0" aria-expanded="' + state.tlGuideOpen + '" onclick="tlGuideToggle()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();tlGuideToggle()}" style="min-height:44px;display:flex;justify-content:space-between;align-items:center;cursor:pointer">';
   h += '<div style="font:600 12px \'Noto Sans TC\',sans-serif;color:#e6cd9a">不知道要選塔羅還是雷諾曼？點這裡看差別</div>';
   h += '<span style="color:rgba(240,233,216,.4);font:400 12px sans-serif">' + (state.tlGuideOpen ? '︿' : '﹀') + '</span>';
   h += '</div>';
@@ -1729,7 +1745,7 @@ function renderHome() {
     + '<div style="font:italic 10px \'EB Garamond\',serif;color:#a9784f">' + esc(c.nameEn) + '</div>'
     + '<div style="font:500 10px \'Noto Sans TC\',sans-serif;color:#8a6f47;margin-top:4px">' + (dailyReversed ? '逆位 Reversed' : '正位 Upright') + '</div>'
     + '</div></div>';
-  h += '<div onclick="toggleDailyFlip()" style="margin:0 auto;width:170px;height:262px;cursor:pointer;position:relative">';
+  h += '<div role="button" tabindex="0" aria-label="翻開或收起今日一牌" aria-pressed="' + state.dailyFlipped + '" onclick="toggleDailyFlip()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();toggleDailyFlip()}" style="margin:0 auto;width:170px;height:262px;cursor:pointer;position:relative">';
   h += flipBox('daily', state.dailyFlipped, 10, sigil(76, 76), frontInner);
   h += '</div>';
   h += '<div id="daily-meaning" style="text-align:center;margin-top:16px;padding:0 20px;display:' + (state.dailyFlipped ? 'block' : 'none') + '">';
@@ -1750,7 +1766,7 @@ function renderHome() {
 
   // ---- everything else, collapsed by default ----
   h += '<div style="margin-top:32px;border-top:1px solid rgba(201,169,110,.15);padding-top:16px">';
-  h += '<div onclick="toggleHomeMore()" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer">';
+  h += '<div role="button" tabindex="0" aria-expanded="' + state.homeMoreOpen + '" onclick="toggleHomeMore()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();toggleHomeMore()}" style="min-height:44px;display:flex;justify-content:space-between;align-items:center;cursor:pointer">';
   h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.08em;color:rgba(240,233,216,.5)">更多功能 More</div>';
   h += '<span style="color:#c9a96e;font-size:12px">' + (state.homeMoreOpen ? '︿ 收合' : '﹀ 展開') + '</span>';
   h += '</div>';
@@ -1792,9 +1808,9 @@ function wizProgress() {
 function wizBtns(showBack, nextOk, nextLabel, nextFn) {
   var h = '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:22px">';
   h += showBack
-    ? '<button onclick="wizBack()" style="font:400 12px \'Noto Sans TC\',sans-serif;background:none;border:1px solid rgba(201,169,110,.35);color:rgba(240,233,216,.6);padding:9px 20px;border-radius:20px;cursor:pointer">上一步</button>'
+    ? '<button type="button" onclick="wizBack()" style="min-height:44px;font:400 12px \'Noto Sans TC\',sans-serif;background:none;border:1px solid rgba(201,169,110,.35);color:rgba(240,233,216,.6);padding:9px 20px;border-radius:22px;cursor:pointer">上一步</button>'
     : '<span></span>';
-  h += '<button onclick="' + nextFn + '"' + (nextOk ? '' : ' disabled') + ' style="font:500 13px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;background:linear-gradient(120deg,#c9a96e,#e6cd9a);color:#1a1622;border:none;padding:11px 30px;border-radius:22px;cursor:pointer;opacity:' + (nextOk ? '1' : '.35') + '">' + nextLabel + '</button>';
+  h += '<button type="button" onclick="' + nextFn + '"' + (nextOk ? '' : ' disabled') + ' style="min-height:44px;font:500 13px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;background:linear-gradient(120deg,#c9a96e,#e6cd9a);color:#1a1622;border:none;padding:11px 30px;border-radius:22px;cursor:pointer;opacity:' + (nextOk ? '1' : '.35') + '">' + nextLabel + '</button>';
   return h + '</div>';
 }
 
@@ -1809,13 +1825,14 @@ function renderModePicker() {
   var cardsActive = state.readingMode === 'cards';
   var combinedActive = state.readingMode === 'combined';
   var h = '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:14px">解讀來源</div>';
+  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);margin-top:4px;line-height:1.6">牌卡著重目前情境；加入星盤後，會再補充你的長期性格與行動傾向。</div>';
   h += '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center">';
-  h += '<button type="button" aria-pressed="' + cardsActive + '" onclick="wizSetReadingMode(\'cards\')" style="font:500 12px \'Noto Sans TC\',sans-serif;background:' + (cardsActive ? 'rgba(201,169,110,.18)' : 'rgba(255,255,255,.02)') + ';border:1px solid ' + (cardsActive ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (cardsActive ? '#f0e9d8' : 'rgba(240,233,216,.6)') + ';padding:8px 14px;border-radius:16px;cursor:pointer">牌卡解讀</button>';
+  h += '<button type="button" aria-pressed="' + cardsActive + '" onclick="wizSetReadingMode(\'cards\')" style="min-height:44px;font:500 12px \'Noto Sans TC\',sans-serif;background:' + (cardsActive ? 'rgba(201,169,110,.18)' : 'rgba(255,255,255,.02)') + ';border:1px solid ' + (cardsActive ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (cardsActive ? '#f0e9d8' : 'rgba(240,233,216,.6)') + ';padding:8px 14px;border-radius:22px;cursor:pointer">牌卡解讀</button>';
   if (hasAstro) {
-    h += '<button type="button" aria-pressed="' + combinedActive + '" onclick="wizSetReadingMode(\'combined\')" style="font:500 12px \'Noto Sans TC\',sans-serif;background:' + (combinedActive ? 'rgba(201,169,110,.18)' : 'rgba(255,255,255,.02)') + ';border:1px solid ' + (combinedActive ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (combinedActive ? '#f0e9d8' : 'rgba(240,233,216,.6)') + ';padding:8px 14px;border-radius:16px;cursor:pointer">牌卡＋我的星盤</button>';
+    h += '<button type="button" aria-pressed="' + combinedActive + '" onclick="wizSetReadingMode(\'combined\')" style="min-height:44px;font:500 12px \'Noto Sans TC\',sans-serif;background:' + (combinedActive ? 'rgba(201,169,110,.18)' : 'rgba(255,255,255,.02)') + ';border:1px solid ' + (combinedActive ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (combinedActive ? '#f0e9d8' : 'rgba(240,233,216,.6)') + ';padding:8px 14px;border-radius:22px;cursor:pointer">牌卡＋我的星盤</button>';
   } else {
-    h += '<button type="button" disabled aria-disabled="true" title="需要先建立你的星盤才能使用" style="font:500 12px \'Noto Sans TC\',sans-serif;background:rgba(255,255,255,.02);border:1px dashed rgba(201,169,110,.25);color:rgba(240,233,216,.3);padding:8px 14px;border-radius:16px;cursor:not-allowed">牌卡＋我的星盤</button>';
-    h += '<button type="button" onclick="go(\'astro\')" style="font:400 11px \'Noto Sans TC\',sans-serif;background:none;border:none;color:#c9a96e;cursor:pointer;border-bottom:1px dotted #c9a96e;padding:0 0 1px">先建立我的星盤 →</button>';
+    h += '<button type="button" disabled aria-disabled="true" title="需要先建立你的星盤才能使用" style="min-height:44px;font:500 12px \'Noto Sans TC\',sans-serif;background:rgba(255,255,255,.02);border:1px dashed rgba(201,169,110,.25);color:rgba(240,233,216,.3);padding:8px 14px;border-radius:22px;cursor:not-allowed">牌卡＋我的星盤</button>';
+    h += '<button type="button" onclick="go(\'astro\')" style="min-height:44px;font:400 11px \'Noto Sans TC\',sans-serif;background:none;border:none;color:#c9a96e;cursor:pointer;border-bottom:1px dotted #c9a96e;padding:8px 2px">先建立我的星盤 →</button>';
   }
   h += '</div>';
   return h;
@@ -1834,7 +1851,7 @@ function renderSubtopicPicker() {
   h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">';
   options.forEach(function (s) {
     var active = state.subtopic === s.key;
-    h += '<button type="button" aria-pressed="' + active + '" onclick="wizToggleSubtopic(\'' + s.key + '\')" style="font:400 11px \'Noto Sans TC\',sans-serif;background:' + (active ? 'rgba(201,169,110,.22)' : 'rgba(201,169,110,.08)') + ';border:1px solid ' + (active ? '#e6cd9a' : 'rgba(201,169,110,.3)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.7)') + ';padding:6px 12px;border-radius:14px;cursor:pointer">' + (active ? '✓ ' : '') + esc(s.zh) + '</button>';
+    h += '<button type="button" aria-pressed="' + active + '" onclick="wizToggleSubtopic(\'' + s.key + '\')" style="min-height:44px;display:inline-flex;align-items:center;font:400 11px \'Noto Sans TC\',sans-serif;background:' + (active ? 'rgba(201,169,110,.22)' : 'rgba(201,169,110,.08)') + ';border:1px solid ' + (active ? '#e6cd9a' : 'rgba(201,169,110,.3)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.7)') + ';padding:8px 12px;border-radius:22px;cursor:pointer">' + (active ? '✓ ' : '') + esc(s.zh) + '</button>';
   });
   h += '</div>';
   return h;
@@ -1847,8 +1864,8 @@ function renderWizard(spreads, isTarot) {
   if (state.wizardStep === 1) {
     h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);margin-top:6px">選擇牌組（不確定可先看下方差異說明）</div>';
     h += '<div style="display:flex;gap:8px;margin-top:8px">';
-    h += '<button onclick="wizSetDeck(\'tarot\')" style="flex:1;text-align:center;background:' + (isTarot ? 'rgba(201,169,110,.15)' : 'rgba(255,255,255,.02)') + ';border:1px solid ' + (isTarot ? '#c9a96e' : 'rgba(201,169,110,.25)') + ';border-radius:10px;padding:9px;cursor:pointer;font:500 12px \'Noto Sans TC\',sans-serif;color:' + (isTarot ? '#f0e9d8' : 'rgba(240,233,216,.6)') + '">塔羅牌 Tarot</button>';
-    h += '<button onclick="wizSetDeck(\'lenormand\')" style="flex:1;text-align:center;background:' + (!isTarot ? 'rgba(201,169,110,.15)' : 'rgba(255,255,255,.02)') + ';border:1px solid ' + (!isTarot ? '#c9a96e' : 'rgba(201,169,110,.25)') + ';border-radius:10px;padding:9px;cursor:pointer;font:500 12px \'Noto Sans TC\',sans-serif;color:' + (!isTarot ? '#f0e9d8' : 'rgba(240,233,216,.6)') + '">雷諾曼牌 Lenormand</button>';
+    h += '<button type="button" onclick="wizSetDeck(\'tarot\')" style="min-height:44px;flex:1;text-align:center;background:' + (isTarot ? 'rgba(201,169,110,.15)' : 'rgba(255,255,255,.02)') + ';border:1px solid ' + (isTarot ? '#c9a96e' : 'rgba(201,169,110,.25)') + ';border-radius:10px;padding:9px;cursor:pointer;font:500 12px \'Noto Sans TC\',sans-serif;color:' + (isTarot ? '#f0e9d8' : 'rgba(240,233,216,.6)') + '">塔羅牌 Tarot</button>';
+    h += '<button type="button" onclick="wizSetDeck(\'lenormand\')" style="min-height:44px;flex:1;text-align:center;background:' + (!isTarot ? 'rgba(201,169,110,.15)' : 'rgba(255,255,255,.02)') + ';border:1px solid ' + (!isTarot ? '#c9a96e' : 'rgba(201,169,110,.25)') + ';border-radius:10px;padding:9px;cursor:pointer;font:500 12px \'Noto Sans TC\',sans-serif;color:' + (!isTarot ? '#f0e9d8' : 'rgba(240,233,216,.6)') + '">雷諾曼牌 Lenormand</button>';
     h += '</div>';
     h += renderTarotLenormandGuide();
     h += '<div style="font:600 15px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:18px">你想詢問的是哪個面向？</div>';
@@ -1889,8 +1906,8 @@ function renderWizard(spreads, isTarot) {
     var targetCfg = TARGET_FIELD_CONFIG[state.category];
     h += '<div style="font:600 15px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:6px">具體描述你想問的問題</div>';
     if (targetCfg) {
-      h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:14px">' + targetCfg.label + '</div>';
-      h += '<input id="target-input" value="' + esc(state.target) + '" oninput="state.target=this.value" placeholder="' + targetCfg.placeholder + '" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:10px 13px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+      h += '<label for="target-input" style="display:block;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:14px">' + targetCfg.label + '</label>';
+      h += '<input id="target-input" maxlength="80" value="' + esc(state.target) + '" oninput="state.target=this.value.slice(0,80)" placeholder="' + targetCfg.placeholder + '" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:10px 13px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
     }
     if (['love', 'career', 'family', 'wealth', 'health', 'social', 'study', 'general'].indexOf(state.category) !== -1) {
       /* 已完成牌卡＋星盤引擎的分類皆顯示解讀來源選擇器。 */
@@ -1902,19 +1919,22 @@ function renderWizard(spreads, isTarot) {
          過濾，astro-only 的子問題自然不會出現。 */
       h += renderSubtopicPicker();
     }
-    h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:14px">具體問題（選填，可點下方範例）</div>';
+    h += '<label for="question-input" style="display:block;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:14px">具體問題（選填，可點下方範例）</label>';
+    h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);margin-top:4px;line-height:1.6">可以只選上方的具體問題，也可以自行輸入；兩者都有填寫時，解讀會一起參考。</div>';
     h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">';
     tmpl.chips.forEach(function (c2, i2) {
-      h += '<button onclick="wizChip(' + i2 + ')" style="font:400 11px \'Noto Sans TC\',sans-serif;background:rgba(201,169,110,.08);border:1px solid rgba(201,169,110,.3);color:rgba(240,233,216,.7);padding:6px 12px;border-radius:14px;cursor:pointer">' + c2 + '</button>';
+      h += '<button type="button" onclick="wizChip(' + i2 + ')" style="min-height:44px;display:inline-flex;align-items:center;font:400 11px \'Noto Sans TC\',sans-serif;background:rgba(201,169,110,.08);border:1px solid rgba(201,169,110,.3);color:rgba(240,233,216,.7);padding:8px 12px;border-radius:22px;cursor:pointer">' + c2 + '</button>';
     });
     h += '</div>';
-    h += '<textarea id="question-input" oninput="updateQHint(this.value)" placeholder="' + tmpl.placeholder + '" style="width:100%;box-sizing:border-box;margin-top:10px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:11px 14px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none;min-height:74px;resize:vertical">' + esc(state.question) + '</textarea>';
-    h += '<div id="q-hint" style="font:400 11px \'Noto Sans TC\',sans-serif;margin-top:7px;line-height:1.6;min-height:16px"></div>';
+    h += '<textarea id="question-input" maxlength="300" aria-describedby="q-hint q-count" oninput="updateQHint(this.value)" placeholder="' + tmpl.placeholder + '" style="width:100%;box-sizing:border-box;margin-top:10px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:11px 14px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none;min-height:74px;resize:vertical">' + esc(state.question) + '</textarea>';
+    h += '<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">';
+    h += '<div id="q-hint" aria-live="polite" style="flex:1;font:400 11px \'Noto Sans TC\',sans-serif;margin-top:7px;line-height:1.6;min-height:16px"></div>';
+    h += '<div id="q-count" aria-live="polite" style="flex:none;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:8px">' + Math.min(state.question.length, 300) + ' / 300</div></div>';
     if (!isTarot) {
       var ranges = [['week','一週內'],['month','一個月內'],['quarter','三個月內'],['half','半年內'],['open','不限時間']];
       h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:14px">想看的時間範圍</div>';
       h += '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:8px">';
-      ranges.forEach(function (r) { var active = state.timeframe === r[0]; h += '<button aria-pressed="' + active + '" onclick="wizSetTimeframe(\'' + r[0] + '\')" style="font:400 11px \'Noto Sans TC\',sans-serif;background:' + (active ? 'rgba(201,169,110,.18)' : 'rgba(255,255,255,.02)') + ';border:1px solid ' + (active ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.6)') + ';padding:7px 12px;border-radius:15px;cursor:pointer">' + r[1] + '</button>'; });
+      ranges.forEach(function (r) { var active = state.timeframe === r[0]; h += '<button type="button" aria-pressed="' + active + '" onclick="wizSetTimeframe(\'' + r[0] + '\')" style="min-height:44px;font:400 11px \'Noto Sans TC\',sans-serif;background:' + (active ? 'rgba(201,169,110,.18)' : 'rgba(255,255,255,.02)') + ';border:1px solid ' + (active ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.6)') + ';padding:8px 12px;border-radius:22px;cursor:pointer">' + r[1] + '</button>'; });
       h += '</div>';
     }
     h += wizBtns(true, true, '下一步', 'wizNext()');
@@ -1936,7 +1956,7 @@ function renderWizard(spreads, isTarot) {
   }
 
   if (state.wizardStep > 1) {
-    h += '<div style="text-align:center;margin-top:16px"><button onclick="wizRestart()" style="background:none;border:none;color:rgba(240,233,216,.35);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">重新開始 Restart</button></div>';
+    h += '<div style="text-align:center;margin-top:16px"><button type="button" onclick="wizRestart()" style="min-height:44px;background:none;border:none;color:rgba(240,233,216,.35);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:8px 6px">重新開始 Restart</button></div>';
   }
   return h;
 }
@@ -1946,7 +1966,12 @@ function wizSetDeck(d) {
   render();
 }
 function wizSetCat(k) {
-  if (state.category !== k) { state.category = k; state.target = ''; state.subtopic = ''; state.readingMode = 'cards'; }
+  if (state.category !== k) {
+    state.category = k; state.target = ''; state.subtopic = ''; state.readingMode = 'cards';
+    var recSource = state.deck === 'lenormand' ? LEN_RECOMMENDATIONS : RECOMMENDATIONS;
+    var firstRecommended = (recSource[k] || [])[0];
+    if (firstRecommended) state.spread = firstRecommended;
+  }
   render();
 }
 function wizToggleSubtopic(key) {
@@ -1970,8 +1995,10 @@ function timeframeLabel() { return ({week:'一週內',month:'一個月內',quart
 function wizNext() {
   if (state.wizardStep === 1 && !state.category) return;
   if (state.wizardStep === 3) {
+    var targetInput = document.getElementById('target-input');
+    if (targetInput) state.target = targetInput.value.trim().slice(0, 80);
     var ta = document.getElementById('question-input');
-    if (ta) state.question = ta.value.trim();
+    if (ta) state.question = ta.value.trim().slice(0, 300);
   }
   state.wizardStep = Math.min(4, state.wizardStep + 1);
   render(); window.scrollTo(0, 0);
@@ -1989,11 +2016,13 @@ function wizChip(i) {
   updateQHint(t);
 }
 function updateQHint(v) {
-  state.question = v;
+  state.question = String(v || '').slice(0, 300);
   var hint = document.getElementById('q-hint');
+  var count = document.getElementById('q-count');
+  if (count) count.textContent = state.question.length + ' / 300';
   if (!hint) return;
-  if (!v.trim()) { hint.textContent = ''; return; }
-  var issue = isQuestionVague(v);
+  if (!state.question.trim()) { hint.textContent = ''; return; }
+  var issue = isQuestionVague(state.question);
   if (issue === 'short') { hint.style.color = '#d99b5f'; hint.textContent = '問題有點簡短，試著加入具體對象、時間範圍或情境，解讀會更貼近你的處境。'; }
   else if (issue === 'vague') { hint.style.color = '#d99b5f'; hint.textContent = '這個問題偏籠統，建議聚焦成一個更明確的面向。'; }
   else { hint.style.color = '#9fce9f'; hint.textContent = '問題夠具體，可以繼續下一步。'; }
@@ -3982,7 +4011,7 @@ function renderLibrary() {
     h += '<div style="display:flex;margin-top:18px;border-bottom:1px solid rgba(201,169,110,.15)">';
     [{ key: 'tarot', zh: '塔羅 78 張' }, { key: 'lenormand', zh: '雷諾曼 36 張' }].forEach(function (t) {
       var active = t.key === state.libDeck;
-      h += '<button onclick="setLibDeck(\'' + t.key + '\')" style="flex:1;background:none;border:none;border-bottom:2px solid ' + (active ? '#c9a96e' : 'transparent') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.4)') + ';padding:10px 4px;cursor:pointer;font:500 13px \'Noto Sans TC\',sans-serif">' + t.zh + '</button>';
+      h += '<button type="button" onclick="setLibDeck(\'' + t.key + '\')" style="min-height:44px;flex:1;background:none;border:none;border-bottom:2px solid ' + (active ? '#c9a96e' : 'transparent') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.4)') + ';padding:10px 4px;cursor:pointer;font:500 13px \'Noto Sans TC\',sans-serif">' + t.zh + '</button>';
     });
     h += '</div>';
     if (libIsTarot) h += renderMnemonic();
@@ -3991,7 +4020,7 @@ function renderLibrary() {
     var mc = masteredCount(libIsTarot);
     var deckTotal = libIsTarot ? TAROT.length : LENORMAND.length;
     h += '<div style="display:flex;align-items:center;gap:12px;margin-top:12px;border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:11px 14px;background:rgba(255,255,255,.02)">';
-    h += '<button onclick="quizStart()" style="flex:none;font:500 12px \'Noto Sans TC\',sans-serif;background:linear-gradient(120deg,#c9a96e,#e6cd9a);color:#1a1622;border:none;padding:9px 18px;border-radius:16px;cursor:pointer">🎯 牌義測驗</button>';
+    h += '<button type="button" onclick="quizStart()" style="min-height:44px;flex:none;font:500 12px \'Noto Sans TC\',sans-serif;background:linear-gradient(120deg,#c9a96e,#e6cd9a);color:#1a1622;border:none;padding:9px 18px;border-radius:22px;cursor:pointer">🎯 牌義測驗</button>';
     h += '<div style="flex:1;min-width:0">';
     h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">已掌握 ' + mc + ' / ' + deckTotal + ' 張</div>';
     h += '<div style="height:4px;border-radius:2px;background:rgba(201,169,110,.15);margin-top:5px;overflow:hidden"><div style="width:' + Math.round(mc / deckTotal * 100) + '%;height:100%;background:linear-gradient(90deg,#c9a96e,#e6cd9a)"></div></div>';
@@ -4001,7 +4030,7 @@ function renderLibrary() {
     h += '<div style="display:flex;gap:8px;margin-top:14px;overflow-x:auto;padding-bottom:4px">';
     suits.forEach(function (su) {
       var active = su.key === state.libSuit;
-      h += '<button onclick="setLibSuit(\'' + su.key + '\')" style="flex:none;background:' + (active ? 'rgba(201,169,110,.18)' : 'transparent') + ';border:1px solid ' + (active ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.55)') + ';padding:7px 13px;border-radius:16px;cursor:pointer;font:500 11px \'Noto Sans TC\',sans-serif;white-space:nowrap">' + su.zh + '</button>';
+      h += '<button type="button" onclick="setLibSuit(\'' + su.key + '\')" style="min-height:44px;flex:none;background:' + (active ? 'rgba(201,169,110,.18)' : 'transparent') + ';border:1px solid ' + (active ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.55)') + ';padding:8px 13px;border-radius:22px;cursor:pointer;font:500 11px \'Noto Sans TC\',sans-serif;white-space:nowrap">' + su.zh + '</button>';
     });
     h += '</div>';
     // grid
@@ -4011,7 +4040,7 @@ function renderLibrary() {
     h += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px 10px;margin-top:18px">';
     filtered.forEach(function (c) {
       var key = libIsTarot ? c.id : ('l' + c.n);
-      h += '<div onclick="selectLibCard(\'' + key + '\')" style="cursor:pointer;display:flex;flex-direction:column;gap:5px;position:relative">';
+      h += '<div role="button" tabindex="0" aria-label="查看' + esc(c.nameZh) + '完整牌義" onclick="selectLibCard(\'' + key + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();selectLibCard(\'' + key + '\')}" style="cursor:pointer;display:flex;flex-direction:column;gap:5px;position:relative">';
       if (isMastered(key)) h += '<div style="position:absolute;top:-5px;right:-5px;width:17px;height:17px;border-radius:50%;background:#c9a96e;color:#1a1622;font:600 10px sans-serif;display:flex;align-items:center;justify-content:center;z-index:2">✓</div>';
       h += '<div style="width:100%;aspect-ratio:150/230;border-radius:6px;border:1px solid rgba(216,185,108,.5);overflow:hidden;background:#f2e9d8;display:flex;flex-direction:column">';
       if (c.img) {
@@ -5834,7 +5863,7 @@ function renderCityLiveBlock(prefix, genFnName) {
   matches.forEach(function (c) {
     var idx = CITY_LIST.indexOf(c);
     var active = state[prefix + 'CityIdx'] === idx;
-    h += '<button onclick="' + prefix + 'SetCity(' + idx + ')" style="font:400 11px \'Noto Sans TC\',sans-serif;background:' + (active ? 'rgba(201,169,110,.2)' : 'rgba(201,169,110,.06)') + ';border:1px solid ' + (active ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.65)') + ';padding:6px 12px;border-radius:14px;cursor:pointer">' + c.zh + '</button>';
+    h += '<button type="button" onclick="' + prefix + 'SetCity(' + idx + ')" style="min-height:44px;font:400 11px \'Noto Sans TC\',sans-serif;background:' + (active ? 'rgba(201,169,110,.2)' : 'rgba(201,169,110,.06)') + ';border:1px solid ' + (active ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.65)') + ';padding:8px 12px;border-radius:22px;cursor:pointer">' + c.zh + '</button>';
   });
   h += '</div>';
   if (matches.length === 0 && query && query.trim()) {
