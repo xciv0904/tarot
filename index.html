@@ -1754,12 +1754,13 @@ function wizBtns(showBack, nextOk, nextLabel, nextFn) {
   return h + '</div>';
 }
 
-/* Phase 1C：解讀來源選擇器（只在 category==='love' 時於問題輸入步驟顯示）。
-   「牌卡＋我的星盤」只有 state.astroResult 存在時才可選——沒有星盤絕不能選，也絕不臨時
+/* Phase 1C（愛情）／Phase 2B（事業）共用的解讀來源選擇器，在有星盤引擎的分類於問題輸入步驟
+   顯示。「牌卡＋我的星盤」只有 state.astroResult 存在時才可選——沒有星盤絕不能選，也絕不臨時
    生成假星盤；沒有星盤時顯示為不可用按鈕，並提供「先建立我的星盤」導向星盤分頁的入口。
    go('astro') 只是切換 state.tab，resetReading() 不會清除 category／question／subtopic／
-   wizardStep，所以之後從星盤分頁切回占卜分頁時，這裡填到一半的資訊會保留。 */
-function renderLoveModePicker() {
+   wizardStep，所以之後從星盤分頁切回占卜分頁時，這裡填到一半的資訊會保留。原名
+   renderLoveModePicker，Phase 2B 起改為通用名稱；行為對 love 完全不變。 */
+function renderModePicker() {
   var hasAstro = !!state.astroResult;
   var cardsActive = state.readingMode === 'cards';
   var combinedActive = state.readingMode === 'combined';
@@ -1847,13 +1848,14 @@ function renderWizard(spreads, isTarot) {
       h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:14px">' + targetCfg.label + '</div>';
       h += '<input id="target-input" value="' + esc(state.target) + '" oninput="state.target=this.value" placeholder="' + targetCfg.placeholder + '" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:10px 13px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
     }
-    if (state.category === 'love') {
-      h += renderLoveModePicker();
+    if (state.category === 'love' || state.category === 'career') {
+      /* Phase 1C（愛情）／Phase 2B（事業）皆有牌卡＋星盤模式選擇器。 */
+      h += renderModePicker();
       h += renderSubtopicPicker();
     } else if (SUBTOPICS[state.category]) {
-      /* Phase 2A：目前只有 career 有 cards 子問題資料；沒有牌卡＋星盤模式選擇器
-        （combined 留待 Phase 2B），renderSubtopicPicker() 依 state.readingMode（此時恆為
-         'cards'）過濾，astro-only 的 career-talent 不會出現。 */
+      /* 其他有 SUBTOPICS 定義但尚未做星盤引擎的分類：只顯示子問題選擇器，
+         沒有模式切換 UI，renderSubtopicPicker() 依 state.readingMode（此時恆為 'cards'）
+         過濾，astro-only 的子問題自然不會出現。 */
       h += renderSubtopicPicker();
     }
     h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:14px">具體問題（選填，可點下方範例）</div>';
@@ -1907,14 +1909,14 @@ function wizToggleSubtopic(key) {
   state.subtopic = (state.subtopic === key) ? '' : key;
   render();
 }
-/* combined 模式只在愛情分類、且已經有 state.astroResult 時才允許選取——沒有星盤絕不能選，
-   也絕不臨時生成假星盤。切換模式後，若目前選取的 subtopic 在新模式下不支援，安全清除它
-  （目前 SUBTOPICS.love 七個子問題的 modes 都同時支援 cards／combined，此檢查是為未來調整鋪路）。 */
+/* combined 模式只在目前分類（愛情或事業）已經有 state.astroResult 時才允許選取——沒有星盤
+   絕不能選，也絕不臨時生成假星盤。切換模式後，若目前選取的 subtopic 在新模式下不支援，
+   安全清除它（例如 career-talent 只有 astro/combined，切回 cards 時會被清除）。 */
 function wizSetReadingMode(mode) {
   if (mode === state.readingMode) return;
   if (mode === 'combined' && !state.astroResult) return;
   state.readingMode = mode;
-  var def = (SUBTOPICS.love || []).filter(function (s) { return s.key === state.subtopic; })[0];
+  var def = (SUBTOPICS[state.category] || []).filter(function (s) { return s.key === state.subtopic; })[0];
   if (state.subtopic && (!def || def.modes.indexOf(mode) === -1)) state.subtopic = '';
   render();
 }
@@ -2104,10 +2106,26 @@ function renderReading() {
         }
       }
     } else if (state.category === 'career' && state.subtopic) {
-      /* Phase 2A：事業目前只有 cards 模式，沿用同一個手機友善折疊面板渲染函式
-        （不傳 titleText，跟愛情 cards 模式一樣維持展開、不折疊），事業星盤與 combined 留待 Phase 2B。 */
       var careerSubDef = (SUBTOPICS.career || []).filter(function (s) { return s.key === state.subtopic; })[0];
-      if (careerSubDef) h += renderSubtopicResultPanel(careerSubDef, cardSubtopicReading('career', state.subtopic, state.drawn));
+      if (careerSubDef) {
+        var careerCardRes = cardSubtopicReading('career', state.subtopic, state.drawn);
+        if (state.readingMode === 'combined' && state.astroResult) {
+          /* Phase 2B combined 模式：依序顯示 A 牌卡具體解讀、B 星盤補充解讀、C 綜合觀察。
+             career-talent 是 astro-only 子問題，cardSubtopicReading() 對它固定回傳
+             available:false（mode-not-supported）；renderSubtopicResultPanel() 與
+             renderCombinedSummaryPanel() 在資料不可用／非 combined 模式時本來就回傳空字串，
+             因此這裡不需要另外特判 career-talent，就能正確安全降級成只顯示星盤補充解讀，
+             不會出現空的牌卡面板或假的綜合面板。星盤結果現算現用，不寫回 state。 */
+          h += renderSubtopicResultPanel(careerSubDef, careerCardRes, '牌卡具體解讀');
+          var careerAstroRes = astroCategoryReading('career', state.subtopic, state.astroResult, state.astroUnknownTime);
+          h += renderAstroSubtopicPanel(careerSubDef, careerAstroRes);
+          var careerCombRes = combinedReading(careerCardRes, careerAstroRes, 'career', state.subtopic);
+          h += renderCombinedSummaryPanel(careerSubDef, careerCombRes);
+        } else {
+          /* cards 模式：與 Phase 2A 完全一致，不多出任何星盤區塊 */
+          h += renderSubtopicResultPanel(careerSubDef, careerCardRes);
+        }
+      }
     }
     if (!isTarot && state.spread === 'grand') {
       h += grandPanel();
@@ -2532,6 +2550,9 @@ var CAREER_AXIS_LABELS = {
   industryDirection: '產業方向', jobFunction: '職務性質', workContent: '工作內容', workEnvironment: '工作環境',
   employmentType: '工作型態傾向', workRhythm: '自主與合作節奏',
   strength: '職場優勢', blindSpot: '容易卡住的地方', managerFit: '適合的主管風格', teamFit: '適合的團隊環境',
+  /* Phase 2B：career-talent（星盤限定）新增的兩個維度標籤，沿用同一份 CAREER_AXIS_LABELS，
+     跟牌卡端共用的維度（industryDirection 等）放在一起，不另外新建標籤物件。 */
+  longTermDirection: '長期職涯方向', talentResource: '才能資源運用',
 };
 /* 依整體牌陣語氣挑句：trend／favor／risk／action／timing 這幾個欄位在所有事業子問題間共用同一套
    語氣措辭池，差異來自實際抽牌的正逆位與吉凶比例（loveToneBucket()，通用邏輯，非愛情限定）。
@@ -2755,8 +2776,9 @@ function renderSubtopicResultPanel(subtopicDef, result, titleText) {
    且 astroResult.available 時呼叫。內部資料不足／被排除的項目一律轉成中文說明，
    絕不顯示內部英文 reason 代碼或 undefined。 */
 var ASTRO_SKIP_ITEM_LABELS = {
-  Venus: '金星', Mars: '火星', Moon: '月亮',
-  house5: '第五宮', house7: '第七宮', 'moon-aspects': '月亮相關相位',
+  Venus: '金星', Mars: '火星', Moon: '月亮', Sun: '太陽', Mercury: '水星', Jupiter: '木星', Saturn: '土星',
+  house5: '第五宮', house7: '第七宮', house2: '第二宮', house6: '第六宮', house10: '第十宮', MC: '天頂（MC）',
+  'moon-aspects': '月亮相關相位',
 };
 var ASTRO_SKIP_REASON_LABELS = {
   'unknown-time-unreliable': '出生時間未知，可靠度不足而不使用',
@@ -3077,14 +3099,15 @@ function buildDrawn() {
       subtopic: (state.subtopic && SUBTOPICS[state.category]) ? (function () {
         var def = (SUBTOPICS[state.category] || []).filter(function (s) { return s.key === state.subtopic; })[0];
         if (!def) return null;
+        var hasAstroEngine = state.category === 'love' || state.category === 'career';
         var cardRes = cardSubtopicReading(state.category, state.subtopic, state.drawn);
-        var astroRes = (state.category === 'love' && state.readingMode === 'combined' && state.astroResult)
-          ? astroCategoryReading('love', state.subtopic, state.astroResult, state.astroUnknownTime) : null;
-        var combRes = (astroRes && astroRes.available) ? combinedReading(cardRes, astroRes, 'love', state.subtopic) : null;
+        var astroRes = (hasAstroEngine && state.readingMode === 'combined' && state.astroResult)
+          ? astroCategoryReading(state.category, state.subtopic, state.astroResult, state.astroUnknownTime) : null;
+        var combRes = (astroRes && astroRes.available) ? combinedReading(cardRes, astroRes, state.category, state.subtopic) : null;
         return {
           key: state.subtopic, zh: def.zh, catKey: state.category,
           reading: cardRes,
-          readingMode: state.category === 'love' ? state.readingMode : 'cards',
+          readingMode: hasAstroEngine ? state.readingMode : 'cards',
           cardReading: cardRes,
           astroReading: astroRes,
           combinedReading: combRes,
@@ -3316,8 +3339,10 @@ function copyForAI() {
       }
     }
   } else if (state.category === 'career' && state.subtopic) {
-    /* Phase 2A：純新增段落，只有事業分類且選了具體子問題時才會輸出，不影響既有輸出內容；
-       複製給 AI 一律輸出完整欄位與完整 caveat（不像畫面上的折疊面板只顯示摘要）。 */
+    /* Phase 2A：事業牌卡段落，純新增，只有事業分類且選了具體子問題時才會輸出，不影響既有輸出
+       內容；複製給 AI 一律輸出完整欄位與完整 caveat（不像畫面上的折疊面板只顯示摘要）。
+       career-talent 是 astro-only 子問題，cardSubtopicReading() 對它固定回傳 available:false，
+       這裡會自動跳過牌卡段落，不會出現空標題。 */
     var careerSubDef2 = (SUBTOPICS.career || []).filter(function (s) { return s.key === state.subtopic; })[0];
     var careerRes2 = careerSubDef2 ? cardSubtopicReading('career', state.subtopic, state.drawn) : null;
     if (careerRes2 && careerRes2.available) {
@@ -3327,6 +3352,33 @@ function copyForAI() {
         if (careerSubDef2.fields.indexOf(f) === -1 || !careerRes2[f]) return;
         lines.push('　' + SUBTOPIC_FIELD_LABELS[f][0] + '：' + careerRes2[f]);
       });
+    }
+    /* Phase 2B：combined 模式（且有 state.astroResult）時，額外附加事業星盤完整解讀、
+       實際星盤依據，以及牌卡＋星盤綜合觀察；career-talent 沒有牌卡結果時，清楚標示為
+       「星盤限定 astro-only」，不假裝有牌卡內容。 */
+    if (careerSubDef2 && state.readingMode === 'combined' && state.astroResult) {
+      var careerAstroRes2 = astroCategoryReading('career', state.subtopic, state.astroResult, state.astroUnknownTime);
+      if (careerAstroRes2.available) {
+        var hasCareerCard2 = !!(careerRes2 && careerRes2.available);
+        lines.push('');
+        lines.push('具體問題解讀（事業星盤）：' + careerSubDef2.zh + (hasCareerCard2 ? '' : '（星盤限定 astro-only，本題無牌卡模式）'));
+        SUBTOPIC_FIELD_ORDER.forEach(function (f) {
+          if (careerSubDef2.fields.indexOf(f) === -1 || !careerAstroRes2[f]) return;
+          lines.push('　' + SUBTOPIC_FIELD_LABELS[f][0] + '：' + careerAstroRes2[f]);
+        });
+        if (careerAstroRes2.evidence && careerAstroRes2.evidence.used.length) {
+          lines.push('　星盤依據：' + careerAstroRes2.evidence.used.join('；'));
+        }
+        var careerCombRes2 = combinedReading(careerRes2, careerAstroRes2, 'career', state.subtopic);
+        if (careerCombRes2.available && careerCombRes2.mode === 'combined') {
+          lines.push('');
+          lines.push('牌卡＋星盤綜合觀察（事業）：' + careerSubDef2.zh);
+          SUBTOPIC_FIELD_ORDER.forEach(function (f) {
+            if (careerSubDef2.fields.indexOf(f) === -1 || !careerCombRes2[f]) return;
+            lines.push('　' + SUBTOPIC_FIELD_LABELS[f][0] + '：' + careerCombRes2[f]);
+          });
+        }
+      }
     }
   }
   lines.push('');
@@ -5614,7 +5666,7 @@ var HOROSCOPE_PERIODS = {
    不得延伸為疾病或身體部位的診斷式對應。 */
 var ASTRO_CATEGORY_FOCUS = {
   love: { planets: ['Venus', 'Mars', 'Moon'], houses: [5, 7], useAsc: false, useMC: false, symbolicOnly: false },
-  career: { planets: ['Sun', 'Saturn', 'Jupiter'], houses: [2, 6, 10], useAsc: false, useMC: true, symbolicOnly: false },
+  career: { planets: ['Sun', 'Mercury', 'Mars', 'Jupiter', 'Saturn'], houses: [2, 6, 10], useAsc: false, useMC: true, symbolicOnly: false },
   family: { planets: ['Moon'], houses: [4], useAsc: false, useMC: false, symbolicOnly: false },
   health: { planets: ['Sun', 'Moon'], houses: [6], useAsc: true, useMC: false, symbolicOnly: true },
   wealth: { planets: ['Venus', 'Jupiter', 'Saturn'], houses: [2, 8], useAsc: false, useMC: false, symbolicOnly: false },
@@ -6077,13 +6129,289 @@ function astroLoveAspectEvidenceStr(a) {
   return (aDef ? aDef.zh : a.a) + (aspectDef ? aspectDef.zh : a.type) + (bDef ? bDef.zh : a.b) + '（誤差' + orbText + '）';
 }
 
+/* ================= Phase 2B：事業分類的星盤具體解讀引擎 ================= */
+
+/* MC（天頂）的證據字串——love 從沒用過 MC，既有的 astroLovePlanetEvidenceStr／
+   astroLoveHouseEvidenceStr 都不適用（MC 不是行星也不是宮頭陣列裡的一員），因此新增這個小
+   函式；其餘證據字串（行星／宮頭／相位）直接重用既有的 astroLovePlanetEvidenceStr／
+   astroLoveHouseEvidenceStr／astroLoveAspectEvidenceStr（純格式化，非愛情限定）。 */
+function astroMcEvidenceStr(mcObj) {
+  var sign = ZODIAC_SIGNS[mcObj.sign];
+  return 'MC（天頂）：' + sign.zh + '（' + sign.elem + '）';
+}
+
+/* careerAstroEvidence(chart, unknownTime)
+   純函式：整理「事業」分類可以動用的真實星盤依據，透過 astroAvailableFocus(ctx,'career')
+   沿用 ASTRO_CATEGORY_FOCUS.career 設定（太陽／水星／火星／木星／土星，第二／六／十宮＋MC），
+   不重新混用全域 state。太陽／水星／火星／木星／土星移動速度都比月亮慢很多，星座本身在
+   出生時間未知時仍可靠，因此（跟 loveAstroEvidence 排除月亮不同）這裡不需要特別排除任何行星，
+   只有宮位與 MC（天頂）才需要已知出生時間。第十宮的宮頭與 MC 在整宮制下可能落在不同星座，
+   因此分開追蹤，不假設兩者相同。 */
+function careerAstroEvidence(chart, unknownTime) {
+  var out = { available: false, planets: {}, houses: {}, mc: null, aspects: [], skipped: [], seed: '' };
+  if (!chart) return out;
+  out.available = true;
+  var ctx = { chart: chart, unknownTime: !!unknownTime };
+  var focus = astroAvailableFocus(ctx, 'career'); // { planets:['Sun','Mercury','Mars','Jupiter','Saturn'], houses:[2,6,10]或[], useMC ... }
+  var timeKnown = astroTimeKnown(ctx);
+
+  function validSignIdx(idx) { return typeof idx === 'number' && !isNaN(idx) && idx >= 0 && idx <= 11 && !!ZODIAC_SIGNS[idx]; }
+
+  focus.planets.forEach(function (key) {
+    var p = chart.planets && chart.planets[key];
+    if (!p) { out.skipped.push({ item: key, reason: 'not-in-chart' }); return; }
+    if (!validSignIdx(p.sign)) { out.skipped.push({ item: key, reason: 'invalid-sign-data' }); return; }
+    out.planets[key] = { sign: p.sign, deg: p.deg, retro: !!p.retro, house: timeKnown ? p.house : null };
+  });
+
+  focus.houses.forEach(function (h) {
+    if (!chart.houseCusps || chart.houseCusps.length !== 12) { out.skipped.push({ item: 'house' + h, reason: 'no-house-data' }); return; }
+    var cusp = chart.houseCusps[h - 1];
+    var signIdx = (typeof cusp === 'number' && !isNaN(cusp)) ? Math.floor(astroNormDeg(cusp) / 30) : NaN;
+    if (!validSignIdx(signIdx)) { out.skipped.push({ item: 'house' + h, reason: 'invalid-house-data' }); return; }
+    out.houses[h] = { sign: signIdx };
+  });
+  if (!timeKnown) {
+    [2, 6, 10].forEach(function (h) { out.skipped.push({ item: 'house' + h, reason: 'unknown-time' }); });
+  }
+
+  if (focus.useMC && timeKnown && typeof chart.mc === 'number' && !isNaN(chart.mc)) {
+    var mcSign = Math.floor(astroNormDeg(chart.mc) / 30);
+    if (validSignIdx(mcSign)) out.mc = { sign: mcSign };
+  }
+  if (!timeKnown) out.skipped.push({ item: 'MC', reason: 'unknown-time' });
+
+  var relevantKeys = ['Sun', 'Mercury', 'Mars', 'Jupiter', 'Saturn'];
+  out.aspects = pureUsableAspects(chart, unknownTime)
+    .filter(function (a) { return relevantKeys.indexOf(a.a) !== -1 || relevantKeys.indexOf(a.b) !== -1; })
+    .map(function (a) { return { a: a.a, b: a.b, type: a.type, orb: a.orb }; });
+
+  var seedParts = relevantKeys.map(function (key) {
+    var p = out.planets[key];
+    return key + ':' + (p ? (p.sign + '-' + Math.round(p.deg)) : 'na');
+  });
+  [2, 6, 10].forEach(function (h) { seedParts.push('h' + h + ':' + (out.houses[h] ? out.houses[h].sign : 'na')); });
+  seedParts.push('mc:' + (out.mc ? out.mc.sign : 'na'));
+  seedParts.push('asp:' + out.aspects.map(function (a) { return a.a + a.type + a.b + Math.round(a.orb * 10); }).sort().join(','));
+  out.seed = seedParts.join('|');
+  return out;
+}
+
+/* ---- 依元素（火／土／風／水）分組的事業措辭池。loveAstroValence() 的和諧／緊張判斷邏輯
+   完全通用（不含任何愛情內容），career 直接重用，不重複宣告 careerAstroValence()。 ---- */
+var ASTRO_CAREER_SUN_BY_ELEM = {
+  火: ['太陽落在火象星座，核心發展方向可能傾向主動開創、追求成就與被看見', '自我認同容易建立在敢於行動、率先嘗試的成果上'],
+  土: ['太陽落在土象星座，核心發展方向可能傾向穩健築基、長期累積專業', '自我認同容易建立在踏實可靠、被信任的表現上'],
+  風: ['太陽落在風象星座，核心發展方向可能傾向溝通交流、整合資訊與人脈', '自我認同容易建立在思路清晰、能提出見解的表現上'],
+  水: ['太陽落在水象星座，核心發展方向可能傾向發揮同理心、創造情感連結的價值', '自我認同容易建立在能感受並回應他人需求的角色上'],
+};
+var ASTRO_CAREER_MERCURY_BY_ELEM = {
+  火: ['水星落在火象星座，思考與溝通方式可能直接明快，重視效率勝過細節', '工作方式傾向快速下判斷、當機立斷'],
+  土: ['水星落在土象星座，思考與溝通方式可能務實嚴謹，重視具體與可執行性', '工作方式傾向按部就班、循序驗證'],
+  風: ['水星落在風象星座，思考與溝通方式可能靈活多元，擅長整理與傳遞資訊', '工作方式傾向多工並行、樂於交流意見'],
+  水: ['水星落在水象星座，思考與溝通方式可能偏向直覺與感受，重視弦外之音', '工作方式傾向細膩體察，重視氛圍勝過條列式邏輯'],
+};
+var ASTRO_CAREER_MARS_BY_ELEM = {
+  火: ['火星落在火象星座，行動力強且節奏明快，競爭時傾向正面迎戰', '執行節奏偏向立即行動，不喜歡拖延'],
+  土: ['火星落在土象星座，行動力偏向穩健持久，競爭時傾向按計畫推進', '執行節奏偏向扎實但較慢，重視每一步都站穩'],
+  風: ['火星落在風象星座，行動力偏向靈活應變，競爭時傾向以策略與資訊取勝', '執行節奏偏向邊想邊調整，不喜歡一成不變'],
+  水: ['火星落在水象星座，行動力容易受情緒與氛圍牽動，競爭時傾向迂迴應對', '執行節奏偏向醞釀後才行動，重視時機是否合適'],
+};
+var ASTRO_CAREER_JUPITER_BY_ELEM = {
+  火: ['木星落在火象星座，成長與機會可能來自主動出擊、勇於嘗試新領域', '擴張方式傾向大膽跨步，願意承擔一定風險'],
+  土: ['木星落在土象星座，成長與機會可能來自長期累積、逐步擴大既有基礎', '擴張方式傾向穩紮穩打，重視實質成果'],
+  風: ['木星落在風象星座，成長與機會可能來自拓展人脈、吸收多方資訊', '擴張方式傾向廣泛連結，透過交流開啟新可能'],
+  水: ['木星落在水象星座，成長與機會可能來自直覺、創意或助人的價值', '擴張方式傾向順勢而為，重視意義感勝過規模'],
+};
+var ASTRO_CAREER_SATURN_BY_ELEM = {
+  火: ['土星落在火象星座，責任與限制可能出現在需要克制衝動、學習耐心', '長期累積的專業化方向傾向從行動中磨練出紀律'],
+  土: ['土星落在土象星座，責任與限制可能出現在對成果要求嚴格、容易給自己壓力', '長期累積的專業化方向傾向扎實穩健，是天生的長跑型'],
+  風: ['土星落在風象星座，責任與限制可能出現在想法很多卻不易落實，需要練習聚焦', '長期累積的專業化方向傾向透過持續學習與系統化思考建立權威'],
+  水: ['土星落在水象星座，責任與限制可能出現在情緒或界線不易拿捏，是需要練習的課題', '長期累積的專業化方向傾向在同理與專業之間找到平衡'],
+};
+var ASTRO_CAREER_HOUSE6_BY_ELEM = {
+  火: ['第六宮落在火象星座，日常工作習慣可能偏向快節奏、喜歡處理變動與挑戰', '工作環境較適合允許主動出擊、步調明快的職場'],
+  土: ['第六宮落在土象星座，日常工作習慣可能偏向規律務實、重視流程與紀律', '工作環境較適合制度清楚、講求穩定的職場'],
+  風: ['第六宮落在風象星座，日常工作習慣可能偏向多工彈性、重視溝通協調', '工作環境較適合資訊流通、互動頻繁的職場'],
+  水: ['第六宮落在水象星座，日常工作習慣可能偏向重視氛圍與人情、需要情感投入', '工作環境較適合溫暖、有支持感的職場'],
+};
+/* 第十宮宮頭與 MC 屬同一象徵領域（職涯方向、社會角色與公開發展），共用同一份措辭池 */
+var ASTRO_CAREER_HOUSE10_BY_ELEM = {
+  火: ['第十宮／天頂落在火象星座，職涯方向與社會角色可能傾向展現領導力與行動力', '公開發展較適合能主動爭取曝光與機會的舞台'],
+  土: ['第十宮／天頂落在土象星座，職涯方向與社會角色可能傾向累積長期聲望與專業地位', '公開發展較適合按部就班、穩紮穩打建立權威的路徑'],
+  風: ['第十宮／天頂落在風象星座，職涯方向與社會角色可能傾向成為溝通者、整合者或意見領袖', '公開發展較適合能發揮人脈與資訊優勢的舞台'],
+  水: ['第十宮／天頂落在水象星座，職涯方向與社會角色可能傾向以創意、關懷或直覺為核心價值', '公開發展較適合能展現同理心與感受力的舞台'],
+};
+/* 第二宮：才能資源與收入運用模式——只能描述資源運用，不得推算薪資或具體數字 */
+var ASTRO_CAREER_HOUSE2_BY_ELEM = {
+  火: ['第二宮落在火象星座，才能資源的運用可能傾向積極變現、樂於嘗試新的收入來源', '對資源的態度偏向主動創造機會，而非被動等待'],
+  土: ['第二宮落在土象星座，才能資源的運用可能傾向穩健累積、重視長期的資源管理', '對資源的態度偏向謹慎保守，重視安全感'],
+  風: ['第二宮落在風象星座，才能資源的運用可能傾向多元開發、透過知識或人脈變現', '對資源的態度偏向靈活調整，願意嘗試不同的收入組合'],
+  水: ['第二宮落在水象星座，才能資源的運用可能傾向以直覺或創意為核心價值', '對資源的態度偏向隨心，重視資源是否能帶來意義感'],
+};
+/* ---- 依整體語氣（positive／neutral／challenging）挑句：trend／favor／risk／action／timing
+   在所有事業子問題間共用同一套星盤語氣措辭池，差異來自 loveAstroValence(ev.aspects)。
+   timing 只能用「近期／仍需累積／條件成熟後」等模糊區間，不給確切日期或保證結果。 ---- */
+var ASTRO_CAREER_TONE_POOL = {
+  trend: {
+    positive: ['整體行星角度偏向和諧，職涯發展有機會順勢擴張', '星盤能量流動順暢，近期的努力容易被看見'],
+    neutral: ['行星角度有順有逆，目前處於累積與觀察並行的階段', '星盤能量中性，發展走向取決於接下來的準備與行動'],
+    challenging: ['整體行星角度帶有一些張力，目前階段較適合收斂與整理，而非貿然擴張', '星盤能量顯示這段時間需要先處理限制或課題，才能往前推進'],
+  },
+  favor: {
+    positive: ['木星與太陽的能量狀態是目前最大的助力，適合順勢展現實力', '整體星象對你有利，機會與資源都相對充足'],
+    neutral: ['踏實的準備會是這段時間最實際的助力', '保持開放與彈性，會比堅持單一方向更有幫助'],
+    challenging: ['願意誠實面對土星帶來的課題，本身就是一種助力', '過去累積的專業與耐心，會是撐過這段緊縮期的關鍵'],
+  },
+  risk: {
+    positive: ['擴張順利時也別忽略基礎的鞏固，避免衝過頭', '留意別因為進展快就忽略細節與風險評估'],
+    neutral: ['猶豫不決可能讓準備期拉得更長，建議設定檢核點', '資訊不足容易造成誤判，適時確認會比悶著猜更好'],
+    challenging: ['土星的限制若不正視，可能持續消耗心力', '容易因為壓力而想太多，建議把注意力放回可控的部分'],
+  },
+  action: {
+    positive: ['可以主動一點，把握現有的擴張機會往前推進', '適合展現實力、爭取更大的舞台或資源'],
+    neutral: ['建議先觀察並持續累積，同時保持開放心態', '可以先從小範圍的嘗試開始，逐步驗證方向'],
+    challenging: ['建議先穩住現有基礎，把土星課題處理好再求擴張', '暫時放慢腳步，把注意力放在能自己掌握的專業累積上'],
+  },
+  timing: {
+    positive: ['近期是條件相對成熟、適合擴張的階段', '目前準備度已經足夠，可以考慮加快腳步'],
+    neutral: ['近期適合先準備，仍需要一段時間累積才會看到成果', '條件尚未完全成熟，建議先觀察再決定下一步節奏'],
+    challenging: ['目前仍需累積，條件成熟後再考慮進一步行動會更穩妥', '近期不適合躁進，建議先把眼前的課題處理好'],
+  },
+};
+
+/* astroCategoryReadingCareer(subtopicKey, chart, unknownTime)
+   事業分類的星盤具體解讀，只在 astroCategoryReading() 分派時由 catKey==='career' 呼叫。
+   五個子問題只能描述適配傾向／發展階段，不斷言唯一職業、不保證錄取或收入、不給確切日期。 */
+function astroCategoryReadingCareer(subtopicKey, chart, unknownTime) {
+  var out = {
+    available: false, reason: '', catKey: 'career', subtopicKey: subtopicKey,
+    conclusion: '', traits: '', trend: '', favor: '', risk: '', timing: '', action: '', caveat: '',
+    evidence: null, tone: null,
+  };
+  var subtopic = (SUBTOPICS.career || []).filter(function (s) { return s.key === subtopicKey; })[0];
+  if (!subtopic) { out.reason = 'unknown-subtopic'; return out; }
+  if (subtopic.modes.indexOf('astro') === -1) { out.reason = 'mode-not-supported'; return out; }
+  if (!chart) { out.reason = 'no-chart'; return out; }
+
+  var ev = careerAstroEvidence(chart, unknownTime);
+  if (!ev.planets.Sun && !ev.planets.Mercury && !ev.planets.Mars && !ev.planets.Jupiter && !ev.planets.Saturn) { out.reason = 'no-focus-data'; return out; }
+
+  var seed = 'career|' + subtopicKey + '|' + ev.seed;
+  var used = [];
+  function note(str) { used.push(str); }
+
+  var sunP = ev.planets.Sun, mercuryP = ev.planets.Mercury, marsP = ev.planets.Mars, jupiterP = ev.planets.Jupiter, saturnP = ev.planets.Saturn;
+  var sunElem = sunP ? ZODIAC_SIGNS[sunP.sign].elem : null;
+  var mercuryElem = mercuryP ? ZODIAC_SIGNS[mercuryP.sign].elem : null;
+  var marsElem = marsP ? ZODIAC_SIGNS[marsP.sign].elem : null;
+  var jupiterElem = jupiterP ? ZODIAC_SIGNS[jupiterP.sign].elem : null;
+  var saturnElem = saturnP ? ZODIAC_SIGNS[saturnP.sign].elem : null;
+  var house2 = ev.houses[2], house6 = ev.houses[6], house10 = ev.houses[10];
+  var house2Elem = house2 ? ZODIAC_SIGNS[house2.sign].elem : null;
+  var house6Elem = house6 ? ZODIAC_SIGNS[house6.sign].elem : null;
+  var house10Elem = house10 ? ZODIAC_SIGNS[house10.sign].elem : null;
+  var mcElem = ev.mc ? ZODIAC_SIGNS[ev.mc.sign].elem : null;
+  var valence = loveAstroValence(ev.aspects); // 通用邏輯，非愛情限定，見上方註解
+  out.tone = valence;
+
+  if (sunP) note(astroLovePlanetEvidenceStr('Sun', sunP));
+  if (mercuryP) note(astroLovePlanetEvidenceStr('Mercury', mercuryP));
+  if (marsP) note(astroLovePlanetEvidenceStr('Mars', marsP));
+  if (jupiterP) note(astroLovePlanetEvidenceStr('Jupiter', jupiterP));
+  if (saturnP) note(astroLovePlanetEvidenceStr('Saturn', saturnP));
+  if (house2) note(astroLoveHouseEvidenceStr(2, house2));
+  if (house6) note(astroLoveHouseEvidenceStr(6, house6));
+  if (house10) note(astroLoveHouseEvidenceStr(10, house10));
+  if (ev.mc) note(astroMcEvidenceStr(ev.mc));
+  ev.aspects.forEach(function (a) { note('相位：' + astroLoveAspectEvidenceStr(a)); });
+
+  function sunLine(tag) { return sunElem ? astroSeededPick(seed + tag, ASTRO_CAREER_SUN_BY_ELEM[sunElem]) : ''; }
+  function mercuryLine(tag) { return mercuryElem ? astroSeededPick(seed + tag, ASTRO_CAREER_MERCURY_BY_ELEM[mercuryElem]) : ''; }
+  function marsLine(tag) { return marsElem ? astroSeededPick(seed + tag, ASTRO_CAREER_MARS_BY_ELEM[marsElem]) : ''; }
+  function jupiterLine(tag) { return jupiterElem ? astroSeededPick(seed + tag, ASTRO_CAREER_JUPITER_BY_ELEM[jupiterElem]) : ''; }
+  function saturnLine(tag) { return saturnElem ? astroSeededPick(seed + tag, ASTRO_CAREER_SATURN_BY_ELEM[saturnElem]) : ''; }
+  function house6Line(tag) { return house6Elem ? astroSeededPick(seed + tag, ASTRO_CAREER_HOUSE6_BY_ELEM[house6Elem]) : ''; }
+  /* 第十宮與 MC 共用同一份措辭池；MC 存在就優先用 MC（更貼近「天頂」這個古典職業指標），沒有才退回第十宮宮頭 */
+  function house10OrMcLine(tag) { return mcElem ? astroSeededPick(seed + tag, ASTRO_CAREER_HOUSE10_BY_ELEM[mcElem]) : (house10Elem ? astroSeededPick(seed + tag, ASTRO_CAREER_HOUSE10_BY_ELEM[house10Elem]) : ''); }
+  function house2Line(tag) { return house2Elem ? astroSeededPick(seed + tag, ASTRO_CAREER_HOUSE2_BY_ELEM[house2Elem]) : ''; }
+  function toneField(fieldKey) { return astroSeededPick(seed + '|' + fieldKey, ASTRO_CAREER_TONE_POOL[fieldKey][valence]); }
+
+  var baseCaveat = '以上為本命星盤的象徵性傾向，反映的是你長期的天賦、慣性與發展模式，並非對職涯結果的確定預測（例如是否升遷、錄取、創業成功或確切收入），實際情況仍需以你自己的專業判斷與現實條件為準。';
+  var caveatParts = [baseCaveat];
+  if (ev.skipped.some(function (s) { return s.item === 'house2' || s.item === 'house6' || s.item === 'house10' || s.item === 'MC'; })) {
+    caveatParts.push('出生時間未知，本次不使用第二、第六、第十宮與天頂（MC）等時間敏感資料，僅採用行星星座與可用相位作為參考。');
+  }
+
+  if (subtopicKey === 'industry-fit') {
+    var jLine = jupiterLine('|jupiter'), sLine = sunLine('|sun');
+    out.conclusion = (jLine || '產業方向的星盤依據暫時不足') + (sLine ? '；同時，' + sLine : '');
+    var dims = [];
+    if (jupiterElem) dims.push(CAREER_AXIS_LABELS.industryDirection + '：' + jupiterLine('|dim-industry'));
+    if (mercuryElem) dims.push(CAREER_AXIS_LABELS.jobFunction + '：' + mercuryLine('|dim-job'));
+    if (house6Elem) dims.push(CAREER_AXIS_LABELS.workContent + '：' + house6Line('|dim-content'));
+    var envLine = house10OrMcLine('|dim-env');
+    if (envLine) dims.push(CAREER_AXIS_LABELS.workEnvironment + '：' + envLine);
+    out.traits = dims.join('；');
+    out.favor = toneField('favor'); out.action = toneField('action');
+    caveatParts.push('星盤只能描述產業與職務的適配傾向，不指定唯一職業，實際選擇仍需考量現實條件與個人意願。');
+  } else if (subtopicKey === 'work-style-fit') {
+    var mLine = marsLine('|mars'), stLine = saturnLine('|saturn');
+    out.conclusion = (mLine || '工作型態的星盤依據暫時不足') + (stLine ? '；同時，' + stLine : '');
+    var dims2 = [];
+    if (marsElem) dims2.push(CAREER_AXIS_LABELS.employmentType + '：' + marsLine('|dim-employ'));
+    if (saturnElem) dims2.push(CAREER_AXIS_LABELS.workRhythm + '：' + saturnLine('|dim-rhythm'));
+    out.traits = dims2.join('；');
+    out.favor = toneField('favor'); out.risk = toneField('risk');
+    caveatParts.push('星盤只能反映受雇／接案／創業／管理／創意／技術等工作型態的相對傾向，不斷言一定適合創業或一定不適合受雇，實際選擇仍需綜合現實條件評估。');
+  } else if (subtopicKey === 'career-timing') {
+    var jLine2 = jupiterLine('|jupiter'), stLine2 = saturnLine('|saturn');
+    out.conclusion = (jLine2 ? '木星的能量顯示，' + jLine2 : '目前擴張傾向的星盤依據暫時不足') + (stLine2 ? '；同時，土星提醒，' + stLine2 : '');
+    out.trend = toneField('trend'); out.timing = toneField('timing'); out.favor = toneField('favor'); out.risk = toneField('risk'); out.action = toneField('action');
+    caveatParts.push('本命星盤無法預測確切的升遷、錄取或離職日期，以上僅反映目前的發展階段、準備度與擴張／收斂傾向；若要更精準掌握時機，需要搭配行運或推運資料（本次未使用）。');
+  } else if (subtopicKey === 'workplace-strength-weakness') {
+    var suLine = sunLine('|sun'), stLine3 = saturnLine('|saturn');
+    out.conclusion = (suLine || '職場優勢的星盤依據暫時不足') + (stLine3 ? '；同時，土星提醒，' + stLine3 : '');
+    var dims3 = [];
+    if (sunElem) dims3.push(CAREER_AXIS_LABELS.strength + '：' + sunLine('|dim-strength'));
+    if (saturnElem) dims3.push(CAREER_AXIS_LABELS.blindSpot + '：' + saturnLine('|dim-blind'));
+    if (jupiterElem) dims3.push(CAREER_AXIS_LABELS.managerFit + '：' + jupiterLine('|dim-manager'));
+    if (house6Elem) dims3.push(CAREER_AXIS_LABELS.teamFit + '：' + house6Line('|dim-team'));
+    out.traits = dims3.join('；');
+    out.favor = toneField('favor'); out.risk = toneField('risk'); out.action = toneField('action');
+  } else if (subtopicKey === 'career-talent') {
+    var suLine2 = sunLine('|sun'), jLine3 = jupiterLine('|jupiter');
+    out.conclusion = (suLine2 || '天賦傾向的星盤依據暫時不足') + (jLine3 ? '；同時，' + jLine3 : '');
+    var dims4 = [];
+    var dirLine = house10OrMcLine('|dim-direction');
+    if (dirLine) dims4.push(CAREER_AXIS_LABELS.longTermDirection + '：' + dirLine);
+    if (house2Elem) dims4.push(CAREER_AXIS_LABELS.talentResource + '：' + house2Line('|dim-resource'));
+    out.traits = dims4.join('；');
+    out.favor = toneField('favor'); out.action = toneField('action');
+    caveatParts.push('第二宮只用來描述才能資源的運用傾向，不推算具體薪資或資產；星盤呈現的是長期天賦與能力發展方式，不是對特定職位或成就的確定預測。');
+  }
+
+  ['conclusion', 'traits', 'trend', 'favor', 'risk', 'timing', 'action'].forEach(function (f) {
+    if (subtopic.fields.indexOf(f) === -1) out[f] = '';
+  });
+  if (!out.conclusion) out.conclusion = '目前可用的星盤依據不足以針對「' + subtopic.zh + '」給出具體描述，建議先確認出生資料是否完整。';
+  out.caveat = caveatParts.join('');
+  out.evidence = { used: used, skipped: ev.skipped, seed: ev.seed };
+  out.available = true;
+  return out;
+}
+
 /* astroCategoryReading(catKey, subtopicKey, chart, unknownTime)
-   目前只支援 catKey==='love'；chart 需為 computeNatalChart() 的真實回傳值，unknownTime 由
-   呼叫端明確傳入。內部一律以 loveAstroEvidence(chart, unknownTime) 整理出的真實依據組句，
-   不讀取 state.astroResult／state.astroUnknownTime，也不呼叫依賴全域 state 的
-   astroUsableAspects()。資料不足時回傳 available:false 並附上原因，絕不捏造內容；
-   available:true 時 conclusion／caveat 一定非空，其餘欄位依 SUBTOPICS.love 的 fields 填入。 */
+   目前支援 catKey==='love'（astroCategoryReadingLove，Phase 1B，邏輯完全不變）與
+   catKey==='career'（astroCategoryReadingCareer，Phase 2B）；chart 需為 computeNatalChart()
+   的真實回傳值，unknownTime 由呼叫端明確傳入。資料不足時回傳 available:false 並附上原因，
+   絕不捏造內容；available:true 時 conclusion／caveat 一定非空，其餘欄位依對應 SUBTOPICS 的
+   fields 填入。 */
 function astroCategoryReading(catKey, subtopicKey, chart, unknownTime) {
+  if (catKey === 'career') return astroCategoryReadingCareer(subtopicKey, chart, unknownTime);
+  return astroCategoryReadingLove(catKey, subtopicKey, chart, unknownTime);
+}
+function astroCategoryReadingLove(catKey, subtopicKey, chart, unknownTime) {
   var out = {
     available: false, reason: '', catKey: catKey, subtopicKey: subtopicKey,
     conclusion: '', traits: '', trend: '', favor: '', risk: '', timing: '', action: '', caveat: '',
@@ -6215,13 +6543,18 @@ var COMBINED_DIFFER_LEAD_POOL = [
   '牌卡看見的是這段時間的樣貌，星盤看見的是更長期的模式，兩者不同時，代表值得多留意「現在」跟「一貫」之間的落差',
 ];
 /* combinedReading(cardResult, astroResult, catKey, subtopicKey)
-   目前只支援 catKey==='love'。cardResult 應為 cardSubtopicReading() 的回傳值，
-   astroResult 應為 astroCategoryReading() 的回傳值；任一邊為 null／undefined／available:false
-   都視為「該邊不可用」，安全降級為只用另一邊（cards-only／astro-only），兩邊都不可用才 unavailable。
-   兩邊都可用時，只依據雙方已經算好的 tone（cardResult.tone 來自 loveToneBucket、
-   astroResult.tone 來自 loveAstroValence）判斷一致／分歧，並用兩邊「已經產生的真實內容」
-   組成摘要——不重新捏造人物特徵，也不會把兩邊全部欄位原封不動貼成一大段，而是用清楚的
-   「目前狀態（牌卡）／長期傾向（星盤）」標籤分別呈現，讓使用者能自己比較。 */
+   支援 catKey==='love' 與 catKey==='career'（Phase 2B 起）。cardResult 應為
+   cardSubtopicReading() 的回傳值，astroResult 應為 astroCategoryReading() 的回傳值；
+   任一邊為 null／undefined／available:false 都視為「該邊不可用」，安全降級為只用另一邊
+  （cards-only／astro-only），兩邊都不可用才 unavailable——例如 career-talent 沒有牌卡模式，
+   cardResult 永遠是 available:false，這裡會自動落在 astro-only，不需要另外特判。
+   兩邊都可用時，只依據雙方已經算好的 tone（cardResult.tone 來自 loveToneBucket／
+   astroResult.tone 來自 loveAstroValence——兩者皆為通用邏輯，love／career 共用同一套）
+   判斷一致／分歧，並用兩邊「已經產生的真實內容」組成摘要——不重新捏造人物或職涯特徵，
+   也不會把兩邊全部欄位原封不動貼成一大段，而是用清楚的「目前狀態（牌卡）／長期傾向
+  （星盤）」標籤分別呈現，讓使用者能自己比較。這個合併邏輯與導語措辭池本身就是分類無關的
+   通用引擎，不需要另外複製一份 career 專屬版本，只需要把下面兩個原本寫死 love 的地方
+   改成讀取傳入的 catKey。 */
 function combinedReading(cardResult, astroResult, catKey, subtopicKey) {
   var out = {
     available: false, reason: '', catKey: catKey, subtopicKey: subtopicKey,
@@ -6229,14 +6562,14 @@ function combinedReading(cardResult, astroResult, catKey, subtopicKey) {
     conclusion: '', traits: '', trend: '', favor: '', risk: '', timing: '', action: '', caveat: '',
     cardTone: null, astroTone: null, agreement: 'unknown',
   };
-  if (catKey !== 'love') { out.reason = 'unsupported-category'; return out; }
+  if (catKey !== 'love' && catKey !== 'career') { out.reason = 'unsupported-category'; return out; }
   var hasCard = !!(cardResult && cardResult.available);
   var hasAstro = !!(astroResult && astroResult.available);
   if (!hasCard && !hasAstro) { out.reason = 'no-input'; return out; }
   out.mode = hasCard && hasAstro ? 'combined' : (hasAstro ? 'astro-only' : 'cards-only');
   out.available = true;
 
-  var subtopic = (SUBTOPICS.love || []).filter(function (s) { return s.key === subtopicKey; })[0];
+  var subtopic = (SUBTOPICS[catKey] || []).filter(function (s) { return s.key === subtopicKey; })[0];
   var fields = subtopic ? subtopic.fields : SUBTOPIC_FIELD_ORDER;
 
   if (out.mode === 'cards-only') {
