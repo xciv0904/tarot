@@ -1848,8 +1848,8 @@ function renderWizard(spreads, isTarot) {
       h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:14px">' + targetCfg.label + '</div>';
       h += '<input id="target-input" value="' + esc(state.target) + '" oninput="state.target=this.value" placeholder="' + targetCfg.placeholder + '" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:10px 13px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
     }
-    if (state.category === 'love' || state.category === 'career') {
-      /* Phase 1C（愛情）／Phase 2B（事業）皆有牌卡＋星盤模式選擇器。 */
+    if (state.category === 'love' || state.category === 'career' || state.category === 'family') {
+      /* 已完成牌卡＋星盤引擎的分類皆顯示解讀來源選擇器。 */
       h += renderModePicker();
       h += renderSubtopicPicker();
     } else if (SUBTOPICS[state.category]) {
@@ -2124,6 +2124,20 @@ function renderReading() {
         } else {
           /* cards 模式：與 Phase 2A 完全一致，不多出任何星盤區塊 */
           h += renderSubtopicResultPanel(careerSubDef, careerCardRes);
+        }
+      }
+    } else if (state.category === 'family' && state.subtopic) {
+      var familySubDef = (SUBTOPICS.family || []).filter(function (s) { return s.key === state.subtopic; })[0];
+      if (familySubDef) {
+        var familyCardRes = cardSubtopicReading('family', state.subtopic, state.drawn);
+        if (state.readingMode === 'combined' && state.astroResult) {
+          h += renderSubtopicResultPanel(familySubDef, familyCardRes, '牌卡具體解讀');
+          var familyAstroRes = astroCategoryReading('family', state.subtopic, state.astroResult, state.astroUnknownTime);
+          h += renderAstroSubtopicPanel(familySubDef, familyAstroRes);
+          var familyCombRes = combinedReading(familyCardRes, familyAstroRes, 'family', state.subtopic);
+          h += renderCombinedSummaryPanel(familySubDef, familyCombRes);
+        } else {
+          h += renderSubtopicResultPanel(familySubDef, familyCardRes);
         }
       }
     }
@@ -2645,6 +2659,90 @@ function cardSubtopicReadingCareer(subtopicKey, drawnCards) {
   return out;
 }
 
+/* 家庭分類牌卡引擎：核心結論沿用每張牌既有的 family 情境牌義；其餘欄位依整個牌陣
+   的正逆／吉凶比例選句。只描述互動模式與可調整方向，不替未在場的家人判定動機。 */
+var FAMILY_SUBTOPIC_LEAD = {
+  'family-dynamics': ['這次牌面反映的家庭互動核心是：', '關於原生家庭與互動模式，牌面顯示：'],
+  'family-relations': ['關於你與家人的關係走向，牌面顯示：', '這段家庭關係目前較明顯的主題是：'],
+  'living-responsibility': ['關於居住、搬動與家庭責任，牌面提示：', '目前家庭壓力的核心較可能是：'],
+  'family-improve': ['家庭關係可以先從這個方向改善：', '牌面給你的改善重點是：'],
+};
+var FAMILY_ROLE_PRIORITY = {
+  'family-dynamics': ['root', 'present', 'self'],
+  'family-relations': ['other', 'bond', 'future'],
+  'living-responsibility': ['obstacle', 'present', 'future'],
+  'family-improve': ['advice', 'future', 'self'],
+};
+var FAMILY_TONE_POOL = {
+  traits: {
+    positive: ['家庭成員之間仍有支持與連結，遇到事情時較願意彼此照應', '互動中有一定的信任基礎，重要時刻仍能回到同一陣線'],
+    neutral: ['家人各有立場與習慣，需要透過具體討論才能找到共同節奏', '家庭互動表面平穩，但有些需求可能尚未被清楚說出'],
+    challenging: ['家庭中可能累積了責任不均、界線模糊或未說出口的情緒', '彼此容易用防衛、沉默或控制回應壓力，真正需求反而被遮住'],
+  },
+  trend: {
+    positive: ['接下來的互動有逐步緩和的空間，坦白而溫和的溝通會帶來進展', '家庭氣氛較可能往理解與重新協調的方向發展'],
+    neutral: ['關係仍在調整期，走向取決於是否願意把責任與需求說清楚', '短期內不一定立刻改變，但小幅調整能慢慢累積效果'],
+    challenging: ['若持續逃避核心問題，原有摩擦可能反覆出現', '近期仍有壓力，先降低衝突強度比急著一次解決更實際'],
+  },
+  favor: {
+    positive: ['既有的情感連結與願意互相照顧，是目前最重要的助力', '家人之間仍保有信任，適合用具體行動重新建立合作'],
+    neutral: ['願意聽完彼此的理由，而不是急著判斷對錯，會帶來幫助', '把抽象抱怨改成具體需求，是目前最實際的助力'],
+    challenging: ['先穩住自己的情緒與界線，會比勉強說服所有人更有幫助', '尋找一位能中立協調的人，可能有助於降低彼此防衛'],
+  },
+  risk: {
+    positive: ['關係好轉時仍要把責任與界線說清楚，避免問題只是暫時被擱置', '別因為氣氛緩和就再次把自己的真實需求壓下來'],
+    neutral: ['容易各自猜測對方心意，卻沒有確認真正需要什麼', '若只談道理、不談感受，溝通可能停在表面'],
+    challenging: ['翻舊帳、情緒勒索或把所有責任推給一個人，會讓問題更難處理', '長期壓抑後一次爆發，可能讓原本可談的事情變成對立'],
+  },
+  action: {
+    positive: ['找一個平靜時段，具體說出你的感受、需求與願意承擔的部分', '延續目前有效的互動方式，並用小行動增加彼此的安全感'],
+    neutral: ['先釐清哪些是你的責任、哪些需要共同協調，再進行溝通', '一次只談一個具體問題，避免把多年累積的事情同時攤開'],
+    challenging: ['先暫停高張力對話，等情緒下降後再談界線與可行方案', '若衝突已超出彼此能處理的範圍，可考慮尋求可信任的第三方協助'],
+  },
+};
+function familyFocusCard(drawnCards, subtopicKey) {
+  var priorities = FAMILY_ROLE_PRIORITY[subtopicKey] || ['root', 'present', 'advice'];
+  for (var i = 0; i < priorities.length; i++) {
+    for (var j = 0; j < drawnCards.length; j++) {
+      if (posRole(drawnCards[j].pos.zh) === priorities[i]) return drawnCards[j];
+    }
+  }
+  return drawnCards[drawnCards.length - 1];
+}
+function cardSubtopicReadingFamily(subtopicKey, drawnCards) {
+  var out = { available: false, reason: '', catKey: 'family', subtopicKey: subtopicKey, conclusion: '', traits: '', trend: '', favor: '', risk: '', timing: '', action: '', caveat: '', tone: null };
+  var subtopic = (SUBTOPICS.family || []).filter(function (s) { return s.key === subtopicKey; })[0];
+  if (!subtopic) { out.reason = 'unknown-subtopic'; return out; }
+  if (!drawnCards || !drawnCards.length) { out.reason = 'no-cards'; return out; }
+  var isTarot = typeof drawnCards[0].card.arcana !== 'undefined';
+  var focus = familyFocusCard(drawnCards, subtopicKey);
+  var seed = 'family|' + subtopicKey + '|' + drawnCards.map(function (d) {
+    return (isTarot ? d.card.id : ('l' + d.card.n)) + (d.reversed ? 'R' : 'U');
+  }).join(',');
+  var baseMeaning;
+  if (isTarot && focus.card.rich && focus.card.rich.ctx && focus.card.rich.ctx.family) {
+    baseMeaning = focus.card.rich.ctx.family[focus.reversed ? 1 : 0];
+  } else if (isTarot) {
+    baseMeaning = focus.reversed ? focus.card.revZh : focus.card.upZh;
+  } else {
+    var lr = LEN_RICH[focus.card.n];
+    baseMeaning = (lr && lr.family) ? lr.family : focus.card.mZh;
+  }
+  baseMeaning = baseMeaning.replace(/,/g, '，');
+  var leadPool = FAMILY_SUBTOPIC_LEAD[subtopicKey];
+  out.conclusion = leadPool[hashStr(seed + '|lead') % leadPool.length] + baseMeaning;
+  var tone = loveToneBucket(drawnCards, isTarot);
+  out.tone = tone;
+  ['traits', 'trend', 'favor', 'risk', 'action'].forEach(function (f) {
+    if (subtopic.fields.indexOf(f) === -1) return;
+    var pool = FAMILY_TONE_POOL[f][tone];
+    out[f] = pool[hashStr(seed + '|' + f) % pool.length];
+  });
+  out.caveat = '以上內容反映牌面所呈現的家庭互動與你可觀察的部分，無法代替未在場家人說明其真實想法，也不是對搬家、分離或家庭事件的確定預測；請以實際溝通、安全與現實條件為準。';
+  out.available = true;
+  return out;
+}
+
 /* cardSubtopicReading(catKey, subtopicKey, drawnCards)
    目前支援 catKey==='love'（cardSubtopicReadingLove，Phase 1A，邏輯完全不變）與
    catKey==='career'（cardSubtopicReadingCareer，Phase 2A）；drawnCards 需為 state.drawn
@@ -2653,6 +2751,7 @@ function cardSubtopicReadingCareer(subtopicKey, drawnCards) {
    catKey/subtopicKey 不支援或沒有抽牌時安全回傳 available:false，不捏造任何內容。 */
 function cardSubtopicReading(catKey, subtopicKey, drawnCards) {
   if (catKey === 'career') return cardSubtopicReadingCareer(subtopicKey, drawnCards);
+  if (catKey === 'family') return cardSubtopicReadingFamily(subtopicKey, drawnCards);
   return cardSubtopicReadingLove(catKey, subtopicKey, drawnCards);
 }
 function cardSubtopicReadingLove(catKey, subtopicKey, drawnCards) {
@@ -3099,7 +3198,7 @@ function buildDrawn() {
       subtopic: (state.subtopic && SUBTOPICS[state.category]) ? (function () {
         var def = (SUBTOPICS[state.category] || []).filter(function (s) { return s.key === state.subtopic; })[0];
         if (!def) return null;
-        var hasAstroEngine = state.category === 'love' || state.category === 'career';
+        var hasAstroEngine = state.category === 'love' || state.category === 'career' || state.category === 'family';
         var cardRes = cardSubtopicReading(state.category, state.subtopic, state.drawn);
         var astroRes = (hasAstroEngine && state.readingMode === 'combined' && state.astroResult)
           ? astroCategoryReading(state.category, state.subtopic, state.astroResult, state.astroUnknownTime) : null;
@@ -3378,6 +3477,38 @@ function copyForAI() {
             lines.push('　' + SUBTOPIC_FIELD_LABELS[f][0] + '：' + careerCombRes2[f]);
           });
         }
+      }
+    }
+  } else if (state.category === 'family' && state.subtopic) {
+    var familySubDef2 = (SUBTOPICS.family || []).filter(function (s) { return s.key === state.subtopic; })[0];
+    var familyRes2 = familySubDef2 ? cardSubtopicReading('family', state.subtopic, state.drawn) : null;
+    if (familyRes2 && familyRes2.available) {
+      lines.push('');
+      lines.push('具體問題解讀（家庭牌卡）：' + familySubDef2.zh);
+      SUBTOPIC_FIELD_ORDER.forEach(function (f) {
+        if (familySubDef2.fields.indexOf(f) !== -1 && familyRes2[f]) lines.push('　' + SUBTOPIC_FIELD_LABELS[f][0] + '：' + familyRes2[f]);
+      });
+    }
+    if (familySubDef2 && state.readingMode === 'combined' && state.astroResult) {
+      var familyAstroRes2 = astroCategoryReading('family', state.subtopic, state.astroResult, state.astroUnknownTime);
+      if (familyAstroRes2.available) {
+        lines.push('');
+        lines.push('具體問題解讀（家庭星盤）：' + familySubDef2.zh);
+        SUBTOPIC_FIELD_ORDER.forEach(function (f) {
+          if (familySubDef2.fields.indexOf(f) !== -1 && familyAstroRes2[f]) lines.push('　' + SUBTOPIC_FIELD_LABELS[f][0] + '：' + familyAstroRes2[f]);
+        });
+        if (familyAstroRes2.evidence && familyAstroRes2.evidence.used.length) lines.push('　星盤依據：' + familyAstroRes2.evidence.used.join('；'));
+        var familyCombRes2 = combinedReading(familyRes2, familyAstroRes2, 'family', state.subtopic);
+        if (familyCombRes2.available && familyCombRes2.mode === 'combined') {
+          lines.push('');
+          lines.push('牌卡＋星盤綜合觀察（家庭）：' + familySubDef2.zh);
+          SUBTOPIC_FIELD_ORDER.forEach(function (f) {
+            if (familySubDef2.fields.indexOf(f) !== -1 && familyCombRes2[f]) lines.push('　' + SUBTOPIC_FIELD_LABELS[f][0] + '：' + familyCombRes2[f]);
+          });
+        }
+      } else if (state.astroUnknownTime) {
+        lines.push('');
+        lines.push('家庭星盤補充：出生時間未知，本次不使用月亮與第四宮進行家庭解讀，因此只保留牌卡結果。');
       }
     }
   }
@@ -7037,6 +7168,105 @@ function astroCategoryReadingCareer(subtopicKey, chart, unknownTime) {
   return out;
 }
 
+/* 家庭星盤引擎：只使用月亮、第四宮與月亮／土星相關可用相位。月亮與宮位都受出生
+   時間影響，因此 unknownTime 時不做替代推測，讓上層安全降級成 cards-only。 */
+var ASTRO_FAMILY_MOON_BY_ELEM = {
+  火: ['情緒來得直接而快，家中若能允許坦白表達，關係較容易恢復活力', '面對家人時傾向立即反應，需要先降溫再談真正需求'],
+  土: ['重視穩定、責任與可預期的生活節奏，常用實際行動照顧家人', '家庭安全感多半來自規律與可靠，但也可能把責任扛得太多'],
+  風: ['需要透過說明、討論與交換觀點理解家人，沉默容易增加猜測', '家庭互動重視溝通與空間，比起情緒黏著更需要彼此講清楚'],
+  水: ['對家庭氣氛與情緒變化特別敏感，容易先感受到他人未說出口的需要', '很重視情感歸屬與陪伴，也需要避免把家人的情緒全部吸收進來'],
+};
+var ASTRO_FAMILY_HOUSE4_BY_ELEM = {
+  火: ['理想的家需要活力、行動與各自發展的空間', '家庭課題常圍繞誰來帶頭、如何在親近中保有自主'],
+  土: ['理想的家重視穩定、責任分工與能長久維持的生活基礎', '家庭課題常圍繞責任、公平分擔與對安全感的不同定義'],
+  風: ['理想的家需要充分溝通、平等討論與保留個人空間', '家庭課題常圍繞資訊是否透明、意見能否被聽見'],
+  水: ['理想的家重視情感連結、照顧與可以安心示弱的氣氛', '家庭課題常圍繞情緒界線、依附與如何互相支持而不過度承擔'],
+};
+var ASTRO_FAMILY_TONE_POOL = {
+  trend: {
+    positive: ['可用相位顯示情緒與責任較能互相配合，家庭關係有逐步穩定的空間'],
+    neutral: ['星盤呈現的是可調整的家庭慣性，走向仍取決於實際溝通與分工'],
+    challenging: ['可用相位帶有情緒與責任的張力，需要先處理壓力來源，關係才容易鬆動'],
+  },
+  favor: {
+    positive: ['你有能力把感受轉成具體照顧與承諾，這是家庭互動的重要資源'],
+    neutral: ['願意辨認自己的情緒需求並把它說清楚，是改善關係的主要助力'],
+    challenging: ['先建立自己的情緒界線與支持系統，會比獨自承擔更有幫助'],
+  },
+  risk: {
+    positive: ['關係和諧時仍要確認責任是否公平，避免習慣性替所有人收拾'],
+    neutral: ['容易把熟悉的家庭反應當成唯一做法，需要留意沉默、說教或過度照顧'],
+    challenging: ['壓力下可能在控制、退縮或情緒化反應間擺盪，讓真正需求更難被聽見'],
+  },
+  action: {
+    positive: ['可以延續有效的照顧方式，同時清楚說明自己的界線與需要'],
+    neutral: ['先用一句具體而不指責的話說明感受，再討論可執行的分工'],
+    challenging: ['先降低衝突強度並穩定情緒，再處理責任、居住或界線等現實問題'],
+  },
+};
+function familyAstroEvidence(chart, unknownTime) {
+  var out = { available: false, moon: null, house4: null, aspects: [], skipped: [], seed: '' };
+  if (!chart) return out;
+  if (unknownTime) {
+    out.skipped.push({ item: 'Moon', reason: 'unknown-time-unreliable' }, { item: 'house4', reason: 'unknown-time' });
+    return out;
+  }
+  var moon = chart.planets && chart.planets.Moon;
+  if (moon && typeof moon.sign === 'number' && moon.sign >= 0 && moon.sign <= 11) {
+    out.moon = { sign: moon.sign, deg: moon.deg, house: moon.house };
+  }
+  if (chart.houseCusps && chart.houseCusps.length === 12) {
+    var cusp = chart.houseCusps[3];
+    var sign = Math.floor(astroNormDeg(cusp) / 30);
+    if (sign >= 0 && sign <= 11) out.house4 = { sign: sign };
+  }
+  out.aspects = pureUsableAspects(chart, false).filter(function (a) {
+    return a.a === 'Moon' || a.b === 'Moon' || ((a.a === 'Saturn' || a.b === 'Saturn') && (a.a === 'Moon' || a.b === 'Moon'));
+  });
+  out.available = !!(out.moon || out.house4);
+  out.seed = 'moon:' + (out.moon ? out.moon.sign + '-' + Math.round(out.moon.deg) : 'na') +
+    '|h4:' + (out.house4 ? out.house4.sign : 'na') +
+    '|asp:' + out.aspects.map(function (a) { return a.a + a.type + a.b + Math.round(a.orb * 10); }).sort().join(',');
+  return out;
+}
+function astroCategoryReadingFamily(subtopicKey, chart, unknownTime) {
+  var out = { available: false, reason: '', catKey: 'family', subtopicKey: subtopicKey, conclusion: '', traits: '', trend: '', favor: '', risk: '', timing: '', action: '', caveat: '', evidence: null, tone: null };
+  var subtopic = (SUBTOPICS.family || []).filter(function (s) { return s.key === subtopicKey; })[0];
+  if (!subtopic) { out.reason = 'unknown-subtopic'; return out; }
+  if (!chart) { out.reason = 'no-chart'; return out; }
+  var ev = familyAstroEvidence(chart, unknownTime);
+  if (!ev.available) { out.reason = unknownTime ? 'unknown-time-unreliable' : 'no-focus-data'; out.evidence = ev; return out; }
+  var seed = 'family|' + subtopicKey + '|' + ev.seed;
+  var moonElem = ev.moon ? ZODIAC_SIGNS[ev.moon.sign].elem : null;
+  var houseElem = ev.house4 ? ZODIAC_SIGNS[ev.house4.sign].elem : null;
+  var moonLine = moonElem ? astroSeededPick(seed + '|moon', ASTRO_FAMILY_MOON_BY_ELEM[moonElem]) : '';
+  var houseLine = houseElem ? astroSeededPick(seed + '|house4', ASTRO_FAMILY_HOUSE4_BY_ELEM[houseElem]) : '';
+  var tone = loveAstroValence(ev.aspects);
+  out.tone = tone;
+  if (subtopicKey === 'family-dynamics') {
+    out.conclusion = moonLine + (houseLine ? '；' + houseLine : '');
+    out.traits = '情緒互動：' + moonLine + (houseLine ? '；家庭根基：' + houseLine : '');
+    out.favor = ASTRO_FAMILY_TONE_POOL.favor[tone][0]; out.risk = ASTRO_FAMILY_TONE_POOL.risk[tone][0];
+  } else if (subtopicKey === 'family-relations') {
+    out.conclusion = moonLine;
+    out.trend = ASTRO_FAMILY_TONE_POOL.trend[tone][0]; out.risk = ASTRO_FAMILY_TONE_POOL.risk[tone][0]; out.action = ASTRO_FAMILY_TONE_POOL.action[tone][0];
+  } else if (subtopicKey === 'living-responsibility') {
+    out.conclusion = houseLine || moonLine;
+    out.trend = ASTRO_FAMILY_TONE_POOL.trend[tone][0]; out.risk = ASTRO_FAMILY_TONE_POOL.risk[tone][0]; out.action = ASTRO_FAMILY_TONE_POOL.action[tone][0];
+  } else if (subtopicKey === 'family-improve') {
+    out.conclusion = '改善可以從理解自己的情緒安全感開始：' + moonLine;
+    out.favor = ASTRO_FAMILY_TONE_POOL.favor[tone][0]; out.action = ASTRO_FAMILY_TONE_POOL.action[tone][0];
+  }
+  var used = [];
+  if (ev.moon) used.push(astroLovePlanetEvidenceStr('Moon', ev.moon));
+  if (ev.house4) used.push(astroLoveHouseEvidenceStr(4, ev.house4));
+  ev.aspects.forEach(function (a) { used.push('相位：' + astroLoveAspectEvidenceStr(a)); });
+  out.caveat = '以上只描述你自己的情緒安全感、家庭慣性與第四宮象徵，不能代替父母、手足或伴侶說明其真實想法，也不能預測確定的搬家、分離或家庭事件。';
+  out.evidence = { used: used, skipped: ev.skipped, seed: ev.seed };
+  out.available = true;
+  return out;
+}
+
 /* astroCategoryReading(catKey, subtopicKey, chart, unknownTime)
    目前支援 catKey==='love'（astroCategoryReadingLove，Phase 1B，邏輯完全不變）與
    catKey==='career'（astroCategoryReadingCareer，Phase 2B）；chart 需為 computeNatalChart()
@@ -7045,6 +7275,7 @@ function astroCategoryReadingCareer(subtopicKey, chart, unknownTime) {
    fields 填入。 */
 function astroCategoryReading(catKey, subtopicKey, chart, unknownTime) {
   if (catKey === 'career') return astroCategoryReadingCareer(subtopicKey, chart, unknownTime);
+  if (catKey === 'family') return astroCategoryReadingFamily(subtopicKey, chart, unknownTime);
   return astroCategoryReadingLove(catKey, subtopicKey, chart, unknownTime);
 }
 function astroCategoryReadingLove(catKey, subtopicKey, chart, unknownTime) {
@@ -7198,7 +7429,7 @@ function combinedReading(cardResult, astroResult, catKey, subtopicKey) {
     conclusion: '', traits: '', trend: '', favor: '', risk: '', timing: '', action: '', caveat: '',
     cardTone: null, astroTone: null, agreement: 'unknown',
   };
-  if (catKey !== 'love' && catKey !== 'career') { out.reason = 'unsupported-category'; return out; }
+  if (catKey !== 'love' && catKey !== 'career' && catKey !== 'family') { out.reason = 'unsupported-category'; return out; }
   var hasCard = !!(cardResult && cardResult.available);
   var hasAstro = !!(astroResult && astroResult.available);
   if (!hasCard && !hasAstro) { out.reason = 'no-input'; return out; }
