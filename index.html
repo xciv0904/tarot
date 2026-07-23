@@ -6110,55 +6110,155 @@ function astroFlashCopied() {
     if (b) b.textContent = '複製給 AI 解讀 Copy for AI';
   }, 2000);
 }
+function astroCopyPositionLine(position, unknownTime) {
+  var sign = ZODIAC_SIGNS[position.sign];
+  return sign.zh + ' ' + position.deg.toFixed(2) + '°' +
+    (unknownTime ? '；宮位不使用' : '；第' + position.house + '宮') +
+    (position.retro ? '；逆行 R' : '；順行');
+}
+function astroCopyAspectEndpoint(key, chart, unknownTime) {
+  var profile = natalAspectProfile(key);
+  var position = natalAspectPosition(chart, key);
+  if (!profile || !position) return '';
+  return profile.name + '：' + astroCopyPositionLine(position, unknownTime);
+}
+function buildAstroCopyText(chart, unknownTime) {
+  if (!chart) return '';
+  var lines = [];
+  var birthStr = state.astroY + '/' + pad2(state.astroM) + '/' + pad2(state.astroD) + ' ' +
+    (unknownTime ? '(出生時間未知；無時間星盤)' : pad2(state.astroH) + ':' + pad2(state.astroMin));
+  lines.push('個人本命星盤完整資料 Natal Chart Data');
+  lines.push('出生：' + birthStr);
+  lines.push('地點：' + (state.astroCityUsed ? state.astroCityUsed.zh : '未提供'));
+  lines.push('宮位制：' + (state.astroHouseSystem === 'whole' ? '整宮制 Whole Sign' : '普拉西德制 Placidus'));
+  lines.push('資料可靠度：' + (unknownTime
+    ? '出生時間未知；不使用上升、天頂、宮位、福點與頂點，月亮位置僅作當日可能範圍參考。'
+    : '出生時間已提供；可使用上升、天頂與宮位。占星內容屬象徵性解讀，不是事件保證。'));
+
+  lines.push('');
+  lines.push('＝＝＝＝ 行星配置 ＝＝＝＝');
+  PLANET_DEFS.forEach(function (d) {
+    var p = chart.planets[d.key];
+    if (!p) return;
+    var r = planetPlacementReading(d, p, unknownTime);
+    var pb = PLANET_BEGINNER[d.key];
+    lines.push('');
+    lines.push('【配置資料｜' + d.zh + ' ' + d.key + '】');
+    lines.push('位置：' + astroCopyPositionLine(p, unknownTime));
+    if (unknownTime && d.key === 'Moon') lines.push('月亮可靠度：出生時間未知；當日可能範圍為 ' + astroMoonRangeText() + '，不採用月亮宮位。');
+    lines.push('核心功能：' + pb['function']);
+    lines.push('【一般摘要】');
+    lines.push(r.summary);
+    lines.push('【生活中的表現】');
+    lines.push(r.lifeExpression);
+    lines.push('【占星推導】');
+    lines.push('行星功能：' + r.advanced.planetFunction);
+    lines.push('星座運作：' + r.advanced.signMethod);
+    lines.push('宮位情境：' + r.advanced.houseActivation);
+    lines.push('融合解讀：' + r.advanced.synthesis);
+    lines.push('成熟方向：' + r.advanced.growth);
+    lines.push('【可以發揮】');
+    lines.push(r.strength);
+    lines.push('【需要留意】');
+    lines.push(r.caution);
+    lines.push('【專業資料】');
+    lines.push(r.technical);
+  });
+
+  lines.push('');
+  lines.push('＝＝＝＝ 額外本命點 ＝＝＝＝');
+  EXTRA_POINT_DEFS.forEach(function (d) {
+    if (unknownTime && (d.key === 'Fortune' || d.key === 'Vertex')) return;
+    var p = chart.points[d.key];
+    if (!p) return;
+    var r = extraPointReading(d, p, chart, unknownTime);
+    var pb = POINT_BEGINNER[d.key];
+    lines.push('');
+    lines.push('【本命點資料｜' + pointDisplayName(d) + ' ' + d.key + '】');
+    lines.push('位置：' + astroCopyPositionLine(p, unknownTime));
+    lines.push('核心功能：' + pb.coreFunction);
+    lines.push('【一般摘要】');
+    lines.push(r.summary);
+    lines.push('【' + r.primaryLabel + '】');
+    lines.push(r.primaryText);
+    lines.push('【生活中的表現】');
+    lines.push(r.lifeExpression);
+    lines.push('【本命點推導】');
+    lines.push('本命點功能：' + r.advanced.coreFunction);
+    lines.push('星座運作：' + r.advanced.signMethod);
+    lines.push('宮位情境：' + r.advanced.houseActivation);
+    if (r.advanced.axisContext) lines.push('交點軸線：' + r.advanced.axisContext);
+    lines.push('融合解讀：' + r.advanced.synthesis);
+    lines.push('成長方向：' + r.advanced.growth);
+    lines.push('【需要留意】');
+    lines.push(r.caution);
+    lines.push('【專業資料】');
+    lines.push(r.technical);
+  });
+
+  lines.push('');
+  lines.push('＝＝＝＝ 星盤結構與宮位 ＝＝＝＝');
+  if (!unknownTime) {
+    lines.push('上升 ASC：' + ZODIAC_SIGNS[chart.ascSign].zh + ' ' + (chart.asc % 30).toFixed(2) + '°');
+    lines.push('天頂 MC：' + ZODIAC_SIGNS[Math.floor(chart.mc / 30)].zh + ' ' + (chart.mc % 30).toFixed(2) + '°');
+    lines.push('宮位起點：');
+    chart.houseCusps.forEach(function (cusp, i) {
+      var sign = ZODIAC_SIGNS[Math.floor(cusp / 30)];
+      lines.push('- 第' + (i + 1) + '宮：' + sign.zh + ' ' + (cusp % 30).toFixed(2) + '°；人生領域：' + HOUSE_BEGINNER[i].lifeArea);
+    });
+  } else {
+    lines.push('出生時間未知，本次不列出上升、天頂與十二宮位。');
+    lines.push('月亮當日可能範圍：' + astroMoonRangeText());
+  }
+  var eq = computeElementQualityBalance(chart);
+  lines.push('元素分布：火' + eq.elem['火'] + '　土' + eq.elem['土'] + '　風' + eq.elem['風'] + '　水' + eq.elem['水']);
+  lines.push('性質分布：本位' + eq.qual['本位'] + '　固定' + eq.qual['固定'] + '　變動' + eq.qual['變動']);
+
+  var usableAspects = astroUsableAspects(chart).slice().sort(function (a, b) {
+    var priorityDiff = (natalAspectPriority(a) === 'core' ? 0 : 1) - (natalAspectPriority(b) === 'core' ? 0 : 1);
+    return priorityDiff || a.orb - b.orb;
+  });
+  lines.push('');
+  lines.push('＝＝＝＝ 主要相位 ＝＝＝＝');
+  usableAspects.forEach(function (asp) {
+    var r = natalAspectReading(asp, chart, unknownTime);
+    if (!r.available) return;
+    lines.push('');
+    lines.push('【相位資料｜' + r.title + '】');
+    lines.push('天體 A：' + astroCopyAspectEndpoint(asp.a, chart, unknownTime));
+    lines.push('天體 B：' + astroCopyAspectEndpoint(asp.b, chart, unknownTime));
+    lines.push('相位：' + ASPECT_DEFS[asp.type].zh + ' ' + NATAL_ASPECT_SYMBOLS[asp.type]);
+    lines.push('精確角距：' + (natalAspectExactDistance(chart, asp) === null ? '未提供' : natalAspectExactDistance(chart, asp).toFixed(2) + '°'));
+    lines.push('容許度：' + asp.orb.toFixed(2) + '°');
+    lines.push('重要程度：' + (r.priority === 'core' ? '核心相位' : '次要相位'));
+    lines.push('入相／出相：目前專案未計算，不推測。');
+    lines.push('【一般摘要】');
+    lines.push(r.summary);
+    lines.push('【內在互動】');
+    lines.push(r.advanced.functions + ' ' + r.advanced.principle);
+    lines.push('【兩端星座與宮位背景】');
+    lines.push(r.advanced.context);
+    lines.push('【實際表現】');
+    lines.push(r.advanced.expression);
+    lines.push('【優勢】');
+    lines.push(r.strength.replace(/^可以發揮：/, ''));
+    lines.push('【容易卡住】');
+    lines.push(r.challenge.replace(/^需要留意：/, ''));
+    lines.push('【整合方式】');
+    lines.push(r.advanced.integration);
+    lines.push('【專業資料】');
+    lines.push(r.technical);
+  });
+
+  lines.push('');
+  lines.push('請根據以上完整資料，先綜合行星、星座、宮位與相位之間的關聯，再做深入的性格特質、關係模式、工作傾向與人生課題解讀。請區分可直接由資料支持的內容與推測，不要使用宿命式斷言；出生時間未知時，請遵守上方可靠度限制。');
+  lines.push(personaInstructionLine());
+  return lines.join('\n');
+}
 function astroCopyForAI() {
   var chart = state.astroResult;
   if (!chart) return;
-  var lines = [];
-  lines.push('個人本命星盤資料 Natal Chart Data');
-  var birthStr = state.astroY + '/' + pad2(state.astroM) + '/' + pad2(state.astroD) + ' ' +
-    (state.astroUnknownTime ? '(出生時間未知；無時間星盤)' : pad2(state.astroH) + ':' + pad2(state.astroMin));
-  lines.push('出生：' + birthStr + '　地點：' + (state.astroCityUsed ? state.astroCityUsed.zh : ''));
-  lines.push('宮位制：' + (state.astroHouseSystem === 'whole' ? '整宮制 Whole Sign' : '普拉西德制 Placidus'));
-  lines.push('');
-  lines.push('行星位置 Planet positions:');
-  PLANET_DEFS.forEach(function (d) {
-    var p = chart.planets[d.key];
-    var sign = ZODIAC_SIGNS[p.sign];
-    lines.push('- ' + d.zh + '(' + d.key + ')：' + sign.zh + ' ' + p.deg.toFixed(2) + '°' + (state.astroUnknownTime ? '' : '　第' + p.house + '宮') + (p.retro ? '　逆行 R' : ''));
-  });
-  lines.push('');
-  lines.push('額外本命點 Additional points:');
-  EXTRA_POINT_DEFS.forEach(function (d) {
-    if (state.astroUnknownTime && (d.key === 'Fortune' || d.key === 'Vertex')) return;
-    var p = chart.points[d.key];
-    var sign = ZODIAC_SIGNS[p.sign];
-    lines.push('- ' + d.zh + '(' + d.key + ')：' + sign.zh + ' ' + p.deg.toFixed(2) + '°' + (state.astroUnknownTime ? '' : '　第' + p.house + '宮') + (p.retro ? '　逆行 R' : ''));
-  });
-  lines.push('');
-  if (!state.astroUnknownTime) {
-    lines.push('上升 ASC：' + ZODIAC_SIGNS[chart.ascSign].zh + ' ' + (chart.asc % 30).toFixed(2) + '°');
-    lines.push('天頂 MC：' + ZODIAC_SIGNS[Math.floor(chart.mc / 30)].zh + ' ' + (chart.mc % 30).toFixed(2) + '°');
-    lines.push(''); lines.push('宮位起點 House cusps:');
-    chart.houseCusps.forEach(function (cusp, i) { var sign = ZODIAC_SIGNS[Math.floor(cusp / 30)]; lines.push('- 第' + (i + 1) + '宮：' + sign.zh + ' ' + (cusp % 30).toFixed(2) + '°'); });
-  } else { lines.push('月亮當日可能範圍：' + astroMoonRangeText()); }
-  var eq = computeElementQualityBalance(chart);
-  lines.push('');
-  lines.push('元素分布：火' + eq.elem['火'] + '　土' + eq.elem['土'] + '　風' + eq.elem['風'] + '　水' + eq.elem['水']);
-  lines.push('性質分布：本位' + eq.qual['本位'] + '　固定' + eq.qual['固定'] + '　變動' + eq.qual['變動']);
-  var usableAspects = astroUsableAspects(chart);
-  if (usableAspects.length) {
-    lines.push('');
-    lines.push('主要相位 Aspects:');
-    usableAspects.slice().sort(function (a, b) { return a.orb - b.orb; }).forEach(function (asp) {
-      var aDef = findAnyPointDef(asp.a);
-      var bDef = findAnyPointDef(asp.b);
-      lines.push('- ' + aDef.zh + ' ' + ASPECT_DEFS[asp.type].zh + ' ' + bDef.zh + '（誤差 ' + asp.orb.toFixed(2) + '°）');
-    });
-  }
-  lines.push('');
-  lines.push('請根據以上本命星盤資料，幫我做深入的性格特質與人生議題解讀。');
-  lines.push(personaInstructionLine());
-  var text = lines.join('\n');
+  var text = buildAstroCopyText(chart, !!state.astroUnknownTime);
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(astroFlashCopied).catch(function () { fallbackCopy(text, astroFlashCopied); });
   } else {
