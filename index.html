@@ -59,8 +59,31 @@
 </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
 <script>
+/* Astronomy Engine is kept as a local, version-pinned asset and loaded only when
+   a natal/synastry calculation is actually needed. This keeps the reading and
+   library screens independent from third-party network availability. */
+var astronomyLoadPromise = null;
+function ensureAstronomyLoaded() {
+  if (window.Astronomy) return Promise.resolve(window.Astronomy);
+  if (astronomyLoadPromise) return astronomyLoadPromise;
+  astronomyLoadPromise = new Promise(function (resolve, reject) {
+    var script = document.createElement('script');
+    script.src = 'assets/vendor/astronomy-engine-2.1.19.min.js';
+    script.async = true;
+    script.onload = function () {
+      if (window.Astronomy) resolve(window.Astronomy);
+      else reject(new Error('Astronomy Engine loaded without global API'));
+    };
+    script.onerror = function () { reject(new Error('Astronomy Engine failed to load')); };
+    document.head.appendChild(script);
+  }).catch(function (err) {
+    astronomyLoadPromise = null;
+    throw err;
+  });
+  return astronomyLoadPromise;
+}
+
 var IMG = {"RWSa-C-02": "assets/cards/RWSa-C-02.webp", "RWSa-C-03": "assets/cards/RWSa-C-03.webp", "RWSa-C-04": "assets/cards/RWSa-C-04.webp", "RWSa-C-05": "assets/cards/RWSa-C-05.webp", "RWSa-C-06": "assets/cards/RWSa-C-06.webp", "RWSa-C-07": "assets/cards/RWSa-C-07.webp", "RWSa-C-08": "assets/cards/RWSa-C-08.webp", "RWSa-C-09": "assets/cards/RWSa-C-09.webp", "RWSa-C-0A": "assets/cards/RWSa-C-0A.webp", "RWSa-C-10": "assets/cards/RWSa-C-10.webp", "RWSa-C-J1": "assets/cards/RWSa-C-J1.webp", "RWSa-C-J2": "assets/cards/RWSa-C-J2.webp", "RWSa-C-KI": "assets/cards/RWSa-C-KI.webp", "RWSa-C-QU": "assets/cards/RWSa-C-QU.webp", "RWSa-P-02": "assets/cards/RWSa-P-02.webp", "RWSa-P-03": "assets/cards/RWSa-P-03.webp", "RWSa-P-04": "assets/cards/RWSa-P-04.webp", "RWSa-P-05": "assets/cards/RWSa-P-05.webp", "RWSa-P-06": "assets/cards/RWSa-P-06.webp", "RWSa-P-07": "assets/cards/RWSa-P-07.webp", "RWSa-P-08": "assets/cards/RWSa-P-08.webp", "RWSa-P-09": "assets/cards/RWSa-P-09.webp", "RWSa-P-0A": "assets/cards/RWSa-P-0A.webp", "RWSa-P-10": "assets/cards/RWSa-P-10.webp", "RWSa-P-J1": "assets/cards/RWSa-P-J1.webp", "RWSa-P-J2": "assets/cards/RWSa-P-J2.webp", "RWSa-P-KI": "assets/cards/RWSa-P-KI.webp", "RWSa-P-QU": "assets/cards/RWSa-P-QU.webp", "RWSa-S-02": "assets/cards/RWSa-S-02.webp", "RWSa-S-03": "assets/cards/RWSa-S-03.webp", "RWSa-S-04": "assets/cards/RWSa-S-04.webp", "RWSa-S-05": "assets/cards/RWSa-S-05.webp", "RWSa-S-06": "assets/cards/RWSa-S-06.webp", "RWSa-S-07": "assets/cards/RWSa-S-07.webp", "RWSa-S-08": "assets/cards/RWSa-S-08.webp", "RWSa-S-09": "assets/cards/RWSa-S-09.webp", "RWSa-S-0A": "assets/cards/RWSa-S-0A.webp", "RWSa-S-10": "assets/cards/RWSa-S-10.webp", "RWSa-S-J1": "assets/cards/RWSa-S-J1.webp", "RWSa-S-J2": "assets/cards/RWSa-S-J2.webp", "RWSa-S-KI": "assets/cards/RWSa-S-KI.webp", "RWSa-S-QU": "assets/cards/RWSa-S-QU.webp", "RWSa-T-00": "assets/cards/RWSa-T-00.webp", "RWSa-T-01": "assets/cards/RWSa-T-01.webp", "RWSa-T-02": "assets/cards/RWSa-T-02.webp", "RWSa-T-03": "assets/cards/RWSa-T-03.webp", "RWSa-T-04": "assets/cards/RWSa-T-04.webp", "RWSa-T-05": "assets/cards/RWSa-T-05.webp", "RWSa-T-06": "assets/cards/RWSa-T-06.webp", "RWSa-T-07": "assets/cards/RWSa-T-07.webp", "RWSa-T-08": "assets/cards/RWSa-T-08.webp", "RWSa-T-09": "assets/cards/RWSa-T-09.webp", "RWSa-T-10": "assets/cards/RWSa-T-10.webp", "RWSa-T-11": "assets/cards/RWSa-T-11.webp", "RWSa-T-12": "assets/cards/RWSa-T-12.webp", "RWSa-T-13": "assets/cards/RWSa-T-13.webp", "RWSa-T-14": "assets/cards/RWSa-T-14.webp", "RWSa-T-15": "assets/cards/RWSa-T-15.webp", "RWSa-T-16": "assets/cards/RWSa-T-16.webp", "RWSa-T-17": "assets/cards/RWSa-T-17.webp", "RWSa-T-18": "assets/cards/RWSa-T-18.webp", "RWSa-T-19": "assets/cards/RWSa-T-19.webp", "RWSa-T-20": "assets/cards/RWSa-T-20.webp", "RWSa-T-21": "assets/cards/RWSa-T-21.webp", "RWSa-W-02": "assets/cards/RWSa-W-02.webp", "RWSa-W-03": "assets/cards/RWSa-W-03.webp", "RWSa-W-04": "assets/cards/RWSa-W-04.webp", "RWSa-W-05": "assets/cards/RWSa-W-05.webp", "RWSa-W-06": "assets/cards/RWSa-W-06.webp", "RWSa-W-07": "assets/cards/RWSa-W-07.webp", "RWSa-W-08": "assets/cards/RWSa-W-08.webp", "RWSa-W-09": "assets/cards/RWSa-W-09.webp", "RWSa-W-0A": "assets/cards/RWSa-W-0A.webp", "RWSa-W-10": "assets/cards/RWSa-W-10.webp", "RWSa-W-J1": "assets/cards/RWSa-W-J1.webp", "RWSa-W-J2": "assets/cards/RWSa-W-J2.webp", "RWSa-W-KI": "assets/cards/RWSa-W-KI.webp", "RWSa-W-QU": "assets/cards/RWSa-W-QU.webp", "LEN-01": "assets/cards/LEN-01.webp", "LEN-02": "assets/cards/LEN-02.webp", "LEN-03": "assets/cards/LEN-03.webp", "LEN-04": "assets/cards/LEN-04.webp", "LEN-05": "assets/cards/LEN-05.webp", "LEN-06": "assets/cards/LEN-06.webp", "LEN-07": "assets/cards/LEN-07.webp", "LEN-08": "assets/cards/LEN-08.webp", "LEN-09": "assets/cards/LEN-09.webp", "LEN-10": "assets/cards/LEN-10.webp", "LEN-11": "assets/cards/LEN-11.webp", "LEN-12": "assets/cards/LEN-12.webp", "LEN-13": "assets/cards/LEN-13.webp", "LEN-14": "assets/cards/LEN-14.webp", "LEN-15": "assets/cards/LEN-15.webp", "LEN-16": "assets/cards/LEN-16.webp", "LEN-17": "assets/cards/LEN-17.webp", "LEN-18": "assets/cards/LEN-18.webp", "LEN-19": "assets/cards/LEN-19.webp", "LEN-20": "assets/cards/LEN-20.webp", "LEN-21": "assets/cards/LEN-21.webp", "LEN-22": "assets/cards/LEN-22.webp", "LEN-23": "assets/cards/LEN-23.webp", "LEN-24": "assets/cards/LEN-24.webp", "LEN-25": "assets/cards/LEN-25.webp", "LEN-26": "assets/cards/LEN-26.webp", "LEN-27": "assets/cards/LEN-27.webp", "LEN-28": "assets/cards/LEN-28.webp", "LEN-29": "assets/cards/LEN-29.webp", "LEN-30": "assets/cards/LEN-30.webp", "LEN-31": "assets/cards/LEN-31.webp", "LEN-32": "assets/cards/LEN-32.webp", "LEN-33": "assets/cards/LEN-33.webp", "LEN-34": "assets/cards/LEN-34.webp", "LEN-35": "assets/cards/LEN-35.webp", "LEN-36": "assets/cards/LEN-36.webp"};
 </script>
 <script>
@@ -5926,7 +5949,7 @@ function astroSaveProfile() {
     }));
   } catch (e) {}
 }
-function astroLoadProfile() {
+async function astroLoadProfile() {
   try {
     var sv = JSON.parse(localStorage.getItem('tl_astro_profile') || 'null');
     if (!sv) return;
@@ -5937,12 +5960,17 @@ function astroLoadProfile() {
     state.astroCityIdx = sv.cityIdx;
     var city = CITY_LIST[state.astroCityIdx];
     if (city && state.astroY && state.astroM && state.astroD) {
+      await ensureAstronomyLoaded();
       var hh = state.astroUnknownTime ? 12 : (parseInt(state.astroH, 10) || 0);
       var mm = state.astroUnknownTime ? 0 : (parseInt(state.astroMin, 10) || 0);
       state.astroResult = computeNatalChart(parseInt(state.astroY, 10), parseInt(state.astroM, 10), parseInt(state.astroD, 10), hh, mm, city.lat, city.lon, city.tz, state.astroHouseSystem);
       state.astroCityUsed = city;
+      render();
     }
-  } catch (e) {}
+  } catch (e) {
+    state.astroResult = null;
+    try { console.warn('無法恢復已儲存的星盤：', e); } catch (e2) {}
+  }
 }
 /* 匯出／匯入星盤資料——換手機或換瀏覽器時，本命點資料（存在 localStorage）不會跟著走，
    這裡讓使用者自己存一份 JSON 小檔案備份，之後在新裝置上匯入就能還原，不用重新輸入。 */
@@ -6000,7 +6028,7 @@ function astroForget() {
   state.astroUnknownTime = false; state.astroHouseSystem = 'placidus'; state.astroResult = null;
   render(); window.scrollTo(0, 0);
 }
-function astroGenerate() {
+async function astroGenerate() {
   var city = CITY_LIST[state.astroCityIdx];
   if (!city || !state.astroY || !state.astroM || !state.astroD) return;
   if (validateBirthDate(state.astroY, state.astroM, state.astroD, state.astroH, state.astroMin, state.astroUnknownTime)) { render(); return; }
@@ -6009,6 +6037,14 @@ function astroGenerate() {
      整個凍住、使用者以為沒反應而重複點擊。 */
   state.astroGenerating = true;
   render();
+  try {
+    await ensureAstronomyLoaded();
+  } catch (e) {
+    state.astroGenerating = false;
+    render();
+    try { alert('星盤計算元件載入失敗，請確認網路後重新整理頁面再試一次。'); } catch (e2) {}
+    return;
+  }
   setTimeout(function () {
     var hh = state.astroUnknownTime ? 12 : (parseInt(state.astroH, 10) || 0);
     var mm = state.astroUnknownTime ? 0 : (parseInt(state.astroMin, 10) || 0);
@@ -6080,12 +6116,20 @@ function synCityInput(v) {
   updateCityLiveBlock('syn', 'synGenerate');
 }
 function synToggleUnknownTime() { state.synUnknownTime = !state.synUnknownTime; render(); }
-function synGenerate() {
+async function synGenerate() {
   var city = CITY_LIST[state.synCityIdx];
   if (!city || !state.synY || !state.synM || !state.synD) return;
   if (validateBirthDate(state.synY, state.synM, state.synD, state.synH, state.synMin, state.synUnknownTime)) { render(); return; }
   state.synGenerating = true;
   render();
+  try {
+    await ensureAstronomyLoaded();
+  } catch (e) {
+    state.synGenerating = false;
+    render();
+    try { alert('星盤計算元件載入失敗，請確認網路後重新整理頁面再試一次。'); } catch (e2) {}
+    return;
+  }
   setTimeout(function () {
     var hh = state.synUnknownTime ? 12 : (parseInt(state.synH, 10) || 0);
     var mm = state.synUnknownTime ? 0 : (parseInt(state.synMin, 10) || 0);

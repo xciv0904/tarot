@@ -1,5 +1,5 @@
 /* Mystic Deck service worker — 卡牌圖片快取優先,頁面網路優先 */
-const CACHE = 'mystic-v3';
+const CACHE = 'mystic-v4';
 const CORE = ['./', './index.html', './manifest.json', './assets/favicon.png', './assets/icon-192.png', './assets/icon-512.png'];
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(CORE); }).catch(function () {}));
