@@ -397,7 +397,12 @@ var SUBTOPICS = {
     { key: 'focus-execution', zh: '專注力、時間安排、理解及表達模式', fields: ['conclusion', 'risk', 'action', 'caveat'], modes: ['cards', 'astro', 'combined'] },
     { key: 'learning-trait', zh: '星盤中的學習特質與適合發展的能力', fields: ['conclusion', 'traits', 'favor', 'caveat'], modes: ['astro', 'combined'] },
   ],
-  /* general 維持現狀，不新增具體問題 */
+  general: [
+    { key: 'overall-theme', zh: '近期整體運勢與生活主軸', fields: ['conclusion', 'trend', 'favor', 'risk', 'action', 'caveat'], modes: ['cards', 'astro', 'combined'] },
+    { key: 'priority-focus', zh: '目前最需要優先處理的事情', fields: ['conclusion', 'traits', 'risk', 'action', 'caveat'], modes: ['cards', 'astro', 'combined'] },
+    { key: 'hidden-blindspot', zh: '目前可能沒有注意到的盲點', fields: ['conclusion', 'risk', 'action', 'caveat'], modes: ['cards', 'astro', 'combined'] },
+    { key: 'next-direction', zh: '下一階段的方向與行動建議', fields: ['conclusion', 'trend', 'favor', 'action', 'caveat'], modes: ['cards', 'astro', 'combined'] },
+  ],
 };
 
 /* 健康／財運為合規敏感分類，輸出時一律附加固定免責句（非動態生成、不可省略） */
@@ -1848,7 +1853,7 @@ function renderWizard(spreads, isTarot) {
       h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:14px">' + targetCfg.label + '</div>';
       h += '<input id="target-input" value="' + esc(state.target) + '" oninput="state.target=this.value" placeholder="' + targetCfg.placeholder + '" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:10px 13px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
     }
-    if (state.category === 'love' || state.category === 'career' || state.category === 'family') {
+    if (['love', 'career', 'family', 'wealth', 'health', 'social', 'study', 'general'].indexOf(state.category) !== -1) {
       /* 已完成牌卡＋星盤引擎的分類皆顯示解讀來源選擇器。 */
       h += renderModePicker();
       h += renderSubtopicPicker();
@@ -2138,6 +2143,34 @@ function renderReading() {
           h += renderCombinedSummaryPanel(familySubDef, familyCombRes);
         } else {
           h += renderSubtopicResultPanel(familySubDef, familyCardRes);
+        }
+      }
+    } else if (state.category === 'wealth' && state.subtopic) {
+      var wealthSubDef = (SUBTOPICS.wealth || []).filter(function (s) { return s.key === state.subtopic; })[0];
+      if (wealthSubDef) {
+        var wealthCardRes = cardSubtopicReading('wealth', state.subtopic, state.drawn);
+        if (state.readingMode === 'combined' && state.astroResult) {
+          h += renderSubtopicResultPanel(wealthSubDef, wealthCardRes, '牌卡具體解讀');
+          var wealthAstroRes = astroCategoryReading('wealth', state.subtopic, state.astroResult, state.astroUnknownTime);
+          h += renderAstroSubtopicPanel(wealthSubDef, wealthAstroRes);
+          var wealthCombRes = combinedReading(wealthCardRes, wealthAstroRes, 'wealth', state.subtopic);
+          h += renderCombinedSummaryPanel(wealthSubDef, wealthCombRes);
+        } else {
+          h += renderSubtopicResultPanel(wealthSubDef, wealthCardRes);
+        }
+      }
+    } else if (['health', 'social', 'study', 'general'].indexOf(state.category) !== -1 && state.subtopic) {
+      var remainingSubDef = (SUBTOPICS[state.category] || []).filter(function (s) { return s.key === state.subtopic; })[0];
+      if (remainingSubDef) {
+        var remainingCardRes = cardSubtopicReading(state.category, state.subtopic, state.drawn);
+        if (state.readingMode === 'combined' && state.astroResult) {
+          h += renderSubtopicResultPanel(remainingSubDef, remainingCardRes, '牌卡具體解讀');
+          var remainingAstroRes = astroCategoryReading(state.category, state.subtopic, state.astroResult, state.astroUnknownTime);
+          h += renderAstroSubtopicPanel(remainingSubDef, remainingAstroRes);
+          var remainingCombRes = combinedReading(remainingCardRes, remainingAstroRes, state.category, state.subtopic);
+          h += renderCombinedSummaryPanel(remainingSubDef, remainingCombRes);
+        } else {
+          h += renderSubtopicResultPanel(remainingSubDef, remainingCardRes);
         }
       }
     }
@@ -2743,6 +2776,212 @@ function cardSubtopicReadingFamily(subtopicKey, drawnCards) {
   return out;
 }
 
+/* 財運牌卡引擎：描述現金流、風險態度與可能的資源來源，不提供任何特定投資標的、
+   買賣時點或保證獲利結論。money-pattern 為星盤限定，不在牌卡模式產生內容。 */
+var WEALTH_SUBTOPIC_LEAD = {
+  'cashflow-risk': ['關於近期收支與現金流，牌面顯示：', '目前財務流動較明顯的訊息是：'],
+  'risk-approach': ['關於宜保守或在可承受範圍內行動，牌面提示：', '這組牌對風險節奏的提醒是：'],
+  'opportunity-source': ['財務機會可能從這個方向被看見：', '牌面顯示較值得留意的資源來源是：'],
+};
+var WEALTH_ROLE_PRIORITY = {
+  'cashflow-risk': ['present', 'obstacle', 'future'],
+  'risk-approach': ['advice', 'obstacle', 'future'],
+  'opportunity-source': ['future', 'other', 'strength'],
+};
+var WEALTH_SOURCE_BY_GROUP = {
+  wands: ['機會較可能來自主動開發、副業嘗試、行銷推廣或需要行動力的工作', '資源來源偏向新計畫、接案或把想法快速落實'],
+  cups: ['機會較可能來自服務、照顧、美感創作、顧客關係或人際合作', '資源來源偏向信任、口碑與能回應他人需求的工作'],
+  swords: ['機會較可能來自資訊、企劃、顧問、溝通、教學或專業判斷', '資源來源偏向知識、分析與解決複雜問題的能力'],
+  pentacles: ['機會較可能來自本業累積、技術、管理、實體資源或長期合作', '資源來源偏向穩定工作、專業證明與可持續的成果'],
+  major: ['財務議題正處於較大的轉折，機會來源不宜只用單一工作類型判定', '資源可能伴隨人生方向調整而出現，需要回到整體選擇評估'],
+  len_good: ['資源流動相對順暢，工作、人脈或合作可能帶來可見機會', '機會來源較明朗，但仍需要實際確認條件與成本'],
+  len_neutral: ['資源來源仍在醞釀，可能來自既有工作或日常人脈的小幅累積', '機會尚未特別集中，適合多方比較而不急著投入'],
+  len_bad: ['目前更適合先處理漏洞、債務或不穩定因素，再尋找新的收入來源', '機會可能伴隨隱藏成本或條件，需要特別查證'],
+};
+var WEALTH_TONE_POOL = {
+  trend: {
+    positive: ['近期資源流動較有支持，但仍宜先保留必要預備金', '收支有改善空間，適合把握已看得懂且能承擔的機會'],
+    neutral: ['財務走向仍在整理期，收入與支出需要持續觀察', '近期宜以穩定現金流為主，再決定是否增加風險'],
+    challenging: ['現金流可能承受壓力，短期宜優先止漏、降低非必要支出', '近期變數偏多，先維持流動性比追求高報酬更重要'],
+  },
+  favor: {
+    positive: ['已有的能力、工作成果與可靠合作，是目前最實際的財務助力', '清楚掌握的資訊與穩定執行力，有助於把機會轉成成果'],
+    neutral: ['預算、紀錄與分散風險，是目前最能增加安全感的做法', '先盤點可動用資源與固定支出，會比憑感覺決定更有幫助'],
+    challenging: ['保留緊急預備金並尋求可信任的專業意見，是目前的重要保護', '願意面對帳務與風險，而不是期待快速翻轉，會更有幫助'],
+  },
+  risk: {
+    positive: ['順利時仍要留意過度樂觀、追高或把短期成果當成長期保證', '機會出現時要確認合約、成本與退出條件，避免只看潛在收益'],
+    neutral: ['資訊不完整、猶豫後衝動投入或忽略小額累積支出，都是需要留意的風險', '不要因為害怕錯過而超出自己原本設定的承受範圍'],
+    challenging: ['需留意高槓桿、借貸投入、來路不明的機會與承諾保證獲利的說法', '壓力下容易想靠一次高風險決策翻轉，反而放大損失'],
+  },
+  action: {
+    positive: ['可以在設定上限與退出條件後，小幅度測試自己充分理解的機會', '先確定必要支出與預備金，再把剩餘資源投入明確目標'],
+    neutral: ['先記錄一段時間的收支與風險承受度，再決定下一步', '把大決定拆成小步驟，避免一次投入過多資源'],
+    challenging: ['暫緩高風險或不熟悉的決定，先處理現金流、債務與必要支出', '若涉及重大金額、借貸或複雜商品，請先諮詢合格財務專業人士'],
+  },
+};
+function wealthFocusCard(drawnCards, subtopicKey) {
+  var priorities = WEALTH_ROLE_PRIORITY[subtopicKey] || ['present', 'future', 'advice'];
+  for (var i = 0; i < priorities.length; i++) for (var j = 0; j < drawnCards.length; j++) {
+    if (posRole(drawnCards[j].pos.zh) === priorities[i]) return drawnCards[j];
+  }
+  return drawnCards[drawnCards.length - 1];
+}
+function cardSubtopicReadingWealth(subtopicKey, drawnCards) {
+  var out = { available: false, reason: '', catKey: 'wealth', subtopicKey: subtopicKey, conclusion: '', traits: '', trend: '', favor: '', risk: '', timing: '', action: '', caveat: '', tone: null };
+  var subtopic = (SUBTOPICS.wealth || []).filter(function (s) { return s.key === subtopicKey; })[0];
+  if (!subtopic) { out.reason = 'unknown-subtopic'; return out; }
+  if (subtopic.modes.indexOf('cards') === -1) { out.reason = 'mode-not-supported'; return out; }
+  if (!drawnCards || !drawnCards.length) { out.reason = 'no-cards'; return out; }
+  var isTarot = typeof drawnCards[0].card.arcana !== 'undefined';
+  var focus = wealthFocusCard(drawnCards, subtopicKey);
+  var seed = 'wealth|' + subtopicKey + '|' + drawnCards.map(function (d) {
+    return (isTarot ? d.card.id : ('l' + d.card.n)) + (d.reversed ? 'R' : 'U');
+  }).join(',');
+  var baseMeaning;
+  if (isTarot && focus.card.rich && focus.card.rich.ctx && focus.card.rich.ctx.wealth) baseMeaning = focus.card.rich.ctx.wealth[focus.reversed ? 1 : 0];
+  else if (isTarot) baseMeaning = focus.reversed ? focus.card.revZh : focus.card.upZh;
+  else { var lr = LEN_RICH[focus.card.n]; baseMeaning = (lr && lr.wealth) ? lr.wealth : focus.card.mZh; }
+  baseMeaning = baseMeaning.replace(/,/g, '，');
+  var leadPool = WEALTH_SUBTOPIC_LEAD[subtopicKey];
+  out.conclusion = leadPool[hashStr(seed + '|lead') % leadPool.length] + baseMeaning;
+  var tone = loveToneBucket(drawnCards, isTarot);
+  out.tone = tone;
+  if (subtopicKey === 'opportunity-source') {
+    var group = loveCardGroup(focus.card, isTarot);
+    var sourcePool = WEALTH_SOURCE_BY_GROUP[group] || WEALTH_SOURCE_BY_GROUP.len_neutral;
+    out.traits = '可能來源：' + sourcePool[hashStr(seed + '|source') % sourcePool.length];
+  }
+  ['trend', 'favor', 'risk', 'action'].forEach(function (f) {
+    if (subtopic.fields.indexOf(f) !== -1) out[f] = WEALTH_TONE_POOL[f][tone][hashStr(seed + '|' + f) % WEALTH_TONE_POOL[f][tone].length];
+  });
+  out.caveat = FINANCE_DISCLAIMER + ' 牌面只能提供風險節奏與自我觀察，不能判斷特定標的一定上漲、保證獲利或取代完整的財務評估。';
+  out.available = true;
+  return out;
+}
+
+/* 健康／人際／學業共用牌卡骨架；各分類仍使用自己的既有 ctx 牌義、專屬導語與
+   專屬措辭池。健康只談生活節奏與自我照顧，不把牌面對應成疾病或器官。 */
+var REMAINING_CARD_CONFIG = {
+  health: {
+    leads: {
+      'body-lifestyle': '關於近期壓力與生活習慣，牌面提醒：',
+      'daily-balance': '關於睡眠、飲食、情緒與活動平衡，牌面顯示：',
+    },
+    caveat: HEALTH_DISCLAIMER + ' 牌面不對應特定器官或疾病，本次只提供生活習慣、壓力與自我照顧的象徵性提醒。',
+  },
+  social: {
+    leads: {
+      'attract-type': '關於你容易遇到的人際類型，牌面顯示：',
+      'interpersonal-style': '關於你的人際優勢、盲點與界線，牌面提醒：',
+      'ally-conflict': '關於合作、支持、競爭與誤解，牌面顯示：',
+    },
+    caveat: '以上為牌面呈現的人際互動傾向，不能代替他人說明其真實想法，也不能斷言誰一定是貴人或敵人；請以實際行為、溝通與界線為準。',
+  },
+  study: {
+    leads: {
+      'major-fit': '關於適合的科系、技能與學習方式，牌面顯示：',
+      'exam-application': '關於考試、申請、留學或證照準備，牌面提醒：',
+      'focus-execution': '關於專注、時間安排、理解與表達，牌面顯示：',
+    },
+    caveat: '以上為牌面呈現的學習傾向與準備方向，不保證考試、錄取、申請或證照結果；實際成果仍取決於準備程度、評分標準與現實條件。',
+  },
+};
+var REMAINING_CARD_TRAITS = {
+  health: {
+    wands: '生活節奏偏快、行動量高，較需要安排降速與恢復時間', cups: '狀態容易受情緒與關係氛圍影響，適合建立穩定的情緒出口',
+    swords: '思緒與資訊壓力較明顯，需要減少過度分析並保留睡眠品質', pentacles: '身體較重視規律、飲食與可持續習慣，適合循序調整',
+    major: '目前的身心課題較像整體生活轉折，不宜簡化成單一身體部位', len_good: '整體恢復條件較有支持，適合維持有效習慣',
+    len_neutral: '狀態需要持續觀察，先從作息與壓力紀錄找規律', len_bad: '目前較需要休息與現實協助，不宜勉強硬撐',
+  },
+  social: {
+    wands: '容易遇到直接、有行動力、喜歡帶動氣氛的人', cups: '容易遇到重感受、願意傾聽、也較敏感的人',
+    swords: '容易遇到理性、重視觀點與溝通效率的人', pentacles: '容易遇到務實、可靠、重視長期互助的人',
+    major: '近期人際可能帶來較鮮明的轉折或重要課題', len_good: '互動對象較願意支持合作，關係發展相對順暢',
+    len_neutral: '互動需要時間觀察與磨合，不宜太早定義關係', len_bad: '互動中可能有防衛、誤解或利益衝突，需要保留界線',
+  },
+  study: {
+    wands: '較適合目標明確、能實作與快速得到回饋的學習方式', cups: '較適合有故事、圖像、情感連結或人際互動的內容',
+    swords: '較適合分析、閱讀、寫作、辯證與資訊整理型學習', pentacles: '較適合反覆練習、做題、實作與穩定累積的方式',
+    major: '學習方向可能正經歷較大的選擇或轉換，需要先確認核心目標', len_good: '目前學習資源與回饋較有支持，適合延續有效方法',
+    len_neutral: '學習方向仍需比較與試做，再決定主要投入項目', len_bad: '目前可能有基礎漏洞、壓力或方法不合，需要先處理卡點',
+  },
+};
+var REMAINING_TONE_POOL = {
+  health: {
+    trend: { positive:'整體狀態有回穩空間，維持規律比短期激烈調整更有幫助', neutral:'狀態仍在波動，適合記錄睡眠、飲食、活動與壓力的變化', challenging:'近期負荷偏高，應優先休息並留意實際不適是否需要專業協助' },
+    favor: { positive:'已經有效的作息與支持系統，是目前最重要的助力', neutral:'小幅但能持續的生活調整，比一次改很多更容易維持', challenging:'願意求助、休息並降低負荷，是目前重要的保護因素' },
+    risk: { positive:'好轉時仍別一次恢復過多活動，避免忽略身體回饋', neutral:'容易因忙碌而跳過休息，或用短期刺激取代真正恢復', challenging:'不宜把牌面當成診斷，也不要因占卜結果延後就醫' },
+    action: { positive:'延續有效習慣，安排固定的睡眠、飲食與活動節奏', neutral:'一次選一項最影響生活的習慣，連續觀察並逐步調整', challenging:'先降低負荷；若有持續或嚴重不適，請尋求合格醫療人員協助' },
+  },
+  social: {
+    trend: { positive:'互動有增加信任與合作的空間，主動而真誠會帶來進展', neutral:'關係仍在觀察與磨合期，走向取決於後續溝通', challenging:'近期容易出現立場差異或誤解，先降溫再確認事實' },
+    favor: { positive:'清楚表達與可靠行動，是建立支持關係的主要優勢', neutral:'願意傾聽並確認彼此理解，會比急著說服更有幫助', challenging:'保留界線並尋找中立資訊，能降低被情緒帶走的風險' },
+    risk: { positive:'關係順利時也別忽略界線與互惠，避免單方面付出', neutral:'容易用猜測代替確認，或為了合群壓下真實需求', challenging:'需留意操控、排擠、利益不透明或反覆踩界線的行為' },
+    action: { positive:'可以主動安排一次具體合作或坦白對話，累積信任', neutral:'先說明你的觀察與需求，再詢問對方的理解', challenging:'暫停高衝突互動，保存事實並清楚設定可接受的界線' },
+  },
+  study: {
+    trend: { positive:'準備方向逐漸清楚，持續執行容易看到累積成果', neutral:'仍在調整方法與節奏，需要用練習結果檢查成效', challenging:'目前有基礎或時間配置問題，先補漏洞比追趕進度重要' },
+    favor: { positive:'目前的理解力與執行節奏是主要優勢，適合穩定累積', neutral:'明確計畫、回饋與分段複習，是最實際的助力', challenging:'願意求助並重整基礎，會比獨自硬撐更有效' },
+    risk: { positive:'進展順利時仍要定期測驗自己，避免只有熟悉感沒有真正理解', neutral:'容易規劃過多、切換方法或拖到最後才集中準備', challenging:'焦慮、熬夜與只做擅長題目，可能讓弱點持續累積' },
+    action: { positive:'維持目前方法，加入定期回想測驗與錯題整理', neutral:'把目標拆成每天可完成的任務，並依回饋調整', challenging:'先縮小範圍補最關鍵的基礎，必要時尋求老師或同學協助' },
+  },
+};
+function cardSubtopicReadingRemaining(catKey, subtopicKey, drawnCards) {
+  var out = { available:false, reason:'', catKey:catKey, subtopicKey:subtopicKey, conclusion:'', traits:'', trend:'', favor:'', risk:'', timing:'', action:'', caveat:'', tone:null };
+  var cfg = REMAINING_CARD_CONFIG[catKey], subtopic = (SUBTOPICS[catKey] || []).filter(function (s) { return s.key === subtopicKey; })[0];
+  if (!cfg) { out.reason = 'unsupported-category'; return out; }
+  if (!subtopic) { out.reason = 'unknown-subtopic'; return out; }
+  if (subtopic.modes.indexOf('cards') === -1) { out.reason = 'mode-not-supported'; return out; }
+  if (!drawnCards || !drawnCards.length) { out.reason = 'no-cards'; return out; }
+  var isTarot = typeof drawnCards[0].card.arcana !== 'undefined';
+  var focus = drawnCards[drawnCards.length - 1];
+  var seed = catKey + '|' + subtopicKey + '|' + drawnCards.map(function (d) { return (isTarot ? d.card.id : 'l'+d.card.n) + (d.reversed?'R':'U'); }).join(',');
+  var base;
+  if (isTarot && focus.card.rich && focus.card.rich.ctx && focus.card.rich.ctx[catKey]) base = focus.card.rich.ctx[catKey][focus.reversed ? 1 : 0];
+  else if (isTarot) base = focus.reversed ? focus.card.revZh : focus.card.upZh;
+  else { var lr = LEN_RICH[focus.card.n]; base = (lr && lr[catKey]) ? lr[catKey] : focus.card.mZh; }
+  out.conclusion = cfg.leads[subtopicKey] + base.replace(/,/g, '，');
+  var tone = loveToneBucket(drawnCards, isTarot); out.tone = tone;
+  if (subtopic.fields.indexOf('traits') !== -1) {
+    var group = loveCardGroup(focus.card, isTarot);
+    out.traits = REMAINING_CARD_TRAITS[catKey][group] || '';
+  }
+  ['trend','favor','risk','action'].forEach(function (f) { if (subtopic.fields.indexOf(f) !== -1) out[f] = REMAINING_TONE_POOL[catKey][f][tone]; });
+  if (subtopic.fields.indexOf('timing') !== -1) out.timing = tone === 'positive' ? '近期可依準備進度穩定推進' : (tone === 'neutral' ? '仍需一段時間準備與觀察' : '宜先補足基礎，不急著設定確切結果時間');
+  out.caveat = cfg.caveat; out.available = true; return out;
+}
+
+var GENERAL_SUBTOPIC_LEAD = {
+  'overall-theme':'近期整體生活最明顯的主軸是：',
+  'priority-focus':'目前最值得優先處理的是：',
+  'hidden-blindspot':'牌面提醒你可能忽略的是：',
+  'next-direction':'下一階段可以朝這個方向前進：',
+};
+var GENERAL_FOCUS_BY_GROUP = {
+  wands:'行動、目標與生活動力',cups:'情緒、關係與內在滿足',swords:'思考、溝通與需要做出的判斷',pentacles:'工作、資源與現實生活基礎',
+  major:'目前較重要的人生轉折與整體方向',len_good:'正在形成的機會與支持',len_neutral:'需要持續觀察與調整的日常狀態',len_bad:'眼前的壓力、漏洞與需要先處理的問題',
+};
+var GENERAL_TONE_POOL = {
+  trend:{positive:'整體趨勢較有支持，適合穩定推進並擴大已有效的做法',neutral:'目前處於整理與轉換期，方向會隨後續選擇逐漸清楚',challenging:'近期阻力偏多，先處理核心壓力比急著全面推進更實際'},
+  favor:{positive:'已有的能力、支持與清楚目標，是目前最大的助力',neutral:'願意盤點現況並調整優先順序，會帶來實際幫助',challenging:'保留基本生活節奏、可信任的支持與求助管道，是重要保護'},
+  risk:{positive:'順利時仍要留意一次承擔太多，避免忽略休息與細節',neutral:'容易同時關注太多問題，導致真正重要的事沒有被處理',challenging:'壓力下可能急著做重大決定或完全停擺，需要先縮小問題範圍'},
+  action:{positive:'選定一個最重要的方向，延續有效做法並安排下一個具體步驟',neutral:'把待處理事項分成現在、稍後與可以放下三類，再開始行動',challenging:'先穩住安全、健康與必要責任，再處理其他長期目標'},
+};
+function cardSubtopicReadingGeneral(subtopicKey, drawnCards) {
+  var out={available:false,reason:'',catKey:'general',subtopicKey:subtopicKey,conclusion:'',traits:'',trend:'',favor:'',risk:'',timing:'',action:'',caveat:'',tone:null};
+  var subtopic=(SUBTOPICS.general||[]).filter(function(s){return s.key===subtopicKey;})[0];
+  if(!subtopic){out.reason='unknown-subtopic';return out;} if(!drawnCards||!drawnCards.length){out.reason='no-cards';return out;}
+  var isTarot=typeof drawnCards[0].card.arcana!=='undefined',focus=drawnCards[drawnCards.length-1];
+  var base=isTarot&&focus.card.rich&&focus.card.rich.ctx&&focus.card.rich.ctx.general?focus.card.rich.ctx.general[focus.reversed?1:0]:(isTarot?(focus.reversed?focus.card.revZh:focus.card.upZh):focus.card.mZh);
+  out.conclusion=GENERAL_SUBTOPIC_LEAD[subtopicKey]+base.replace(/,/g,'，');
+  var tone=loveToneBucket(drawnCards,isTarot);out.tone=tone;
+  if(subtopic.fields.indexOf('traits')!==-1){var group=loveCardGroup(focus.card,isTarot);out.traits='優先面向：'+(GENERAL_FOCUS_BY_GROUP[group]||GENERAL_FOCUS_BY_GROUP.len_neutral);}
+  ['trend','favor','risk','action'].forEach(function(f){if(subtopic.fields.indexOf(f)!==-1)out[f]=GENERAL_TONE_POOL[f][tone];});
+  out.caveat='綜合解讀呈現的是目前牌面的象徵性主題與可調整方向，不代表所有生活領域都會同時發生事件，也不是對未來結果的確定預測。';
+  out.available=true;return out;
+}
+
 /* cardSubtopicReading(catKey, subtopicKey, drawnCards)
    目前支援 catKey==='love'（cardSubtopicReadingLove，Phase 1A，邏輯完全不變）與
    catKey==='career'（cardSubtopicReadingCareer，Phase 2A）；drawnCards 需為 state.drawn
@@ -2752,6 +2991,9 @@ function cardSubtopicReadingFamily(subtopicKey, drawnCards) {
 function cardSubtopicReading(catKey, subtopicKey, drawnCards) {
   if (catKey === 'career') return cardSubtopicReadingCareer(subtopicKey, drawnCards);
   if (catKey === 'family') return cardSubtopicReadingFamily(subtopicKey, drawnCards);
+  if (catKey === 'wealth') return cardSubtopicReadingWealth(subtopicKey, drawnCards);
+  if (['health', 'social', 'study'].indexOf(catKey) !== -1) return cardSubtopicReadingRemaining(catKey, subtopicKey, drawnCards);
+  if (catKey === 'general') return cardSubtopicReadingGeneral(subtopicKey, drawnCards);
   return cardSubtopicReadingLove(catKey, subtopicKey, drawnCards);
 }
 function cardSubtopicReadingLove(catKey, subtopicKey, drawnCards) {
@@ -3198,7 +3440,7 @@ function buildDrawn() {
       subtopic: (state.subtopic && SUBTOPICS[state.category]) ? (function () {
         var def = (SUBTOPICS[state.category] || []).filter(function (s) { return s.key === state.subtopic; })[0];
         if (!def) return null;
-        var hasAstroEngine = state.category === 'love' || state.category === 'career' || state.category === 'family';
+        var hasAstroEngine = ['love', 'career', 'family', 'wealth', 'health', 'social', 'study', 'general'].indexOf(state.category) !== -1;
         var cardRes = cardSubtopicReading(state.category, state.subtopic, state.drawn);
         var astroRes = (hasAstroEngine && state.readingMode === 'combined' && state.astroResult)
           ? astroCategoryReading(state.category, state.subtopic, state.astroResult, state.astroUnknownTime) : null;
@@ -3509,6 +3751,57 @@ function copyForAI() {
       } else if (state.astroUnknownTime) {
         lines.push('');
         lines.push('家庭星盤補充：出生時間未知，本次不使用月亮與第四宮進行家庭解讀，因此只保留牌卡結果。');
+      }
+    }
+  } else if (state.category === 'wealth' && state.subtopic) {
+    var wealthSubDef2 = (SUBTOPICS.wealth || []).filter(function (s) { return s.key === state.subtopic; })[0];
+    var wealthRes2 = wealthSubDef2 ? cardSubtopicReading('wealth', state.subtopic, state.drawn) : null;
+    if (wealthRes2 && wealthRes2.available) {
+      lines.push('');
+      lines.push('具體問題解讀（財運牌卡）：' + wealthSubDef2.zh);
+      SUBTOPIC_FIELD_ORDER.forEach(function (f) {
+        if (wealthSubDef2.fields.indexOf(f) !== -1 && wealthRes2[f]) lines.push('　' + SUBTOPIC_FIELD_LABELS[f][0] + '：' + wealthRes2[f]);
+      });
+    }
+    if (wealthSubDef2 && state.readingMode === 'combined' && state.astroResult) {
+      var wealthAstroRes2 = astroCategoryReading('wealth', state.subtopic, state.astroResult, state.astroUnknownTime);
+      if (wealthAstroRes2.available) {
+        lines.push('');
+        lines.push('具體問題解讀（財運星盤）：' + wealthSubDef2.zh + (wealthRes2 && wealthRes2.available ? '' : '（星盤限定 astro-only，本題無牌卡模式）'));
+        SUBTOPIC_FIELD_ORDER.forEach(function (f) {
+          if (wealthSubDef2.fields.indexOf(f) !== -1 && wealthAstroRes2[f]) lines.push('　' + SUBTOPIC_FIELD_LABELS[f][0] + '：' + wealthAstroRes2[f]);
+        });
+        if (wealthAstroRes2.evidence && wealthAstroRes2.evidence.used.length) lines.push('　星盤依據：' + wealthAstroRes2.evidence.used.join('；'));
+        var wealthCombRes2 = combinedReading(wealthRes2, wealthAstroRes2, 'wealth', state.subtopic);
+        if (wealthCombRes2.available && wealthCombRes2.mode === 'combined') {
+          lines.push('');
+          lines.push('牌卡＋星盤綜合觀察（財運）：' + wealthSubDef2.zh);
+          SUBTOPIC_FIELD_ORDER.forEach(function (f) {
+            if (wealthSubDef2.fields.indexOf(f) !== -1 && wealthCombRes2[f]) lines.push('　' + SUBTOPIC_FIELD_LABELS[f][0] + '：' + wealthCombRes2[f]);
+          });
+        }
+      }
+    }
+  } else if (['health', 'social', 'study', 'general'].indexOf(state.category) !== -1 && state.subtopic) {
+    var remCat2 = state.category;
+    var remNames2 = {health:'健康',social:'人際',study:'學業',general:'綜合'};
+    var remSubDef2 = (SUBTOPICS[remCat2] || []).filter(function(s){return s.key===state.subtopic;})[0];
+    var remCardRes2 = remSubDef2 ? cardSubtopicReading(remCat2,state.subtopic,state.drawn) : null;
+    if (remCardRes2 && remCardRes2.available) {
+      lines.push(''); lines.push('具體問題解讀（'+remNames2[remCat2]+'牌卡）：'+remSubDef2.zh);
+      SUBTOPIC_FIELD_ORDER.forEach(function(f){if(remSubDef2.fields.indexOf(f)!==-1&&remCardRes2[f])lines.push('　'+SUBTOPIC_FIELD_LABELS[f][0]+'：'+remCardRes2[f]);});
+    }
+    if (remSubDef2 && state.readingMode==='combined' && state.astroResult) {
+      var remAstroRes2=astroCategoryReading(remCat2,state.subtopic,state.astroResult,state.astroUnknownTime);
+      if(remAstroRes2.available){
+        lines.push(''); lines.push('具體問題解讀（'+remNames2[remCat2]+'星盤）：'+remSubDef2.zh+(remCardRes2&&remCardRes2.available?'':'（星盤限定 astro-only，本題無牌卡模式）'));
+        SUBTOPIC_FIELD_ORDER.forEach(function(f){if(remSubDef2.fields.indexOf(f)!==-1&&remAstroRes2[f])lines.push('　'+SUBTOPIC_FIELD_LABELS[f][0]+'：'+remAstroRes2[f]);});
+        if(remAstroRes2.evidence&&remAstroRes2.evidence.used.length)lines.push('　星盤依據：'+remAstroRes2.evidence.used.join('；'));
+        var remCombRes2=combinedReading(remCardRes2,remAstroRes2,remCat2,state.subtopic);
+        if(remCombRes2.available&&remCombRes2.mode==='combined'){
+          lines.push(''); lines.push('牌卡＋星盤綜合觀察（'+remNames2[remCat2]+'）：'+remSubDef2.zh);
+          SUBTOPIC_FIELD_ORDER.forEach(function(f){if(remSubDef2.fields.indexOf(f)!==-1&&remCombRes2[f])lines.push('　'+SUBTOPIC_FIELD_LABELS[f][0]+'：'+remCombRes2[f]);});
+        }
       }
     }
   }
@@ -7267,6 +7560,266 @@ function astroCategoryReadingFamily(subtopicKey, chart, unknownTime) {
   return out;
 }
 
+/* 財運星盤引擎：金星描述價值與消費偏好，木星描述擴張方式，土星描述風險與長期
+   建立；出生時間已知時才加入第二／第八宮。只提供象徵性資源模式，不推算報酬。 */
+var ASTRO_WEALTH_VALUE_BY_ELEM = {
+  火: ['價值選擇偏向機會與體驗，做決定速度快，需預先設定支出與風險上限'],
+  土: ['價值選擇偏向穩定與實用，重視可累積、可掌握的長期成果'],
+  風: ['價值選擇偏向資訊與彈性，習慣比較方案，但需避免頻繁改變決策'],
+  水: ['價值選擇容易受感受與關係影響，需要區分情感滿足與實際負擔'],
+};
+var ASTRO_WEALTH_GROWTH_BY_ELEM = {
+  火: ['擴張方式偏向主動爭取與快速嘗試，適合小規模驗證後再增加投入'],
+  土: ['擴張方式偏向穩健累積、建立專業與可重複的收入基礎'],
+  風: ['擴張方式偏向知識、人脈與多元合作，資訊品質會直接影響成果'],
+  水: ['擴張方式偏向信任、服務與理解需求，需同步建立清楚的交換條件'],
+};
+var ASTRO_WEALTH_DISCIPLINE_BY_ELEM = {
+  火: ['風險課題在於控制衝動與過度自信，把行動力放進明確規則'],
+  土: ['風險課題在於避免因害怕失去而過度保守，也要定期檢查資源配置'],
+  風: ['風險課題在於避免資訊過量與反覆猶豫，應建立一致的判斷標準'],
+  水: ['風險課題在於避免因情緒、信任或人情壓力模糊財務界線'],
+};
+var ASTRO_WEALTH_HOUSE2_BY_ELEM = {
+  火: ['收入與個人資源較適合透過主動開發、獨立行動或成果導向的方式建立'],
+  土: ['收入與個人資源較適合透過穩定專業、制度與長期累積建立'],
+  風: ['收入與個人資源較適合透過資訊、溝通、教學、人脈或多元技能建立'],
+  水: ['收入與個人資源較適合透過服務、創作、照顧或理解情感需求建立'],
+};
+var ASTRO_WEALTH_HOUSE8_BY_ELEM = {
+  火: ['共同財務與合作資源需要先講清楚決策權及最大可承擔損失'],
+  土: ['共同財務與合作資源需要清楚契約、責任分配與長期安全基礎'],
+  風: ['共同財務與合作資源需要資訊透明、定期確認與保留調整空間'],
+  水: ['共同財務與合作資源需要避免人情取代規則，並保留各自界線'],
+};
+function wealthAstroEvidence(chart, unknownTime) {
+  var out = { available: false, planets: {}, houses: {}, aspects: [], skipped: [], seed: '' };
+  if (!chart) return out;
+  ['Venus', 'Jupiter', 'Saturn'].forEach(function (key) {
+    var p = chart.planets && chart.planets[key];
+    if (p && typeof p.sign === 'number' && p.sign >= 0 && p.sign <= 11) out.planets[key] = { sign: p.sign, deg: p.deg, retro: !!p.retro, house: unknownTime ? null : p.house };
+  });
+  if (!unknownTime && chart.houseCusps && chart.houseCusps.length === 12) {
+    [2, 8].forEach(function (h) { out.houses[h] = { sign: Math.floor(astroNormDeg(chart.houseCusps[h - 1]) / 30) }; });
+  } else if (unknownTime) {
+    out.skipped.push({ item: 'house2', reason: 'unknown-time' }, { item: 'house8', reason: 'unknown-time' });
+  }
+  var keys = ['Venus', 'Jupiter', 'Saturn'];
+  out.aspects = pureUsableAspects(chart, unknownTime).filter(function (a) { return keys.indexOf(a.a) !== -1 || keys.indexOf(a.b) !== -1; });
+  out.available = !!(out.planets.Venus || out.planets.Jupiter || out.planets.Saturn);
+  out.seed = keys.map(function (k) { return k + ':' + (out.planets[k] ? out.planets[k].sign : 'na'); }).join('|') +
+    '|h2:' + (out.houses[2] ? out.houses[2].sign : 'na') + '|h8:' + (out.houses[8] ? out.houses[8].sign : 'na') +
+    '|asp:' + out.aspects.map(function (a) { return a.a + a.type + a.b + Math.round(a.orb * 10); }).sort().join(',');
+  return out;
+}
+function astroCategoryReadingWealth(subtopicKey, chart, unknownTime) {
+  var out = { available: false, reason: '', catKey: 'wealth', subtopicKey: subtopicKey, conclusion: '', traits: '', trend: '', favor: '', risk: '', timing: '', action: '', caveat: '', evidence: null, tone: null };
+  var subtopic = (SUBTOPICS.wealth || []).filter(function (s) { return s.key === subtopicKey; })[0];
+  if (!subtopic) { out.reason = 'unknown-subtopic'; return out; }
+  if (!chart) { out.reason = 'no-chart'; return out; }
+  var ev = wealthAstroEvidence(chart, unknownTime);
+  if (!ev.available) { out.reason = 'no-focus-data'; return out; }
+  var seed = 'wealth|' + subtopicKey + '|' + ev.seed;
+  function elemOf(p) { return p ? ZODIAC_SIGNS[p.sign].elem : null; }
+  var ve = elemOf(ev.planets.Venus), je = elemOf(ev.planets.Jupiter), se = elemOf(ev.planets.Saturn);
+  var h2e = elemOf(ev.houses[2]), h8e = elemOf(ev.houses[8]);
+  var valueLine = ve ? ASTRO_WEALTH_VALUE_BY_ELEM[ve][0] : '';
+  var growthLine = je ? ASTRO_WEALTH_GROWTH_BY_ELEM[je][0] : '';
+  var disciplineLine = se ? ASTRO_WEALTH_DISCIPLINE_BY_ELEM[se][0] : '';
+  var h2Line = h2e ? ASTRO_WEALTH_HOUSE2_BY_ELEM[h2e][0] : '';
+  var h8Line = h8e ? ASTRO_WEALTH_HOUSE8_BY_ELEM[h8e][0] : '';
+  var tone = loveAstroValence(ev.aspects);
+  out.tone = tone;
+  if (subtopicKey === 'cashflow-risk') {
+    out.conclusion = valueLine + (h2Line ? '；' + h2Line : '');
+    out.trend = WEALTH_TONE_POOL.trend[tone][0]; out.risk = disciplineLine || WEALTH_TONE_POOL.risk[tone][0]; out.action = WEALTH_TONE_POOL.action[tone][0];
+  } else if (subtopicKey === 'risk-approach') {
+    out.conclusion = disciplineLine + (growthLine ? '；' + growthLine : '');
+    out.trend = WEALTH_TONE_POOL.trend[tone][0]; out.favor = WEALTH_TONE_POOL.favor[tone][0]; out.risk = WEALTH_TONE_POOL.risk[tone][0];
+  } else if (subtopicKey === 'opportunity-source') {
+    out.conclusion = growthLine || valueLine;
+    out.traits = '個人資源：' + (h2Line || growthLine) + (h8Line ? '；合作資源：' + h8Line : '');
+    out.favor = WEALTH_TONE_POOL.favor[tone][0]; out.action = WEALTH_TONE_POOL.action[tone][0];
+  } else if (subtopicKey === 'money-pattern') {
+    out.conclusion = valueLine + (disciplineLine ? '；' + disciplineLine : '');
+    out.traits = '價值與消費：' + valueLine + (h2Line ? '；收入資源：' + h2Line : '') + (h8Line ? '；共同資源：' + h8Line : '');
+    out.trend = WEALTH_TONE_POOL.trend[tone][0];
+  }
+  var used = [];
+  ['Venus', 'Jupiter', 'Saturn'].forEach(function (k) { if (ev.planets[k]) used.push(astroLovePlanetEvidenceStr(k, ev.planets[k])); });
+  if (ev.houses[2]) used.push(astroLoveHouseEvidenceStr(2, ev.houses[2]));
+  if (ev.houses[8]) used.push(astroLoveHouseEvidenceStr(8, ev.houses[8]));
+  ev.aspects.forEach(function (a) { used.push('相位：' + astroLoveAspectEvidenceStr(a)); });
+  var timeNote = unknownTime ? ' 出生時間未知，本次不使用第二宮與第八宮，只採用行星星座及可靠相位。' : '';
+  out.caveat = FINANCE_DISCLAIMER + timeNote + ' 星盤只能描述價值觀、資源運用與風險傾向，不能預測特定投資報酬、價格走勢或確切收入。';
+  out.evidence = { used: used, skipped: ev.skipped, seed: seed };
+  out.available = true;
+  return out;
+}
+
+/* 健康／人際／學業星盤引擎：依 ASTRO_CATEGORY_FOCUS 的既有行星與宮位設定整理證據。
+   健康只談壓力反應與生活習慣，不建立星座／宮位到器官或疾病的對應。 */
+var REMAINING_ASTRO_LABEL = {
+  health: { Sun:'活力與日常主軸', Moon:'情緒與安全感', house6:'日常習慣', ASC:'身體節奏' },
+  social: { Mercury:'溝通方式', Venus:'關係價值', house11:'社群與朋友圈' },
+  study: { Mercury:'理解與表達', Jupiter:'視野與成長', house3:'基礎學習', house9:'高等學習與遠方經驗' },
+};
+function remainingAstroEvidence(catKey, chart, unknownTime) {
+  var out = { available:false, planets:{}, houses:{}, asc:null, aspects:[], skipped:[], seed:'' };
+  if (!chart) return out;
+  var ctx = { chart:chart, unknownTime:!!unknownTime }, focus = astroAvailableFocus(ctx, catKey);
+  focus.planets.forEach(function (key) {
+    if (unknownTime && key === 'Moon') { out.skipped.push({item:'Moon',reason:'unknown-time-unreliable'}); return; }
+    var p = chart.planets && chart.planets[key];
+    if (p && typeof p.sign === 'number' && p.sign >= 0 && p.sign <= 11) out.planets[key] = {sign:p.sign,deg:p.deg,retro:!!p.retro,house:unknownTime?null:p.house};
+  });
+  focus.houses.forEach(function (h) {
+    if (chart.houseCusps && chart.houseCusps.length === 12) out.houses[h] = {sign:Math.floor(astroNormDeg(chart.houseCusps[h-1])/30)};
+  });
+  if (unknownTime) ASTRO_CATEGORY_FOCUS[catKey].houses.forEach(function (h) { out.skipped.push({item:'house'+h,reason:'unknown-time'}); });
+  if (focus.useAsc && typeof chart.ascSign === 'number') out.asc = {sign:chart.ascSign};
+  if (unknownTime && ASTRO_CATEGORY_FOCUS[catKey].useAsc) out.skipped.push({item:'ASC',reason:'unknown-time'});
+  var keys = focus.planets.filter(function (k) { return !(unknownTime && k === 'Moon'); });
+  out.aspects = pureUsableAspects(chart, unknownTime).filter(function (a) { return keys.indexOf(a.a)!==-1 || keys.indexOf(a.b)!==-1; });
+  out.available = Object.keys(out.planets).length > 0;
+  out.seed = keys.map(function(k){return k+':'+(out.planets[k]?out.planets[k].sign:'na');}).join('|') +
+    '|houses:' + Object.keys(out.houses).map(function(h){return h+':'+out.houses[h].sign;}).join(',') +
+    '|asp:' + out.aspects.map(function(a){return a.a+a.type+a.b+Math.round(a.orb*10);}).sort().join(',');
+  return out;
+}
+function astroCategoryReadingRemaining(catKey, subtopicKey, chart, unknownTime) {
+  var out = { available:false, reason:'', catKey:catKey, subtopicKey:subtopicKey, conclusion:'', traits:'', trend:'', favor:'', risk:'', timing:'', action:'', caveat:'', evidence:null, tone:null };
+  var subtopic = (SUBTOPICS[catKey] || []).filter(function(s){return s.key===subtopicKey;})[0];
+  if (['health','social','study'].indexOf(catKey)===-1) { out.reason='unsupported-category'; return out; }
+  if (!subtopic) { out.reason='unknown-subtopic'; return out; }
+  if (!chart) { out.reason='no-chart'; return out; }
+  var ev = remainingAstroEvidence(catKey, chart, unknownTime);
+  if (!ev.available) { out.reason='no-focus-data'; out.evidence=ev; return out; }
+  var labels = REMAINING_ASTRO_LABEL[catKey], parts=[], used=[];
+  Object.keys(ev.planets).forEach(function(key){
+    var p=ev.planets[key], sign=ZODIAC_SIGNS[p.sign], sb=SIGN_BEGINNER[p.sign];
+    parts.push((labels[key]||key)+'：'+sb.behavior);
+    used.push(astroLovePlanetEvidenceStr(key,p));
+  });
+  Object.keys(ev.houses).forEach(function(h){
+    var ho=ev.houses[h], hb=HOUSE_BEGINNER[parseInt(h,10)-1];
+    parts.push((labels['house'+h]||('第'+h+'宮'))+'：'+hb.lifeArea);
+    used.push(astroLoveHouseEvidenceStr(parseInt(h,10),ho));
+  });
+  if (ev.asc) { parts.push('身體與外在節奏：'+SIGN_BEGINNER[ev.asc.sign].behavior); used.push('上升：'+ZODIAC_SIGNS[ev.asc.sign].zh); }
+  ev.aspects.forEach(function(a){used.push('相位：'+astroLoveAspectEvidenceStr(a));});
+  var tone=loveAstroValence(ev.aspects); out.tone=tone;
+  if (catKey==='health') {
+    out.conclusion = subtopicKey==='self-care-symbolic'
+      ? '星盤可提供的自我照顧方向是：'+parts.join('；')
+      : '你的壓力反應與生活節奏可能呈現：'+parts.join('；');
+    out.action = REMAINING_TONE_POOL.health.action[tone];
+    if (subtopic.fields.indexOf('trend')!==-1) out.trend=REMAINING_TONE_POOL.health.trend[tone];
+    if (subtopic.fields.indexOf('favor')!==-1) out.favor=REMAINING_TONE_POOL.health.favor[tone];
+    if (subtopic.fields.indexOf('risk')!==-1) out.risk=REMAINING_TONE_POOL.health.risk[tone];
+    out.caveat=HEALTH_DISCLAIMER+' 星盤不用于判斷特定器官、疾病或治療方式，只能作為壓力、作息與自我照顧的象徵性參考。';
+  } else if (catKey==='social') {
+    out.conclusion='你在人際中的溝通、價值與群體互動傾向是：'+parts.join('；');
+    if (subtopic.fields.indexOf('traits')!==-1) out.traits=parts.join('；');
+    if (subtopic.fields.indexOf('favor')!==-1) out.favor=REMAINING_TONE_POOL.social.favor[tone];
+    if (subtopic.fields.indexOf('risk')!==-1) out.risk=REMAINING_TONE_POOL.social.risk[tone];
+    if (subtopic.fields.indexOf('action')!==-1) out.action=REMAINING_TONE_POOL.social.action[tone];
+    out.caveat='星盤只描述你自己的溝通與群體互動傾向，無法判定他人的真實想法，也不代表某類人必然是貴人、競爭者或不適合交往。';
+  } else {
+    out.conclusion='你的理解、表達與拓展知識的方式可能是：'+parts.join('；');
+    if (subtopic.fields.indexOf('traits')!==-1) out.traits=parts.join('；');
+    if (subtopic.fields.indexOf('trend')!==-1) out.trend=REMAINING_TONE_POOL.study.trend[tone];
+    if (subtopic.fields.indexOf('timing')!==-1) out.timing=tone==='positive'?'近期適合依計畫穩定推進':(tone==='neutral'?'仍需一段時間準備與驗證':'宜先補足基礎，再安排重要考試或申請節奏');
+    if (subtopic.fields.indexOf('favor')!==-1) out.favor=REMAINING_TONE_POOL.study.favor[tone];
+    if (subtopic.fields.indexOf('risk')!==-1) out.risk=REMAINING_TONE_POOL.study.risk[tone];
+    if (subtopic.fields.indexOf('action')!==-1) out.action=REMAINING_TONE_POOL.study.action[tone];
+    out.caveat='星盤只能描述學習與理解方式，不能保證考試、錄取、留學、申請或證照結果；實際成果仍取決於準備程度與現實條件。';
+  }
+  out.evidence={used:used,skipped:ev.skipped,seed:ev.seed}; out.available=true; return out;
+}
+
+/* 「綜合」使用整張本命盤的長期傾向，不把本命盤寫成短期事件預報。
+   出生時間未知時，月亮、上升與宮位一律不使用；相位沿用 pureUsableAspects() 的過濾規則。 */
+function generalAstroEvidence(chart, unknownTime) {
+  var out={available:false,planets:{},asc:null,focusHouse:null,aspects:[],balance:null,skipped:[],seed:''};
+  if(!chart||!chart.planets)return out;
+  ['Sun','Jupiter','Saturn'].forEach(function(key){
+    var p=chart.planets[key];
+    if(p&&typeof p.sign==='number'&&p.sign>=0&&p.sign<12)out.planets[key]={sign:p.sign,deg:p.deg,house:unknownTime?null:p.house,retro:!!p.retro};
+    else out.skipped.push({item:key,reason:'not-in-chart'});
+  });
+  if(!unknownTime){
+    var moon=chart.planets.Moon;
+    if(moon&&typeof moon.sign==='number'&&moon.sign>=0&&moon.sign<12)out.planets.Moon={sign:moon.sign,deg:moon.deg,house:moon.house,retro:!!moon.retro};
+    if(typeof chart.ascSign==='number'&&chart.ascSign>=0&&chart.ascSign<12)out.asc={sign:chart.ascSign};
+    var counts={};
+    Object.keys(chart.planets).forEach(function(key){
+      var h=chart.planets[key]&&chart.planets[key].house;
+      if(h>=1&&h<=12)counts[h]=(counts[h]||0)+1;
+    });
+    var focusH=Object.keys(counts).sort(function(a,b){return counts[b]-counts[a]||parseInt(a,10)-parseInt(b,10);})[0];
+    if(focusH&&HOUSE_BEGINNER[parseInt(focusH,10)-1])out.focusHouse={house:parseInt(focusH,10),count:counts[focusH]};
+  }else{
+    out.skipped.push({item:'Moon',reason:'unknown-time'},{item:'ASC',reason:'unknown-time'},{item:'houses',reason:'unknown-time'});
+  }
+  try{out.balance=computeElementQualityBalance(chart);}catch(e){out.balance=null;}
+  out.aspects=pureUsableAspects(chart,unknownTime).slice().sort(function(a,b){
+    var pa=natalAspectPriority(a)==='core'?0:1,pb=natalAspectPriority(b)==='core'?0:1;
+    return pa-pb||a.orb-b.orb;
+  }).slice(0,5).map(function(a){return{a:a.a,b:a.b,type:a.type,orb:a.orb};});
+  out.available=!!out.planets.Sun;
+  out.seed=['Sun','Moon','Jupiter','Saturn'].map(function(k){return k+':'+(out.planets[k]?out.planets[k].sign:'na');}).join('|')+
+    '|asc:'+(out.asc?out.asc.sign:'na')+'|house:'+(out.focusHouse?out.focusHouse.house:'na')+
+    '|asp:'+out.aspects.map(function(a){return a.a+a.type+a.b+Math.round(a.orb*10);}).join(',');
+  return out;
+}
+var GENERAL_ASTRO_TONE_POOL={
+  trend:{positive:'長期傾向顯示現有方向較能得到內在能力支持，適合穩定累積',neutral:'目前較像重新整理生活重心的階段，需要透過實際選擇逐步聚焦',challenging:'長期課題彼此施壓時，先穩住基本節奏比一次改變所有事情更重要'},
+  favor:{positive:'能主動運用既有優勢並接受合適支持，是目前可持續發展的力量',neutral:'願意盤點真正重視的事、保留調整空間，會比追求完美答案更有幫助',challenging:'規律生活、清楚界線與可信任的支持系統，是面對壓力的重要資源'},
+  risk:{positive:'進展順利時仍要留意過度擴張，避免把每個機會都當成必要責任',neutral:'容易在多個方向間分散心力，或用思考取代真正的優先排序',challenging:'壓力可能放大自我懷疑與控制需求，需要避免在疲憊時做全面性決定'},
+  action:{positive:'保留有效做法，選一項最重要的長期目標安排下一個可完成步驟',neutral:'先分清楚必要、想要與可以延後的事情，再把注意力放回可控制的部分',challenging:'先照顧作息、安全與必要責任，等狀態穩定後再處理較大的方向調整'},
+};
+function astroCategoryReadingGeneral(subtopicKey,chart,unknownTime){
+  var out={available:false,reason:'',catKey:'general',subtopicKey:subtopicKey,conclusion:'',traits:'',trend:'',favor:'',risk:'',timing:'',action:'',caveat:'',evidence:null,tone:null};
+  var subtopic=(SUBTOPICS.general||[]).filter(function(s){return s.key===subtopicKey;})[0];
+  if(!subtopic){out.reason='unknown-subtopic';return out;} if(!chart){out.reason='no-chart';return out;}
+  var ev=generalAstroEvidence(chart,unknownTime);if(!ev.available){out.reason='no-focus-data';out.evidence=ev;return out;}
+  var used=[],sun=ev.planets.Sun,jupiter=ev.planets.Jupiter,saturn=ev.planets.Saturn;
+  var sunSign=ZODIAC_SIGNS[sun.sign],sunB=SIGN_BEGINNER[sun.sign];
+  var elemKeys=['火','土','風','水'],topElem=ev.balance?elemKeys.reduce(function(best,k){return ev.balance.elem[k]>ev.balance.elem[best]?k:best;},elemKeys[0]):sunSign.elem;
+  var houseText=ev.focusHouse?HOUSE_BEGINNER[ev.focusHouse.house-1].lifeArea:'';
+  used.push(astroLovePlanetEvidenceStr('Sun',sun));
+  if(jupiter)used.push(astroLovePlanetEvidenceStr('Jupiter',jupiter));
+  if(saturn)used.push(astroLovePlanetEvidenceStr('Saturn',saturn));
+  if(ev.planets.Moon)used.push(astroLovePlanetEvidenceStr('Moon',ev.planets.Moon));
+  if(ev.asc)used.push('上升：'+ZODIAC_SIGNS[ev.asc.sign].zh);
+  if(ev.focusHouse)used.push('行星較集中：第'+ev.focusHouse.house+'宮（'+houseText+'）');
+  ev.aspects.forEach(function(a){used.push('重要相位：'+astroLoveAspectEvidenceStr(a));});
+  var tone=loveAstroValence(ev.aspects);out.tone=tone;
+  var lifeBase=houseText?('，較常在「'+houseText+'」這個生活領域被看見'):'';
+  if(subtopicKey==='overall-theme'){
+    out.conclusion='你的長期生活主軸，是用'+sunSign.zh+'式的「'+sunB.method+'」建立自我方向'+lifeBase+'。';
+    out.trend=GENERAL_ASTRO_TONE_POOL.trend[tone];out.favor=GENERAL_ASTRO_TONE_POOL.favor[tone];out.risk=GENERAL_ASTRO_TONE_POOL.risk[tone];out.action=GENERAL_ASTRO_TONE_POOL.action[tone];
+  }else if(subtopicKey==='priority-focus'){
+    var focusText=houseText||('把'+topElem+'元素代表的慣用反應轉成可持續的生活安排');
+    out.conclusion='目前最值得長期投入的重點，是'+focusText+'。';
+    out.traits='優先面向：'+focusText+'；核心做法：'+sunB.behavior;
+    out.risk=GENERAL_ASTRO_TONE_POOL.risk[tone];out.action=GENERAL_ASTRO_TONE_POOL.action[tone];
+  }else if(subtopicKey==='hidden-blindspot'){
+    var saturnText=saturn?SIGN_BEGINNER[saturn.sign].shadow:'壓力下可能只沿用熟悉方法';
+    out.conclusion='星盤較需要留意的盲點，是'+saturnText+'。';
+    out.risk=GENERAL_ASTRO_TONE_POOL.risk[tone];
+    out.action=saturn?('可以從土星所在的'+ZODIAC_SIGNS[saturn.sign].zh+'課題著手：'+SIGN_BEGINNER[saturn.sign].matureExpression+'。'):GENERAL_ASTRO_TONE_POOL.action[tone];
+  }else{
+    var jText=jupiter?SIGN_BEGINNER[jupiter.sign].matureExpression:sunB.matureExpression;
+    out.conclusion='下一階段可發展的方向，是'+jText+lifeBase+'。';
+    out.trend=GENERAL_ASTRO_TONE_POOL.trend[tone];out.favor=GENERAL_ASTRO_TONE_POOL.favor[tone];out.action=GENERAL_ASTRO_TONE_POOL.action[tone];
+  }
+  ['conclusion','traits','trend','favor','risk','timing','action'].forEach(function(f){if(subtopic.fields.indexOf(f)===-1)out[f]='';});
+  out.caveat='綜合星盤解讀描述的是較長期的性格資源與人生課題，不是近期事件預報，也不能確定某件事必然發生。'+(unknownTime?' 出生時間未知，本次未使用月亮、上升與宮位，只採用較可靠的行星星座與相位。':'');
+  out.evidence={used:used,skipped:ev.skipped,seed:ev.seed};out.available=true;return out;
+}
+
 /* astroCategoryReading(catKey, subtopicKey, chart, unknownTime)
    目前支援 catKey==='love'（astroCategoryReadingLove，Phase 1B，邏輯完全不變）與
    catKey==='career'（astroCategoryReadingCareer，Phase 2B）；chart 需為 computeNatalChart()
@@ -7276,6 +7829,9 @@ function astroCategoryReadingFamily(subtopicKey, chart, unknownTime) {
 function astroCategoryReading(catKey, subtopicKey, chart, unknownTime) {
   if (catKey === 'career') return astroCategoryReadingCareer(subtopicKey, chart, unknownTime);
   if (catKey === 'family') return astroCategoryReadingFamily(subtopicKey, chart, unknownTime);
+  if (catKey === 'wealth') return astroCategoryReadingWealth(subtopicKey, chart, unknownTime);
+  if (['health', 'social', 'study'].indexOf(catKey) !== -1) return astroCategoryReadingRemaining(catKey, subtopicKey, chart, unknownTime);
+  if (catKey === 'general') return astroCategoryReadingGeneral(subtopicKey, chart, unknownTime);
   return astroCategoryReadingLove(catKey, subtopicKey, chart, unknownTime);
 }
 function astroCategoryReadingLove(catKey, subtopicKey, chart, unknownTime) {
@@ -7429,7 +7985,7 @@ function combinedReading(cardResult, astroResult, catKey, subtopicKey) {
     conclusion: '', traits: '', trend: '', favor: '', risk: '', timing: '', action: '', caveat: '',
     cardTone: null, astroTone: null, agreement: 'unknown',
   };
-  if (catKey !== 'love' && catKey !== 'career' && catKey !== 'family') { out.reason = 'unsupported-category'; return out; }
+  if (['love', 'career', 'family', 'wealth', 'health', 'social', 'study', 'general'].indexOf(catKey) === -1) { out.reason = 'unsupported-category'; return out; }
   var hasCard = !!(cardResult && cardResult.available);
   var hasAstro = !!(astroResult && astroResult.available);
   if (!hasCard && !hasAstro) { out.reason = 'no-input'; return out; }
