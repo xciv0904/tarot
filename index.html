@@ -1776,11 +1776,14 @@ function renderLoveModePicker() {
   return h;
 }
 
-/* Phase 1A：愛情分類的具體子問題選擇器（只在 category==='love' 時於問題輸入步驟顯示）。
-   依目前 state.readingMode 只列出 SUBTOPICS.love 中 modes 包含該模式的項目；
-   再次點選同一個可取消選取。其他分類完全不受影響，不呼叫這個函式。 */
-function renderLoveSubtopicPicker() {
-  var options = (SUBTOPICS.love || []).filter(function (s) { return s.modes.indexOf(state.readingMode) !== -1; });
+/* Phase 1A（愛情）／Phase 2A（事業）共用的具體子問題選擇器，只在 SUBTOPICS 有定義該分類時
+   於問題輸入步驟顯示。依目前 state.readingMode 只列出 SUBTOPICS[state.category] 中 modes
+   包含該模式的項目；再次點選同一個可取消選取。非 love 分類目前沒有模式切換 UI，
+   wizSetCat() 切換分類時已把 readingMode 重設為 'cards'，所以這裡永遠只會列出 cards 子問題，
+   career-talent（modes 只有 astro/combined）自然不會出現。原名 renderLoveSubtopicPicker，
+   Phase 2A 起改為通用名稱；行為對 love 完全不變。 */
+function renderSubtopicPicker() {
+  var options = (SUBTOPICS[state.category] || []).filter(function (s) { return s.modes.indexOf(state.readingMode) !== -1; });
   if (!options.length) return '';
   var h = '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:14px">想深入了解的具體問題（選填，可再次點選取消）</div>';
   h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">';
@@ -1846,7 +1849,12 @@ function renderWizard(spreads, isTarot) {
     }
     if (state.category === 'love') {
       h += renderLoveModePicker();
-      h += renderLoveSubtopicPicker();
+      h += renderSubtopicPicker();
+    } else if (SUBTOPICS[state.category]) {
+      /* Phase 2A：目前只有 career 有 cards 子問題資料；沒有牌卡＋星盤模式選擇器
+        （combined 留待 Phase 2B），renderSubtopicPicker() 依 state.readingMode（此時恆為
+         'cards'）過濾，astro-only 的 career-talent 不會出現。 */
+      h += renderSubtopicPicker();
     }
     h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:14px">具體問題（選填，可點下方範例）</div>';
     h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">';
@@ -2095,6 +2103,11 @@ function renderReading() {
           h += renderSubtopicResultPanel(loveSubDef, loveCardRes);
         }
       }
+    } else if (state.category === 'career' && state.subtopic) {
+      /* Phase 2A：事業目前只有 cards 模式，沿用同一個手機友善折疊面板渲染函式
+        （不傳 titleText，跟愛情 cards 模式一樣維持展開、不折疊），事業星盤與 combined 留待 Phase 2B。 */
+      var careerSubDef = (SUBTOPICS.career || []).filter(function (s) { return s.key === state.subtopic; })[0];
+      if (careerSubDef) h += renderSubtopicResultPanel(careerSubDef, cardSubtopicReading('career', state.subtopic, state.drawn));
     }
     if (!isTarot && state.spread === 'grand') {
       h += grandPanel();
@@ -2479,12 +2492,149 @@ var LOVE_TONE_POOL = {
   },
 };
 
+/* ================= Phase 2A：事業分類的牌卡具體解讀資料與純函式 =================
+   共用工具全部重用既有的通用函式：loveCardGroup()（花色／大牌／雷諾曼吉凶分組——名稱雖沿用
+   Phase 1A，但內部邏輯本來就與愛情無關，是通用的花色分組工具）、loveToneBucket()（整體牌陣
+   語氣，同樣是通用邏輯）、hashStr()、traitPoolPick()／TRAIT_POOL（上面已新增 career 專用軸心）。
+   只有 CAREER_SUBTOPIC_LEAD／CAREER_ROLE_PRIORITY／CAREER_TRAIT_AXES_BY_SUBTOPIC／
+   CAREER_AXIS_LABELS／CAREER_TONE_POOL／careerFocusCard() 是事業專屬、新增的內容。 */
+var CAREER_SUBTOPIC_LEAD = {
+  'industry-fit': ['從你目前抽到的牌來看，', '這次牌面透露的訊息是，'],
+  'work-style-fit': ['關於適合的工作型態，牌面顯示：', '這張牌對工作模式的暗示是：'],
+  'career-timing': ['關於升遷、轉職或求職的趨勢，牌面顯示：', '這張牌對職涯時機的提示是：'],
+  'workplace-strength-weakness': ['關於你的職場優勢與課題，牌面顯示：', '這張牌對職場狀態的提醒是：'],
+};
+/* 依子問題挑出最能代表答案的那張牌：跟 loveFocusCard() 同樣的做法（先找角色相符的牌位，
+   找不到就用陣型最後一張），只是換一套事業專用的角色優先序，鍵值沿用既有 posRole() 的角色。 */
+var CAREER_ROLE_PRIORITY = {
+  'industry-fit': ['future', 'present', 'self'],
+  'work-style-fit': ['self', 'present', 'future'],
+  'career-timing': ['future', 'advice', 'present'],
+  'workplace-strength-weakness': ['self', 'other', 'advice'],
+};
+function careerFocusCard(drawnCards, subtopicKey) {
+  var priorities = CAREER_ROLE_PRIORITY[subtopicKey] || ['future', 'present', 'self'];
+  for (var i = 0; i < priorities.length; i++) {
+    for (var j = 0; j < drawnCards.length; j++) {
+      if (posRole(drawnCards[j].pos.zh) === priorities[i]) return drawnCards[j];
+    }
+  }
+  return drawnCards[drawnCards.length - 1];
+}
+/* 「人物／環境特徵」欄位由哪些 TRAIT_POOL 軸心組成；只有列在這裡的子問題才會產生 traits 內容。
+   career-timing 沒有 traits（SUBTOPICS.career 本來就沒有把 traits 列進它的 fields）。 */
+var CAREER_TRAIT_AXES_BY_SUBTOPIC = {
+  'industry-fit': ['industryDirection', 'jobFunction', 'workContent', 'workEnvironment'],
+  'work-style-fit': ['employmentType', 'workRhythm'],
+  'workplace-strength-weakness': ['strength', 'blindSpot', 'managerFit', 'teamFit'],
+};
+var CAREER_AXIS_LABELS = {
+  industryDirection: '產業方向', jobFunction: '職務性質', workContent: '工作內容', workEnvironment: '工作環境',
+  employmentType: '工作型態傾向', workRhythm: '自主與合作節奏',
+  strength: '職場優勢', blindSpot: '容易卡住的地方', managerFit: '適合的主管風格', teamFit: '適合的團隊環境',
+};
+/* 依整體牌陣語氣挑句：trend／favor／risk／action／timing 這幾個欄位在所有事業子問題間共用同一套
+   語氣措辭池，差異來自實際抽牌的正逆位與吉凶比例（loveToneBucket()，通用邏輯，非愛情限定）。
+   timing 只能用「近期／需要醞釀／宜先準備」等模糊區間，不給確切日期或保證結果。 */
+var CAREER_TONE_POOL = {
+  trend: {
+    positive: ['整體發展的走向偏向順利，工作上有機會迎來新的進展', '牌面能量偏正向，努力容易在近期得到回應', '目前的趨勢對你有利，適合順勢而為、把握機會'],
+    neutral: ['發展走向還在醞釀中，順與不順都各有一些，需要再觀察一段時間', '目前處於過渡階段，趨勢尚未完全明朗，建議保持彈性', '事情的走向取決於接下來的準備與行動，暫時沒有絕對的定論'],
+    challenging: ['目前的趨勢帶有一些阻力，進展可能比預期慢一些', '牌面顯示這段時間需要多一點耐心，不宜期待立即的變化', '發展走向暫時卡在某個環節，建議先處理眼前的課題再往前'],
+  },
+  favor: {
+    positive: ['你目前的狀態與準備是最大的助力，保持現有的步調即可', '身邊的機會與人脈都對你有利，適合主動一點爭取', '整體氛圍站在你這邊，展現真實的實力會加分'],
+    neutral: ['踏實的準備會是這段時間最實際的助力', '保持開放的心態，願意多方嘗試會帶來加分', '穩定的工作步調本身就是一種優勢，不必刻意強求'],
+    challenging: ['願意誠實面對職場課題本身就是一種助力，別急著逃避', '過去累積的經驗與耐心，會是撐過這段時期的關鍵', '願意先調整自己的心態，會比等環境改變更有幫助'],
+  },
+  risk: {
+    positive: ['順利時也別忽略持續累積，避免因為太順而鬆懈準備', '留意別因為進展快就忽略確認細節', '好的開始也需要持續投入，避免三分鐘熱度'],
+    neutral: ['猶豫不決可能讓機會悄悄流失，建議別拖太久', '資訊不足容易造成誤判，適時主動確認會比悶著猜更好', '過度分析反而可能錯過行動的時機'],
+    challenging: ['要留意逃避溝通或累積情緒，反而讓問題越滾越大', '容易因為缺乏安全感而想太多，建議別把小事放大檢視', '過去未解決的職場課題若不處理，可能持續影響現況'],
+  },
+  action: {
+    positive: ['可以主動一點，把握現有的好氛圍往前推進一步', '適合把想法或需求說出口，坦誠會帶來更好的結果', '順勢而為，同時也記得肯定自己這段時間的努力'],
+    neutral: ['建議先觀察一陣子，同時保持開放而不勉強的心態', '可以先從小的行動開始，慢慢累積成果與信心', '給自己一點時間，同時誠實盤點目前真正的需求'],
+    challenging: ['建議先照顧好自己的狀態，再決定下一步怎麼走', '找一個適合的時機，坦誠地把心裡的顧慮說出來', '暫時放慢腳步，把注意力放在能自己掌握的部分'],
+  },
+  timing: {
+    positive: ['近期是相對有利的時機，可以主動把握機會', '接下來一段時間適合積極爭取，時機站在你這邊', '短期內就有機會看到具體的進展或回應'],
+    neutral: ['目前時機還在醞釀，建議先做好準備、伺機而動', '沒有特別急迫的時間點，宜先觀察再決定行動節奏', '接下來需要一段時間累積，還不到全力衝刺的時候'],
+    challenging: ['目前不是躁進的時機，宜先穩住腳步、做足準備', '短期內可能不會有立即的結果，需要更多耐心醞釀', '建議先處理眼前的課題，時機到了再進一步行動'],
+  },
+};
+/* cardSubtopicReadingCareer(subtopicKey, drawnCards)
+   事業分類的牌卡具體解讀，只在 cardSubtopicReading() 分派時由 catKey==='career' 呼叫。
+   核心結論優先取用既有 RICH.ctx.career／LEN_RICH.career 的真實牌義句子（不捏造新文案），
+   traits／trend／favor／risk／action／timing 皆依實際抽到的牌、正逆位與整體牌陣語氣動態組合，
+   語氣一律使用「較適合、可能、傾向、可優先考慮」，不斷言唯一職業、不保證錄取、升遷或收入。 */
+function cardSubtopicReadingCareer(subtopicKey, drawnCards) {
+  var out = { available: false, reason: '', catKey: 'career', subtopicKey: subtopicKey, conclusion: '', traits: '', trend: '', favor: '', risk: '', timing: '', action: '', caveat: '', tone: null };
+  var subtopic = (SUBTOPICS.career || []).filter(function (s) { return s.key === subtopicKey; })[0];
+  if (!subtopic) { out.reason = 'unknown-subtopic'; return out; }
+  if (subtopic.modes.indexOf('cards') === -1) { out.reason = 'mode-not-supported'; return out; }
+  if (!drawnCards || !drawnCards.length) { out.reason = 'no-cards'; return out; }
+
+  var isTarot = typeof drawnCards[0].card.arcana !== 'undefined';
+  var focus = careerFocusCard(drawnCards, subtopicKey);
+  var seedBase = 'career|' + subtopicKey + '|' + drawnCards.map(function (d) {
+    return (isTarot ? d.card.id : ('l' + d.card.n)) + (d.reversed ? 'R' : 'U');
+  }).join(',');
+
+  var baseMeaning;
+  if (isTarot && focus.card.rich && focus.card.rich.ctx && focus.card.rich.ctx.career) {
+    baseMeaning = focus.card.rich.ctx.career[focus.reversed ? 1 : 0];
+  } else if (isTarot) {
+    baseMeaning = focus.reversed ? focus.card.revZh : focus.card.upZh;
+  } else {
+    var lr2 = LEN_RICH[focus.card.n];
+    baseMeaning = (lr2 && lr2.career) ? lr2.career : focus.card.mZh;
+  }
+  baseMeaning = baseMeaning.replace(/,/g, '，');
+  var careerLeadPool = CAREER_SUBTOPIC_LEAD[subtopicKey] || CAREER_SUBTOPIC_LEAD['industry-fit'];
+  var careerLead = careerLeadPool[hashStr(seedBase + '|lead') % careerLeadPool.length];
+  out.conclusion = careerLead + baseMeaning;
+
+  var careerAxes = CAREER_TRAIT_AXES_BY_SUBTOPIC[subtopicKey];
+  if (careerAxes && subtopic.fields.indexOf('traits') !== -1) {
+    var careerGroup = loveCardGroup(focus.card, isTarot); // 通用的花色／大牌／雷諾曼吉凶分組工具
+    var careerParts = careerAxes.map(function (axis) {
+      var text = traitPoolPick(axis, careerGroup, seedBase + '|' + axis);
+      if (!text) return '';
+      var label = CAREER_AXIS_LABELS[axis] || axis;
+      return label + '：' + text;
+    }).filter(function (t) { return !!t; });
+    out.traits = careerParts.join('；');
+  }
+
+  var careerTone = loveToneBucket(drawnCards, isTarot); // 通用的整體牌陣語氣工具，非愛情限定
+  out.tone = careerTone;
+  ['trend', 'favor', 'risk', 'action', 'timing'].forEach(function (f) {
+    if (subtopic.fields.indexOf(f) === -1) return;
+    var pool = (CAREER_TONE_POOL[f] && CAREER_TONE_POOL[f][careerTone]) || [];
+    if (!pool.length) return;
+    out[f] = pool[hashStr(seedBase + '|' + f) % pool.length];
+  });
+
+  if (subtopic.fields.indexOf('caveat') !== -1) {
+    out.caveat = '以上描述是牌面象徵與可能傾向，並非對職涯結果的確定預測（例如是否升遷、錄取或創業成功），實際情況仍需以你自己的專業判斷與現實條件為準。';
+  }
+
+  out.available = true;
+  return out;
+}
+
 /* cardSubtopicReading(catKey, subtopicKey, drawnCards)
-   目前只支援 catKey==='love'；drawnCards 需為 state.drawn 這種 {card, reversed, pos, flipped} 陣列。
-   塔羅／雷諾曼皆由 drawnCards[0].card.arcana 是否存在自動判斷，不需要另外傳 isTarot。
-   回傳結構化物件，只有實際有內容的欄位才會被填入；catKey/subtopicKey 不支援或沒有抽牌時
-   安全回傳 available:false，不捏造任何內容。 */
+   目前支援 catKey==='love'（cardSubtopicReadingLove，Phase 1A，邏輯完全不變）與
+   catKey==='career'（cardSubtopicReadingCareer，Phase 2A）；drawnCards 需為 state.drawn
+   這種 {card, reversed, pos, flipped} 陣列。塔羅／雷諾曼皆由 drawnCards[0].card.arcana
+   是否存在自動判斷，不需要另外傳 isTarot。回傳結構化物件，只有實際有內容的欄位才會被填入；
+   catKey/subtopicKey 不支援或沒有抽牌時安全回傳 available:false，不捏造任何內容。 */
 function cardSubtopicReading(catKey, subtopicKey, drawnCards) {
+  if (catKey === 'career') return cardSubtopicReadingCareer(subtopicKey, drawnCards);
+  return cardSubtopicReadingLove(catKey, subtopicKey, drawnCards);
+}
+function cardSubtopicReadingLove(catKey, subtopicKey, drawnCards) {
   var out = { available: false, reason: '', catKey: catKey, subtopicKey: subtopicKey, conclusion: '', traits: '', trend: '', favor: '', risk: '', timing: '', action: '', caveat: '', tone: null };
   if (catKey !== 'love') { out.reason = 'unsupported-category'; return out; }
   var subtopic = (SUBTOPICS.love || []).filter(function (s) { return s.key === subtopicKey; })[0];
@@ -2918,21 +3068,23 @@ function buildDrawn() {
           action: cardAction(d, isTarot), reminder: cardReminder(d, isTarot),
         };
       }),
-      /* Phase 1A/1C：新增欄位，僅在愛情分類且選了具體子問題時才有值；不影響既有欄位／舊歷史紀錄格式，
-         歷史列表畫面（renderHistory／historyCopyForAI／分享圖片）本階段尚未讀取這些欄位，留待後續階段
-        （見完成報告）。reading 是 Phase 1A 就存在的舊欄位，維持不變；readingMode／cardReading／
-         astroReading／combinedReading 皆為 Phase 1C 純新增欄位。 */
-      subtopic: (state.category === 'love' && state.subtopic) ? (function () {
-        var def = (SUBTOPICS.love || []).filter(function (s) { return s.key === state.subtopic; })[0];
+      /* Phase 1A/1C/2A：新增欄位，僅在愛情或事業分類且選了具體子問題時才有值；不影響既有欄位／
+         舊歷史紀錄格式，歷史列表畫面（renderHistory／historyCopyForAI／分享圖片）本階段尚未讀取
+         這些欄位，留待後續階段（見完成報告）。reading 是 Phase 1A 就存在的舊欄位，維持不變；
+         readingMode／cardReading／astroReading／combinedReading 是 Phase 1C 新增欄位（事業目前
+         沒有星盤引擎，astroReading／combinedReading 固定為 null，readingMode 固定為 'cards'，
+         不臨時捏造）；catKey 是 Phase 2A 純新增欄位，方便未來區分是哪個分類的子問題結果。 */
+      subtopic: (state.subtopic && SUBTOPICS[state.category]) ? (function () {
+        var def = (SUBTOPICS[state.category] || []).filter(function (s) { return s.key === state.subtopic; })[0];
         if (!def) return null;
-        var cardRes = cardSubtopicReading('love', state.subtopic, state.drawn);
-        var astroRes = (state.readingMode === 'combined' && state.astroResult)
+        var cardRes = cardSubtopicReading(state.category, state.subtopic, state.drawn);
+        var astroRes = (state.category === 'love' && state.readingMode === 'combined' && state.astroResult)
           ? astroCategoryReading('love', state.subtopic, state.astroResult, state.astroUnknownTime) : null;
         var combRes = (astroRes && astroRes.available) ? combinedReading(cardRes, astroRes, 'love', state.subtopic) : null;
         return {
-          key: state.subtopic, zh: def.zh,
+          key: state.subtopic, zh: def.zh, catKey: state.category,
           reading: cardRes,
-          readingMode: state.readingMode,
+          readingMode: state.category === 'love' ? state.readingMode : 'cards',
           cardReading: cardRes,
           astroReading: astroRes,
           combinedReading: combRes,
@@ -3162,6 +3314,19 @@ function copyForAI() {
           }
         }
       }
+    }
+  } else if (state.category === 'career' && state.subtopic) {
+    /* Phase 2A：純新增段落，只有事業分類且選了具體子問題時才會輸出，不影響既有輸出內容；
+       複製給 AI 一律輸出完整欄位與完整 caveat（不像畫面上的折疊面板只顯示摘要）。 */
+    var careerSubDef2 = (SUBTOPICS.career || []).filter(function (s) { return s.key === state.subtopic; })[0];
+    var careerRes2 = careerSubDef2 ? cardSubtopicReading('career', state.subtopic, state.drawn) : null;
+    if (careerRes2 && careerRes2.available) {
+      lines.push('');
+      lines.push('具體問題解讀（事業）：' + careerSubDef2.zh);
+      SUBTOPIC_FIELD_ORDER.forEach(function (f) {
+        if (careerSubDef2.fields.indexOf(f) === -1 || !careerRes2[f]) return;
+        lines.push('　' + SUBTOPIC_FIELD_LABELS[f][0] + '：' + careerRes2[f]);
+      });
     }
   }
   lines.push('');
@@ -5578,6 +5743,110 @@ var TRAIT_POOL = {
     len_good: ['相遇場合可能明朗順利，例如公開活動、聚會或朋友介紹', '較可能在氣氛正向、充滿好消息的場合認識對方', '相遇的契機可能來得突然但美好，值得保持開放心態'],
     len_neutral: ['相遇場合可能很日常，例如平常的生活圈或例行的社交場合', '目前還看不出特別的場景線索，建議保持觀察、順其自然', '相遇方式可能普通平淡，重點在後續互動而非初次印象'],
     len_bad: ['相遇場合可能帶點波折，或在彼此都不算輕鬆的情境下認識', '初次認識的過程可能不太順利，建議別因此就否定這段緣分', '相遇的時機點可能不是最理想的階段，需要多一點耐心與時間'],
+  },
+  /* ================= Phase 2A：事業分類「具體人物／環境特徵」所需的措辭池 =================
+     沿用上面同一份 TRAIT_POOL 物件與 traitPoolPick() 存取方式（不重複宣告共用工具）；
+     分組鍵與愛情軸心一致：塔羅花色／大牌，雷諾曼吉／中性／凶。以下十個軸心只供 career 使用，
+     內容一律為「較適合／可能／傾向」語氣，不斷言唯一職業、不保證錄取或收入。 */
+  industryDirection: {
+    wands: ['產業方向可能較適合業務開發、行銷推廣或需要主動出擊的領域', '可優先考慮步調快、能快速看到成果的產業，例如新創或業務導向的公司'],
+    cups: ['產業方向可能較適合人際服務、教育、藝文或身心照護相關領域', '可優先考慮重視人際互動與情感連結的產業，例如諮商、公關或社福'],
+    swords: ['產業方向可能較適合資訊、法律、顧問或需要邏輯分析的領域', '可優先考慮講求精準判斷與策略思考的產業，例如科技、研究或法務'],
+    pentacles: ['產業方向可能較適合金融、工程、不動產或講求穩定的傳統產業', '可優先考慮制度成熟、能長期累積專業的產業，例如製造、財會或公部門'],
+    major: ['產業方向可能不侷限於單一領域，較適合能發揮個人使命感的工作', '可優先考慮正在轉型或具有開創性質的產業，重點在方向而非產業別'],
+    len_good: ['產業方向目前傾向順遂，適合朝人脈與資源都相對充足的領域發展', '可優先考慮正在成長、機會較多的產業'],
+    len_neutral: ['產業方向暫時看不出明顯偏好，可以多方嘗試、保持觀察', '可優先考慮先累積經驗、不急著鎖定單一產業'],
+    len_bad: ['產業方向目前可能面臨一些調整或挑戰，宜謹慎評估再投入', '可優先考慮先穩定現況、避免貿然轉換到陌生領域'],
+  },
+  jobFunction: {
+    wands: ['職務性質可能偏向需要主動出擊、對外接觸的角色', '較適合能發揮行動力與衝勁的職務，例如業務、公關或專案推動'],
+    cups: ['職務性質可能偏向需要同理心與溝通的角色', '較適合能照顧他人感受、建立關係的職務，例如人資、客服或教學'],
+    swords: ['職務性質可能偏向需要分析、規劃或把關的角色', '較適合邏輯清晰、能提出策略的職務，例如企劃、分析或法務'],
+    pentacles: ['職務性質可能偏向需要穩定執行與細心把關的角色', '較適合講求精確與長期負責的職務，例如財會、工程或行政管理'],
+    major: ['職務性質可能不落於傳統框架，較偏向帶領或開創性質的角色', '較適合需要整合全局、承擔較大責任的職務'],
+    len_good: ['職務性質目前傾向順利，適合承擔更多能見度高的角色', '較適合能發揮所長、容易被看見成果的職務'],
+    len_neutral: ['職務性質暫時中規中矩，可以先從熟悉的角色做起', '較適合先累積基本功，再逐步調整職務方向'],
+    len_bad: ['職務性質目前可能有壓力或需要調整的地方，宜謹慎評估', '較適合先穩住現有角色，再考慮是否轉換'],
+  },
+  workContent: {
+    wands: ['日常工作內容可能偏向專案推動、開發新客戶或處理突發狀況', '工作步調較快，經常需要同時處理多項進行中的任務'],
+    cups: ['日常工作內容可能偏向與人互動、傾聽需求或協調關係', '工作步調較彈性，重視每一次溝通與互動的品質'],
+    swords: ['日常工作內容可能偏向資料分析、撰寫文件或制定計畫', '工作步調講求精準，需要花時間確認細節與邏輯'],
+    pentacles: ['日常工作內容可能偏向例行性的執行、追蹤與維護', '工作步調穩定規律，重視流程與長期累積的成果'],
+    major: ['日常工作內容可能不只是例行事務，牽涉較大格局的規劃或轉型', '工作內容可能正處於重新定義角色的階段'],
+    len_good: ['日常工作內容目前發展順利，容易看到具體成果', '工作內容偏向被肯定、有成長空間的任務'],
+    len_neutral: ['日常工作內容暫時平穩，沒有特別突出也沒有明顯壓力', '工作內容中規中矩，適合先觀察再調整步調'],
+    len_bad: ['日常工作內容目前可能較繁重或瑣碎，需要多一點耐心', '工作內容可能正經歷調整期，宜謹慎分配心力'],
+  },
+  workEnvironment: {
+    wands: ['工作環境較適合步調快、鼓勵主動嘗試的團隊或新創氛圍', '適合充滿挑戰、能自由發揮行動力的工作場所'],
+    cups: ['工作環境較適合重視人情味、氣氛溫暖的團隊', '適合同事間互相支持、情感連結緊密的工作場所'],
+    swords: ['工作環境較適合講求專業分工、邏輯清楚的團隊', '適合制度明確、溝通直接了當的工作場所'],
+    pentacles: ['工作環境較適合穩定務實、制度成熟的組織', '適合重視長期發展與安全感的工作場所'],
+    major: ['工作環境的樣貌可能不落於一般框架，正在經歷轉型或重塑', '適合能讓你發揮更大格局與使命感的場所'],
+    len_good: ['工作環境目前氛圍正向，人際關係相對和諧', '適合資源與機會都相對充足的工作場所'],
+    len_neutral: ['工作環境暫時平穩，沒有特別的優勢也沒有明顯困擾', '適合先觀察團隊文化，再決定是否長期投入'],
+    len_bad: ['工作環境目前可能存在一些緊張或需要磨合的地方', '宜多留意職場氛圍，必要時建立自己的界線'],
+  },
+  employmentType: {
+    wands: ['工作型態傾向可能較適合業務導向的受雇工作，或需要主動出擊的接案型態', '也可能適合開創性質強的創業或專案主導角色'],
+    cups: ['工作型態傾向可能較適合團隊合作、重視人際的受雇工作', '也可能適合以陪伴與服務為核心的接案或創意型態'],
+    swords: ['工作型態傾向可能較適合需要專業判斷的受雇或顧問型接案', '也可能適合技術與邏輯導向的專業角色'],
+    pentacles: ['工作型態傾向可能較適合穩定的受雇工作，或制度化的管理職務', '也可能適合按部就班經營的長期事業'],
+    major: ['工作型態傾向可能不侷限於單一模式，較適合能自主定義角色的方式', '也可能適合帶有開創精神的創業或轉型嘗試'],
+    len_good: ['工作型態傾向目前順遂，不論受雇或接案都有發展空間', '較適合把握現有機會、擴大現有的工作型態'],
+    len_neutral: ['工作型態傾向暫時沒有明顯偏好，可以先維持現況、多方觀察', '較適合先試探不同型態，再決定長期方向'],
+    len_bad: ['工作型態傾向目前可能需要調整，貿然轉換型態宜謹慎評估', '較適合先穩住現有工作型態，再考慮轉換'],
+  },
+  workRhythm: {
+    wands: ['自主與合作節奏可能偏向快節奏、獨立決斷，也樂於主導合作', '較適合步調明快、能快速拍板的工作方式'],
+    cups: ['自主與合作節奏可能偏向重視共識、需要情感上的信任基礎', '較適合節奏彈性、重視團隊感受的合作方式'],
+    swords: ['自主與合作節奏可能偏向獨立作業、依邏輯分工合作', '較適合各司其職、溝通講求效率的工作方式'],
+    pentacles: ['自主與合作節奏可能偏向穩健漸進、按計畫逐步推進', '較適合長期穩定的合作關係，不喜歡臨時變動'],
+    major: ['自主與合作節奏可能不落於一般框架，重點在能否發揮主導權', '較適合能有較大自主空間、自行定義節奏的合作方式'],
+    len_good: ['自主與合作節奏目前順暢，彼此配合度較高', '較適合順勢擴大自主權限或合作範圍'],
+    len_neutral: ['自主與合作節奏暫時平穩，尚在磨合彼此習慣的階段', '較適合先維持現有節奏，不急著改變合作模式'],
+    len_bad: ['自主與合作節奏目前可能出現落差，需要多溝通協調', '較適合先釐清彼此期待，再決定合作深度'],
+  },
+  strength: {
+    wands: ['職場優勢可能在於行動力強、敢於承擔挑戰', '面對壓力時反應快，容易成為推動事情前進的人'],
+    cups: ['職場優勢可能在於善於察言觀色、建立信任關係', '能敏銳感受團隊氛圍，是凝聚人心的角色'],
+    swords: ['職場優勢可能在於邏輯清晰、擅長分析與表達', '能快速抓住問題核心，提出具體可行的方案'],
+    pentacles: ['職場優勢可能在於穩定可靠、執行力強', '重視細節與品質，是值得信賴的長期夥伴'],
+    major: ['職場優勢可能超出一般技能範疇，展現在格局與影響力上', '具備帶領或轉化局勢的潛力'],
+    len_good: ['職場優勢目前明顯，容易被看見並獲得肯定', '整體表現順遂，是發揮實力的好時機'],
+    len_neutral: ['職場優勢暫時還不算突出，需要更多時間累積展現', '可以從小地方開始建立自己的專業形象'],
+    len_bad: ['職場優勢目前可能被現實壓力掩蓋，需要重新盤點', '建議先釐清自己真正擅長的部分，再對外展現'],
+  },
+  blindSpot: {
+    wands: ['容易卡住的地方可能是太急躁，還沒想清楚就先行動', '也可能因為太專注衝刺而忽略團隊的節奏'],
+    cups: ['容易卡住的地方可能是太顧慮他人感受而不敢表達立場', '也可能因為情緒化而影響專業判斷'],
+    swords: ['容易卡住的地方可能是想太多、容易陷入過度分析', '也可能因為表達太直接而顯得缺乏彈性'],
+    pentacles: ['容易卡住的地方可能是太保守、不敢嘗試新的做法', '也可能因為過度謹慎而錯過行動的時機'],
+    major: ['容易卡住的地方可能是把格局看得太大，反而忽略眼前的細節', '也可能因為壓力較大而一時看不清方向'],
+    len_good: ['容易卡住的地方可能是太順利而放鬆警覺', '也可能因為機會多而不容易聚焦'],
+    len_neutral: ['容易卡住的地方暫時不明顯，建議持續留意自己的狀態', '可能容易因為猶豫不決而拖延'],
+    len_bad: ['容易卡住的地方可能與目前的壓力或挑戰有關，需要多留意情緒', '也可能因為卡在瓶頸而感到挫折，建議適時求助'],
+  },
+  managerFit: {
+    wands: ['適合的主管風格可能是給予空間、鼓勵主動出擊的類型', '較能適應果斷明快、願意授權的領導方式'],
+    cups: ['適合的主管風格可能是重視溝通、願意傾聽的類型', '較能適應溫和支持、給予情感回饋的領導方式'],
+    swords: ['適合的主管風格可能是條理清楚、能給明確方向的類型', '較能適應理性溝通、就事論事的領導方式'],
+    pentacles: ['適合的主管風格可能是穩健可靠、重視制度的類型', '較能適應按部就班、給予清楚規則的領導方式'],
+    major: ['適合的主管風格可能不拘泥傳統，重點在能否給予格局與願景', '較能適應具有遠見、願意授權重大決策的領導方式'],
+    len_good: ['目前與主管的互動傾向順利，適合主動爭取更多發揮空間', '較能從支持型的主管身上獲得成長機會'],
+    len_neutral: ['與主管的適配度暫時中性，需要更多相處才能判斷', '建議先觀察主管的溝通習慣，再調整互動方式'],
+    len_bad: ['與主管的互動目前可能有些磨合，需要多一點耐心與溝通', '建議先釐清彼此期待，避免誤解累積'],
+  },
+  teamFit: {
+    wands: ['適合的團隊環境可能是步調明快、鼓勵嘗試的團隊', '在充滿挑戰與行動力的團隊中較能發揮'],
+    cups: ['適合的團隊環境可能是氣氛融洽、互相支持的團隊', '在重視情感連結與合作默契的團隊中較能發揮'],
+    swords: ['適合的團隊環境可能是分工明確、專業導向的團隊', '在講求邏輯與效率的團隊中較能發揮'],
+    pentacles: ['適合的團隊環境可能是穩定踏實、制度健全的團隊', '在重視長期合作與信任的團隊中較能發揮'],
+    major: ['適合的團隊環境可能不拘泥於規模，重點在是否有共同的願景', '在能發揮更大影響力的團隊或組織中較能施展'],
+    len_good: ['目前的團隊氛圍傾向正向，適合多參與團隊合作的機會', '在資源充足、氣氛良好的團隊中容易發揮'],
+    len_neutral: ['團隊適配度暫時中性，可以多花時間了解團隊文化', '建議先觀察團隊互動模式，再決定投入程度'],
+    len_bad: ['目前的團隊氛圍可能存在一些緊張或磨合，需要多留意', '建議先建立清楚的溝通界線，再逐步培養信任'],
   },
 };
 /* 安全存取 TRAIT_POOL：對應措辭池為空（尚未撰稿）時一律回傳空字串，絕不外洩佔位文字。
