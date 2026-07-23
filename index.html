@@ -2567,23 +2567,37 @@ var SUBTOPIC_FIELD_LABELS = {
   caveat: ['不確定性提醒', 'Caveat'],
 };
 var SUBTOPIC_FIELD_ORDER = ['conclusion', 'traits', 'trend', 'favor', 'risk', 'timing', 'action', 'caveat'];
+var SUBTOPIC_UI_CAVEAT = {
+  cards: '牌面呈現的是象徵與可能傾向，請以實際觀察與自己的判斷為準。',
+  astro: '星盤描述的是個人傾向，會受出生資料完整度影響，不代表確定結果。',
+  combined: '牌卡與星盤皆為探索參考，不是對人物或未來的確定預測。',
+};
 /* titleText 為選填參數：cards-only 模式沿用預設「具體問題解讀」（與 Phase 1A 完全一致的輸出，
    逐位元組不變）；Phase 1C 的 combined 模式呼叫時會傳入「牌卡具體解讀」以清楚標示這是哪一邊的內容。 */
 function renderSubtopicResultPanel(subtopicDef, result, titleText) {
   if (!result || !result.available) return '';
   var title = titleText || '具體問題解讀';
+  var isCombinedDetail = titleText === '牌卡具體解讀';
   var h = '<div style="border:1px solid rgba(201,169,110,.4);border-radius:10px;padding:15px 17px;background:rgba(255,255,255,.02);margin-top:12px">';
-  h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:#e6cd9a;text-transform:uppercase">✦ ' + esc(title) + ' · ' + esc(subtopicDef.zh) + '</div>';
+  if (isCombinedDetail) {
+    h += '<details><summary style="min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;list-style:none;font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:#e6cd9a;text-transform:uppercase">✦ ' + esc(title) + '<span style="font:400 10px \'Noto Sans TC\',sans-serif;letter-spacing:0;color:rgba(240,233,216,.45);white-space:nowrap">點擊展開</span></summary>';
+    h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:2px;line-height:1.6">' + esc(subtopicDef.zh) + '</div>';
+  } else {
+    h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:#e6cd9a;text-transform:uppercase">✦ ' + esc(title) + ' · ' + esc(subtopicDef.zh) + '</div>';
+  }
   h += '<div style="margin-top:9px;display:flex;flex-direction:column;gap:9px">';
   SUBTOPIC_FIELD_ORDER.forEach(function (f) {
     if (subtopicDef.fields.indexOf(f) === -1) return;
     var val = result[f];
     if (!val) return;
+    if (f === 'caveat') val = SUBTOPIC_UI_CAVEAT.cards;
     var label = SUBTOPIC_FIELD_LABELS[f];
     h += '<div><span style="font:500 10px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;color:#c9a96e">' + label[0] + ' <span style="font:italic 9px \'EB Garamond\',serif;color:rgba(201,169,110,.6)">' + label[1] + '</span></span>';
     h += '<div style="font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:3px;line-height:1.8;text-align:justify">' + esc(val) + '</div></div>';
   });
-  h += '</div></div>';
+  h += '</div>';
+  if (isCombinedDetail) h += '</details>';
+  h += '</div>';
   return h;
 }
 
@@ -2605,12 +2619,14 @@ var ASTRO_SKIP_REASON_LABELS = {
 function renderAstroSubtopicPanel(subtopicDef, result) {
   if (!result || !result.available) return '';
   var h = '<div style="border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:15px 17px;background:rgba(255,255,255,.02);margin-top:12px">';
-  h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:#c9a96e;text-transform:uppercase">✧ 星盤補充解讀 · ' + esc(subtopicDef.zh) + '</div>';
+  h += '<details><summary style="min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;list-style:none;font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:#c9a96e;text-transform:uppercase">✧ 星盤補充解讀<span style="font:400 10px \'Noto Sans TC\',sans-serif;letter-spacing:0;color:rgba(240,233,216,.45);white-space:nowrap">點擊展開</span></summary>';
+  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:2px;line-height:1.6">' + esc(subtopicDef.zh) + '</div>';
   h += '<div style="margin-top:9px;display:flex;flex-direction:column;gap:9px">';
   SUBTOPIC_FIELD_ORDER.forEach(function (f) {
     if (subtopicDef.fields.indexOf(f) === -1) return;
     var val = result[f];
     if (!val) return;
+    if (f === 'caveat') val = SUBTOPIC_UI_CAVEAT.astro;
     var label = SUBTOPIC_FIELD_LABELS[f];
     h += '<div><span style="font:500 10px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;color:#c9a96e">' + label[0] + ' <span style="font:italic 9px \'EB Garamond\',serif;color:rgba(201,169,110,.6)">' + label[1] + '</span></span>';
     h += '<div style="font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:3px;line-height:1.8;text-align:justify">' + esc(val) + '</div></div>';
@@ -2630,7 +2646,7 @@ function renderAstroSubtopicPanel(subtopicDef, result) {
     }).join('、');
     h += '<div style="margin-top:9px;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);line-height:1.8">本次未使用：' + esc(skipText) + '</div>';
   }
-  h += '</div>';
+  h += '</details></div>';
   return h;
 }
 
@@ -2646,16 +2662,27 @@ function renderCombinedSummaryPanel(subtopicDef, result) {
   var h = '<div style="border:1px solid rgba(201,169,110,.45);border-radius:10px;padding:15px 17px;background:rgba(201,169,110,.06);margin-top:12px">';
   h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:#e6cd9a;text-transform:uppercase">✦ 牌卡＋星盤綜合觀察 · ' + esc(subtopicDef.zh) + '</div>';
   h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);margin-top:4px">' + esc(COMBINED_AGREEMENT_LABELS[result.agreement] || '') + '</div>';
-  h += '<div style="margin-top:9px;display:flex;flex-direction:column;gap:9px">';
+  h += '<div style="margin-top:11px;display:flex;flex-direction:column;gap:10px">';
+  ['conclusion', 'action'].forEach(function (f) {
+    if (subtopicDef.fields.indexOf(f) === -1 || !result[f]) return;
+    var label = SUBTOPIC_FIELD_LABELS[f];
+    h += '<div><span style="font:500 10px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;color:#c9a96e">' + label[0] + ' <span style="font:italic 9px \'EB Garamond\',serif;color:rgba(201,169,110,.6)">' + label[1] + '</span></span>';
+    h += '<div style="font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:3px;line-height:1.75;text-align:justify">' + esc(result[f]) + '</div></div>';
+  });
+  h += '</div>';
+  h += '<details style="margin-top:10px"><summary style="min-height:44px;display:flex;align-items:center;cursor:pointer;font:400 11px \'Noto Sans TC\',sans-serif;color:#c9a96e">查看完整綜合解讀</summary>';
+  h += '<div style="display:flex;flex-direction:column;gap:9px;padding-top:3px">';
   SUBTOPIC_FIELD_ORDER.forEach(function (f) {
+    if (f === 'conclusion' || f === 'action') return;
     if (subtopicDef.fields.indexOf(f) === -1) return;
     var val = result[f];
     if (!val) return;
+    if (f === 'caveat') val = SUBTOPIC_UI_CAVEAT.combined;
     var label = SUBTOPIC_FIELD_LABELS[f];
     h += '<div><span style="font:500 10px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;color:#c9a96e">' + label[0] + ' <span style="font:italic 9px \'EB Garamond\',serif;color:rgba(201,169,110,.6)">' + label[1] + '</span></span>';
     h += '<div style="font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:3px;line-height:1.8;text-align:justify">' + esc(val) + '</div></div>';
   });
-  h += '</div></div>';
+  h += '</div></details></div>';
   return h;
 }
 
