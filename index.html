@@ -900,6 +900,25 @@ function rr(ctx, x, y, w, h2, r) {
   ctx.closePath();
 }
 
+/* 分享圖只放具體問題的精簡摘要；完整欄位仍保留在「複製給 AI」與歷史紀錄中。 */
+function currentSubtopicShareData() {
+  if (!state.subtopic || !SUBTOPICS[state.category]) return null;
+  var def = (SUBTOPICS[state.category] || []).filter(function (s) { return s.key === state.subtopic; })[0];
+  if (!def) return null;
+  var cardRes = cardSubtopicReading(state.category, state.subtopic, state.drawn);
+  var astroRes = (state.readingMode === 'combined' && state.astroResult)
+    ? astroCategoryReading(state.category, state.subtopic, state.astroResult, state.astroUnknownTime) : null;
+  var combinedRes = astroRes && astroRes.available
+    ? combinedReading(cardRes, astroRes, state.category, state.subtopic) : null;
+  var result = combinedRes && combinedRes.available ? combinedRes : (cardRes && cardRes.available ? cardRes : astroRes);
+  if (!result || !result.available) return null;
+  return {
+    title: def.zh,
+    conclusion: result.conclusion || '',
+    action: result.action || result.favor || '',
+  };
+}
+
 function shareResultImage() {
   try {
     var drawn = state.drawn;
@@ -917,9 +936,14 @@ function shareResultImage() {
     mctx.font = '24px "Noto Sans TC", sans-serif';
     var overall = overallReading();
     var oLines = wrapCJK(mctx, overall, W - 2 * pad);
+    var subtopicShare = currentSubtopicShareData();
+    var subTitleLines = subtopicShare ? wrapCJK(mctx, subtopicShare.title, W - 2 * pad) : [];
+    var subConclusionLines = subtopicShare && subtopicShare.conclusion ? wrapCJK(mctx, subtopicShare.conclusion, W - 2 * pad) : [];
+    var subActionLines = subtopicShare && subtopicShare.action ? wrapCJK(mctx, '行動提醒：' + subtopicShare.action, W - 2 * pad) : [];
     var qText = (state.target ? '關於「' + state.target + '」' : '') + (state.question ? '「' + state.question + '」' : '');
     var startY = qText ? 216 : 186;
-    var H = startY + rows * (ch + 92) + 60 + oLines.length * 38 + 96;
+    var subtopicH = subtopicShare ? (62 + subTitleLines.length * 30 + subConclusionLines.length * 34 + subActionLines.length * 32) : 0;
+    var H = startY + rows * (ch + 92) + 60 + oLines.length * 38 + subtopicH + 96;
     cv.width = W; cv.height = H;
     var ctx = cv.getContext('2d');
 
@@ -983,6 +1007,21 @@ function shareResultImage() {
       ctx.fillStyle = 'rgba(240,233,216,.9)'; ctx.font = '24px "Noto Sans TC", sans-serif';
       ctx.textAlign = 'left';
       oLines.forEach(function (ln, k2) { ctx.fillText(ln, pad, oy + 42 + k2 * 38); });
+      var sy = oy + 42 + oLines.length * 38;
+      if (subtopicShare) {
+        ctx.strokeStyle = 'rgba(201,169,110,.25)'; ctx.beginPath(); ctx.moveTo(pad, sy + 14); ctx.lineTo(W - pad, sy + 14); ctx.stroke();
+        sy += 52;
+        ctx.fillStyle = '#e6cd9a'; ctx.font = '600 20px "Noto Serif TC", serif'; ctx.textAlign = 'left';
+        ctx.fillText('✦ 具體問題', pad, sy);
+        ctx.fillStyle = 'rgba(240,233,216,.65)'; ctx.font = '18px "Noto Sans TC", sans-serif';
+        subTitleLines.forEach(function (ln, i2) { ctx.fillText(ln, pad, sy + 30 + i2 * 30); });
+        sy += 30 + subTitleLines.length * 30;
+        ctx.fillStyle = 'rgba(240,233,216,.92)'; ctx.font = '22px "Noto Sans TC", sans-serif';
+        subConclusionLines.forEach(function (ln, i3) { ctx.fillText(ln, pad, sy + i3 * 34); });
+        sy += subConclusionLines.length * 34 + 8;
+        ctx.fillStyle = '#9bc5a3'; ctx.font = '19px "Noto Sans TC", sans-serif';
+        subActionLines.forEach(function (ln, i4) { ctx.fillText(ln, pad, sy + i4 * 32); });
+      }
       ctx.textAlign = 'center';
       ctx.fillStyle = 'rgba(240,233,216,.35)'; ctx.font = 'italic 15px Georgia, serif';
       ctx.fillText('Mystic Deck · 塔羅 · 雷諾曼', W / 2, H - 42);
@@ -4010,6 +4049,60 @@ function historyFlashCopied() {
     if (b) b.textContent = '複製給 AI 解讀 Copy for AI';
   }, 2000);
 }
+function historySubtopicResult(st) {
+  if (!st) return null;
+  if (st.readingMode === 'combined' && st.combinedReading && st.combinedReading.available) return st.combinedReading;
+  if (st.cardReading && st.cardReading.available) return st.cardReading;
+  if (st.reading && st.reading.available) return st.reading;
+  if (st.astroReading && st.astroReading.available) return st.astroReading;
+  return null;
+}
+function appendHistorySubtopicCopy(lines, st) {
+  if (!st) return;
+  lines.push('具體問題：' + (st.zh || st.key || ''));
+  var sections = [
+    ['牌卡解讀', st.cardReading || st.reading],
+    ['星盤補充解讀', st.astroReading],
+    ['牌卡＋星盤綜合觀察', st.combinedReading],
+  ];
+  sections.forEach(function (section) {
+    var result = section[1];
+    if (!result || !result.available) return;
+    lines.push(section[0] + '：');
+    SUBTOPIC_FIELD_ORDER.forEach(function (f) {
+      if (result[f]) lines.push('　' + SUBTOPIC_FIELD_LABELS[f][0] + '：' + result[f]);
+    });
+    if (result.evidence && result.evidence.used && result.evidence.used.length) {
+      lines.push('　星盤依據：' + result.evidence.used.join('；'));
+    }
+  });
+  lines.push('');
+}
+function renderHistorySubtopic(st) {
+  if (!st) return '';
+  var result = historySubtopicResult(st);
+  if (!result) return '';
+  var h = '<div style="border:1px solid rgba(201,169,110,.35);border-radius:10px;padding:15px 17px;background:rgba(201,169,110,.06);margin-top:12px">';
+  h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.08em;color:#e6cd9a">✦ 具體問題解讀</div>';
+  h += '<div style="font:500 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:5px;line-height:1.7">' + esc(st.zh || st.key || '') + '</div>';
+  h += '<div style="margin-top:9px;display:flex;flex-direction:column;gap:8px">';
+  SUBTOPIC_FIELD_ORDER.forEach(function (f) {
+    if (!result[f]) return;
+    var val = f === 'caveat' ? SUBTOPIC_UI_CAVEAT[result.mode === 'combined' ? 'combined' : (st.readingMode === 'combined' ? 'astro' : 'cards')] : result[f];
+    h += '<div><span style="font:500 10px \'Noto Sans TC\',sans-serif;color:#c9a96e">' + SUBTOPIC_FIELD_LABELS[f][0] + '</span>';
+    h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.85);line-height:1.75;margin-top:2px;text-align:justify">' + esc(val) + '</div></div>';
+  });
+  h += '</div>';
+  if (st.readingMode === 'combined' && (st.cardReading || st.astroReading)) {
+    h += '<details style="margin-top:9px"><summary style="min-height:44px;display:flex;align-items:center;font:500 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);cursor:pointer">查看當時的牌卡與星盤分項</summary>';
+    [['牌卡',st.cardReading || st.reading],['星盤',st.astroReading]].forEach(function (section) {
+      if (!section[1] || !section[1].available || !section[1].conclusion) return;
+      h += '<div style="margin-top:6px;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.7);line-height:1.7"><span style="color:#c9a96e">' + section[0] + '：</span>' + esc(section[1].conclusion) + '</div>';
+    });
+    h += '</details>';
+  }
+  return h + '</div>';
+}
 function historyCopyForAI() {
   if (state.histSelected === null || !state.history[state.histSelected]) return;
   var e = state.history[state.histSelected];
@@ -4043,6 +4136,7 @@ function historyCopyForAI() {
       lines.push('');
     }
     if (dt.overall) { lines.push('綜合解讀：' + dt.overall); lines.push(''); }
+    appendHistorySubtopicCopy(lines, dt.subtopic);
   } else if (e.summary) {
     lines.push('摘要：' + e.summary);
     lines.push('');
@@ -4081,6 +4175,7 @@ function renderHistory() {
         h += '<div style="font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:8px;line-height:1.9;text-align:justify">' + esc(dt.overall) + '</div>';
         h += '</div>';
       }
+      h += renderHistorySubtopic(dt.subtopic);
       if (dt.analysis && dt.analysis.length) {
         h += '<div style="border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:15px 17px;background:rgba(255,255,255,.02);margin-top:12px">';
         h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:#c9a96e;text-transform:uppercase">✧ 牌陣分析 Spread Analysis</div>';
