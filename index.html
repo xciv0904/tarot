@@ -421,6 +421,7 @@ var state = {
   question: '',
   target: '',
   subtopic: '',        // 具體問題 key（目前僅 love 類別有對應 UI／解讀，見 SUBTOPICS）
+  readingMode: 'cards', // 'cards' | 'combined'（目前僅 love 類別可切換；combined 需要 state.astroResult 存在）
   timeframe: 'month',
   drawn: [],
   phase: 'setup',      // setup | shuffling | picking | result
@@ -1645,6 +1646,7 @@ function startQuestionFlow() {
   state.question = '';
   state.target = '';
   state.subtopic = '';
+  state.readingMode = 'cards';
   go('reading', state.deck || 'tarot');
 }
 
@@ -1752,11 +1754,33 @@ function wizBtns(showBack, nextOk, nextLabel, nextFn) {
   return h + '</div>';
 }
 
+/* Phase 1C：解讀來源選擇器（只在 category==='love' 時於問題輸入步驟顯示）。
+   「牌卡＋我的星盤」只有 state.astroResult 存在時才可選——沒有星盤絕不能選，也絕不臨時
+   生成假星盤；沒有星盤時顯示為不可用按鈕，並提供「先建立我的星盤」導向星盤分頁的入口。
+   go('astro') 只是切換 state.tab，resetReading() 不會清除 category／question／subtopic／
+   wizardStep，所以之後從星盤分頁切回占卜分頁時，這裡填到一半的資訊會保留。 */
+function renderLoveModePicker() {
+  var hasAstro = !!state.astroResult;
+  var cardsActive = state.readingMode === 'cards';
+  var combinedActive = state.readingMode === 'combined';
+  var h = '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:14px">解讀來源</div>';
+  h += '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center">';
+  h += '<button type="button" aria-pressed="' + cardsActive + '" onclick="wizSetReadingMode(\'cards\')" style="font:500 12px \'Noto Sans TC\',sans-serif;background:' + (cardsActive ? 'rgba(201,169,110,.18)' : 'rgba(255,255,255,.02)') + ';border:1px solid ' + (cardsActive ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (cardsActive ? '#f0e9d8' : 'rgba(240,233,216,.6)') + ';padding:8px 14px;border-radius:16px;cursor:pointer">牌卡解讀</button>';
+  if (hasAstro) {
+    h += '<button type="button" aria-pressed="' + combinedActive + '" onclick="wizSetReadingMode(\'combined\')" style="font:500 12px \'Noto Sans TC\',sans-serif;background:' + (combinedActive ? 'rgba(201,169,110,.18)' : 'rgba(255,255,255,.02)') + ';border:1px solid ' + (combinedActive ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (combinedActive ? '#f0e9d8' : 'rgba(240,233,216,.6)') + ';padding:8px 14px;border-radius:16px;cursor:pointer">牌卡＋我的星盤</button>';
+  } else {
+    h += '<button type="button" disabled aria-disabled="true" title="需要先建立你的星盤才能使用" style="font:500 12px \'Noto Sans TC\',sans-serif;background:rgba(255,255,255,.02);border:1px dashed rgba(201,169,110,.25);color:rgba(240,233,216,.3);padding:8px 14px;border-radius:16px;cursor:not-allowed">牌卡＋我的星盤</button>';
+    h += '<button type="button" onclick="go(\'astro\')" style="font:400 11px \'Noto Sans TC\',sans-serif;background:none;border:none;color:#c9a96e;cursor:pointer;border-bottom:1px dotted #c9a96e;padding:0 0 1px">先建立我的星盤 →</button>';
+  }
+  h += '</div>';
+  return h;
+}
+
 /* Phase 1A：愛情分類的具體子問題選擇器（只在 category==='love' 時於問題輸入步驟顯示）。
-   只列出 SUBTOPICS.love 中 modes 包含 'cards' 的項目；再次點選同一個可取消選取。
-   其他分類完全不受影響，不呼叫這個函式。 */
+   依目前 state.readingMode 只列出 SUBTOPICS.love 中 modes 包含該模式的項目；
+   再次點選同一個可取消選取。其他分類完全不受影響，不呼叫這個函式。 */
 function renderLoveSubtopicPicker() {
-  var options = (SUBTOPICS.love || []).filter(function (s) { return s.modes.indexOf('cards') !== -1; });
+  var options = (SUBTOPICS.love || []).filter(function (s) { return s.modes.indexOf(state.readingMode) !== -1; });
   if (!options.length) return '';
   var h = '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:14px">想深入了解的具體問題（選填，可再次點選取消）</div>';
   h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">';
@@ -1821,6 +1845,7 @@ function renderWizard(spreads, isTarot) {
       h += '<input id="target-input" value="' + esc(state.target) + '" oninput="state.target=this.value" placeholder="' + targetCfg.placeholder + '" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:10px 13px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
     }
     if (state.category === 'love') {
+      h += renderLoveModePicker();
       h += renderLoveSubtopicPicker();
     }
     h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:14px">具體問題（選填，可點下方範例）</div>';
@@ -1867,11 +1892,22 @@ function wizSetDeck(d) {
   render();
 }
 function wizSetCat(k) {
-  if (state.category !== k) { state.category = k; state.target = ''; state.subtopic = ''; }
+  if (state.category !== k) { state.category = k; state.target = ''; state.subtopic = ''; state.readingMode = 'cards'; }
   render();
 }
 function wizToggleSubtopic(key) {
   state.subtopic = (state.subtopic === key) ? '' : key;
+  render();
+}
+/* combined 模式只在愛情分類、且已經有 state.astroResult 時才允許選取——沒有星盤絕不能選，
+   也絕不臨時生成假星盤。切換模式後，若目前選取的 subtopic 在新模式下不支援，安全清除它
+  （目前 SUBTOPICS.love 七個子問題的 modes 都同時支援 cards／combined，此檢查是為未來調整鋪路）。 */
+function wizSetReadingMode(mode) {
+  if (mode === state.readingMode) return;
+  if (mode === 'combined' && !state.astroResult) return;
+  state.readingMode = mode;
+  var def = (SUBTOPICS.love || []).filter(function (s) { return s.key === state.subtopic; })[0];
+  if (state.subtopic && (!def || def.modes.indexOf(mode) === -1)) state.subtopic = '';
   render();
 }
 function wizSetSpread(k) { state.spread = k; render(); }
@@ -1888,7 +1924,7 @@ function wizNext() {
 }
 function wizBack() { state.wizardStep = Math.max(1, state.wizardStep - 1); render(); }
 function wizRestart() {
-  state.wizardStep = 1; state.category = null; state.question = ''; state.target = ''; state.subtopic = '';
+  state.wizardStep = 1; state.category = null; state.question = ''; state.target = ''; state.subtopic = ''; state.readingMode = 'cards';
   resetReading(); render(); window.scrollTo(0, 0);
 }
 function wizChip(i) {
@@ -2044,7 +2080,21 @@ function renderReading() {
     h += '</div>';
     if (state.category === 'love' && state.subtopic) {
       var loveSubDef = (SUBTOPICS.love || []).filter(function (s) { return s.key === state.subtopic; })[0];
-      if (loveSubDef) h += renderSubtopicResultPanel(loveSubDef, cardSubtopicReading('love', state.subtopic, state.drawn));
+      if (loveSubDef) {
+        var loveCardRes = cardSubtopicReading('love', state.subtopic, state.drawn);
+        if (state.readingMode === 'combined' && state.astroResult) {
+          /* combined 模式：依序顯示 A 牌卡具體解讀、B 星盤補充解讀、C 牌卡＋星盤綜合觀察。
+             星盤結果現算現用，不寫回 state，也絕不在沒有 state.astroResult 時臨時生成假星盤。 */
+          h += renderSubtopicResultPanel(loveSubDef, loveCardRes, '牌卡具體解讀');
+          var loveAstroRes = astroCategoryReading('love', state.subtopic, state.astroResult, state.astroUnknownTime);
+          h += renderAstroSubtopicPanel(loveSubDef, loveAstroRes);
+          var loveCombRes = combinedReading(loveCardRes, loveAstroRes, 'love', state.subtopic);
+          h += renderCombinedSummaryPanel(loveSubDef, loveCombRes);
+        } else {
+          /* cards 模式：與 Phase 1A 完全一致，不多出任何星盤區塊 */
+          h += renderSubtopicResultPanel(loveSubDef, loveCardRes);
+        }
+      }
     }
     if (!isTarot && state.spread === 'grand') {
       h += grandPanel();
@@ -2435,7 +2485,7 @@ var LOVE_TONE_POOL = {
    回傳結構化物件，只有實際有內容的欄位才會被填入；catKey/subtopicKey 不支援或沒有抽牌時
    安全回傳 available:false，不捏造任何內容。 */
 function cardSubtopicReading(catKey, subtopicKey, drawnCards) {
-  var out = { available: false, reason: '', catKey: catKey, subtopicKey: subtopicKey, conclusion: '', traits: '', trend: '', favor: '', risk: '', timing: '', action: '', caveat: '' };
+  var out = { available: false, reason: '', catKey: catKey, subtopicKey: subtopicKey, conclusion: '', traits: '', trend: '', favor: '', risk: '', timing: '', action: '', caveat: '', tone: null };
   if (catKey !== 'love') { out.reason = 'unsupported-category'; return out; }
   var subtopic = (SUBTOPICS.love || []).filter(function (s) { return s.key === subtopicKey; })[0];
   if (!subtopic) { out.reason = 'unknown-subtopic'; return out; }
@@ -2488,6 +2538,7 @@ function cardSubtopicReading(catKey, subtopicKey, drawnCards) {
 
   /* 發展趨勢／有利因素／風險阻礙／可執行建議／時間傾向：依整體牌陣語氣挑句，只填子問題有要求的欄位 */
   var tone = loveToneBucket(drawnCards, isTarot);
+  out.tone = tone; // Phase 1C：純新增的非 UI meta 欄位，供 combinedReading() 比對牌卡／星盤語氣，不影響既有欄位
   ['trend', 'favor', 'risk', 'action', 'timing'].forEach(function (f) {
     if (subtopic.fields.indexOf(f) === -1) return;
     var pool = (LOVE_TONE_POOL[f] && LOVE_TONE_POOL[f][tone]) || [];
@@ -2516,10 +2567,85 @@ var SUBTOPIC_FIELD_LABELS = {
   caveat: ['不確定性提醒', 'Caveat'],
 };
 var SUBTOPIC_FIELD_ORDER = ['conclusion', 'traits', 'trend', 'favor', 'risk', 'timing', 'action', 'caveat'];
-function renderSubtopicResultPanel(subtopicDef, result) {
+/* titleText 為選填參數：cards-only 模式沿用預設「具體問題解讀」（與 Phase 1A 完全一致的輸出，
+   逐位元組不變）；Phase 1C 的 combined 模式呼叫時會傳入「牌卡具體解讀」以清楚標示這是哪一邊的內容。 */
+function renderSubtopicResultPanel(subtopicDef, result, titleText) {
   if (!result || !result.available) return '';
+  var title = titleText || '具體問題解讀';
   var h = '<div style="border:1px solid rgba(201,169,110,.4);border-radius:10px;padding:15px 17px;background:rgba(255,255,255,.02);margin-top:12px">';
-  h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:#e6cd9a;text-transform:uppercase">✦ 具體問題解讀 · ' + esc(subtopicDef.zh) + '</div>';
+  h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:#e6cd9a;text-transform:uppercase">✦ ' + esc(title) + ' · ' + esc(subtopicDef.zh) + '</div>';
+  h += '<div style="margin-top:9px;display:flex;flex-direction:column;gap:9px">';
+  SUBTOPIC_FIELD_ORDER.forEach(function (f) {
+    if (subtopicDef.fields.indexOf(f) === -1) return;
+    var val = result[f];
+    if (!val) return;
+    var label = SUBTOPIC_FIELD_LABELS[f];
+    h += '<div><span style="font:500 10px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;color:#c9a96e">' + label[0] + ' <span style="font:italic 9px \'EB Garamond\',serif;color:rgba(201,169,110,.6)">' + label[1] + '</span></span>';
+    h += '<div style="font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:3px;line-height:1.8;text-align:justify">' + esc(val) + '</div></div>';
+  });
+  h += '</div></div>';
+  return h;
+}
+
+/* Phase 1C：把 astroCategoryReading() 的結果畫成「星盤補充解讀」區塊，只在 combined 模式、
+   且 astroResult.available 時呼叫。內部資料不足／被排除的項目一律轉成中文說明，
+   絕不顯示內部英文 reason 代碼或 undefined。 */
+var ASTRO_SKIP_ITEM_LABELS = {
+  Venus: '金星', Mars: '火星', Moon: '月亮',
+  house5: '第五宮', house7: '第七宮', 'moon-aspects': '月亮相關相位',
+};
+var ASTRO_SKIP_REASON_LABELS = {
+  'unknown-time-unreliable': '出生時間未知，可靠度不足而不使用',
+  'not-in-chart': '星盤資料中沒有這項資訊',
+  'invalid-sign-data': '星座資料異常，無法使用',
+  'invalid-house-data': '宮位資料異常，無法使用',
+  'no-house-data': '缺少宮位資料',
+  'unknown-time': '出生時間未知，此宮位資訊未使用',
+};
+function renderAstroSubtopicPanel(subtopicDef, result) {
+  if (!result || !result.available) return '';
+  var h = '<div style="border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:15px 17px;background:rgba(255,255,255,.02);margin-top:12px">';
+  h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:#c9a96e;text-transform:uppercase">✧ 星盤補充解讀 · ' + esc(subtopicDef.zh) + '</div>';
+  h += '<div style="margin-top:9px;display:flex;flex-direction:column;gap:9px">';
+  SUBTOPIC_FIELD_ORDER.forEach(function (f) {
+    if (subtopicDef.fields.indexOf(f) === -1) return;
+    var val = result[f];
+    if (!val) return;
+    var label = SUBTOPIC_FIELD_LABELS[f];
+    h += '<div><span style="font:500 10px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;color:#c9a96e">' + label[0] + ' <span style="font:italic 9px \'EB Garamond\',serif;color:rgba(201,169,110,.6)">' + label[1] + '</span></span>';
+    h += '<div style="font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:3px;line-height:1.8;text-align:justify">' + esc(val) + '</div></div>';
+  });
+  h += '</div>';
+  if (result.evidence && result.evidence.used && result.evidence.used.length) {
+    h += '<details style="margin-top:9px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);cursor:pointer">本次使用的星盤依據</summary>';
+    h += '<div style="margin-top:6px;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.6);line-height:1.8">';
+    result.evidence.used.forEach(function (u) { h += '· ' + esc(u) + '<br>'; });
+    h += '</div></details>';
+  }
+  if (result.evidence && result.evidence.skipped && result.evidence.skipped.length) {
+    var skipText = result.evidence.skipped.map(function (s) {
+      var itemLabel = ASTRO_SKIP_ITEM_LABELS[s.item] || s.item;
+      var reasonLabel = ASTRO_SKIP_REASON_LABELS[s.reason] || '資料不足';
+      return itemLabel + '（' + reasonLabel + '）';
+    }).join('、');
+    h += '<div style="margin-top:9px;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);line-height:1.8">本次未使用：' + esc(skipText) + '</div>';
+  }
+  h += '</div>';
+  return h;
+}
+
+/* Phase 1C：牌卡＋星盤綜合觀察面板，只在 combinedReading() 回傳 mode==='combined' 時呼叫
+  （cards-only／astro-only／unavailable 都不顯示這個面板——沒有兩邊資料就沒有「綜合」可言）。 */
+var COMBINED_AGREEMENT_LABELS = {
+  agree: '牌卡與星盤方向一致：目前狀態呼應長期傾向',
+  differ: '牌卡與星盤時間尺度不同：目前狀態與長期傾向出現落差',
+  unknown: '資料不足以判斷牌卡與星盤是否一致',
+};
+function renderCombinedSummaryPanel(subtopicDef, result) {
+  if (!result || !result.available || result.mode !== 'combined') return '';
+  var h = '<div style="border:1px solid rgba(201,169,110,.45);border-radius:10px;padding:15px 17px;background:rgba(201,169,110,.06);margin-top:12px">';
+  h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:#e6cd9a;text-transform:uppercase">✦ 牌卡＋星盤綜合觀察 · ' + esc(subtopicDef.zh) + '</div>';
+  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);margin-top:4px">' + esc(COMBINED_AGREEMENT_LABELS[result.agreement] || '') + '</div>';
   h += '<div style="margin-top:9px;display:flex;flex-direction:column;gap:9px">';
   SUBTOPIC_FIELD_ORDER.forEach(function (f) {
     if (subtopicDef.fields.indexOf(f) === -1) return;
@@ -2765,11 +2891,25 @@ function buildDrawn() {
           action: cardAction(d, isTarot), reminder: cardReminder(d, isTarot),
         };
       }),
-      /* Phase 1A：新增欄位，僅在愛情分類且選了具體子問題時才有值；不影響既有欄位／舊歷史紀錄格式，
-         歷史列表畫面（renderHistory／historyCopyForAI／分享圖片）本階段尚未讀取這個欄位，留待後續階段。 */
+      /* Phase 1A/1C：新增欄位，僅在愛情分類且選了具體子問題時才有值；不影響既有欄位／舊歷史紀錄格式，
+         歷史列表畫面（renderHistory／historyCopyForAI／分享圖片）本階段尚未讀取這些欄位，留待後續階段
+        （見完成報告）。reading 是 Phase 1A 就存在的舊欄位，維持不變；readingMode／cardReading／
+         astroReading／combinedReading 皆為 Phase 1C 純新增欄位。 */
       subtopic: (state.category === 'love' && state.subtopic) ? (function () {
         var def = (SUBTOPICS.love || []).filter(function (s) { return s.key === state.subtopic; })[0];
-        return def ? { key: state.subtopic, zh: def.zh, reading: cardSubtopicReading('love', state.subtopic, state.drawn) } : null;
+        if (!def) return null;
+        var cardRes = cardSubtopicReading('love', state.subtopic, state.drawn);
+        var astroRes = (state.readingMode === 'combined' && state.astroResult)
+          ? astroCategoryReading('love', state.subtopic, state.astroResult, state.astroUnknownTime) : null;
+        var combRes = (astroRes && astroRes.available) ? combinedReading(cardRes, astroRes, 'love', state.subtopic) : null;
+        return {
+          key: state.subtopic, zh: def.zh,
+          reading: cardRes,
+          readingMode: state.readingMode,
+          cardReading: cardRes,
+          astroReading: astroRes,
+          combinedReading: combRes,
+        };
       })() : null,
     },
   };
@@ -2960,17 +3100,41 @@ function copyForAI() {
   lines.push('初步綜合解讀：' + overallReading());
   var _an = analyzeSpread(state.drawn, isTarot);
   if (_an.length) lines.push('牌陣分析：' + _an.join(' '));
-  /* Phase 1A：純新增段落，只有愛情分類且選了具體子問題時才會輸出，不影響既有輸出內容 */
+  /* Phase 1A/1C：純新增段落，只有愛情分類且選了具體子問題時才會輸出，不影響既有輸出內容。
+     combined 模式（且有 state.astroResult）時，額外附加星盤依據與綜合觀察段落。 */
   if (state.category === 'love' && state.subtopic) {
     var loveSubDef2 = (SUBTOPICS.love || []).filter(function (s) { return s.key === state.subtopic; })[0];
     var subRes = loveSubDef2 ? cardSubtopicReading('love', state.subtopic, state.drawn) : null;
     if (subRes && subRes.available) {
       lines.push('');
-      lines.push('具體問題解讀：' + loveSubDef2.zh);
+      lines.push('具體問題解讀（牌卡）：' + loveSubDef2.zh);
       SUBTOPIC_FIELD_ORDER.forEach(function (f) {
         if (loveSubDef2.fields.indexOf(f) === -1 || !subRes[f]) return;
         lines.push('　' + SUBTOPIC_FIELD_LABELS[f][0] + '：' + subRes[f]);
       });
+      if (state.readingMode === 'combined' && state.astroResult) {
+        var astroRes2 = astroCategoryReading('love', state.subtopic, state.astroResult, state.astroUnknownTime);
+        if (astroRes2.available) {
+          lines.push('');
+          lines.push('具體問題解讀（星盤）：' + loveSubDef2.zh);
+          SUBTOPIC_FIELD_ORDER.forEach(function (f) {
+            if (loveSubDef2.fields.indexOf(f) === -1 || !astroRes2[f]) return;
+            lines.push('　' + SUBTOPIC_FIELD_LABELS[f][0] + '：' + astroRes2[f]);
+          });
+          if (astroRes2.evidence && astroRes2.evidence.used.length) {
+            lines.push('　星盤依據：' + astroRes2.evidence.used.join('；'));
+          }
+          var combRes2 = combinedReading(subRes, astroRes2, 'love', state.subtopic);
+          if (combRes2.available && combRes2.mode === 'combined') {
+            lines.push('');
+            lines.push('牌卡＋星盤綜合觀察：' + loveSubDef2.zh);
+            SUBTOPIC_FIELD_ORDER.forEach(function (f) {
+              if (loveSubDef2.fields.indexOf(f) === -1 || !combRes2[f]) return;
+              lines.push('　' + SUBTOPIC_FIELD_LABELS[f][0] + '：' + combRes2[f]);
+            });
+          }
+        }
+      }
     }
   }
   lines.push('');
@@ -3339,7 +3503,7 @@ function go(tab, deck) {
 }
 
 function selectSpread(sp) { state.spread = sp; resetReading(); render(); }
-function selectCategory(cat) { state.category = cat; state.subtopic = ''; resetReading(); render(); }
+function selectCategory(cat) { state.category = cat; state.subtopic = ''; state.readingMode = 'cards'; resetReading(); render(); }
 function setLibDeck(d) { state.libDeck = d; state.libSuit = 'all'; state.libSelected = null; state.libQuiz = false; render(); }
 function setLibSuit(su) { state.libSuit = su; state.libSelected = null; render(); }
 function selectLibCard(key) { state.libSelected = key; render(); window.scrollTo(0, 0); }
@@ -5627,7 +5791,7 @@ function astroCategoryReading(catKey, subtopicKey, chart, unknownTime) {
   var out = {
     available: false, reason: '', catKey: catKey, subtopicKey: subtopicKey,
     conclusion: '', traits: '', trend: '', favor: '', risk: '', timing: '', action: '', caveat: '',
-    evidence: null,
+    evidence: null, tone: null,
   };
   if (catKey !== 'love') { out.reason = 'unsupported-category'; return out; }
   var subtopic = (SUBTOPICS.love || []).filter(function (s) { return s.key === subtopicKey; })[0];
@@ -5650,6 +5814,7 @@ function astroCategoryReading(catKey, subtopicKey, chart, unknownTime) {
   var house5Elem = house5 ? ZODIAC_SIGNS[house5.sign].elem : null;
   var house7Elem = house7 ? ZODIAC_SIGNS[house7.sign].elem : null;
   var valence = loveAstroValence(ev.aspects);
+  out.tone = valence; // Phase 1C：純新增的非 UI meta 欄位，供 combinedReading() 比對牌卡／星盤語氣，不影響既有欄位
 
   if (venusP) note(astroLovePlanetEvidenceStr('Venus', venusP));
   if (marsP) note(astroLovePlanetEvidenceStr('Mars', marsP));
@@ -5740,24 +5905,81 @@ function astroCategoryReading(catKey, subtopicKey, chart, unknownTime) {
   return out;
 }
 
+/* Phase 1C：combinedReading() 一致／分歧措辭池。
+   agree：牌卡「目前狀態」與星盤「長期傾向」語氣相同時的共同主題導語（依 tone 分三組）。
+   differ：語氣不同時的導語，明確講清楚這是時間尺度不同，不是誰對誰錯，不可硬湊成一致。 */
+var COMBINED_AGREE_LEAD_POOL = {
+  positive: ['牌卡與星盤在這個面向上方向一致，都偏向正向', '牌卡（目前狀態）與星盤（長期傾向）呈現相同的樂觀訊號', '兩邊都指向積極的方向，是一致且穩固的訊號'],
+  neutral: ['牌卡與星盤在這個面向上都偏向中性、還在觀察階段', '牌卡（目前狀態）與星盤（長期傾向）呈現相近、尚未明朗的訊號', '兩邊都沒有特別強烈的傾向，方向一致地保持中性'],
+  challenging: ['牌卡與星盤在這個面向上都指出需要留意的課題', '牌卡（目前狀態）與星盤（長期傾向）呈現相同的挑戰訊號', '兩邊都提醒這個面向目前需要多一點耐心'],
+};
+var COMBINED_DIFFER_LEAD_POOL = [
+  '牌卡與星盤的時間尺度不同，兩者呈現的訊號並不一致——這不代表矛盾，只是分別反映「當下」與「長期」',
+  '牌卡反映的是目前的情境，星盤反映的是長期的需求與慣性，兩者出現落差是正常的，不需要硬湊成同一個答案',
+  '牌卡看見的是這段時間的樣貌，星盤看見的是更長期的模式，兩者不同時，代表值得多留意「現在」跟「一貫」之間的落差',
+];
 /* combinedReading(cardResult, astroResult, catKey, subtopicKey)
-   牌卡＋星盤的綜合解讀骨架。cardResult 代表既有抽牌解讀的彙整結果（可為 null／undefined），
-   astroResult 應為 astroCategoryReading() 的回傳值。目前只判斷資料齊備度與模式，
-   一致／分歧的文案比對邏輯留待後續階段實作。 */
+   目前只支援 catKey==='love'。cardResult 應為 cardSubtopicReading() 的回傳值，
+   astroResult 應為 astroCategoryReading() 的回傳值；任一邊為 null／undefined／available:false
+   都視為「該邊不可用」，安全降級為只用另一邊（cards-only／astro-only），兩邊都不可用才 unavailable。
+   兩邊都可用時，只依據雙方已經算好的 tone（cardResult.tone 來自 loveToneBucket、
+   astroResult.tone 來自 loveAstroValence）判斷一致／分歧，並用兩邊「已經產生的真實內容」
+   組成摘要——不重新捏造人物特徵，也不會把兩邊全部欄位原封不動貼成一大段，而是用清楚的
+   「目前狀態（牌卡）／長期傾向（星盤）」標籤分別呈現，讓使用者能自己比較。 */
 function combinedReading(cardResult, astroResult, catKey, subtopicKey) {
   var out = {
     available: false, reason: '', catKey: catKey, subtopicKey: subtopicKey,
     mode: 'none', // none | cards-only | astro-only | combined
     conclusion: '', traits: '', trend: '', favor: '', risk: '', timing: '', action: '', caveat: '',
+    cardTone: null, astroTone: null, agreement: 'unknown',
   };
-  var hasCard = !!cardResult;
+  if (catKey !== 'love') { out.reason = 'unsupported-category'; return out; }
+  var hasCard = !!(cardResult && cardResult.available);
   var hasAstro = !!(astroResult && astroResult.available);
   if (!hasCard && !hasAstro) { out.reason = 'no-input'; return out; }
   out.mode = hasCard && hasAstro ? 'combined' : (hasAstro ? 'astro-only' : 'cards-only');
   out.available = true;
-  /* TODO（後續階段）：比較 cardResult 與 astroResult 的語氣分數／關鍵字，
-     一致時輸出「共同主題」句型、分歧時輸出「長期傾向（星盤）與目前狀態（牌卡）不同」句型，
-     兩者皆須透過 seeded pick 從措辭池動態組合，不得使用單一固定字串。 */
+
+  var subtopic = (SUBTOPICS.love || []).filter(function (s) { return s.key === subtopicKey; })[0];
+  var fields = subtopic ? subtopic.fields : SUBTOPIC_FIELD_ORDER;
+
+  if (out.mode === 'cards-only') {
+    SUBTOPIC_FIELD_ORDER.forEach(function (f) { if (fields.indexOf(f) !== -1) out[f] = cardResult[f] || ''; });
+    return out;
+  }
+  if (out.mode === 'astro-only') {
+    SUBTOPIC_FIELD_ORDER.forEach(function (f) { if (fields.indexOf(f) !== -1) out[f] = astroResult[f] || ''; });
+    return out;
+  }
+
+  // mode === 'combined'：兩邊都可用，比較 tone 並組出「目前狀態／長期傾向」的摘要
+  out.cardTone = cardResult.tone || null;
+  out.astroTone = astroResult.tone || null;
+  var bothToneKnown = !!out.cardTone && !!out.astroTone;
+  out.agreement = bothToneKnown ? (out.cardTone === out.astroTone ? 'agree' : 'differ') : 'unknown';
+
+  var seed = 'combined|' + subtopicKey + '|' + (out.cardTone || 'x') + '|' + (out.astroTone || 'x');
+  function twoLayer(cardVal, astroVal) {
+    if (cardVal && astroVal) return '目前狀態（牌卡）：' + cardVal + '　長期傾向（星盤）：' + astroVal;
+    if (cardVal) return '目前狀態（牌卡）：' + cardVal;
+    if (astroVal) return '長期傾向（星盤）：' + astroVal;
+    return '';
+  }
+
+  var leadSentence = '';
+  if (out.agreement === 'agree') {
+    leadSentence = astroSeededPick(seed + '|lead', COMBINED_AGREE_LEAD_POOL[out.cardTone] || COMBINED_AGREE_LEAD_POOL.neutral);
+  } else if (out.agreement === 'differ') {
+    leadSentence = astroSeededPick(seed + '|lead', COMBINED_DIFFER_LEAD_POOL);
+  }
+  SUBTOPIC_FIELD_ORDER.forEach(function (f) {
+    if (fields.indexOf(f) === -1 || f === 'caveat') return;
+    var layered = twoLayer(cardResult[f], astroResult[f]);
+    out[f] = (f === 'conclusion' && leadSentence) ? (leadSentence + '。' + layered) : layered;
+  });
+  if (fields.indexOf('caveat') !== -1) {
+    out.caveat = [cardResult.caveat, astroResult.caveat].filter(Boolean).join(' ');
+  }
   return out;
 }
 
