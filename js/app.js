@@ -14,9 +14,15 @@ var state = {
   wizardStep: 1,       // 1=類別 2=牌陣 3=問題 4=確認
   question: '',
   target: '',
-  subtopic: '',        // 具體問題 key（目前僅 love 類別有對應 UI／解讀，見 SUBTOPICS）
-  readingMode: 'cards', // 'cards' | 'combined'（目前僅 love 類別可切換；combined 需要 state.astroResult 存在）
+  subtopic: '',        // 具體問題 key（單選，驅動牌卡＋星盤深度解讀，見 SUBTOPICS）
+  readingMode: 'cards', // 'cards' | 'combined'（combined 需要 state.astroResult 存在）
   timeframe: 'month',
+  /* Step 3「想深入了解的面向」——跟上面的 state.subtopic 是兩套獨立機制：這裡是可複選
+     （每個分類最多 3 項）的面向標籤，依 topicQuestionConfig 分類各自存放，不會互相覆蓋，
+     切換 Step 1 的分類時也不需要清除，因為畫面永遠只讀目前 state.category 對應的那一份。 */
+  wizFocusSel: {},        // { [categoryKey]: string[] }，每個分類最多 3 項
+  wizFocusExpanded: {},   // { [categoryKey]: boolean }，是否展開顯示全部分組
+  wizFocusLimitHit: '',   // 選滿 3 項後又點擊第 4 項時，記錄是哪個分類觸發，顯示提示用
   drawn: [],
   phase: 'setup',      // setup | shuffling | picking | result
   pickOrder: [],       // shuffled indices of the full deck (picking pool)
@@ -1514,13 +1520,92 @@ function renderModePicker() {
 function renderSubtopicPicker() {
   var options = (SUBTOPICS[state.category] || []).filter(function (s) { return s.modes.indexOf(state.readingMode) !== -1; });
   if (!options.length) return '';
-  var h = '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:14px">想深入了解的具體問題（選填，可再次點選取消）</div>';
+  /* 這裡的標籤特意跟下面新增的 renderFocusAreaPicker()（可複選的「想深入了解的面向」）
+     用不同措辭區分：這組是單選、且會直接驅動下方牌卡／星盤逐項深度解讀；新的那組只是
+     複選標籤，會併入「複製給 AI 解讀」的文字，兩者互不影響。 */
+  var h = '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:14px">加碼看本站牌卡逐項解讀（單選，選填，可再次點選取消）</div>';
   h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">';
   options.forEach(function (s) {
     var active = state.subtopic === s.key;
     h += '<button type="button" aria-pressed="' + active + '" onclick="wizToggleSubtopic(\'' + s.key + '\')" style="min-height:44px;display:inline-flex;align-items:center;font:400 11px \'Noto Sans TC\',sans-serif;background:' + (active ? 'rgba(201,169,110,.22)' : 'rgba(201,169,110,.08)') + ';border:1px solid ' + (active ? '#e6cd9a' : 'rgba(201,169,110,.3)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.7)') + ';padding:8px 12px;border-radius:22px;cursor:pointer">' + (active ? '✓ ' : '') + esc(s.zh) + '</button>';
   });
   h += '</div>';
+  return h;
+}
+
+/* ================= Step 3「想深入了解的面向」（可複選，最多 3 項）=================
+   資料來源：js/data/reading-data.js 的 topicQuestionConfig，八個分類各自獨立，
+   不在 DOM 裡為每個分類寫死重複區塊。預設只顯示每組的第 1、2 項（跨分組輪流取，
+   湊到最多 7 項最常用選項），其餘要點「顯示更多選項」才會用分組標題展開；
+   如果使用者選到的項目剛好落在「更多」裡（例如展開後選了、又收起面板），
+   會自動保持展開，避免已選項目被面板收合藏起來、卻沒有任何畫面線索。 */
+function computeDefaultFocusOptions(cfg) {
+  var flat = [];
+  var maxLen = 0;
+  cfg.focusGroups.forEach(function (g) { if (g.options.length > maxLen) maxLen = g.options.length; });
+  for (var i = 0; i < maxLen && flat.length < 7; i++) {
+    for (var gi = 0; gi < cfg.focusGroups.length; gi++) {
+      if (flat.length >= 7) break;
+      var opt = cfg.focusGroups[gi].options[i];
+      if (opt) flat.push(opt);
+    }
+  }
+  return flat;
+}
+function wizToggleFocus(catKey, opt) {
+  var sel = state.wizFocusSel[catKey] || (state.wizFocusSel[catKey] = []);
+  var idx = sel.indexOf(opt);
+  if (idx !== -1) {
+    sel.splice(idx, 1);
+    state.wizFocusLimitHit = '';
+  } else if (sel.length >= 3) {
+    state.wizFocusLimitHit = catKey;
+  } else {
+    sel.push(opt);
+    state.wizFocusLimitHit = '';
+  }
+  render();
+}
+function wizToggleFocusExpand(catKey) {
+  state.wizFocusExpanded[catKey] = !state.wizFocusExpanded[catKey];
+  render();
+}
+function renderFocusAreaPicker() {
+  var catKey = state.category;
+  var cfg = topicQuestionConfig[catKey];
+  if (!cfg) return '';
+  var sel = state.wizFocusSel[catKey] || [];
+  var defaultOpts = computeDefaultFocusOptions(cfg);
+  var hasHiddenSelection = sel.some(function (o) { return defaultOpts.indexOf(o) === -1; });
+  var expanded = !!state.wizFocusExpanded[catKey] || hasHiddenSelection;
+
+  function optBtn(opt) {
+    var active = sel.indexOf(opt) !== -1;
+    return '<button type="button" aria-pressed="' + active + '" onclick="wizToggleFocus(\'' + catKey + '\',' + JSON.stringify(opt) + ')" style="min-height:40px;text-align:left;font:400 11.5px \'Noto Sans TC\',sans-serif;background:' + (active ? 'rgba(201,169,110,.22)' : 'rgba(201,169,110,.06)') + ';border:1px solid ' + (active ? '#e6cd9a' : 'rgba(201,169,110,.28)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.72)') + ';padding:8px 12px;border-radius:10px;cursor:pointer">' + (active ? '✓ ' : '') + esc(opt) + '</button>';
+  }
+
+  var h = '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px">';
+  h += '<div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">想深入了解的面向</div>';
+  h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:' + (sel.length >= 3 ? '#e6cd9a' : 'rgba(240,233,216,.4)') + '">已選 ' + sel.length + '／3</div>';
+  h += '</div>';
+  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);margin-top:4px">最多可複選 3 項，再次點擊已選項目可以取消。</div>';
+
+  h += '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:10px">';
+  if (!expanded) {
+    defaultOpts.forEach(function (opt) { h += optBtn(opt); });
+  } else {
+    cfg.focusGroups.forEach(function (g, gi) {
+      h += '<div style="flex-basis:100%;font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:' + (gi === 0 ? '0' : '10') + 'px">' + esc(g.title) + '</div>';
+      g.options.forEach(function (opt) { h += optBtn(opt); });
+    });
+  }
+  h += '</div>';
+
+  h += '<div style="text-align:center;margin-top:10px"><button type="button" onclick="wizToggleFocusExpand(\'' + catKey + '\')" style="min-height:44px;background:none;border:none;color:#c9a96e;font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(201,169,110,.4);padding:4px 2px">' + (expanded ? '收起，只看常用選項' : '顯示更多選項（依主題分類）') + '</button></div>';
+
+  if (state.wizFocusLimitHit === catKey) {
+    h += '<div role="status" style="font:400 11px \'Noto Sans TC\',sans-serif;color:#d67878;margin-top:4px;text-align:center">最多可選 3 項，請先取消一項再選新的</div>';
+  }
   return h;
 }
 
@@ -1573,8 +1658,17 @@ function renderWizard(spreads, isTarot) {
 
   } else if (state.wizardStep === 3) {
     var tmpl = QUESTION_TEMPLATES[state.category] || QUESTION_TEMPLATES.general;
+    var focusCfg = topicQuestionConfig[state.category];
     var targetCfg = TARGET_FIELD_CONFIG[state.category];
-    h += '<div style="font:600 15px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:6px">具體描述你想問的問題</div>';
+    /* Step 3 標題／說明文字依 Step 1 選擇的主題動態變化（topicQuestionConfig[category].label／hint），
+       沒有對應設定時退回原本固定文案，不會出現 undefined。 */
+    h += '<div style="font:600 15px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:6px">' + esc(focusCfg ? focusCfg.label : '具體描述你想問的問題') + '</div>';
+    if (focusCfg) {
+      h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);margin-top:5px;line-height:1.6">' + esc(focusCfg.hint) + '</div>';
+    }
+    if (focusCfg && focusCfg.riskNotice) {
+      h += '<div style="margin-top:10px;border:1px solid rgba(214,120,120,.35);border-radius:10px;padding:10px 13px;background:rgba(214,120,120,.06);font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.7">⚠ ' + esc(focusCfg.riskNotice) + '</div>';
+    }
     if (targetCfg) {
       h += '<label for="target-input" style="display:block;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:14px">' + targetCfg.label + '</label>';
       h += '<input id="target-input" maxlength="80" value="' + esc(state.target) + '" oninput="state.target=this.value.slice(0,80)" placeholder="' + targetCfg.placeholder + '" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:10px 13px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
@@ -1589,14 +1683,16 @@ function renderWizard(spreads, isTarot) {
          過濾，astro-only 的子問題自然不會出現。 */
       h += renderSubtopicPicker();
     }
-    h += '<label for="question-input" style="display:block;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:14px">具體問題（選填，可點下方範例）</label>';
-    h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);margin-top:4px;line-height:1.6">可以只選上方的具體問題，也可以自行輸入；兩者都有填寫時，解讀會一起參考。</div>';
+    /* 新增的可複選「想深入了解的面向」（最多 3 項），八個分類都有資料，見 topicQuestionConfig。 */
+    h += renderFocusAreaPicker();
+    h += '<label for="question-input" style="display:block;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:18px">具體問題（選填，可點下方範例）</label>';
+    h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);margin-top:4px;line-height:1.6">可以只選上方的面向，也可以自行輸入；兩者都有填寫時，解讀會一起參考，自行輸入的內容仍可隨時修改。</div>';
     h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">';
-    tmpl.chips.forEach(function (c2, i2) {
-      h += '<button type="button" onclick="wizChip(' + i2 + ')" style="min-height:44px;display:inline-flex;align-items:center;font:400 11px \'Noto Sans TC\',sans-serif;background:rgba(201,169,110,.08);border:1px solid rgba(201,169,110,.3);color:rgba(240,233,216,.7);padding:8px 12px;border-radius:22px;cursor:pointer">' + c2 + '</button>';
+    (focusCfg ? focusCfg.examples : tmpl.chips).forEach(function (c2, i2) {
+      h += '<button type="button" onclick="wizChip(' + i2 + ')" style="min-height:44px;display:inline-flex;align-items:center;font:400 11px \'Noto Sans TC\',sans-serif;background:rgba(201,169,110,.08);border:1px solid rgba(201,169,110,.3);color:rgba(240,233,216,.7);padding:8px 12px;border-radius:22px;cursor:pointer">' + esc(c2) + '</button>';
     });
     h += '</div>';
-    h += '<textarea id="question-input" maxlength="300" aria-describedby="q-hint q-count" oninput="updateQHint(this.value)" placeholder="' + tmpl.placeholder + '" style="width:100%;box-sizing:border-box;margin-top:10px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:11px 14px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none;min-height:74px;resize:vertical">' + esc(state.question) + '</textarea>';
+    h += '<textarea id="question-input" maxlength="300" aria-describedby="q-hint q-count" oninput="updateQHint(this.value)" placeholder="' + esc(focusCfg ? focusCfg.placeholder : tmpl.placeholder) + '" style="width:100%;box-sizing:border-box;margin-top:10px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:11px 14px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none;min-height:74px;resize:vertical">' + esc(state.question) + '</textarea>';
     h += '<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">';
     h += '<div id="q-hint" aria-live="polite" style="flex:1;font:400 11px \'Noto Sans TC\',sans-serif;margin-top:7px;line-height:1.6;min-height:16px"></div>';
     h += '<div id="q-count" aria-live="polite" style="flex:none;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:8px">' + Math.min(state.question.length, 300) + ' / 300</div></div>';
@@ -1638,6 +1734,7 @@ function wizSetDeck(d) {
 function wizSetCat(k) {
   if (state.category !== k) {
     state.category = k; state.target = ''; state.subtopic = ''; state.readingMode = 'cards';
+    state.wizFocusLimitHit = ''; // 切換分類時清掉上一個分類殘留的「已選滿」提示
     var recSource = state.deck === 'lenormand' ? LEN_RECOMMENDATIONS : RECOMMENDATIONS;
     var firstRecommended = (recSource[k] || [])[0];
     if (firstRecommended) state.spread = firstRecommended;
@@ -1679,7 +1776,8 @@ function wizRestart() {
   resetReading(); render(); window.scrollTo(0, 0);
 }
 function wizChip(i) {
-  var t = (QUESTION_TEMPLATES[state.category] || QUESTION_TEMPLATES.general).chips[i];
+  var focusCfg = topicQuestionConfig[state.category];
+  var t = focusCfg ? focusCfg.examples[i] : (QUESTION_TEMPLATES[state.category] || QUESTION_TEMPLATES.general).chips[i];
   state.question = t;
   var ta = document.getElementById('question-input');
   if (ta) ta.value = t;
@@ -3357,12 +3455,31 @@ function copyForAI() {
   var spreads = currentSpreads();
   if (!state.drawn.length) return;
   var cat = CATEGORIES.find(function (x) { return x.key === state.category; });
+  var focusCfg2 = topicQuestionConfig[state.category];
   var lines = [];
   lines.push('占卜類型：' + (isTarot ? '塔羅牌 Tarot' : '雷諾曼牌 Lenormand'));
   if (cat) lines.push('占卜主題：' + cat.zh + ' (' + cat.en + ')');
   if (state.target) lines.push('對象：' + state.target);
-  if (state.question) lines.push('問題：' + state.question);
+  /* Step 3 新增的可複選「想深入了解的面向」，依 state.category 各自獨立存放，
+     這裡只讀取目前分類的那一份，跟舊的單選 state.subtopic（下面已有獨立段落處理）
+     是兩組互不影響的資料。 */
+  var wizFocus = (state.wizFocusSel && state.wizFocusSel[state.category]) || [];
+  if (wizFocus.length) {
+    lines.push('想深入了解的面向：');
+    wizFocus.forEach(function (f, fi) { lines.push((fi + 1) + '. ' + f); });
+  }
+  if (state.question) lines.push('使用者的具體問題：' + state.question);
   lines.push('牌陣：' + spreads[state.spread].zh + ' (' + spreads[state.spread].en + ')');
+  /* 有具體問題或有選面向時，才附上給 AI 的解讀原則——避免每一次「未填寫、以通用方式解讀」
+     的複製結果都多出一段用不到的指示。健康／財運分類另外一律附加免責聲明（riskNotice），
+     不受這個條件影響，只要是這兩個分類就一定會出現。 */
+  if (wizFocus.length || state.question) {
+    lines.push('');
+    lines.push('【給 AI 的解讀原則】');
+    lines.push('1. 請優先回答「使用者的具體問題」。');
+    if (wizFocus.length) lines.push('2. 再依序回應「想深入了解的面向」列出的項目，不要把它們拆成互不相關的分段解讀，請整合牌面形成一個有主軸的答案。');
+    if (focusCfg2 && focusCfg2.riskNotice) lines.push((wizFocus.length ? '3' : '2') + '. ' + focusCfg2.riskNotice + '請勿做出確定性的醫療診斷、投資保證或法律判斷。');
+  }
   lines.push('');
   state.drawn.forEach(function (d) {
     var c = d.card;
