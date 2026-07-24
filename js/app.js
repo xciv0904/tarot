@@ -4632,13 +4632,36 @@ function aspectBeginnerData(asp) {
     var tpl = astroSeededPick(seedBase + '|' + name, base[name]);
     return fillAspectTemplate(tpl, a.kw, b.kw);
   }
+  var leadTpl = astroSeededPick(seedBase + '|lead', base.lead);
   return {
     title: a.zh + ' × ' + b.zh,
-    lead: pickField('lead'),
+    lead: fillAspectTemplate(leadTpl, a.kw, b.kw),
+    leadTpl: leadTpl, /* 未代入關鍵字的原始模板——只給 aspectBeginnerDataUnique() 內部
+                          比對用，判斷「是不是選到同一句骨架」，跟關鍵字無關 */
     strength: pickField('strength'),
     watch: pickField('watch'),
     practice: pickField('practice'),
   };
+}
+/* 「三分鐘看懂你的星盤」一次列出 3 組相位——每組相位的 lead 句子雖然是用
+   pair+type 做種子挑出來的（同一組永遠讀到同一句），但 lead 模板池目前每種
+   相位類型只有 2 個變化。如果這 3 組剛好有 2 組以上是同一種相位類型（例如
+   都是三分相），各自獨立種子挑選仍有機會巧合選到同一個模板骨架——填進去的
+   關鍵字雖然不同（例如「思考溝通×直覺夢想」跟「愛與美感×獨立求變」），但
+   包住關鍵字的那句話會一字不差重複，讀起來像同一句話講了兩三次。這裡在組
+   成這份「精簡摘要」清單時，比對的是「未代入關鍵字的模板骨架」（leadTpl），
+   同份清單裡撞骨架的話就換成同一相位類型底下還沒用過的另一個版本；只影響
+   這份 3 組摘要清單的呈現，不影響 aspectBeginnerData() 本身「同一組永遠讀到
+   同一句」的保證（例如點進單一相位的詳細卡片，看到的還是原本那句）。 */
+function aspectBeginnerDataUnique(asp, usedLeadTpls) {
+  var d = aspectBeginnerData(asp);
+  var key = asp.type + '::' + d.leadTpl;
+  if (usedLeadTpls.indexOf(key) === -1) { usedLeadTpls.push(key); return d; }
+  var a = findAnyPointDef(asp.a), b = findAnyPointDef(asp.b), base = ASPECT_BEGINNER[asp.type];
+  var altTpl = base.lead.filter(function (tpl) { return usedLeadTpls.indexOf(asp.type + '::' + tpl) === -1; })[0];
+  if (altTpl) { d.lead = fillAspectTemplate(altTpl, a.kw, b.kw); key = asp.type + '::' + altTpl; }
+  usedLeadTpls.push(key);
+  return d;
 }
 function renderAspectBeginnerCard(asp) {
   var d=aspectBeginnerData(asp);
@@ -4775,7 +4798,11 @@ function natalAspectPlacementPhrase(position, unknownTime) {
   }
   return '以'+signName+'方式';
 }
-function natalAspectReading(asp, chart, unknownTime) {
+/* usedSet（選填）：跟 aspectBeginnerDataUnique() 同樣的用意，用在「複製給 AI
+   解讀」的星盤資料匯出——會把星盤裡所有可用相位一次列完，同一相位類型的
+   summary 模板池通常只有 2～3 個版本，相位數一多還是有機會撞同一版本。有
+   傳 usedSet 進來時會避開同一次匯出裡已經用過的版本；不傳則行為不變。 */
+function natalAspectReading(asp, chart, unknownTime, usedSet) {
   var dynamic=NATAL_ASPECT_DYNAMICS[asp.type], a=natalAspectProfile(asp.a), b=natalAspectProfile(asp.b);
   var pa=natalAspectPosition(chart,asp.a), pb=natalAspectPosition(chart,asp.b);
   if (!dynamic || !a || !b || !pa || !pb) return {available:false,reason:'missing-data'};
@@ -4784,6 +4811,14 @@ function natalAspectReading(asp, chart, unknownTime) {
   var title=a.name+NATAL_ASPECT_TITLE_VERBS[asp.type]+b.name;
   var pairVars={ A:a.name, Afunc:a.func, Agift:a.gift, Arisk:a.risk, Apractice:a.practice, Aplace:natalAspectPlacementPhrase(pa,unknownTime), B:b.name, Bfunc:b.func, Bgift:b.gift, Brisk:b.risk, Bpractice:b.practice, Bplace:natalAspectPlacementPhrase(pb,unknownTime) };
   var summaryTpl=Array.isArray(dynamic.summary) ? astroSeededPick(asp.a+'|'+asp.b+'|'+asp.type+'|summary',dynamic.summary) : dynamic.summary;
+  if (usedSet && Array.isArray(dynamic.summary)) {
+    var summaryKey = asp.type + '|summary|' + summaryTpl;
+    if (usedSet[summaryKey]) {
+      var altSummary = dynamic.summary.filter(function (t) { return !usedSet[asp.type + '|summary|' + t]; })[0];
+      if (altSummary) summaryTpl = altSummary;
+    }
+    usedSet[asp.type + '|summary|' + summaryTpl] = true;
+  }
   var summary=fillTpl(summaryTpl,pairVars);
   var strength='可以發揮：'+fillTpl(dynamic.strength,pairVars);
   var challenge='需要留意：'+fillTpl(dynamic.challenge,pairVars);
@@ -4804,8 +4839,8 @@ function natalAspectReading(asp, chart, unknownTime) {
     technical:'實際角距 '+exactText+'；標準相位角 '+nominal+'°；容許度 '+asp.orb.toFixed(1)+'°。容許度只表示相位接近精確角度的程度，不代表吉凶。',
   };
 }
-function renderNatalAspectCard(asp, chart, unknownTime) {
-  var d=natalAspectReading(asp,chart,unknownTime);
+function renderNatalAspectCard(asp, chart, unknownTime, usedSet) {
+  var d=natalAspectReading(asp,chart,unknownTime,usedSet);
   if (!d.available) return '';
   var core=d.priority==='core';
   var h='<article data-aspect-priority="'+d.priority+'" style="border-top:1px solid rgba(201,169,110,.15);padding:12px 0">';
@@ -5026,10 +5061,28 @@ function renderCityLiveBlock(prefix, genFnName) {
   }
   h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.3);margin-top:16px;line-height:1.7">🔒 出生資料只會儲存在你自己的裝置（瀏覽器）中，不會上傳到任何伺服器' + (prefix === 'astro' ? '；你也可以隨時在生成星盤後按「清除已儲存的星盤資料」完全刪除。' : '。') + '</div>';
   var birthErr = validateBirthDate(state[prefix + 'Y'], state[prefix + 'M'], state[prefix + 'D'], state[prefix + 'H'], state[prefix + 'Min'], state[prefix + 'UnknownTime']);
-  var ready = state[prefix + 'Y'] && state[prefix + 'M'] && state[prefix + 'D'] && state[prefix + 'CityIdx'] != null && !birthErr;
+  /* 整體完成度提示要分開算「日期」跟「時間」兩項，不能直接用 birthErr——
+     birthErr 是驗證函式回傳的單一訊息，日期沒填完跟時間沒填完都會讓它有值，
+     混在一起算會出現「日期明明填對了，卻被算成沒完成」這種誤導的情況 */
+  var yN = parseInt(state[prefix + 'Y'], 10), mN = parseInt(state[prefix + 'M'], 10), dN = parseInt(state[prefix + 'D'], 10);
+  var dateDone = !!(state[prefix + 'Y'] && state[prefix + 'M'] && state[prefix + 'D']) && !isNaN(yN) && yN >= 1900 && yN <= 2100
+    && !isNaN(mN) && mN >= 1 && mN <= 12 && !isNaN(dN) && dN >= 1 && dN <= new Date(yN, mN, 0).getDate();
+  var hN = parseInt(state[prefix + 'H'], 10), minN = parseInt(state[prefix + 'Min'], 10);
+  var timeDone = !!state[prefix + 'UnknownTime'] || (
+    state[prefix + 'H'] !== '' && state[prefix + 'H'] != null && !isNaN(hN) && hN >= 0 && hN <= 23 &&
+    state[prefix + 'Min'] !== '' && state[prefix + 'Min'] != null && !isNaN(minN) && minN >= 0 && minN <= 59
+  );
+  var cityDone = state[prefix + 'CityIdx'] != null;
+  var doneCount = (dateDone ? 1 : 0) + (timeDone ? 1 : 0) + (cityDone ? 1 : 0);
+  var ready = state[prefix + 'Y'] && state[prefix + 'M'] && state[prefix + 'D'] && cityDone && !birthErr;
   var generating = !!state[prefix + 'Generating'];
   var btnLabel = generating ? '計算中…' : '生成星盤 →';
-  h += '<button onclick="' + genFnName + '()" ' + (ready && !generating ? '' : 'disabled') + ' style="width:100%;margin-top:14px;padding:13px;border-radius:12px;border:1px solid ' + (ready ? '#c9a96e' : 'rgba(201,169,110,.2)') + ';background:' + (ready ? 'linear-gradient(135deg,#c9a96e,#a9835a)' : 'rgba(255,255,255,.03)') + ';color:' + (ready ? '#1a1622' : 'rgba(240,233,216,.3)') + ';font:600 14px \'Noto Sans TC\',sans-serif;cursor:pointer">' + btnLabel + '</button>';
+  /* 整體完成度提示——延伸自上面「未選出生地」這類逐欄提示，一次看到還差幾項，
+     不用逐欄自己數；按鈕能不能按仍然照舊用 birthErr／cityDone 判斷，不受這裡影響 */
+  if (!ready) {
+    h += '<div role="status" style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);margin-top:10px;text-align:center">已完成 ' + doneCount + ' / 3 項（出生日期・出生時間・出生地）</div>';
+  }
+  h += '<button onclick="' + genFnName + '()" ' + (ready && !generating ? '' : 'disabled') + ' style="width:100%;margin-top:8px;padding:13px;border-radius:12px;border:1px solid ' + (ready ? '#c9a96e' : 'rgba(201,169,110,.2)') + ';background:' + (ready ? 'linear-gradient(135deg,#c9a96e,#a9835a)' : 'rgba(255,255,255,.03)') + ';color:' + (ready ? '#1a1622' : 'rgba(240,233,216,.3)') + ';font:600 14px \'Noto Sans TC\',sans-serif;cursor:pointer">' + btnLabel + '</button>';
   return h;
 }
 function updateCityLiveBlock(prefix, genFnName) {
@@ -5320,12 +5373,25 @@ function crossAspectText(asp, labelA, labelB) {
    改用跟本命盤同一套 aspectBeginnerData／ASPECT_BEGINNER 白話系統，只是標題
    加上「本人／對方」以區分這是兩個人之間的交叉相位，其餘的白話敘述、關鍵字
    代入與多種句型輪替完全共用同一份邏輯，不用另外重寫一份。 */
-function renderCrossAspectBeginnerCard(asp) {
+/* usedSet（選填）：跟 aspectBeginnerDataUnique() 同樣的用意——合盤一次會列出
+   最多 10 組交叉相位（見 renderSynastry），每組相位各自從只有 2 個版本的模板池
+   挑句子，同一種相位類型出現多次時很容易撞到同一個版本，讀起來像同一句話講
+   了好幾遍。有傳 usedSet 進來時，四個欄位（lead/strength/watch/practice）都
+   會各自檢查、避開同一份清單裡已經用過的模板骨架；不傳就跟原本行為一樣。 */
+function renderCrossAspectBeginnerCard(asp, usedSet) {
   var aDef = findAnyPointDef(asp.aKey), bDef = findAnyPointDef(asp.bKey);
   var base = ASPECT_BEGINNER[asp.type];
   var seedBase = 'cross|' + asp.aKey + '|' + asp.bKey + '|' + asp.type;
   function pickField(name) {
     var tpl = astroSeededPick(seedBase + '|' + name, base[name]);
+    if (usedSet) {
+      var key = asp.type + '|' + name + '|' + tpl;
+      if (usedSet[key]) {
+        var alt = base[name].filter(function (t) { return !usedSet[asp.type + '|' + name + '|' + t]; })[0];
+        if (alt) tpl = alt;
+      }
+      usedSet[asp.type + '|' + name + '|' + tpl] = true;
+    }
     return fillAspectTemplate(tpl, '本人的' + aDef.kw, '對方的' + bDef.kw);
   }
   var title = '本人' + aDef.zh + ' × 對方' + bDef.zh;
@@ -5394,8 +5460,9 @@ function renderSynastry() {
   h += '<div style="margin-top:16px;border-top:1px solid rgba(201,169,110,.15);border-bottom:1px solid rgba(201,169,110,.15);padding:14px 0;font:400 13px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.8);line-height:1.9">' + esc(summaryTxt) + '</div>';
 
   h += '<div style="margin-top:18px;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;text-align:center">重點交叉相位</div>';
+  var crossUsedSet = {};
   aspects.slice(0, 10).forEach(function (asp) {
-    h += renderCrossAspectBeginnerCard(asp);
+    h += renderCrossAspectBeginnerCard(asp, crossUsedSet);
   });
 
   h += renderPersonaPicker();
@@ -5459,11 +5526,12 @@ function progressionAddMonths(date, months) {
 function renderProgressionMonths(natal, city) {
   var base = new Date(), charts = [], h = '<div style="margin-top:16px;font:500 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55)">未來 12 個月節奏</div><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:9px">';
   for (var i = 0; i <= 12; i++) charts.push(computeProgressedChart(natal, city, progressionAddMonths(base, i)));
+  var monthUsedSet = {};
   for (var m = 0; m < 12; m++) {
     var d = progressionAddMonths(base, m), p = charts[m], next = charts[m + 1];
     var moon = ZODIAC_SIGNS[p.planets.Moon.sign], moonShift = p.planets.Moon.sign !== next.planets.Moon.sign;
     var aspects = progressionAspects(natal, p), top = aspects[0];
-    var monthPlain=top?progressionAspectPlain(top):null;
+    var monthPlain=top?progressionAspectPlain(top, monthUsedSet):null;
     h += '<div style="border:1px solid '+(moonShift?'rgba(230,205,154,.5)':'rgba(201,169,110,.18)')+';border-radius:9px;padding:8px 9px;background:rgba(255,255,255,.018)"><div style="display:flex;justify-content:space-between;gap:5px"><span style="font:600 11px \'Noto Sans TC\',sans-serif;color:#e6cd9a">'+d.getFullYear()+'/'+pad2(d.getMonth()+1)+'</span>'+(moonShift?'<span style="font:500 8px \'Noto Sans TC\',sans-serif;color:#211b15;background:#e6cd9a;border-radius:8px;padding:2px 5px">內在節奏換檔</span>':'')+'</div><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.68);margin-top:4px">情緒節奏：'+esc(SIGN_BEGINNER[p.planets.Moon.sign].mode)+'</div>'+(monthPlain?'<div style="font:400 9px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:4px;line-height:1.5">'+esc(monthPlain.title)+'：'+esc(monthPlain.text)+'</div>':'')+'<details style="margin-top:5px"><summary style="font:400 8px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);cursor:pointer">精確位置與相位</summary><div style="font:400 8px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);line-height:1.5;margin-top:3px">推運月亮 '+moon.zh+' '+p.planets.Moon.deg.toFixed(1)+'°'+(top?'；'+esc(crossAspectText(top,'本命','推運')):'')+'</div></details></div>';
   }
   return h + '</div>';
@@ -5471,11 +5539,37 @@ function renderProgressionMonths(natal, city) {
 function progSetYears(n) { state.progYears = n; state.progExpandedYear = 0; state.progOnlyTransitions = false; render(); window.scrollTo(0, 0); }
 function progToggleYear(i) { state.progExpandedYear = state.progExpandedYear === i ? null : i; render(); }
 function progToggleTransitions() { state.progOnlyTransitions = !state.progOnlyTransitions; render(); }
-function progressionAspectPlain(a) {
+/* 修正：base.lead／base.strength／base.practice 都是模板「陣列」（每種相位
+   類型有 2 個版本，供 astroSeededPick 挑選），原本這裡直接把陣列跟字串相加，
+   JS 會把整個陣列用逗號接成字串塞進去——不但沒有代入關鍵字（畫面上會直接
+   看到「{Akw}」「{Bkw}」這種未代入的原始佔位符），還會把 2 個版本一次全部
+   顯示、中間夾一個逗號。改成跟其他相位敘述一樣，先用 astroSeededPick 挑一
+   個版本、再用 fillAspectTemplate 代入關鍵字。usedSet（選填）則跟其他相位
+   清單一樣，用來避免同一份清單（例如「未來 12 個月節奏」的 12 張月卡，或
+   一次顯示多年的推運卡片）裡巧合選到同一個版本、讀起來像同一句話重複。 */
+function progressionAspectPlain(a, usedSet) {
   var natal=findAnyPointDef(a.aKey), moving=findAnyPointDef(a.bKey), base=ASPECT_BEGINNER[a.type];
-  return {title:natal.zh+'與'+moving.zh, text:'你原本的「'+natal.kw+'」，正和正在發展的「'+moving.kw+'」互相影響。'+base.lead, strength:base.strength, practice:base.practice};
+  var seedBase = a.aKey + '|' + a.bKey + '|' + a.type;
+  function pickField(name) {
+    var tpl = astroSeededPick(seedBase + '|' + name, base[name]);
+    if (usedSet) {
+      var key = a.type + '|' + name + '|' + tpl;
+      if (usedSet[key]) {
+        var alt = base[name].filter(function (t) { return !usedSet[a.type + '|' + name + '|' + t]; })[0];
+        if (alt) tpl = alt;
+      }
+      usedSet[a.type + '|' + name + '|' + tpl] = true;
+    }
+    return fillAspectTemplate(tpl, natal.kw, moving.kw);
+  }
+  return {
+    title: natal.zh + '與' + moving.zh,
+    text: '你原本的「' + natal.kw + '」，正和正在發展的「' + moving.kw + '」互相影響。' + pickField('lead'),
+    strength: pickField('strength'),
+    practice: pickField('practice'),
+  };
 }
-function renderProgressionYearCard(row, natal) {
+function renderProgressionYearCard(row, natal, usedSet) {
   var p = row.prog, moon = ZODIAC_SIGNS[p.planets.Moon.sign], sun = ZODIAC_SIGNS[p.planets.Sun.sign];
   var open = state.progExpandedYear === row.index;
   var h = '<article style="margin-top:10px;border:1px solid ' + (row.isTransition ? 'rgba(230,205,154,.55)' : 'rgba(201,169,110,.22)') + ';border-radius:12px;background:rgba(255,255,255,.02);overflow:hidden">';
@@ -5483,13 +5577,14 @@ function renderProgressionYearCard(row, natal) {
   h += '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div style="font:600 17px \'Noto Serif TC\',serif;color:#e6cd9a">' + row.year + '</div><div style="display:flex;gap:6px;align-items:center">' + (row.isTransition ? '<span style="font:600 10px \'Noto Sans TC\',sans-serif;color:#211b15;background:#e6cd9a;border-radius:10px;padding:3px 7px">轉折年</span>' : '') + '<span style="font:400 15px sans-serif;color:rgba(240,233,216,.45)">' + (open ? '−' : '＋') + '</span></div></div>';
   h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.82);margin-top:5px;line-height:1.65">' + esc(row.theme) + '</div>';
   h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"><span style="font:400 10px \'Noto Sans TC\',sans-serif;color:#c9a96e">☽ ' + moon.zh + '</span><span style="font:400 10px \'Noto Sans TC\',sans-serif;color:#c9a96e">☉ ' + sun.zh + '</span>' + row.focuses.map(function(f){return '<span style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);border:1px solid rgba(201,169,110,.2);border-radius:10px;padding:2px 6px">'+f+'</span>';}).join('') + '</div>';
-  if (row.aspects.length) { var firstPlain=progressionAspectPlain(row.aspects[0]); h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:8px;line-height:1.6">今年重點：' + esc(firstPlain.text) + '</div>'; }
+  if (row.aspects.length) { var firstPlain=progressionAspectPlain(row.aspects[0], usedSet); h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:8px;line-height:1.6">今年重點：' + esc(firstPlain.text) + '</div>'; }
   h += '</button>';
   if (open) {
     h += '<div style="border-top:1px solid rgba(201,169,110,.15);padding:12px 14px">';
     h += '<div style="padding:10px 11px;border-radius:9px;background:rgba(201,169,110,.07);font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.75">內心的安全感正用「'+esc(SIGN_BEGINNER[p.planets.Moon.sign].mode)+'」的方式調整；長期自我方向則帶著「'+esc(SIGN_BEGINNER[p.planets.Sun.sign].mode)+'」的色彩。</div>';
     if (row.moonChanged || row.sunChanged) h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:#e6cd9a;margin-top:10px;line-height:1.7">' + (row.moonChanged ? '• 這一年推運月亮將換座，內在需求會出現階段轉換。<br>' : '') + (row.sunChanged ? '• 這一年推運太陽將換座，是較少見的長期自我轉型。' : '') + '</div>';
-    row.aspects.slice(0, 6).forEach(function (a) { var d=progressionAspectPlain(a); h += '<div style="border-top:1px solid rgba(201,169,110,.12);padding:9px 0"><div style="font:600 11px \'Noto Sans TC\',sans-serif;color:#f0e9d8">'+esc(d.title)+'</div><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.7;margin-top:4px">'+esc(d.text)+'</div><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:#e6cd9a;line-height:1.65;margin-top:4px">建議：'+esc(d.practice)+'</div><details style="margin-top:6px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);cursor:pointer">查看推運相位、容許度與專業解讀</summary><div style="margin-top:5px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.52);line-height:1.65">'+esc(crossAspectText(a,'本命','推運'))+'</div></details></div>'; });
+    var expandedUsedSet = {};
+    row.aspects.slice(0, 6).forEach(function (a) { var d=progressionAspectPlain(a, expandedUsedSet); h += '<div style="border-top:1px solid rgba(201,169,110,.12);padding:9px 0"><div style="font:600 11px \'Noto Sans TC\',sans-serif;color:#f0e9d8">'+esc(d.title)+'</div><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.7;margin-top:4px">'+esc(d.text)+'</div><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:#e6cd9a;line-height:1.65;margin-top:4px">建議：'+esc(d.practice)+'</div><details style="margin-top:6px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);cursor:pointer">查看推運相位、容許度與專業解讀</summary><div style="margin-top:5px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.52);line-height:1.65">'+esc(crossAspectText(a,'本命','推運'))+'</div></details></div>'; });
     h += '<details style="margin-top:8px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);cursor:pointer">查看推運太陽、月亮精確位置</summary><div style="margin-top:5px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.7">推運月亮：'+moon.zh+' '+p.planets.Moon.deg.toFixed(1)+'°；推運太陽：'+sun.zh+' '+p.planets.Sun.deg.toFixed(1)+'°。</div></details>';
     if (!row.aspects.length) h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);line-height:1.7">這一年沒有容許度內特別緊密的主要相位，適合延續既有節奏。</div>';
     h += '</div>';
@@ -5520,7 +5615,8 @@ function renderProgression() {
   if (state.progYears > 1) h += '<button aria-pressed="'+state.progOnlyTransitions+'" onclick="progToggleTransitions()" style="background:none;border:1px solid rgba(201,169,110,.3);border-radius:12px;padding:5px 9px;color:#c9a96e;font:400 10px \'Noto Sans TC\',sans-serif;cursor:pointer">'+(state.progOnlyTransitions?'顯示全部年份':'只看轉折年')+'</button>';
   h += '</div>';
   if (!visible.length) h += '<div style="margin-top:12px;border:1px dashed rgba(201,169,110,.25);border-radius:12px;padding:16px;text-align:center;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">這個範圍內沒有被標記的明顯轉折年，可以切回「顯示全部年份」查看穩定發展期。</div>';
-  visible.forEach(function(row){h += renderProgressionYearCard(row, chart);});
+  var yearCardUsedSet = {};
+  visible.forEach(function(row){h += renderProgressionYearCard(row, chart, yearCardUsedSet);});
   if (state.progYears === 1) h += renderProgressionMonths(chart, city);
   if (state.astroUnknownTime) h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.38);line-height:1.7;margin-top:10px">＊出生時間未知：不採用上升、天頂、宮位及月亮相關相位；推運月亮位置僅作概略階段參考。</div>';
 
@@ -5947,8 +6043,9 @@ function buildAstroCopyText(chart, unknownTime) {
   });
   lines.push('');
   lines.push('＝＝＝＝ 主要相位 ＝＝＝＝');
+  var natalAspectUsedSet = {};
   usableAspects.forEach(function (asp) {
-    var r = natalAspectReading(asp, chart, unknownTime);
+    var r = natalAspectReading(asp, chart, unknownTime, natalAspectUsedSet);
     if (!r.available) return;
     lines.push('');
     lines.push('【相位資料｜' + r.title + '】');
@@ -8367,7 +8464,10 @@ function renderAstroQuickSummary(chart) {
   var major = astroUsableAspects(chart).filter(function(a){return ASTRO_PLANET_BODY_KEYS.indexOf(a.a)>=0&&ASTRO_PLANET_BODY_KEYS.indexOf(a.b)>=0;}).sort(function(a,b){return a.orb-b.orb;}).slice(0,3);
   var h = '<section style="margin-top:16px;border:1px solid rgba(201,169,110,.38);border-radius:12px;padding:15px 17px;background:rgba(201,169,110,.07)"><h3 style="font:600 14px \'Noto Serif TC\',serif;color:#e6cd9a;margin:0">三分鐘看懂你的星盤</h3>';
   h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.82);line-height:1.85;margin-top:9px">你的核心自我帶有<strong>' + sun.zh + '</strong>的' + sun.trait + '；情緒需求偏向<strong>' + moon.zh + '</strong>的' + moon.trait + '。整體以<strong>' + topElem + '元素</strong>最突出。' + (state.astroUnknownTime ? '出生時間未知，因此本摘要不採用上升與宮位。' : '你給人的第一印象則帶有<strong>' + ZODIAC_SIGNS[chart.ascSign].zh + '上升</strong>的色彩。') + '</div>';
-  if (major.length) h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:10px">最明顯的三組性格互動</div>' + major.map(function(a){var d=aspectBeginnerData(a);return '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.68);line-height:1.7;margin-top:4px">• <strong>'+esc(d.title)+'</strong>：'+esc(d.lead)+'</div>';}).join('')+'<details style="margin-top:7px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);cursor:pointer">查看三組相位的專業名稱與容許度</summary><div style="margin-top:5px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);line-height:1.7">'+major.map(function(a){return esc(aspectPlacementText(a));}).join('<br>')+'</div></details>';
+  if (major.length) {
+    var usedLeads = [];
+    h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:10px">最明顯的三組性格互動</div>' + major.map(function(a){var d=aspectBeginnerDataUnique(a, usedLeads);return '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.68);line-height:1.7;margin-top:4px">• <strong>'+esc(d.title)+'</strong>：'+esc(d.lead)+'</div>';}).join('')+'<details style="margin-top:7px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);cursor:pointer">查看三組相位的專業名稱與容許度</summary><div style="margin-top:5px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);line-height:1.7">'+major.map(function(a){return esc(aspectPlacementText(a));}).join('<br>')+'</div></details>';
+  }
   return h + '</section>';
 }
 
@@ -8564,11 +8664,12 @@ function renderAstro() {
       h += '<div style="margin-top:2px">';
       h += '<details style="margin-top:8px"><summary style="min-height:44px;display:flex;align-items:center;font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;color:rgba(240,233,216,.5);cursor:pointer">查看專業相位總表 Aspect Grid</summary>';
       h += renderAspectGrid(chart)+'</details>';
+      var natalCardUsedSet = {};
       usableAspects.slice().sort(function (x, y) {
         var px=natalAspectPriority(x)==='core'?0:1, py=natalAspectPriority(y)==='core'?0:1;
         return px-py || x.orb-y.orb;
       }).forEach(function (asp) {
-        h += renderNatalAspectCard(asp, chart, !!state.astroUnknownTime);
+        h += renderNatalAspectCard(asp, chart, !!state.astroUnknownTime, natalCardUsedSet);
       });
       h += '</div></details>';
     }
