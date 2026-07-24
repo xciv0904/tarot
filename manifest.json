@@ -1,7 +1,7 @@
 {
   "name": "塔羅 · 雷諾曼占卜 Mystic Deck",
   "short_name": "塔羅占卜",
-  "description": "免費線上塔羅與雷諾曼占卜——洗牌抽牌、牌義解讀與學習系統",
+  "description": "免費線上塔羅與雷諾曼占卜，以及完整西洋占星本命星盤——洗牌抽牌、牌義解讀、每日運勢與合盤配對",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://xciv0904.github.io/tarot/sitemap.xml

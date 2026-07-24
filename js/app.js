@@ -40,6 +40,7 @@ var state = {
   copied: false,
   tlGuideOpen: false,
   homeMoreOpen: false,
+  homeTourDismissed: false,
   astroY: '', astroM: '', astroD: '', astroH: '', astroMin: '',
   astroCityQuery: '', astroCityIdx: null, astroCityUsed: null,
   astroUnknownTime: false, astroResult: null, astroView: 'chart', astroGenerating: false, astroTourDismissed: false,
@@ -104,7 +105,7 @@ var dailyCard = TAROT[_seed % TAROT.length];
 var dailyReversed = (_seed >> 3) % 2 === 1;
 
 function esc(s) {
-  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 var SIGIL = '<svg width="WW" height="HH" viewBox="0 0 70 70"><circle cx="35" cy="35" r="30" fill="none" stroke="#c9a96e" stroke-width="1"/><circle cx="35" cy="35" r="18" fill="none" stroke="#c9a96e" stroke-width="1"/><path d="M35 5 L35 65 M5 35 L65 35" stroke="#c9a96e" stroke-width=".6"/></svg>';
@@ -1303,6 +1304,46 @@ function startQuestionFlow() {
 
 function toggleHomeMore() { state.homeMoreOpen = !state.homeMoreOpen; render(); }
 
+/* 首次造訪的一次性導覽卡片，做法比照星盤分頁已有的 renderAstroTourCard／
+   astroDismissTour——只顯示一次，關掉後記在 localStorage，不會再跳出來 */
+function homeDismissTour() {
+  state.homeTourDismissed = true;
+  try { localStorage.setItem('tl_home_tour_seen', '1'); } catch (e) {}
+  render();
+}
+function renderHomeTourCard() {
+  var h = '<div style="margin-top:16px;border:1px solid rgba(201,169,110,.3);border-radius:12px;padding:14px 16px;background:rgba(201,169,110,.05)">';
+  h += '<div style="display:flex;justify-content:space-between;align-items:center">';
+  h += '<div style="font:600 12px \'Noto Sans TC\',sans-serif;color:#e6cd9a">第一次來嗎？先看這裡</div>';
+  h += '<button onclick="homeDismissTour()" aria-label="關閉導覽" style="background:none;border:none;color:rgba(240,233,216,.4);font:400 18px sans-serif;cursor:pointer;line-height:1;padding:0">×</button>';
+  h += '</div>';
+  [
+    ['下方「今日一牌」', '不用填任何資料，點卡片就能直接看'],
+    ['「我想問一個問題」', '針對特定困擾，走完整的四步驟占卜'],
+    ['「快速占卜」', '不想選來選去，直接抽一張牌看指引'],
+    ['底部導覽列', '「星盤」「牌典」也都是獨立功能，隨時可以切換'],
+  ].forEach(function (it) {
+    h += '<div style="margin-top:8px;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.7);line-height:1.6"><span style="color:#c9a96e;font-weight:600">' + it[0] + '</span>　' + it[1] + '</div>';
+  });
+  h += '<div style="text-align:center;margin-top:10px"><button onclick="homeDismissTour()" style="background:none;border:none;color:rgba(240,233,216,.4);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">我知道了，不用再顯示</button></div>';
+  h += '</div>';
+  return h;
+}
+
+/* 快速占卜捷徑：跳過 4 步驟精靈的類別／牌陣／問題選擇，直接用「綜合／單張牌」
+   這組最通用的預設值進入抽牌畫面。問題與對象保持空白，解讀時會用通用方式呈現
+   （既有的確認頁本來就支援「未填寫，將以通用方式解讀」這個情境，見 wizNext 附近）。*/
+function quickDraw() {
+  state.category = 'general';
+  state.subtopic = '';
+  state.target = '';
+  state.question = '';
+  state.readingMode = 'cards';
+  state.spread = 'single';
+  go('reading', state.deck || 'tarot');
+  startReading();
+}
+
 /* daily card's full meaning text: prefer the rich (upright/reversed) paragraph,
    fall back to the short zh meaning if no rich entry exists for this card */
 function dailyFullMeaning(c, reversed) {
@@ -1319,7 +1360,9 @@ function renderHome() {
   h += '<button onclick="startQuestionFlow()" style="font:600 16px \'Noto Serif TC\',serif;letter-spacing:.04em;background:linear-gradient(120deg,#c9a96e,#e6cd9a);color:#1a1622;border:none;padding:22px 22px;border-radius:14px;cursor:pointer;text-align:left">';
   h += '<div>我想問一個問題 →</div><div style="font:italic 11px \'EB Garamond\',serif;opacity:.7;margin-top:3px;font-weight:400">I have a question — start a guided reading</div>';
   h += '</button>';
+  h += '<button onclick="quickDraw()" style="min-height:44px;font:500 12px \'Noto Sans TC\',sans-serif;background:none;border:1px solid rgba(201,169,110,.35);color:rgba(240,233,216,.75);padding:10px 18px;border-radius:22px;cursor:pointer;text-align:center">快速占卜 · 直接抽一張牌 <span style="opacity:.6;font-style:italic;font:italic 10px \'EB Garamond\',serif">Quick Draw</span></button>';
   h += '</div>';
+  if (!state.homeTourDismissed) h += renderHomeTourCard();
 
   // ---- daily card, always shown, no click needed ----
   var c = dailyCard;
@@ -1469,6 +1512,9 @@ function renderWizard(spreads, isTarot) {
       h += '</button>';
     });
     h += '</div>';
+    if (!state.category) {
+      h += '<div role="status" style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-top:8px;text-align:right">請先選擇一個想詢問的面向，才能繼續下一步</div>';
+    }
     h += wizBtns(false, !!state.category, '下一步', 'wizNext()');
 
   } else if (state.wizardStep === 2) {
@@ -3881,7 +3927,20 @@ function go(tab, deck) {
   state.libQuiz = false;
   if (deck) state.deck = deck;
   resetReading();
-  render();
+  if (tab === 'astro' && typeof PLANET_DEFS === 'undefined') {
+    /* 先呼叫 ensureAstrologyDataLoaded() 讓 astrologyDataLoadPromise 同步設好，
+       render() 才不會在資料還沒開始載入的那一瞬間，誤判成「載入失敗」 */
+    var astroLoad = ensureAstrologyDataLoaded();
+    render();
+    astroLoad.then(function () {
+      ensureAstrologyBodyKeys();
+      if (state.tab === 'astro') render();
+    }).catch(function () {
+      if (state.tab === 'astro') render();
+    });
+  } else {
+    render();
+  }
   window.scrollTo(0, 0);
 }
 
@@ -3962,7 +4021,13 @@ function zonedTimeToUtc(y, m, d, hh, mm, ss, tz) {
   return new Date(guess);
 }
 
-var ASTRO_PLANET_BODY_KEYS = PLANET_DEFS.map(function (p) { return p.key; });
+/* astrology-core-data.js 現在延後載入，PLANET_DEFS 要等星盤分頁被打開後才存在，
+   所以這裡先宣告、實際賦值移到 ensureAstrologyBodyKeys()，在星盤資料載入完成後才呼叫 */
+var ASTRO_PLANET_BODY_KEYS;
+function ensureAstrologyBodyKeys() {
+  if (!ASTRO_PLANET_BODY_KEYS) ASTRO_PLANET_BODY_KEYS = PLANET_DEFS.map(function (p) { return p.key; });
+  return ASTRO_PLANET_BODY_KEYS;
+}
 
 /* ---- 額外本命點：北交點／南交點／莉莉絲／凱龍星／福點／命定點 ---- */
 function pointDisplayName(pointDef) { return EXTRA_POINT_DISPLAY_NAMES[pointDef.key] || pointDef.zh; }
@@ -4956,6 +5021,8 @@ function renderCityLiveBlock(prefix, genFnName) {
   }
   if (state[prefix + 'CityIdx'] != null) {
     h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:8px">已選擇：' + CITY_LIST[state[prefix + 'CityIdx']].zh + '</div>';
+  } else if (state[prefix + 'Y'] && state[prefix + 'M'] && state[prefix + 'D']) {
+    h += '<div role="status" style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-top:8px">請從上方選擇或搜尋你的出生地，才能生成星盤</div>';
   }
   h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.3);margin-top:16px;line-height:1.7">🔒 出生資料只會儲存在你自己的裝置（瀏覽器）中，不會上傳到任何伺服器' + (prefix === 'astro' ? '；你也可以隨時在生成星盤後按「清除已儲存的星盤資料」完全刪除。' : '。') + '</div>';
   var birthErr = validateBirthDate(state[prefix + 'Y'], state[prefix + 'M'], state[prefix + 'D'], state[prefix + 'H'], state[prefix + 'Min'], state[prefix + 'UnknownTime']);
@@ -5020,8 +5087,14 @@ async function astroLoadProfile() {
     state.astroUnknownTime = !!sv.unknownTime;
     state.astroHouseSystem = sv.houseSystem || 'placidus';
     state.astroCityIdx = sv.cityIdx;
+    if (state.astroCityIdx == null || !state.astroY || !state.astroM || !state.astroD) return;
+    /* CITY_LIST 現在來自延後載入的星盤資料檔（見 ensureAstrologyDataLoaded），
+       有已儲存的星盤資料時，代表使用者之前生成過星盤，這裡直接先把資料載入，
+       才能在還沒手動點進「星盤」分頁前，就先把上次的星盤結果復原好 */
+    await ensureAstrologyDataLoaded();
+    ensureAstrologyBodyKeys();
     var city = CITY_LIST[state.astroCityIdx];
-    if (city && state.astroY && state.astroM && state.astroD) {
+    if (city) {
       await ensureAstronomyLoaded();
       var hh = state.astroUnknownTime ? 12 : (parseInt(state.astroH, 10) || 0);
       var mm = state.astroUnknownTime ? 0 : (parseInt(state.astroMin, 10) || 0);
@@ -8313,6 +8386,15 @@ function renderAstroMethodology() {
 }
 
 function renderAstro() {
+  if (typeof PLANET_DEFS === 'undefined') {
+    /* astrologyDataLoadPromise 只有在 go('astro') 已經呼叫過 ensureAstrologyDataLoaded()
+       之後才會是非 null；若已經呼叫過但又變回 null，代表載入失敗（見 ensureAstrologyDataLoaded
+       的 catch）。 */
+    if (astrologyDataLoadPromise === null) {
+      return '<div style="padding:70px 20px;text-align:center;color:rgba(240,233,216,.5);font:400 13px \'Noto Sans TC\',sans-serif">星盤功能載入失敗，請檢查網路連線後重新整理頁面。</div>';
+    }
+    return '<div style="padding:70px 20px;text-align:center;color:rgba(240,233,216,.5);font:400 13px \'Noto Sans TC\',sans-serif">星盤功能載入中…</div>';
+  }
   var h = '<div style="padding:8px 20px 20px">';
   h += '<div style="font:400 11px \'EB Garamond\',serif;letter-spacing:.3em;color:#c9a96e;text-transform:uppercase;text-align:center">Natal Chart</div>';
   h += '<div style="font:600 20px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:4px;text-align:center">個人星盤</div>';
@@ -8507,6 +8589,7 @@ function renderAstro() {
 
 astroLoadProfile();
 try { state.astroTourDismissed = localStorage.getItem('tl_astro_tour_seen') === '1'; } catch (e) {}
+try { state.homeTourDismissed = localStorage.getItem('tl_home_tour_seen') === '1'; } catch (e) {}
 try { var _savedPersona = localStorage.getItem('tl_ai_persona'); if (_savedPersona && findAiPersona(_savedPersona).key === _savedPersona) state.aiPersona = _savedPersona; } catch (e) {}
 
 render();
