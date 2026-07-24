@@ -41,9 +41,11 @@ var state = {
   tlGuideOpen: false,
   homeMoreOpen: false,
   homeTourDismissed: false,
+  homeTourIdx: 0,
   astroY: '', astroM: '', astroD: '', astroH: '', astroMin: '',
   astroCityQuery: '', astroCityIdx: null, astroCityUsed: null,
   astroUnknownTime: false, astroResult: null, astroView: 'chart', astroGenerating: false, astroTourDismissed: false,
+  astroTourIdx: 0, astroTabsMoreOpen: false,
   astroHouseSystem: 'placidus', astroDetail: null, astroMethodOpen: false,
   astroOpenPlacements: false, astroOpenPoints: false, astroOpenAspects: false,
   aiPersona: 'moon',
@@ -1305,26 +1307,51 @@ function startQuestionFlow() {
 function toggleHomeMore() { state.homeMoreOpen = !state.homeMoreOpen; render(); }
 
 /* 首次造訪的一次性導覽卡片，做法比照星盤分頁已有的 renderAstroTourCard／
-   astroDismissTour——只顯示一次，關掉後記在 localStorage，不會再跳出來 */
+   astroDismissTour——只顯示一次，關掉後記在 localStorage，不會再跳出來。
+   內容維持原本 4 則，但改成一次只顯示一則＋上一則/下一則/圓點導覽，
+   降低第一次進站時的閱讀負擔（原本是一次列出 4 條文字的長方框）。 */
+var HOME_TOUR_ITEMS = [
+  ['下方「今日一牌」', '不用填任何資料，點卡片就能直接看'],
+  ['「我想問一個問題」', '針對特定困擾，走完整的四步驟占卜'],
+  ['「快速占卜」', '不想選來選去，直接抽一張牌看指引'],
+  ['底部導覽列', '「星盤」「牌典」也都是獨立功能，隨時可以切換'],
+];
 function homeDismissTour() {
   state.homeTourDismissed = true;
   try { localStorage.setItem('tl_home_tour_seen', '1'); } catch (e) {}
   render();
 }
+function homeShowTour() {
+  state.homeTourDismissed = false;
+  state.homeTourIdx = 0;
+  try { localStorage.removeItem('tl_home_tour_seen'); } catch (e) {}
+  render();
+}
+function homeTourGo(i) {
+  var max = HOME_TOUR_ITEMS.length - 1;
+  state.homeTourIdx = i < 0 ? 0 : (i > max ? max : i);
+  render();
+}
 function renderHomeTourCard() {
+  var idx = state.homeTourIdx || 0;
+  if (idx > HOME_TOUR_ITEMS.length - 1) idx = HOME_TOUR_ITEMS.length - 1;
+  var it = HOME_TOUR_ITEMS[idx];
+  var atStart = idx === 0, atEnd = idx === HOME_TOUR_ITEMS.length - 1;
   var h = '<div style="margin-top:16px;border:1px solid rgba(201,169,110,.3);border-radius:12px;padding:14px 16px;background:rgba(201,169,110,.05)">';
   h += '<div style="display:flex;justify-content:space-between;align-items:center">';
-  h += '<div style="font:600 12px \'Noto Sans TC\',sans-serif;color:#e6cd9a">第一次來嗎？先看這裡</div>';
+  h += '<div style="font:600 12px \'Noto Sans TC\',sans-serif;color:#e6cd9a">第一次來嗎？先看這裡 <span style="opacity:.5;font-weight:400">' + (idx + 1) + '/' + HOME_TOUR_ITEMS.length + '</span></div>';
   h += '<button onclick="homeDismissTour()" aria-label="關閉導覽" style="background:none;border:none;color:rgba(240,233,216,.4);font:400 18px sans-serif;cursor:pointer;line-height:1;padding:0">×</button>';
   h += '</div>';
-  [
-    ['下方「今日一牌」', '不用填任何資料，點卡片就能直接看'],
-    ['「我想問一個問題」', '針對特定困擾，走完整的四步驟占卜'],
-    ['「快速占卜」', '不想選來選去，直接抽一張牌看指引'],
-    ['底部導覽列', '「星盤」「牌典」也都是獨立功能，隨時可以切換'],
-  ].forEach(function (it) {
-    h += '<div style="margin-top:8px;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.7);line-height:1.6"><span style="color:#c9a96e;font-weight:600">' + it[0] + '</span>　' + it[1] + '</div>';
+  h += '<div style="margin-top:10px;min-height:40px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.8);line-height:1.7"><span style="color:#c9a96e;font-weight:600">' + it[0] + '</span><br>' + it[1] + '</div>';
+  h += '<div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-top:12px">';
+  h += '<button onclick="homeTourGo(' + (idx - 1) + ')" aria-label="上一則" ' + (atStart ? 'disabled' : '') + ' style="background:none;border:none;color:' + (atStart ? 'rgba(240,233,216,.15)' : 'rgba(240,233,216,.6)') + ';font-size:16px;line-height:1;cursor:' + (atStart ? 'default' : 'pointer') + ';padding:4px 4px">‹</button>';
+  h += '<div style="display:flex;gap:6px">';
+  HOME_TOUR_ITEMS.forEach(function (_, i) {
+    h += '<button onclick="homeTourGo(' + i + ')" aria-label="第' + (i + 1) + '則" style="width:6px;height:6px;padding:0;border-radius:50%;border:none;cursor:pointer;background:' + (i === idx ? '#e6cd9a' : 'rgba(240,233,216,.25)') + '"></button>';
   });
+  h += '</div>';
+  h += '<button onclick="homeTourGo(' + (idx + 1) + ')" aria-label="下一則" ' + (atEnd ? 'disabled' : '') + ' style="background:none;border:none;color:' + (atEnd ? 'rgba(240,233,216,.15)' : 'rgba(240,233,216,.6)') + ';font-size:16px;line-height:1;cursor:' + (atEnd ? 'default' : 'pointer') + ';padding:4px 4px">›</button>';
+  h += '</div>';
   h += '<div style="text-align:center;margin-top:10px"><button onclick="homeDismissTour()" style="background:none;border:none;color:rgba(240,233,216,.4);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">我知道了，不用再顯示</button></div>';
   h += '</div>';
   return h;
@@ -1360,9 +1387,15 @@ function renderHome() {
   h += '<button onclick="startQuestionFlow()" style="font:600 16px \'Noto Serif TC\',serif;letter-spacing:.04em;background:linear-gradient(120deg,#c9a96e,#e6cd9a);color:#1a1622;border:none;padding:22px 22px;border-radius:14px;cursor:pointer;text-align:left">';
   h += '<div>我想問一個問題 →</div><div style="font:italic 11px \'EB Garamond\',serif;opacity:.7;margin-top:3px;font-weight:400">I have a question — start a guided reading</div>';
   h += '</button>';
-  h += '<button onclick="quickDraw()" style="min-height:44px;font:500 12px \'Noto Sans TC\',sans-serif;background:none;border:1px solid rgba(201,169,110,.35);color:rgba(240,233,216,.75);padding:10px 18px;border-radius:22px;cursor:pointer;text-align:center">快速占卜 · 直接抽一張牌 <span style="opacity:.6;font-style:italic;font:italic 10px \'EB Garamond\',serif">Quick Draw</span></button>';
+  h += '<button onclick="quickDraw()" style="min-height:44px;font:500 13px \'Noto Sans TC\',sans-serif;background:none;border:1px solid rgba(201,169,110,.35);color:rgba(240,233,216,.85);padding:12px 18px;border-radius:14px;cursor:pointer;text-align:left">';
+  h += '<div>快速占卜 · 直接抽一張牌 <span style="opacity:.6;font-style:italic;font:italic 10px \'EB Garamond\',serif">Quick Draw</span></div><div style="font:400 10.5px \'Noto Sans TC\',sans-serif;opacity:.5;margin-top:3px">不特定問題、只想馬上看一張牌的指引時用這個</div>';
+  h += '</button>';
   h += '</div>';
-  if (!state.homeTourDismissed) h += renderHomeTourCard();
+  if (!state.homeTourDismissed) {
+    h += renderHomeTourCard();
+  } else {
+    h += '<div style="text-align:center;margin-top:8px"><button onclick="homeShowTour()" style="background:none;border:none;color:rgba(240,233,216,.35);font:400 10px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">新手導覽 · 再看一次</button></div>';
+  }
 
   // ---- daily card, always shown, no click needed ----
   var c = dailyCard;
@@ -3951,6 +3984,15 @@ function setLibSuit(su) { state.libSuit = su; state.libSelected = null; render()
 function selectLibCard(key) { state.libSelected = key; render(); window.scrollTo(0, 0); }
 function closeLibCard() { state.libSelected = null; render(); }
 
+/* 每個底部導覽項目的簡易線條圖示，用 currentColor 跟按鈕本身的
+   active/inactive 顏色連動，不需要額外的圖片資源。 */
+var NAV_ICONS = {
+  home: '<path d="M3 9.5L10 3l7 6.5"/><path d="M5 8.5V16.5a1 1 0 0 0 1 1h3v-5h2v5h3a1 1 0 0 0 1-1V8.5"/>',
+  reading: '<rect x="4" y="5" width="8" height="12" rx="1.5" transform="rotate(-8 8 11)"/><rect x="8" y="5" width="8" height="12" rx="1.5" transform="rotate(8 12 11)"/>',
+  astro: '<circle cx="10" cy="10" r="7"/><path d="M10 3v14M3 10h14"/><circle cx="13.3" cy="7" r="1.1" fill="currentColor" stroke="none"/>',
+  library: '<path d="M3 4.5c1.5-1 3.5-1 5 0v11c-1.5-1-3.5-1-5 0v-11Z"/><path d="M17 4.5c-1.5-1-3.5-1-5 0v11c1.5-1 3.5-1 5 0v-11Z"/>',
+  more: '<circle cx="4" cy="10" r="1.6" fill="currentColor" stroke="none"/><circle cx="10" cy="10" r="1.6" fill="currentColor" stroke="none"/><circle cx="16" cy="10" r="1.6" fill="currentColor" stroke="none"/>',
+};
 function renderNav() {
   var navDef = [
     { key: 'home', zh: '首頁', en: 'Home' },
@@ -3964,7 +4006,8 @@ function renderNav() {
   navDef.forEach(function (n) {
     var active = activeTab === n.key || (n.key === 'more' && state.tab === 'history');
     var onclick = n.key === 'reading' ? "go('reading',state.deck)" : "go('" + n.key + "')";
-    h += '<button onclick="' + onclick + '" style="flex:1;background:none;border:none;padding:14px 6px 12px;cursor:pointer;color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.4)') + ';text-align:center">';
+    h += '<button onclick="' + onclick + '" style="flex:1;background:none;border:none;padding:12px 6px 12px;cursor:pointer;color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.4)') + ';text-align:center">';
+    h += '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto 2px" aria-hidden="true">' + NAV_ICONS[n.key] + '</svg>';
     h += '<div style="font:500 13px \'Noto Sans TC\',sans-serif">' + n.zh + '</div>';
     h += '<div style="font:italic 9px \'EB Garamond\',serif;opacity:.55;margin-top:1px">' + n.en + '</div>';
     h += '</button>';
@@ -5002,18 +5045,34 @@ function renderNatalWheel(chart) {
     svg += '<line x1="' + pa.x + '" y1="' + pa.y + '" x2="' + pb.x + '" y2="' + pb.y + '" stroke="' + (ASPECT_COLOR[asp.type] || 'rgba(200,200,200,.3)') + '" stroke-width="0.8"/>';
   });
 
-  // planets — simple decluttering: stagger radius when longitudes are close
+  // planets — decluttering: group planets whose ecliptic longitude is close
+  // together into clusters (also checking the wrap-around past 0°/360°), then
+  // spread every planet in a cluster across up to 3 radius tiers. The previous
+  // version only compared each planet to its immediate predecessor and toggled
+  // between 2 tiers, so a cluster of 3+ close planets (e.g. Sun/Mercury/Venus
+  // all early in the same sign) could still end up with the 1st and 3rd planet
+  // sharing a tier and overlapping.
   var order = PLANET_DEFS.map(function (p) { return p.key; }).slice().sort(function (k1, k2) { return chart.planets[k1].lon - chart.planets[k2].lon; });
-  var lastLon = null, tier = 0;
+  var CLUSTER_THRESHOLD = 8, tierOf = {};
+  if (order.length) {
+    var gaps = order.map(function (key, i) {
+      var a = chart.planets[key].lon, b = chart.planets[order[(i + 1) % order.length]].lon;
+      var d = b - a; if (d < 0) d += 360;
+      return d;
+    });
+    var breakIdx = 0;
+    for (var bi = 0; bi < gaps.length; bi++) { if (gaps[bi] >= CLUSTER_THRESHOLD) { breakIdx = (bi + 1) % order.length; break; } }
+    var clusters = [[order[breakIdx]]];
+    for (var ci = 1; ci < order.length; ci++) {
+      var prevGapIdx = (breakIdx + ci - 1) % order.length;
+      if (gaps[prevGapIdx] < CLUSTER_THRESHOLD) clusters[clusters.length - 1].push(order[(breakIdx + ci) % order.length]);
+      else clusters.push([order[(breakIdx + ci) % order.length]]);
+    }
+    clusters.forEach(function (cluster) { cluster.forEach(function (key, i) { tierOf[key] = i % 3; }); });
+  }
   order.forEach(function (key) {
     var lon = chart.planets[key].lon;
-    if (lastLon !== null) {
-      var gap = Math.abs(lon - lastLon);
-      if (gap > 180) gap = 360 - gap;
-      tier = gap < 7 ? (tier + 1) % 2 : 0;
-    }
-    lastLon = lon;
-    var r = planetR - tier * 16;
+    var r = planetR - (tierOf[key] || 0) * 14;
     var ang = astroWheelAngle(lon, chart.asc);
     var pos = astroPolar(cx, cy, r, ang);
     var tick1 = astroPolar(cx, cy, houseR, ang), tick2 = astroPolar(cx, cy, r + 8, ang);
@@ -7778,6 +7837,7 @@ function renderLuckyGrid(rng) {
 }
 
 function astroSetView(v) { state.astroView = v; state.astroDetail = null; render(); window.scrollTo(0, 0); }
+function toggleAstroTabsMore() { state.astroTabsMoreOpen = !state.astroTabsMoreOpen; render(); }
 function astroDismissTour() {
   state.astroTourDismissed = true;
   try { localStorage.setItem('tl_astro_tour_seen', '1'); } catch (e) {}
@@ -7788,29 +7848,47 @@ function astroDismissTour() {
    birth chart itself. This gives a lightweight way back in. */
 function astroShowTour() {
   state.astroTourDismissed = false;
+  state.astroTourIdx = 0;
   try { localStorage.removeItem('tl_astro_tour_seen'); } catch (e) {}
   render();
   window.scrollTo(0, 0);
 }
 /* 星盤功能現在有 7 個子頁面，第一次生成星盤時用一張小卡簡短導覽，避免新用戶
-   不知道除了本命盤之外還有這些功能；只顯示一次，關掉後記在 localStorage 不會再跳出來 */
+   不知道除了本命盤之外還有這些功能；只顯示一次，關掉後記在 localStorage 不會再跳出來。
+   跟首頁的導覽卡一樣，改成一次只顯示一則＋上一則/下一則/圓點導覽。 */
+var ASTRO_TOUR_ITEMS = [
+  ['本命星盤', '十大行星、上升／宮位、相位、元素比例的完整分析'],
+  ['每日／本週／本月／年度', '依真實行運與太陽／月亮回歸算出的評分與解讀，可切換日期'],
+  ['合盤', '輸入另一人的資料，比對兩人的星盤相性'],
+  ['推運', '用「一天等於一年」技法看你現在的心境演變'],
+  ['28星宿', '中國古代的另一套系統，可看本命星宿、跟另一人的關係、每日擇日'],
+  ['計算方式', '說明每一項數字背後用的計算方法與限制，供想了解細節的人查閱'],
+];
+function astroTourGo(i) {
+  var max = ASTRO_TOUR_ITEMS.length - 1;
+  state.astroTourIdx = i < 0 ? 0 : (i > max ? max : i);
+  render();
+}
 function renderAstroTourCard() {
-  var items = [
-    ['本命星盤', '十大行星、上升／宮位、相位、元素比例的完整分析'],
-    ['每日／本週／本月／年度', '依真實行運與太陽／月亮回歸算出的評分與解讀，可切換日期'],
-    ['合盤', '輸入另一人的資料，比對兩人的星盤相性'],
-    ['推運', '用「一天等於一年」技法看你現在的心境演變'],
-    ['28星宿', '中國古代的另一套系統，可看本命星宿、跟另一人的關係、每日擇日'],
-    ['計算方式', '說明每一項數字背後用的計算方法與限制，供想了解細節的人查閱'],
-  ];
+  var idx = state.astroTourIdx || 0;
+  if (idx > ASTRO_TOUR_ITEMS.length - 1) idx = ASTRO_TOUR_ITEMS.length - 1;
+  var it = ASTRO_TOUR_ITEMS[idx];
+  var atStart = idx === 0, atEnd = idx === ASTRO_TOUR_ITEMS.length - 1;
   var h = '<div style="margin-top:16px;border:1px solid rgba(201,169,110,.3);border-radius:12px;padding:14px 16px;background:rgba(201,169,110,.05)">';
   h += '<div style="display:flex;justify-content:space-between;align-items:center">';
-  h += '<div style="font:600 12px \'Noto Sans TC\',sans-serif;color:#e6cd9a">星盤功能小導覽</div>';
+  h += '<div style="font:600 12px \'Noto Sans TC\',sans-serif;color:#e6cd9a">星盤功能小導覽 <span style="opacity:.5;font-weight:400">' + (idx + 1) + '/' + ASTRO_TOUR_ITEMS.length + '</span></div>';
   h += '<button onclick="astroDismissTour()" style="background:none;border:none;color:rgba(240,233,216,.4);font:400 18px sans-serif;cursor:pointer;line-height:1;padding:0">×</button>';
   h += '</div>';
-  items.forEach(function (it) {
-    h += '<div style="margin-top:8px;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.7);line-height:1.6"><span style="color:#c9a96e;font-weight:600">' + it[0] + '</span>　' + it[1] + '</div>';
+  h += '<div style="margin-top:10px;min-height:40px;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.7"><span style="color:#c9a96e;font-weight:600">' + it[0] + '</span><br>' + it[1] + '</div>';
+  h += '<div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-top:12px">';
+  h += '<button onclick="astroTourGo(' + (idx - 1) + ')" aria-label="上一則" ' + (atStart ? 'disabled' : '') + ' style="background:none;border:none;color:' + (atStart ? 'rgba(240,233,216,.15)' : 'rgba(240,233,216,.6)') + ';font-size:16px;line-height:1;cursor:' + (atStart ? 'default' : 'pointer') + ';padding:4px 4px">‹</button>';
+  h += '<div style="display:flex;gap:6px">';
+  ASTRO_TOUR_ITEMS.forEach(function (_, i) {
+    h += '<button onclick="astroTourGo(' + i + ')" aria-label="第' + (i + 1) + '則" style="width:6px;height:6px;padding:0;border-radius:50%;border:none;cursor:pointer;background:' + (i === idx ? '#e6cd9a' : 'rgba(240,233,216,.25)') + '"></button>';
   });
+  h += '</div>';
+  h += '<button onclick="astroTourGo(' + (idx + 1) + ')" aria-label="下一則" ' + (atEnd ? 'disabled' : '') + ' style="background:none;border:none;color:' + (atEnd ? 'rgba(240,233,216,.15)' : 'rgba(240,233,216,.6)') + ';font-size:16px;line-height:1;cursor:' + (atEnd ? 'default' : 'pointer') + ';padding:4px 4px">›</button>';
+  h += '</div>';
   h += '<div style="text-align:center;margin-top:10px"><button onclick="astroDismissTour()" style="background:none;border:none;color:rgba(240,233,216,.4);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">我知道了，不用再顯示</button></div>';
   h += '</div>';
   return h;
@@ -8536,13 +8614,25 @@ function renderAstro() {
   } else {
     var chart = state.astroResult;
 
-    var viewTabs = [['chart', '本命星盤'], ['daily', '每日'], ['weekly', '本週'], ['monthly', '本月'], ['yearly', '年度'], ['synastry', '合盤'], ['progression', '推運'], ['xiu28', '28星宿'], ['method', '計算方式']];
-    h += '<div style="display:flex;gap:6px;margin-top:16px;flex-wrap:wrap;justify-content:center">';
-    viewTabs.forEach(function (vt) {
+    /* 9 個子頁面全部平鋪一列在小螢幕上容易換行擠壓，把使用頻率較低的
+       合盤／28星宿／計算方式收進「更多」，主列只留最常用的 6 個；
+       若目前正停在被收起的分頁，自動展開，避免使用者以為分頁不見了。 */
+    var PRIMARY_ASTRO_TABS = [['chart', '本命星盤'], ['daily', '每日'], ['weekly', '本週'], ['monthly', '本月'], ['yearly', '年度'], ['progression', '推運']];
+    var MORE_ASTRO_TABS = [['synastry', '合盤'], ['xiu28', '28星宿'], ['method', '計算方式']];
+    var astroTabsMoreOpen = state.astroTabsMoreOpen || MORE_ASTRO_TABS.some(function (vt) { return vt[0] === state.astroView; });
+    function astroTabBtn(vt) {
       var on = (state.astroView || 'chart') === vt[0];
-      h += '<button aria-pressed="' + on + '" onclick="astroSetView(\'' + vt[0] + '\')" style="font:500 11px \'Noto Sans TC\',sans-serif;background:' + (on ? 'rgba(201,169,110,.2)' : 'rgba(255,255,255,.03)') + ';border:1px solid ' + (on ? '#c9a96e' : 'rgba(201,169,110,.25)') + ';color:' + (on ? '#f0e9d8' : 'rgba(240,233,216,.55)') + ';padding:6px 13px;border-radius:14px;cursor:pointer">' + vt[1] + '</button>';
-    });
+      return '<button aria-pressed="' + on + '" onclick="astroSetView(\'' + vt[0] + '\')" style="font:500 11px \'Noto Sans TC\',sans-serif;background:' + (on ? 'rgba(201,169,110,.2)' : 'rgba(255,255,255,.03)') + ';border:1px solid ' + (on ? '#c9a96e' : 'rgba(201,169,110,.25)') + ';color:' + (on ? '#f0e9d8' : 'rgba(240,233,216,.55)') + ';padding:6px 13px;border-radius:14px;cursor:pointer">' + vt[1] + '</button>';
+    }
+    h += '<div style="display:flex;gap:6px;margin-top:16px;flex-wrap:wrap;justify-content:center">';
+    PRIMARY_ASTRO_TABS.forEach(function (vt) { h += astroTabBtn(vt); });
+    h += '<button aria-expanded="' + astroTabsMoreOpen + '" onclick="toggleAstroTabsMore()" style="font:500 11px \'Noto Sans TC\',sans-serif;background:' + (astroTabsMoreOpen ? 'rgba(201,169,110,.2)' : 'rgba(255,255,255,.03)') + ';border:1px solid ' + (astroTabsMoreOpen ? '#c9a96e' : 'rgba(201,169,110,.25)') + ';color:' + (astroTabsMoreOpen ? '#f0e9d8' : 'rgba(240,233,216,.55)') + ';padding:6px 13px;border-radius:14px;cursor:pointer">更多 ' + (astroTabsMoreOpen ? '▴' : '▾') + '</button>';
     h += '</div>';
+    if (astroTabsMoreOpen) {
+      h += '<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;justify-content:center">';
+      MORE_ASTRO_TABS.forEach(function (vt) { h += astroTabBtn(vt); });
+      h += '</div>';
+    }
     if (!state.astroTourDismissed) {
       h += renderAstroTourCard();
     } else {
