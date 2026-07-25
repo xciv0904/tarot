@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* 12 張 Golden Charts × 56 題的批次回歸測試。
+/* 12 張 Golden Charts × 54 題的批次回歸測試。
    --update 會更新基準快照與品質報告；一般執行則比對既有快照。 */
 const fs = require('fs');
 const path = require('path');
@@ -31,8 +31,22 @@ function ensureDir(file) { fs.mkdirSync(path.dirname(file), {recursive:true}); }
 
 const c = loadRuntime();
 const questionCount = Object.values(c.NATAL_TOPIC_QUESTIONS).reduce((n, qs) => n + qs.length, 0);
-if (questionCount !== 56) throw new Error('Question Library 題數改變：預期 56，實際 ' + questionCount);
+if (questionCount !== 54) throw new Error('Question Library 題數改變：預期 54，實際 ' + questionCount);
 if (c.GOLDEN_TEST_CHARTS.length < 12) throw new Error('Golden Charts 少於 12 張');
+const allQuestions = Object.values(c.NATAL_TOPIC_QUESTIONS).flat();
+const duplicateValues = (values) => values.filter((value,index) => values.indexOf(value) !== index);
+const duplicateIds = [...new Set(duplicateValues(allQuestions.map(q => q.id)))];
+const duplicateTitles = [...new Set(duplicateValues(allQuestions.map(q => q.title.replace(/[？?]/g,'').trim())))];
+const duplicateFocuses = [...new Set(duplicateValues(allQuestions.map(q => q.questionFocus)))];
+const duplicateTargetSignatures = [...new Set(duplicateValues(allQuestions.map(q => (q.answerTargets||[]).slice().sort().join('|'))))].filter(Boolean);
+if (duplicateIds.length) throw new Error('Question Library 有重複 id：' + duplicateIds.join(', '));
+if (duplicateTitles.length) throw new Error('Question Library 有重複題目：' + duplicateTitles.join(', '));
+if (duplicateFocuses.length) throw new Error('Question Library 有重複 questionFocus：' + duplicateFocuses.join(', '));
+if (duplicateTargetSignatures.length) throw new Error('Question Library 有完全相同的 answerTargets：' + duplicateTargetSignatures.join(' / '));
+const removedDuplicateIds = ['love-longterm-value','career-monetize','family-core-lesson','health-emotion-body','health-rest-rhythm','social-attract-friend','general-standout-energy'];
+const retainedIds = new Set(allQuestions.map(q => q.id));
+const accidentallyRetained = removedDuplicateIds.filter(id => retainedIds.has(id));
+if (accidentallyRetained.length) throw new Error('已合併的重複題目再次出現：' + accidentallyRetained.join(', '));
 
 const coverage = { questionFocusTotal:0, mapped:0, generalFallback:[], categoryTotal:0, planetCategoryExpected:0, planetCategoryPresent:0 };
 Object.values(c.NATAL_TOPIC_QUESTIONS).forEach(qs => qs.forEach(q => {
@@ -56,7 +70,7 @@ function normalizeVisibleText(text) {
 }
 c.GOLDEN_TEST_CHARTS.forEach(chart => {
   Object.entries(c.NATAL_TOPIC_QUESTIONS).forEach(([topicId, questions]) => {
-    /* 正式 UI 每次最多選 3 題；按相同契約分批覆蓋完整 56 題，避免把 6-8 題
+    /* 正式 UI 每次最多選 3 題；按相同契約分批覆蓋完整題庫，避免把 6-9 題
        硬塞進一次呼叫而產生正式產品永遠不會出現的 primary-evidence 警告。 */
     for (let start = 0; start < questions.length; start += 3) {
       const batch = questions.slice(start, start + 3);
@@ -93,14 +107,24 @@ c.GOLDEN_TEST_CHARTS.forEach(chart => {
         const hasVenue = /工作|活動|聚會|圈|社團|旅行|進修|講座|場合|場域|往來|合作|興趣|朋友|家庭/.test(text);
         if (!hasVenue) focusedFailures.push(chart.fixtureId + ': love-meet-scene 沒有具體場合');
       }
-      if (answer.questionId === 'family-core-lesson') {
-        const detailTexts = (answer.details||[]).map(d=>d.text);
-        if (detailTexts.length < 2 || detailTexts[0] === detailTexts[1]) focusedFailures.push(chart.fixtureId + ': family-core-lesson 兩個細節重複');
-        if (!/表達|確認|責任|範圍|對話|分工|討論|說清楚|尊重|冷靜|縮小|承諾|感受|事實/.test(detailTexts[1]||'')) focusedFailures.push(chart.fixtureId + ': family-core-lesson 缺少可練習的相處方式');
-      }
       if (answer.questionId === 'health-lifestyle-fit') {
         if (!/生活步調/.test((answer.details||[]).map(d=>d.label).join('')) || !/判斷適不適合/.test((answer.details||[]).map(d=>d.label).join(''))) focusedFailures.push(chart.fixtureId + ': health-lifestyle-fit 缺少步調或適配判斷');
         if (!/固定|規律|時間|節奏|作息|運動|休息|行程|專注/.test(text)) focusedFailures.push(chart.fixtureId + ': health-lifestyle-fit 缺少具體習慣');
+      }
+      if (answer.questionId === 'love-conflict-repair' && !/第一步|修復|溝通|信任|感受|責任|對話/.test(text)) {
+        focusedFailures.push(chart.fixtureId + ': love-conflict-repair 沒有回答關係修復');
+      }
+      if (answer.questionId === 'health-energy-drain' && !/情境|環境|負荷|消耗|耗能|缺少/.test(text)) {
+        focusedFailures.push(chart.fixtureId + ': health-energy-drain 沒有回答耗能情境');
+      }
+      if (answer.questionId === 'study-mastery-evidence' && !/成果|證明|掌握|判斷標準|驗證/.test(text)) {
+        focusedFailures.push(chart.fixtureId + ': study-mastery-evidence 沒有回答成果驗證');
+      }
+      if (answer.questionId === 'study-knowledge-application' && !/應用|用出來|行動|作品|輸出|實際/.test(text)) {
+        focusedFailures.push(chart.fixtureId + ': study-knowledge-application 沒有回答知識應用');
+      }
+      if (answer.questionId === 'general-decision-basis' && !/判斷|原則|適合|訊號|選擇/.test(text)) {
+        focusedFailures.push(chart.fixtureId + ': general-decision-basis 沒有回答重大選擇的依據');
       }
       });
     }

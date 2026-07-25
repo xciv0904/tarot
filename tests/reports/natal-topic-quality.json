@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-07-25T05:59:25.243Z",
+  "generatedAt": "2026-07-25T18:35:54.797Z",
   "chartCount": 12,
-  "questionCount": 56,
-  "caseCount": 672,
+  "questionCount": 54,
+  "caseCount": 648,
   "coverage": {
-    "questionFocusTotal": 56,
-    "mapped": 56,
+    "questionFocusTotal": 54,
+    "mapped": 54,
     "generalFallback": [],
-    "categoryTotal": 54,
-    "planetCategoryExpected": 540,
-    "planetCategoryPresent": 540
+    "categoryTotal": 53,
+    "planetCategoryExpected": 530,
+    "planetCategoryPresent": 530
   },
   "quality": {
     "validatorFlags": 0,
@@ -20,7 +20,7 @@
     "focusedFailures": [],
     "visibleContentFailures": []
   },
-  "baselineHash": "c7b18f84fa037fcd",
+  "baselineHash": "323fb087674f0ef8",
   "charts": [
     {
       "id": "fire_angular",

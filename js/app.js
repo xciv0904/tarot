@@ -9019,7 +9019,7 @@ function contextualizeCaution(e, cautionFocus, seedExtra, topicId, questionFocus
   if (!parts.length) return astroSeededPick(seed + '|fb', NATAL_NEUTRAL_FALLBACK_TPL);
   return parts.join('，') + '。';
 }
-/* V2.1：evidenceBias 現在套用在所有 56 題（不再只限外型/吸引/第一印象這三個
+/* V2.1：evidenceBias 現在套用在所有題目（不再只限外型/吸引/第一印象這三個
    intent），依題目自己指定的 preferPlanets／preferTypes／excludePlanets／
    angleBonus 調整候選順序，讓「同一主題內不同題目該用不同主導證據」這件事
    由資料驅動，而不是寫死在程式邏輯裡。回傳的是「用來挑內容」的排序，

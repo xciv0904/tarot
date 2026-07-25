@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "chartCount": 12,
-  "questionCount": 56,
-  "caseCount": 672,
+  "questionCount": 54,
+  "caseCount": 648,
   "cases": [
     {
       "chartId": "fire_angular",
@@ -151,20 +151,20 @@
     {
       "chartId": "fire_angular",
       "topicId": "love",
-      "questionId": "love-longterm-value",
-      "headline": "長期關係真正需要的是熟悉感、歸屬感與穩定回應。",
-      "summary": "關係能支持你創造價值、和諧與彼此欣賞時，投入才容易持續。",
+      "questionId": "love-conflict-repair",
+      "headline": "衝突後先恢復熟悉感、歸屬感與穩定回應，再運用同理、照顧與察覺氣氛把問題說清楚。",
+      "summary": "修復的重點不是立刻和好，而是讓彼此重新有條件創造價值、和諧與彼此欣賞。",
       "details": [
         {
-          "label": "長期真正在意的事",
-          "text": "核心需求是熟悉感、歸屬感與穩定回應"
+          "label": "衝突後的第一步",
+          "text": "第一步是恢復熟悉感、歸屬感與穩定回應"
         },
         {
-          "label": "你需要被理解的需求",
-          "text": "長期價值在於創造價值、和諧與彼此欣賞"
+          "label": "修復關係的方式",
+          "text": "修復方式是運用美感、協調與關係經營確認感受、責任與下一步"
         }
       ],
-      "caution": "",
+      "caution": "避免讓過度承接他人的情緒取代真正的對話。",
       "primary": "planet|Moon|4|7|",
       "qualityFlags": []
     },
@@ -231,26 +231,6 @@
     {
       "chartId": "fire_angular",
       "topicId": "career",
-      "questionId": "career-monetize",
-      "headline": "美感設計、人際協調或品牌形象相關的能力較容易變現。",
-      "summary": "你能把混亂的資訊整理成有邏輯的內容，這在需要傳達與教學的市場裡很有價值。",
-      "details": [
-        {
-          "label": "較容易變現的能力",
-          "text": "設計、風格或品牌相關的專長"
-        },
-        {
-          "label": "市場願意付費的部分",
-          "text": "教學、簡報或訓練類的能力"
-        }
-      ],
-      "caution": "留意別因為太在意別人喜不喜歡，而低估自己作品的價值。",
-      "primary": "planet|Venus|6|4|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "fire_angular",
-      "topicId": "career",
       "questionId": "career-work-mode",
       "headline": "工作模式需要保有清楚界線、可靠制度與可預期進度，並採取審慎而穩定的推進方式。",
       "summary": "這能讓你持續發揮執行、競爭與快速反應。",
@@ -305,7 +285,7 @@
         }
       ],
       "caution": "留意別因為太執著於完美，而遲遲不敢展現成果。",
-      "primary": "planet|Saturn|0|7|",
+      "primary": "angle|mc|9||",
       "qualityFlags": []
     },
     {
@@ -450,26 +430,6 @@
     },
     {
       "chartId": "fire_angular",
-      "topicId": "family",
-      "questionId": "family-core-lesson",
-      "headline": "家庭關係反覆出現的課題，較可能是「為維持和諧而壓下真實立場」。",
-      "summary": "這通常不是誰做得不夠好，而是家人都在追求公平、舒適與有品質的互動時，沿用了不再有效的相處方式。",
-      "details": [
-        {
-          "label": "反覆出現的課題",
-          "text": "為維持和諧而壓下真實立場"
-        },
-        {
-          "label": "需要練習的相處方式",
-          "text": "把責任、期限與可以做到的範圍明確分配"
-        }
-      ],
-      "caution": "留意不要只要求自己做得更多；真正的改善需要家人共同調整分工與回應方式。",
-      "primary": "planet|Venus|6|4|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "fire_angular",
       "topicId": "health",
       "questionId": "health-stress-pattern",
       "headline": "壓力多半在無法建立清楚的自我定位並主動承擔時累積。",
@@ -535,37 +495,17 @@
     {
       "chartId": "fire_angular",
       "topicId": "health",
-      "questionId": "health-emotion-body",
-      "headline": "情緒在缺少交流、變化與足夠的思考空間時較容易累積。",
-      "summary": "若長期不能回應情緒並建立可依靠的安全感，壓力可能透過日常狀態被感覺到。",
-      "details": [
-        {
-          "label": "情緒累積的身體反應",
-          "text": "情緒需求是交流、變化與足夠的思考空間"
-        },
-        {
-          "label": "身心連動的模式",
-          "text": "失衡模式是過度承接他人的情緒"
-        }
-      ],
-      "caution": "不推論疾病或特定身體部位。",
-      "primary": "planet|Mercury|4|3|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "fire_angular",
-      "topicId": "health",
       "questionId": "health-self-care",
-      "headline": "恢復能量的關鍵是重新取得熟悉感、歸屬感與穩定回應。",
-      "summary": "能讓你建立結構、責任與可長期維持的成果的活動較有恢復效果。",
+      "headline": "最有恢復效果的方式，是重新取得熟悉感、歸屬感與穩定回應並採用依感受調整的節奏。",
+      "summary": "能讓你重新建立結構、責任與可長期維持的成果、而不是繼續承受刺激的活動，才算真正休息。",
       "details": [
         {
-          "label": "真正能照顧你的方式",
-          "text": "可運用同理、照顧與察覺氣氛照顧自己"
+          "label": "有效的恢復方式",
+          "text": "有效恢復方式是運用同理、照顧與察覺氣氛"
         },
         {
-          "label": "值得安排的習慣",
-          "text": "恢復節奏宜審慎而穩定"
+          "label": "適合的休息節奏",
+          "text": "休息節奏宜審慎而穩定"
         }
       ],
       "caution": "",
@@ -575,21 +515,21 @@
     {
       "chartId": "fire_angular",
       "topicId": "health",
-      "questionId": "health-rest-rhythm",
-      "headline": "休息需要保留清楚界線、可靠制度與可預期進度，並順著審慎而穩定的節奏切換。",
-      "summary": "真正的休息是暫時卸下想得太多或注意力分散帶來的耗損。",
+      "questionId": "health-energy-drain",
+      "headline": "當日常長期缺少交流、變化與足夠的思考空間，又必須面對想得太多或注意力分散時最容易耗能。",
+      "summary": "消耗來源通常不是單一事件，而是環境持續阻礙你建立結構、責任與可長期維持的成果。",
       "details": [
         {
-          "label": "適合的休息節奏",
-          "text": "有效休息條件是清楚界線、可靠制度與可預期進度"
+          "label": "容易消耗你的情境",
+          "text": "高耗能情境是長期缺少交流、變化與足夠的思考空間"
         },
         {
-          "label": "恢復精力的方式",
-          "text": "切換方式宜靈活而快速"
+          "label": "需要降低的負荷",
+          "text": "需要降低的負荷是過度保守、自我要求或害怕犯錯"
         }
       ],
-      "caution": "",
-      "primary": "planet|Saturn|0|7|",
+      "caution": "若疲憊或不適持續，仍應尋求合格醫療專業協助。",
+      "primary": "planet|Mercury|4|3|",
       "qualityFlags": []
     },
     {
@@ -795,26 +735,6 @@
     {
       "chartId": "fire_angular",
       "topicId": "social",
-      "questionId": "social-attract-friend",
-      "headline": "容易吸引重視自主、差異性與不被僵化規則限制、欣賞你以獨特觀點吸引同好的人。",
-      "summary": "這類朋友會回應你想要創造價值、和諧與彼此欣賞的傾向。",
-      "details": [
-        {
-          "label": "容易靠近你的朋友類型",
-          "text": "朋友重視自主、差異性與不被僵化規則限制"
-        },
-        {
-          "label": "友誼中你在意的特質",
-          "text": "互動特點是自然營造好感與合作氣氛"
-        }
-      ],
-      "caution": "",
-      "primary": "planet|Uranus|2|8|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "fire_angular",
-      "topicId": "social",
       "questionId": "social-strength",
       "headline": "人際優勢是美感、協調與關係經營，能讓人感到自然營造好感與合作氣氛。",
       "summary": "這項能力有助於你理解資訊並建立清楚的連結。",
@@ -1014,6 +934,46 @@
     },
     {
       "chartId": "fire_angular",
+      "topicId": "study",
+      "questionId": "study-mastery-evidence",
+      "headline": "最適合用能展現整合、教導與看見長期機會的成果證明自己學會了。",
+      "summary": "真正掌握的標準，是能獨立運用知識去理解資訊並建立清楚的連結。",
+      "details": [
+        {
+          "label": "適合的成果形式",
+          "text": "成果形式可展現整合、教導與看見長期機會"
+        },
+        {
+          "label": "真正學會的判斷標準",
+          "text": "判斷標準是能獨立理解資訊並建立清楚的連結"
+        }
+      ],
+      "caution": "不要只用閱讀時間或熟悉感代替實際驗證。",
+      "primary": "planet|Jupiter|8|9|",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "fire_angular",
+      "topicId": "study",
+      "questionId": "study-knowledge-application",
+      "headline": "把知識用出來，需要把執行、競爭與快速反應轉成能實際採取行動、突破阻力並爭取目標的行動或作品。",
+      "summary": "適合的練習不是重複輸入，而是用靈活而快速的方式產出並接受回饋。",
+      "details": [
+        {
+          "label": "把知識用出來的方式",
+          "text": "應用方式是運用執行、競爭與快速反應解決實際問題"
+        },
+        {
+          "label": "適合的輸出形式",
+          "text": "輸出形式宜靈活而快速"
+        }
+      ],
+      "caution": "避免因求快、急躁或忽略他人節奏而一直準備、卻沒有實際產出。",
+      "primary": "planet|Mars|0|10|",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "fire_angular",
       "topicId": "general",
       "questionId": "general-top-themes",
       "headline": "人生主題圍繞著建立清楚的自我定位並主動承擔。",
@@ -1095,26 +1055,6 @@
     {
       "chartId": "fire_angular",
       "topicId": "general",
-      "questionId": "general-standout-energy",
-      "headline": "命盤中較突出的能量是建立清楚的自我定位並主動承擔，外在呈現為自然成為焦點或代表人物。",
-      "summary": "它會讓同理、照顧與察覺氣氛成為容易被看見的特點。",
-      "details": [
-        {
-          "label": "最突出的能量分布",
-          "text": "突出動力是建立清楚的自我定位並主動承擔"
-        },
-        {
-          "label": "具體展現的方式",
-          "text": "外顯特徵是讓人感到被理解與接住"
-        }
-      ],
-      "caution": "",
-      "primary": "planet|Sun|0|1|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "fire_angular",
-      "topicId": "general",
       "questionId": "general-inner-tension",
       "headline": "內在拉扯常發生在被看見、被肯定並保有主體性與過度把成敗綁在自我價值上之間。",
       "summary": "一邊想要採取行動、突破阻力並爭取目標，一邊又擔心失去平衡。",
@@ -1130,6 +1070,26 @@
       ],
       "caution": "重點是建立可切換的使用情境。",
       "primary": "balance|火本位|||",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "fire_angular",
+      "topicId": "general",
+      "questionId": "general-decision-basis",
+      "headline": "重大選擇時，最可靠的原則是確認它能否長期支持被看見、被肯定並保有主體性。",
+      "summary": "適合的方向不只讓你短暫興奮，也會讓你有空間持續採取行動、突破阻力並爭取目標。",
+      "details": [
+        {
+          "label": "最可靠的判斷原則",
+          "text": "判斷原則是是否支持被看見、被肯定並保有主體性"
+        },
+        {
+          "label": "方向是否適合的訊號",
+          "text": "適合的訊號是能穩定運用執行、競爭與快速反應"
+        }
+      ],
+      "caution": "別讓過度把成敗綁在自我價值上成為唯一的決策理由。",
+      "primary": "planet|Sun|0|1|",
       "qualityFlags": []
     },
     {
@@ -1279,20 +1239,20 @@
     {
       "chartId": "earth_saturn_career",
       "topicId": "love",
-      "questionId": "love-longterm-value",
-      "headline": "長期關係真正需要的是熟悉感、歸屬感與穩定回應。",
-      "summary": "關係能支持你創造價值、和諧與彼此欣賞時，投入才容易持續。",
+      "questionId": "love-conflict-repair",
+      "headline": "衝突後先恢復熟悉感、歸屬感與穩定回應，再運用同理、照顧與察覺氣氛把問題說清楚。",
+      "summary": "修復的重點不是立刻和好，而是讓彼此重新有條件理解資訊並建立清楚的連結。",
       "details": [
         {
-          "label": "長期真正在意的事",
-          "text": "核心需求是熟悉感、歸屬感與穩定回應"
+          "label": "衝突後的第一步",
+          "text": "第一步是恢復熟悉感、歸屬感與穩定回應"
         },
         {
-          "label": "你需要被理解的需求",
-          "text": "長期價值在於創造價值、和諧與彼此欣賞"
+          "label": "修復關係的方式",
+          "text": "修復方式是運用學習、表達與整理複雜資訊確認感受、責任與下一步"
         }
       ],
-      "caution": "",
+      "caution": "避免讓過度承接他人的情緒取代真正的對話。",
       "primary": "planet|Moon|11|5|",
       "qualityFlags": []
     },
@@ -1354,26 +1314,6 @@
       ],
       "caution": "留意想得太多或注意力分散。",
       "primary": "planet|Mercury|5|10|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "earth_saturn_career",
-      "topicId": "career",
-      "questionId": "career-monetize",
-      "headline": "科技創新或突破性解決方案相關的能力較容易變現。",
-      "summary": "你能把混亂的資訊整理成有邏輯的內容，這在需要傳達與教學的市場裡很有價值。",
-      "details": [
-        {
-          "label": "較容易變現的能力",
-          "text": "需要創新技術或方法的專長"
-        },
-        {
-          "label": "市場願意付費的部分",
-          "text": "教學、簡報或訓練類的能力"
-        }
-      ],
-      "caution": "留意別因為太快跳到下一個新點子，而沒有把前一個做完。",
-      "primary": "planet|Uranus|11|11|",
       "qualityFlags": []
     },
     {
@@ -1578,26 +1518,6 @@
     },
     {
       "chartId": "earth_saturn_career",
-      "topicId": "family",
-      "questionId": "family-core-lesson",
-      "headline": "家庭關係反覆出現的課題，較可能是「過度保守、自我要求或害怕犯錯」。",
-      "summary": "這通常不是誰做得不夠好，而是家人都在追求清楚界線、可靠制度與可預期進度時，沿用了不再有效的相處方式。",
-      "details": [
-        {
-          "label": "反覆出現的課題",
-          "text": "過度保守、自我要求或害怕犯錯"
-        },
-        {
-          "label": "需要練習的相處方式",
-          "text": "輪流表達立場，也讓每個人都有參與決定的空間"
-        }
-      ],
-      "caution": "留意不要只要求自己做得更多；真正的改善需要家人共同調整分工與回應方式。",
-      "primary": "planet|Saturn|9|10|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "earth_saturn_career",
       "topicId": "health",
       "questionId": "health-stress-pattern",
       "headline": "壓力多半在無法深入核心並完成根本性的轉化時累積。",
@@ -1663,61 +1583,41 @@
     {
       "chartId": "earth_saturn_career",
       "topicId": "health",
-      "questionId": "health-emotion-body",
-      "headline": "情緒在缺少公平、舒適與有品質的互動時較容易累積。",
-      "summary": "若長期不能理解資訊並建立清楚的連結，壓力可能透過日常狀態被感覺到。",
+      "questionId": "health-self-care",
+      "headline": "最有恢復效果的方式，是重新取得公平、舒適與有品質的互動並採用講究平衡與感受的節奏。",
+      "summary": "能讓你重新回應情緒並建立可依靠的安全感、而不是繼續承受刺激的活動，才算真正休息。",
       "details": [
         {
-          "label": "情緒累積的身體反應",
-          "text": "情緒需求是公平、舒適與有品質的互動"
+          "label": "有效的恢復方式",
+          "text": "有效恢復方式是運用美感、協調與關係經營"
         },
         {
-          "label": "身心連動的模式",
-          "text": "失衡模式是想得太多或注意力分散"
+          "label": "適合的休息節奏",
+          "text": "休息節奏宜依感受調整"
         }
       ],
-      "caution": "不推論疾病或特定身體部位。",
+      "caution": "",
       "primary": "planet|Venus|1|6|",
       "qualityFlags": []
     },
     {
       "chartId": "earth_saturn_career",
       "topicId": "health",
-      "questionId": "health-self-care",
-      "headline": "恢復能量的關鍵是重新取得熟悉感、歸屬感與穩定回應。",
-      "summary": "能讓你創造價值、和諧與彼此欣賞的活動較有恢復效果。",
+      "questionId": "health-energy-drain",
+      "headline": "當日常長期缺少靈感、柔軟空間與情感共鳴，又必須面對界線模糊、理想化或逃避現實時最容易耗能。",
+      "summary": "消耗來源通常不是單一事件，而是環境持續阻礙你創造價值、和諧與彼此欣賞。",
       "details": [
         {
-          "label": "真正能照顧你的方式",
-          "text": "可運用同理、照顧與察覺氣氛照顧自己"
+          "label": "容易消耗你的情境",
+          "text": "高耗能情境是長期缺少靈感、柔軟空間與情感共鳴"
         },
         {
-          "label": "值得安排的習慣",
-          "text": "恢復節奏宜講究平衡與感受"
+          "label": "需要降低的負荷",
+          "text": "需要降低的負荷是為維持和諧而壓下真實立場"
         }
       ],
-      "caution": "",
-      "primary": "planet|Moon|11|5|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "earth_saturn_career",
-      "topicId": "health",
-      "questionId": "health-rest-rhythm",
-      "headline": "休息需要保留交流、變化與足夠的思考空間，並順著靈活而快速的節奏切換。",
-      "summary": "真正的休息是暫時卸下過度保守、自我要求或害怕犯錯帶來的耗損。",
-      "details": [
-        {
-          "label": "適合的休息節奏",
-          "text": "有效休息條件是交流、變化與足夠的思考空間"
-        },
-        {
-          "label": "恢復精力的方式",
-          "text": "切換方式宜審慎而穩定"
-        }
-      ],
-      "caution": "",
-      "primary": "planet|Mercury|5|10|",
+      "caution": "若疲憊或不適持續，仍應尋求合格醫療專業協助。",
+      "primary": "planet|Neptune|1|12|",
       "qualityFlags": []
     },
     {
@@ -1923,26 +1823,6 @@
     {
       "chartId": "earth_saturn_career",
       "topicId": "social",
-      "questionId": "social-attract-friend",
-      "headline": "容易吸引重視深度、真實與足夠的掌控感、欣賞你以深度與強烈存在感建立連結的人。",
-      "summary": "這類朋友會回應你想要創造價值、和諧與彼此欣賞的傾向。",
-      "details": [
-        {
-          "label": "容易靠近你的朋友類型",
-          "text": "朋友重視深度、真實與足夠的掌控感"
-        },
-        {
-          "label": "友誼中你在意的特質",
-          "text": "互動特點是自然營造好感與合作氣氛"
-        }
-      ],
-      "caution": "",
-      "primary": "planet|Pluto|3|1|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "earth_saturn_career",
-      "topicId": "social",
       "questionId": "social-strength",
       "headline": "人際優勢是美感、協調與關係經營，能讓人感到自然營造好感與合作氣氛。",
       "summary": "這項能力有助於你理解資訊並建立清楚的連結。",
@@ -2142,6 +2022,46 @@
     },
     {
       "chartId": "earth_saturn_career",
+      "topicId": "study",
+      "questionId": "study-mastery-evidence",
+      "headline": "最適合用能展現學習、表達與整理複雜資訊的成果證明自己學會了。",
+      "summary": "真正掌握的標準，是能獨立運用知識去連結想像、同理與超越個人的意義。",
+      "details": [
+        {
+          "label": "適合的成果形式",
+          "text": "成果形式可展現學習、表達與整理複雜資訊"
+        },
+        {
+          "label": "真正學會的判斷標準",
+          "text": "判斷標準是能獨立連結想像、同理與超越個人的意義"
+        }
+      ],
+      "caution": "不要只用閱讀時間或熟悉感代替實際驗證。",
+      "primary": "planet|Mercury|5|10|",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "earth_saturn_career",
+      "topicId": "study",
+      "questionId": "study-knowledge-application",
+      "headline": "把知識用出來，需要把執行、競爭與快速反應轉成能實際採取行動、突破阻力並爭取目標的行動或作品。",
+      "summary": "適合的練習不是重複輸入，而是用靈活而快速的方式產出並接受回饋。",
+      "details": [
+        {
+          "label": "把知識用出來的方式",
+          "text": "應用方式是運用執行、競爭與快速反應解決實際問題"
+        },
+        {
+          "label": "適合的輸出形式",
+          "text": "輸出形式宜靈活而快速"
+        }
+      ],
+      "caution": "避免因求快、急躁或忽略他人節奏而一直準備、卻沒有實際產出。",
+      "primary": "planet|Mars|5|8|",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "earth_saturn_career",
       "topicId": "general",
       "questionId": "general-top-themes",
       "headline": "人生主題圍繞著建立清楚的自我定位並主動承擔。",
@@ -2223,26 +2143,6 @@
     {
       "chartId": "earth_saturn_career",
       "topicId": "general",
-      "questionId": "general-standout-energy",
-      "headline": "命盤中較突出的能量是建立清楚的自我定位並主動承擔，外在呈現為自然成為焦點或代表人物。",
-      "summary": "它會讓學習、表達與整理複雜資訊成為容易被看見的特點。",
-      "details": [
-        {
-          "label": "最突出的能量分布",
-          "text": "突出動力是建立清楚的自我定位並主動承擔"
-        },
-        {
-          "label": "具體展現的方式",
-          "text": "外顯特徵是透過談話與好奇心拉近距離"
-        }
-      ],
-      "caution": "",
-      "primary": "planet|Sun|9|10|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "earth_saturn_career",
-      "topicId": "general",
       "questionId": "general-inner-tension",
       "headline": "內在拉扯常發生在被看見、被肯定並保有主體性與過度把成敗綁在自我價值上之間。",
       "summary": "一邊想要採取行動、突破阻力並爭取目標，一邊又擔心失去平衡。",
@@ -2258,6 +2158,26 @@
       ],
       "caution": "重點是建立可切換的使用情境。",
       "primary": "balance|土變動|||",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "earth_saturn_career",
+      "topicId": "general",
+      "questionId": "general-decision-basis",
+      "headline": "重大選擇時，最可靠的原則是確認它能否長期支持被看見、被肯定並保有主體性。",
+      "summary": "適合的方向不只讓你短暫興奮，也會讓你有空間持續建立結構、責任與可長期維持的成果。",
+      "details": [
+        {
+          "label": "最可靠的判斷原則",
+          "text": "判斷原則是是否支持被看見、被肯定並保有主體性"
+        },
+        {
+          "label": "方向是否適合的訊號",
+          "text": "適合的訊號是能穩定運用紀律、規劃與承受長期壓力"
+        }
+      ],
+      "caution": "別讓過度把成敗綁在自我價值上成為唯一的決策理由。",
+      "primary": "planet|Sun|9|10|",
       "qualityFlags": []
     },
     {
@@ -2407,21 +2327,21 @@
     {
       "chartId": "air_uranus_network",
       "topicId": "love",
-      "questionId": "love-longterm-value",
-      "headline": "長期關係真正需要的是熟悉感、歸屬感與穩定回應。",
-      "summary": "關係能支持你創造價值、和諧與彼此欣賞時，投入才容易持續。",
+      "questionId": "love-conflict-repair",
+      "headline": "衝突後先恢復被看見、被肯定並保有主體性，再運用主導、決策與凝聚注意力把問題說清楚。",
+      "summary": "修復的重點不是立刻和好，而是讓彼此重新有條件回應情緒並建立可依靠的安全感。",
       "details": [
         {
-          "label": "長期真正在意的事",
-          "text": "核心需求是熟悉感、歸屬感與穩定回應"
+          "label": "衝突後的第一步",
+          "text": "第一步是恢復被看見、被肯定並保有主體性"
         },
         {
-          "label": "你需要被理解的需求",
-          "text": "長期價值在於創造價值、和諧與彼此欣賞"
+          "label": "修復關係的方式",
+          "text": "修復方式是運用同理、照顧與察覺氣氛確認感受、責任與下一步"
         }
       ],
-      "caution": "",
-      "primary": "planet|Moon|4|8|",
+      "caution": "避免讓過度把成敗綁在自我價值上取代真正的對話。",
+      "primary": "planet|Sun|10|11|",
       "qualityFlags": []
     },
     {
@@ -2482,26 +2402,6 @@
       ],
       "caution": "留意過度把成敗綁在自我價值上。",
       "primary": "planet|Sun|10|11|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "air_uranus_network",
-      "topicId": "career",
-      "questionId": "career-monetize",
-      "headline": "藝術創作、影像、療癒或公益相關的能力較容易變現。",
-      "summary": "你能把混亂的資訊整理成有邏輯的內容，這在需要傳達與教學的市場裡很有價值。",
-      "details": [
-        {
-          "label": "較容易變現的能力",
-          "text": "創作、設計或影像相關的專長"
-        },
-        {
-          "label": "市場願意付費的部分",
-          "text": "教學、簡報或訓練類的能力"
-        }
-      ],
-      "caution": "留意別因為不擅長談價錢，而低估自己作品的市場價值。",
-      "primary": "planet|Neptune|6|3|",
       "qualityFlags": []
     },
     {
@@ -2706,26 +2606,6 @@
     },
     {
       "chartId": "air_uranus_network",
-      "topicId": "family",
-      "questionId": "family-core-lesson",
-      "headline": "家庭關係反覆出現的課題，較可能是「過度控制、猜疑或長期處於高張力」。",
-      "summary": "這通常不是誰做得不夠好，而是家人都在追求深度、真實與足夠的掌控感時，沿用了不再有效的相處方式。",
-      "details": [
-        {
-          "label": "反覆出現的課題",
-          "text": "過度控制、猜疑或長期處於高張力"
-        },
-        {
-          "label": "需要練習的相處方式",
-          "text": "把責任、期限與可以做到的範圍明確分配"
-        }
-      ],
-      "caution": "留意不要只要求自己做得更多；真正的改善需要家人共同調整分工與回應方式。",
-      "primary": "planet|Pluto|8|4|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "air_uranus_network",
       "topicId": "health",
       "questionId": "health-stress-pattern",
       "headline": "壓力多半在無法建立結構、責任與可長期維持的成果時累積。",
@@ -2791,61 +2671,41 @@
     {
       "chartId": "air_uranus_network",
       "topicId": "health",
-      "questionId": "health-emotion-body",
-      "headline": "情緒在缺少熟悉感、歸屬感與穩定回應時較容易累積。",
-      "summary": "若長期不能回應情緒並建立可依靠的安全感，壓力可能透過日常狀態被感覺到。",
-      "details": [
-        {
-          "label": "情緒累積的身體反應",
-          "text": "情緒需求是熟悉感、歸屬感與穩定回應"
-        },
-        {
-          "label": "身心連動的模式",
-          "text": "失衡模式是過度承接他人的情緒"
-        }
-      ],
-      "caution": "不推論疾病或特定身體部位。",
-      "primary": "planet|Moon|4|8|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "air_uranus_network",
-      "topicId": "health",
       "questionId": "health-self-care",
-      "headline": "恢復能量的關鍵是重新取得清楚界線、可靠制度與可預期進度。",
-      "summary": "能讓你回應情緒並建立可依靠的安全感的活動較有恢復效果。",
+      "headline": "最有恢復效果的方式，是重新取得熟悉感、歸屬感與穩定回應並採用依感受調整的節奏。",
+      "summary": "能讓你重新建立結構、責任與可長期維持的成果、而不是繼續承受刺激的活動，才算真正休息。",
       "details": [
         {
-          "label": "真正能照顧你的方式",
-          "text": "可運用紀律、規劃與承受長期壓力照顧自己"
+          "label": "有效的恢復方式",
+          "text": "有效恢復方式是運用同理、照顧與察覺氣氛"
         },
-        {
-          "label": "值得安排的習慣",
-          "text": "恢復節奏宜依感受調整"
-        }
-      ],
-      "caution": "",
-      "primary": "planet|Saturn|2|1|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "air_uranus_network",
-      "topicId": "health",
-      "questionId": "health-rest-rhythm",
-      "headline": "休息需要保留熟悉感、歸屬感與穩定回應，並順著依感受調整的節奏切換。",
-      "summary": "真正的休息是暫時卸下過度保守、自我要求或害怕犯錯帶來的耗損。",
-      "details": [
         {
           "label": "適合的休息節奏",
-          "text": "有效休息條件是熟悉感、歸屬感與穩定回應"
-        },
-        {
-          "label": "恢復精力的方式",
-          "text": "切換方式宜審慎而穩定"
+          "text": "休息節奏宜審慎而穩定"
         }
       ],
       "caution": "",
       "primary": "planet|Moon|4|8|",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "air_uranus_network",
+      "topicId": "health",
+      "questionId": "health-energy-drain",
+      "headline": "當日常長期缺少清楚界線、可靠制度與可預期進度，又必須面對過度保守、自我要求或害怕犯錯時最容易耗能。",
+      "summary": "消耗來源通常不是單一事件，而是環境持續阻礙你回應情緒並建立可依靠的安全感。",
+      "details": [
+        {
+          "label": "容易消耗你的情境",
+          "text": "高耗能情境是長期缺少清楚界線、可靠制度與可預期進度"
+        },
+        {
+          "label": "需要降低的負荷",
+          "text": "需要降低的負荷是過度承接他人的情緒"
+        }
+      ],
+      "caution": "若疲憊或不適持續，仍應尋求合格醫療專業協助。",
+      "primary": "planet|Saturn|2|1|",
       "qualityFlags": []
     },
     {
@@ -3051,26 +2911,6 @@
     {
       "chartId": "air_uranus_network",
       "topicId": "social",
-      "questionId": "social-attract-friend",
-      "headline": "容易吸引重視自由探索、意義感與更大的格局、欣賞你以樂觀與分享帶動群體的人。",
-      "summary": "這類朋友會回應你想要創造價值、和諧與彼此欣賞的傾向。",
-      "details": [
-        {
-          "label": "容易靠近你的朋友類型",
-          "text": "朋友重視自由探索、意義感與更大的格局"
-        },
-        {
-          "label": "友誼中你在意的特質",
-          "text": "互動特點是自然營造好感與合作氣氛"
-        }
-      ],
-      "caution": "",
-      "primary": "planet|Jupiter|6|9|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "air_uranus_network",
-      "topicId": "social",
       "questionId": "social-strength",
       "headline": "人際優勢是美感、協調與關係經營，能讓人感到自然營造好感與合作氣氛。",
       "summary": "這項能力有助於你理解資訊並建立清楚的連結。",
@@ -3112,20 +2952,20 @@
       "chartId": "air_uranus_network",
       "topicId": "social",
       "questionId": "social-circle-fit",
-      "headline": "適合重視被看見、被肯定並保有主體性、並容許你建立清楚的自我定位並主動承擔的人際圈。",
-      "summary": "這種圈子能讓學習、表達與整理複雜資訊成為穩定貢獻。",
+      "headline": "適合重視交流、變化與足夠的思考空間、並容許你理解資訊並建立清楚的連結的人際圈。",
+      "summary": "這種圈子能讓主導、決策與凝聚注意力成為穩定貢獻。",
       "details": [
         {
           "label": "適合的社交圈類型",
-          "text": "圈層價值是被看見、被肯定並保有主體性"
+          "text": "圈層價值是交流、變化與足夠的思考空間"
         },
         {
           "label": "讓你自在的群體氛圍",
-          "text": "你能提供學習、表達與整理複雜資訊"
+          "text": "你能提供主導、決策與凝聚注意力"
         }
       ],
       "caution": "",
-      "primary": "planet|Sun|10|11|",
+      "primary": "planet|Mercury|2|11|",
       "qualityFlags": []
     },
     {
@@ -3270,6 +3110,46 @@
     },
     {
       "chartId": "air_uranus_network",
+      "topicId": "study",
+      "questionId": "study-mastery-evidence",
+      "headline": "最適合用能展現美感、協調與關係經營的成果證明自己學會了。",
+      "summary": "真正掌握的標準，是能獨立運用知識去採取行動、突破阻力並爭取目標。",
+      "details": [
+        {
+          "label": "適合的成果形式",
+          "text": "成果形式可展現美感、協調與關係經營"
+        },
+        {
+          "label": "真正學會的判斷標準",
+          "text": "判斷標準是能獨立採取行動、突破阻力並爭取目標"
+        }
+      ],
+      "caution": "不要只用閱讀時間或熟悉感代替實際驗證。",
+      "primary": "planet|Venus|8|10|",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "air_uranus_network",
+      "topicId": "study",
+      "questionId": "study-knowledge-application",
+      "headline": "把知識用出來，需要把同理、照顧與察覺氣氛轉成能實際回應情緒並建立可依靠的安全感的行動或作品。",
+      "summary": "適合的練習不是重複輸入，而是用直接而迅速的方式產出並接受回饋。",
+      "details": [
+        {
+          "label": "把知識用出來的方式",
+          "text": "應用方式是運用同理、照顧與察覺氣氛解決實際問題"
+        },
+        {
+          "label": "適合的輸出形式",
+          "text": "輸出形式宜直接而迅速"
+        }
+      ],
+      "caution": "避免因過度承接他人的情緒而一直準備、卻沒有實際產出。",
+      "primary": "planet|Moon|4|8|",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "air_uranus_network",
       "topicId": "general",
       "questionId": "general-top-themes",
       "headline": "人生主題圍繞著創造價值、和諧與彼此欣賞。",
@@ -3351,26 +3231,6 @@
     {
       "chartId": "air_uranus_network",
       "topicId": "general",
-      "questionId": "general-standout-energy",
-      "headline": "命盤中較突出的能量是創造價值、和諧與彼此欣賞，外在呈現為自然營造好感與合作氣氛。",
-      "summary": "它會讓紀律、規劃與承受長期壓力成為容易被看見的特點。",
-      "details": [
-        {
-          "label": "最突出的能量分布",
-          "text": "突出動力是創造價值、和諧與彼此欣賞"
-        },
-        {
-          "label": "具體展現的方式",
-          "text": "外顯特徵是以可靠與負責建立信任"
-        }
-      ],
-      "caution": "",
-      "primary": "planet|Venus|8|10|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "air_uranus_network",
-      "topicId": "general",
       "questionId": "general-inner-tension",
       "headline": "內在拉扯常發生在被看見、被肯定並保有主體性與過度把成敗綁在自我價值上之間。",
       "summary": "一邊想要採取行動、突破阻力並爭取目標，一邊又擔心失去平衡。",
@@ -3386,6 +3246,26 @@
       ],
       "caution": "重點是建立可切換的使用情境。",
       "primary": "balance|風固定|||",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "air_uranus_network",
+      "topicId": "general",
+      "questionId": "general-decision-basis",
+      "headline": "重大選擇時，最可靠的原則是確認它能否長期支持被看見、被肯定並保有主體性。",
+      "summary": "適合的方向不只讓你短暫興奮，也會讓你有空間持續打破慣性並創造更自由的新做法。",
+      "details": [
+        {
+          "label": "最可靠的判斷原則",
+          "text": "判斷原則是是否支持被看見、被肯定並保有主體性"
+        },
+        {
+          "label": "方向是否適合的訊號",
+          "text": "適合的訊號是能穩定運用創新、獨立判斷與系統改革"
+        }
+      ],
+      "caution": "別讓過度把成敗綁在自我價值上成為唯一的決策理由。",
+      "primary": "planet|Sun|10|11|",
       "qualityFlags": []
     },
     {
@@ -3535,21 +3415,21 @@
     {
       "chartId": "water_lunar_home",
       "topicId": "love",
-      "questionId": "love-longterm-value",
-      "headline": "長期關係真正需要的是熟悉感、歸屬感與穩定回應。",
-      "summary": "關係能支持你創造價值、和諧與彼此欣賞時，投入才容易持續。",
+      "questionId": "love-conflict-repair",
+      "headline": "衝突後先恢復清楚界線、可靠制度與可預期進度，再運用紀律、規劃與承受長期壓力把問題說清楚。",
+      "summary": "修復的重點不是立刻和好，而是讓彼此重新有條件回應情緒並建立可依靠的安全感。",
       "details": [
         {
-          "label": "長期真正在意的事",
-          "text": "核心需求是熟悉感、歸屬感與穩定回應"
+          "label": "衝突後的第一步",
+          "text": "第一步是恢復清楚界線、可靠制度與可預期進度"
         },
         {
-          "label": "你需要被理解的需求",
-          "text": "長期價值在於創造價值、和諧與彼此欣賞"
+          "label": "修復關係的方式",
+          "text": "修復方式是運用同理、照顧與察覺氣氛確認感受、責任與下一步"
         }
       ],
-      "caution": "",
-      "primary": "planet|Moon|3|4|",
+      "caution": "避免讓過度保守、自我要求或害怕犯錯取代真正的對話。",
+      "primary": "planet|Saturn|3|4|",
       "qualityFlags": []
     },
     {
@@ -3615,41 +3495,21 @@
     {
       "chartId": "water_lunar_home",
       "topicId": "career",
-      "questionId": "career-monetize",
-      "headline": "執行力、業務開發或體能相關的能力較容易變現。",
-      "summary": "你天生具有吸引目光的特質，這在需要個人形象與號召力的市場裡很有價值。",
-      "details": [
-        {
-          "label": "較容易變現的能力",
-          "text": "需要主動出擊、開發客戶的能力"
-        },
-        {
-          "label": "市場願意付費的部分",
-          "text": "需要站上第一線、建立影響力的能力"
-        }
-      ],
-      "caution": "留意別因為只顧衝刺，而忽略長期經營的重要性。",
-      "primary": "planet|Mars|11|2|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "water_lunar_home",
-      "topicId": "career",
       "questionId": "career-work-mode",
-      "headline": "工作模式需要保有熟悉感、歸屬感與穩定回應，並採取依感受調整的推進方式。",
-      "summary": "這能讓你持續發揮執行、競爭與快速反應。",
+      "headline": "工作模式需要保有挑戰、自主與可立即投入的目標，並採取直接而迅速的推進方式。",
+      "summary": "這能讓你持續發揮同理、照顧與察覺氣氛。",
       "details": [
         {
           "label": "適合的就業型態",
-          "text": "自主程度需符合熟悉感、歸屬感與穩定回應"
+          "text": "自主程度需符合挑戰、自主與可立即投入的目標"
         },
         {
           "label": "你需要的自主程度",
-          "text": "合作節奏偏向直接而迅速"
+          "text": "合作節奏偏向依感受調整"
         }
       ],
-      "caution": "把過度承接他人的情緒納入制度設計。",
-      "primary": "planet|Moon|3|4|",
+      "caution": "把求快、急躁或忽略他人節奏納入制度設計。",
+      "primary": "planet|Mars|11|2|",
       "qualityFlags": []
     },
     {
@@ -3709,7 +3569,7 @@
         }
       ],
       "caution": "留意別為了搶功而忽略團隊其他人的貢獻。",
-      "primary": "planet|Sun|11|4|",
+      "primary": "angle|mc|0||",
       "qualityFlags": []
     },
     {
@@ -3834,26 +3694,6 @@
     },
     {
       "chartId": "water_lunar_home",
-      "topicId": "family",
-      "questionId": "family-core-lesson",
-      "headline": "家庭關係反覆出現的課題，較可能是「過度把成敗綁在自我價值上」。",
-      "summary": "這通常不是誰做得不夠好，而是家人都在追求被看見、被肯定並保有主體性時，沿用了不再有效的相處方式。",
-      "details": [
-        {
-          "label": "反覆出現的課題",
-          "text": "過度把成敗綁在自我價值上"
-        },
-        {
-          "label": "需要練習的相處方式",
-          "text": "把責任、期限與可以做到的範圍明確分配"
-        }
-      ],
-      "caution": "留意不要只要求自己做得更多；真正的改善需要家人共同調整分工與回應方式。",
-      "primary": "planet|Sun|11|4|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "water_lunar_home",
       "topicId": "health",
       "questionId": "health-stress-pattern",
       "headline": "壓力多半在無法採取行動、突破阻力並爭取目標時累積。",
@@ -3919,37 +3759,17 @@
     {
       "chartId": "water_lunar_home",
       "topicId": "health",
-      "questionId": "health-emotion-body",
-      "headline": "情緒在缺少自由探索、意義感與更大的格局時較容易累積。",
-      "summary": "若長期不能回應情緒並建立可依靠的安全感，壓力可能透過日常狀態被感覺到。",
-      "details": [
-        {
-          "label": "情緒累積的身體反應",
-          "text": "情緒需求是自由探索、意義感與更大的格局"
-        },
-        {
-          "label": "身心連動的模式",
-          "text": "失衡模式是過度承接他人的情緒"
-        }
-      ],
-      "caution": "不推論疾病或特定身體部位。",
-      "primary": "planet|Jupiter|1|3|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "water_lunar_home",
-      "topicId": "health",
       "questionId": "health-self-care",
-      "headline": "恢復能量的關鍵是重新取得熟悉感、歸屬感與穩定回應。",
-      "summary": "能讓你建立結構、責任與可長期維持的成果的活動較有恢復效果。",
+      "headline": "最有恢復效果的方式，是重新取得熟悉感、歸屬感與穩定回應並採用依感受調整的節奏。",
+      "summary": "能讓你重新建立結構、責任與可長期維持的成果、而不是繼續承受刺激的活動，才算真正休息。",
       "details": [
         {
-          "label": "真正能照顧你的方式",
-          "text": "可運用同理、照顧與察覺氣氛照顧自己"
+          "label": "有效的恢復方式",
+          "text": "有效恢復方式是運用同理、照顧與察覺氣氛"
         },
         {
-          "label": "值得安排的習慣",
-          "text": "恢復節奏宜審慎而穩定"
+          "label": "適合的休息節奏",
+          "text": "休息節奏宜審慎而穩定"
         }
       ],
       "caution": "",
@@ -3959,21 +3779,21 @@
     {
       "chartId": "water_lunar_home",
       "topicId": "health",
-      "questionId": "health-rest-rhythm",
-      "headline": "休息需要保留清楚界線、可靠制度與可預期進度，並順著審慎而穩定的節奏切換。",
-      "summary": "真正的休息是暫時卸下承諾過多或高估可用資源帶來的耗損。",
+      "questionId": "health-energy-drain",
+      "headline": "當日常長期缺少靈感、柔軟空間與情感共鳴，又必須面對界線模糊、理想化或逃避現實時最容易耗能。",
+      "summary": "消耗來源通常不是單一事件，而是環境持續阻礙你理解資訊並建立清楚的連結。",
       "details": [
         {
-          "label": "適合的休息節奏",
-          "text": "有效休息條件是清楚界線、可靠制度與可預期進度"
+          "label": "容易消耗你的情境",
+          "text": "高耗能情境是長期缺少靈感、柔軟空間與情感共鳴"
         },
         {
-          "label": "恢復精力的方式",
-          "text": "切換方式宜開放而擴張"
+          "label": "需要降低的負荷",
+          "text": "需要降低的負荷是想得太多或注意力分散"
         }
       ],
-      "caution": "",
-      "primary": "planet|Saturn|3|4|",
+      "caution": "若疲憊或不適持續，仍應尋求合格醫療專業協助。",
+      "primary": "planet|Neptune|11|12|",
       "qualityFlags": []
     },
     {
@@ -4179,41 +3999,21 @@
     {
       "chartId": "water_lunar_home",
       "topicId": "social",
-      "questionId": "social-attract-friend",
-      "headline": "容易吸引重視公平、舒適與有品質的互動、欣賞你自然營造好感與合作氣氛的人。",
-      "summary": "這類朋友會回應你想要回應情緒並建立可依靠的安全感的傾向。",
+      "questionId": "social-strength",
+      "headline": "人際優勢是美感、協調與關係經營，能讓人感到自然營造好感與合作氣氛。",
+      "summary": "這項能力有助於你理解資訊並建立清楚的連結。",
       "details": [
         {
-          "label": "容易靠近你的朋友類型",
-          "text": "朋友重視公平、舒適與有品質的互動"
+          "label": "你在人際中的優勢",
+          "text": "可持續發揮美感、協調與關係經營"
         },
         {
-          "label": "友誼中你在意的特質",
-          "text": "互動特點是讓人感到被理解與接住"
+          "label": "別人依賴你的部分",
+          "text": "他人感受到透過談話與好奇心拉近距離"
         }
       ],
       "caution": "",
       "primary": "planet|Venus|7|7|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "water_lunar_home",
-      "topicId": "social",
-      "questionId": "social-strength",
-      "headline": "人際優勢是學習、表達與整理複雜資訊，能讓人感到透過談話與好奇心拉近距離。",
-      "summary": "這項能力有助於你創造價值、和諧與彼此欣賞。",
-      "details": [
-        {
-          "label": "你在人際中的優勢",
-          "text": "可持續發揮學習、表達與整理複雜資訊"
-        },
-        {
-          "label": "別人依賴你的部分",
-          "text": "他人感受到自然營造好感與合作氣氛"
-        }
-      ],
-      "caution": "",
-      "primary": "planet|Mercury|7|12|",
       "qualityFlags": []
     },
     {
@@ -4398,6 +4198,46 @@
     },
     {
       "chartId": "water_lunar_home",
+      "topicId": "study",
+      "questionId": "study-mastery-evidence",
+      "headline": "最適合用能展現直覺、創作與感受細微氛圍的成果證明自己學會了。",
+      "summary": "真正掌握的標準，是能獨立運用知識去理解資訊並建立清楚的連結。",
+      "details": [
+        {
+          "label": "適合的成果形式",
+          "text": "成果形式可展現直覺、創作與感受細微氛圍"
+        },
+        {
+          "label": "真正學會的判斷標準",
+          "text": "判斷標準是能獨立理解資訊並建立清楚的連結"
+        }
+      ],
+      "caution": "不要只用閱讀時間或熟悉感代替實際驗證。",
+      "primary": "planet|Neptune|11|12|",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "water_lunar_home",
+      "topicId": "study",
+      "questionId": "study-knowledge-application",
+      "headline": "把知識用出來，需要把整合、教導與看見長期機會轉成能實際擴大視野、可能性與成長空間的行動或作品。",
+      "summary": "適合的練習不是重複輸入，而是用靈活而快速的方式產出並接受回饋。",
+      "details": [
+        {
+          "label": "把知識用出來的方式",
+          "text": "應用方式是運用整合、教導與看見長期機會解決實際問題"
+        },
+        {
+          "label": "適合的輸出形式",
+          "text": "輸出形式宜靈活而快速"
+        }
+      ],
+      "caution": "避免因承諾過多或高估可用資源而一直準備、卻沒有實際產出。",
+      "primary": "planet|Jupiter|1|3|",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "water_lunar_home",
       "topicId": "general",
       "questionId": "general-top-themes",
       "headline": "人生主題圍繞著建立清楚的自我定位並主動承擔。",
@@ -4479,26 +4319,6 @@
     {
       "chartId": "water_lunar_home",
       "topicId": "general",
-      "questionId": "general-standout-energy",
-      "headline": "命盤中較突出的能量是建立清楚的自我定位並主動承擔，外在呈現為自然成為焦點或代表人物。",
-      "summary": "它會讓同理、照顧與察覺氣氛成為容易被看見的特點。",
-      "details": [
-        {
-          "label": "最突出的能量分布",
-          "text": "突出動力是建立清楚的自我定位並主動承擔"
-        },
-        {
-          "label": "具體展現的方式",
-          "text": "外顯特徵是讓人感到被理解與接住"
-        }
-      ],
-      "caution": "",
-      "primary": "planet|Sun|11|4|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "water_lunar_home",
-      "topicId": "general",
       "questionId": "general-inner-tension",
       "headline": "內在拉扯常發生在被看見、被肯定並保有主體性與過度把成敗綁在自我價值上之間。",
       "summary": "一邊想要採取行動、突破阻力並爭取目標，一邊又擔心失去平衡。",
@@ -4514,6 +4334,26 @@
       ],
       "caution": "重點是建立可切換的使用情境。",
       "primary": "balance|水變動|||",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "water_lunar_home",
+      "topicId": "general",
+      "questionId": "general-decision-basis",
+      "headline": "重大選擇時，最可靠的原則是確認它能否長期支持被看見、被肯定並保有主體性。",
+      "summary": "適合的方向不只讓你短暫興奮，也會讓你有空間持續回應情緒並建立可依靠的安全感。",
+      "details": [
+        {
+          "label": "最可靠的判斷原則",
+          "text": "判斷原則是是否支持被看見、被肯定並保有主體性"
+        },
+        {
+          "label": "方向是否適合的訊號",
+          "text": "適合的訊號是能穩定運用同理、照顧與察覺氣氛"
+        }
+      ],
+      "caution": "別讓過度把成敗綁在自我價值上成為唯一的決策理由。",
+      "primary": "planet|Sun|11|4|",
       "qualityFlags": []
     },
     {
@@ -4663,21 +4503,21 @@
     {
       "chartId": "tenth_house_stellium",
       "topicId": "love",
-      "questionId": "love-longterm-value",
-      "headline": "長期關係真正需要的是公平、舒適與有品質的互動。",
-      "summary": "關係能支持你回應情緒並建立可依靠的安全感時，投入才容易持續。",
+      "questionId": "love-conflict-repair",
+      "headline": "衝突後先恢復熟悉感、歸屬感與穩定回應，再運用同理、照顧與察覺氣氛把問題說清楚。",
+      "summary": "修復的重點不是立刻和好，而是讓彼此重新有條件採取行動、突破阻力並爭取目標。",
       "details": [
         {
-          "label": "長期真正在意的事",
-          "text": "核心需求是公平、舒適與有品質的互動"
+          "label": "衝突後的第一步",
+          "text": "第一步是恢復熟悉感、歸屬感與穩定回應"
         },
         {
-          "label": "你需要被理解的需求",
-          "text": "長期價值在於回應情緒並建立可依靠的安全感"
+          "label": "修復關係的方式",
+          "text": "修復方式是運用執行、競爭與快速反應確認感受、責任與下一步"
         }
       ],
-      "caution": "",
-      "primary": "planet|Venus|11|10|",
+      "caution": "避免讓過度承接他人的情緒取代真正的對話。",
+      "primary": "planet|Moon|8|4|",
       "qualityFlags": []
     },
     {
@@ -4738,26 +4578,6 @@
       ],
       "caution": "留意想得太多或注意力分散。",
       "primary": "planet|Mercury|10|10|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "tenth_house_stellium",
-      "topicId": "career",
-      "questionId": "career-monetize",
-      "headline": "深度研究、危機處理或資源整合的專業較容易變現。",
-      "summary": "你能把混亂的資訊整理成有邏輯的內容，這在需要傳達與教學的市場裡很有價值。",
-      "details": [
-        {
-          "label": "較容易變現的能力",
-          "text": "需要深度分析或研究的專長"
-        },
-        {
-          "label": "市場願意付費的部分",
-          "text": "教學、簡報或訓練類的能力"
-        }
-      ],
-      "caution": "留意別因為太重視掌控，而讓合作對象感覺不被信任。",
-      "primary": "planet|Pluto|0|12|",
       "qualityFlags": []
     },
     {
@@ -4962,26 +4782,6 @@
     },
     {
       "chartId": "tenth_house_stellium",
-      "topicId": "family",
-      "questionId": "family-core-lesson",
-      "headline": "家庭關係反覆出現的課題，較可能是「過度承接他人的情緒」。",
-      "summary": "這通常不是誰做得不夠好，而是家人都在追求熟悉感、歸屬感與穩定回應時，沿用了不再有效的相處方式。",
-      "details": [
-        {
-          "label": "反覆出現的課題",
-          "text": "過度承接他人的情緒"
-        },
-        {
-          "label": "需要練習的相處方式",
-          "text": "把責任、期限與可以做到的範圍明確分配"
-        }
-      ],
-      "caution": "留意不要只要求自己做得更多；真正的改善需要家人共同調整分工與回應方式。",
-      "primary": "planet|Moon|8|4|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "tenth_house_stellium",
       "topicId": "health",
       "questionId": "health-stress-pattern",
       "headline": "壓力多半在無法採取行動、突破阻力並爭取目標時累積。",
@@ -5047,37 +4847,17 @@
     {
       "chartId": "tenth_house_stellium",
       "topicId": "health",
-      "questionId": "health-emotion-body",
-      "headline": "情緒在缺少靈感、柔軟空間與情感共鳴時較容易累積。",
-      "summary": "若長期不能回應情緒並建立可依靠的安全感，壓力可能透過日常狀態被感覺到。",
-      "details": [
-        {
-          "label": "情緒累積的身體反應",
-          "text": "情緒需求是靈感、柔軟空間與情感共鳴"
-        },
-        {
-          "label": "身心連動的模式",
-          "text": "失衡模式是過度承接他人的情緒"
-        }
-      ],
-      "caution": "不推論疾病或特定身體部位。",
-      "primary": "planet|Neptune|10|11|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "tenth_house_stellium",
-      "topicId": "health",
       "questionId": "health-self-care",
-      "headline": "恢復能量的關鍵是重新取得熟悉感、歸屬感與穩定回應。",
-      "summary": "能讓你建立結構、責任與可長期維持的成果的活動較有恢復效果。",
+      "headline": "最有恢復效果的方式，是重新取得熟悉感、歸屬感與穩定回應並採用依感受調整的節奏。",
+      "summary": "能讓你重新建立結構、責任與可長期維持的成果、而不是繼續承受刺激的活動，才算真正休息。",
       "details": [
         {
-          "label": "真正能照顧你的方式",
-          "text": "可運用同理、照顧與察覺氣氛照顧自己"
+          "label": "有效的恢復方式",
+          "text": "有效恢復方式是運用同理、照顧與察覺氣氛"
         },
         {
-          "label": "值得安排的習慣",
-          "text": "恢復節奏宜審慎而穩定"
+          "label": "適合的休息節奏",
+          "text": "休息節奏宜審慎而穩定"
         }
       ],
       "caution": "",
@@ -5087,21 +4867,21 @@
     {
       "chartId": "tenth_house_stellium",
       "topicId": "health",
-      "questionId": "health-rest-rhythm",
-      "headline": "休息需要保留清楚界線、可靠制度與可預期進度，並順著審慎而穩定的節奏切換。",
-      "summary": "真正的休息是暫時卸下界線模糊、理想化或逃避現實帶來的耗損。",
+      "questionId": "health-energy-drain",
+      "headline": "當日常長期缺少靈感、柔軟空間與情感共鳴，又必須面對界線模糊、理想化或逃避現實時最容易耗能。",
+      "summary": "消耗來源通常不是單一事件，而是環境持續阻礙你深入核心並完成根本性的轉化。",
       "details": [
         {
-          "label": "適合的休息節奏",
-          "text": "有效休息條件是清楚界線、可靠制度與可預期進度"
+          "label": "容易消耗你的情境",
+          "text": "高耗能情境是長期缺少靈感、柔軟空間與情感共鳴"
         },
         {
-          "label": "恢復精力的方式",
-          "text": "切換方式宜流動而憑直覺"
+          "label": "需要降低的負荷",
+          "text": "需要降低的負荷是過度控制、猜疑或長期處於高張力"
         }
       ],
-      "caution": "",
-      "primary": "planet|Saturn|9|10|",
+      "caution": "若疲憊或不適持續，仍應尋求合格醫療專業協助。",
+      "primary": "planet|Neptune|10|11|",
       "qualityFlags": []
     },
     {
@@ -5307,26 +5087,6 @@
     {
       "chartId": "tenth_house_stellium",
       "topicId": "social",
-      "questionId": "social-attract-friend",
-      "headline": "容易吸引重視被看見、被肯定並保有主體性、欣賞你自然成為焦點或代表人物的人。",
-      "summary": "這類朋友會回應你想要創造價值、和諧與彼此欣賞的傾向。",
-      "details": [
-        {
-          "label": "容易靠近你的朋友類型",
-          "text": "朋友重視被看見、被肯定並保有主體性"
-        },
-        {
-          "label": "友誼中你在意的特質",
-          "text": "互動特點是自然營造好感與合作氣氛"
-        }
-      ],
-      "caution": "",
-      "primary": "planet|Sun|9|10|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "tenth_house_stellium",
-      "topicId": "social",
       "questionId": "social-strength",
       "headline": "人際優勢是美感、協調與關係經營，能讓人感到自然營造好感與合作氣氛。",
       "summary": "這項能力有助於你理解資訊並建立清楚的連結。",
@@ -5526,6 +5286,46 @@
     },
     {
       "chartId": "tenth_house_stellium",
+      "topicId": "study",
+      "questionId": "study-mastery-evidence",
+      "headline": "最適合用能展現學習、表達與整理複雜資訊的成果證明自己學會了。",
+      "summary": "真正掌握的標準，是能獨立運用知識去擴大視野、可能性與成長空間。",
+      "details": [
+        {
+          "label": "適合的成果形式",
+          "text": "成果形式可展現學習、表達與整理複雜資訊"
+        },
+        {
+          "label": "真正學會的判斷標準",
+          "text": "判斷標準是能獨立擴大視野、可能性與成長空間"
+        }
+      ],
+      "caution": "不要只用閱讀時間或熟悉感代替實際驗證。",
+      "primary": "planet|Mercury|10|10|",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "tenth_house_stellium",
+      "topicId": "study",
+      "questionId": "study-knowledge-application",
+      "headline": "把知識用出來，需要把直覺、創作與感受細微氛圍轉成能實際連結想像、同理與超越個人的意義的行動或作品。",
+      "summary": "適合的練習不是重複輸入，而是用靈活而快速的方式產出並接受回饋。",
+      "details": [
+        {
+          "label": "把知識用出來的方式",
+          "text": "應用方式是運用直覺、創作與感受細微氛圍解決實際問題"
+        },
+        {
+          "label": "適合的輸出形式",
+          "text": "輸出形式宜靈活而快速"
+        }
+      ],
+      "caution": "避免因界線模糊、理想化或逃避現實而一直準備、卻沒有實際產出。",
+      "primary": "planet|Neptune|10|11|",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "tenth_house_stellium",
       "topicId": "general",
       "questionId": "general-top-themes",
       "headline": "人生主題圍繞著建立清楚的自我定位並主動承擔。",
@@ -5607,26 +5407,6 @@
     {
       "chartId": "tenth_house_stellium",
       "topicId": "general",
-      "questionId": "general-standout-energy",
-      "headline": "命盤中較突出的能量是建立清楚的自我定位並主動承擔，外在呈現為自然成為焦點或代表人物。",
-      "summary": "它會讓同理、照顧與察覺氣氛成為容易被看見的特點。",
-      "details": [
-        {
-          "label": "最突出的能量分布",
-          "text": "突出動力是建立清楚的自我定位並主動承擔"
-        },
-        {
-          "label": "具體展現的方式",
-          "text": "外顯特徵是讓人感到被理解與接住"
-        }
-      ],
-      "caution": "",
-      "primary": "planet|Sun|9|10|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "tenth_house_stellium",
-      "topicId": "general",
       "questionId": "general-inner-tension",
       "headline": "內在拉扯常發生在被看見、被肯定並保有主體性與過度把成敗綁在自我價值上之間。",
       "summary": "一邊想要採取行動、突破阻力並爭取目標，一邊又擔心失去平衡。",
@@ -5642,6 +5422,26 @@
       ],
       "caution": "重點是建立可切換的使用情境。",
       "primary": "balance|火本位|||",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "tenth_house_stellium",
+      "topicId": "general",
+      "questionId": "general-decision-basis",
+      "headline": "重大選擇時，最可靠的原則是確認它能否長期支持被看見、被肯定並保有主體性。",
+      "summary": "適合的方向不只讓你短暫興奮，也會讓你有空間持續創造價值、和諧與彼此欣賞。",
+      "details": [
+        {
+          "label": "最可靠的判斷原則",
+          "text": "判斷原則是是否支持被看見、被肯定並保有主體性"
+        },
+        {
+          "label": "方向是否適合的訊號",
+          "text": "適合的訊號是能穩定運用美感、協調與關係經營"
+        }
+      ],
+      "caution": "別讓過度把成敗綁在自我價值上成為唯一的決策理由。",
+      "primary": "planet|Sun|9|10|",
       "qualityFlags": []
     },
     {
@@ -5791,21 +5591,21 @@
     {
       "chartId": "twelfth_house_stellium",
       "topicId": "love",
-      "questionId": "love-longterm-value",
-      "headline": "長期關係真正需要的是熟悉感、歸屬感與穩定回應。",
-      "summary": "關係能支持你創造價值、和諧與彼此欣賞時，投入才容易持續。",
+      "questionId": "love-conflict-repair",
+      "headline": "衝突後先恢復交流、變化與足夠的思考空間，再運用學習、表達與整理複雜資訊把問題說清楚。",
+      "summary": "修復的重點不是立刻和好，而是讓彼此重新有條件回應情緒並建立可依靠的安全感。",
       "details": [
         {
-          "label": "長期真正在意的事",
-          "text": "核心需求是熟悉感、歸屬感與穩定回應"
+          "label": "衝突後的第一步",
+          "text": "第一步是恢復交流、變化與足夠的思考空間"
         },
         {
-          "label": "你需要被理解的需求",
-          "text": "長期價值在於創造價值、和諧與彼此欣賞"
+          "label": "修復關係的方式",
+          "text": "修復方式是運用同理、照顧與察覺氣氛確認感受、責任與下一步"
         }
       ],
-      "caution": "",
-      "primary": "planet|Moon|0|12|",
+      "caution": "避免讓想得太多或注意力分散取代真正的對話。",
+      "primary": "planet|Mercury|10|12|",
       "qualityFlags": []
     },
     {
@@ -5866,26 +5666,6 @@
       ],
       "caution": "留意想得太多或注意力分散。",
       "primary": "planet|Mercury|10|12|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "twelfth_house_stellium",
-      "topicId": "career",
-      "questionId": "career-monetize",
-      "headline": "執行力、業務開發或體能相關的能力較容易變現。",
-      "summary": "你能把混亂的資訊整理成有邏輯的內容，這在需要傳達與教學的市場裡很有價值。",
-      "details": [
-        {
-          "label": "較容易變現的能力",
-          "text": "需要主動出擊、開發客戶的能力"
-        },
-        {
-          "label": "市場願意付費的部分",
-          "text": "教學、簡報或訓練類的能力"
-        }
-      ],
-      "caution": "留意別因為只顧衝刺，而忽略長期經營的重要性。",
-      "primary": "planet|Mars|7|9|",
       "qualityFlags": []
     },
     {
@@ -5965,7 +5745,7 @@
         }
       ],
       "caution": "留意別為了求大而忽略了眼前該處理的細節。",
-      "primary": "angle|mc|8||",
+      "primary": "planet|Jupiter|9|10|",
       "qualityFlags": []
     },
     {
@@ -6090,26 +5870,6 @@
     },
     {
       "chartId": "twelfth_house_stellium",
-      "topicId": "family",
-      "questionId": "family-core-lesson",
-      "headline": "家庭關係反覆出現的課題，較可能是「過度保守、自我要求或害怕犯錯」。",
-      "summary": "這通常不是誰做得不夠好，而是家人都在追求清楚界線、可靠制度與可預期進度時，沿用了不再有效的相處方式。",
-      "details": [
-        {
-          "label": "反覆出現的課題",
-          "text": "過度保守、自我要求或害怕犯錯"
-        },
-        {
-          "label": "需要練習的相處方式",
-          "text": "輪流表達立場，也讓每個人都有參與決定的空間"
-        }
-      ],
-      "caution": "留意不要只要求自己做得更多；真正的改善需要家人共同調整分工與回應方式。",
-      "primary": "planet|Saturn|11|11|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "twelfth_house_stellium",
       "topicId": "health",
       "questionId": "health-stress-pattern",
       "headline": "壓力多半在無法採取行動、突破阻力並爭取目標時累積。",
@@ -6175,37 +5935,17 @@
     {
       "chartId": "twelfth_house_stellium",
       "topicId": "health",
-      "questionId": "health-emotion-body",
-      "headline": "情緒在缺少被看見、被肯定並保有主體性時較容易累積。",
-      "summary": "若長期不能回應情緒並建立可依靠的安全感，壓力可能透過日常狀態被感覺到。",
-      "details": [
-        {
-          "label": "情緒累積的身體反應",
-          "text": "情緒需求是被看見、被肯定並保有主體性"
-        },
-        {
-          "label": "身心連動的模式",
-          "text": "失衡模式是過度承接他人的情緒"
-        }
-      ],
-      "caution": "不推論疾病或特定身體部位。",
-      "primary": "planet|Sun|11|12|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "twelfth_house_stellium",
-      "topicId": "health",
       "questionId": "health-self-care",
-      "headline": "恢復能量的關鍵是重新取得熟悉感、歸屬感與穩定回應。",
-      "summary": "能讓你建立結構、責任與可長期維持的成果的活動較有恢復效果。",
+      "headline": "最有恢復效果的方式，是重新取得熟悉感、歸屬感與穩定回應並採用依感受調整的節奏。",
+      "summary": "能讓你重新建立結構、責任與可長期維持的成果、而不是繼續承受刺激的活動，才算真正休息。",
       "details": [
         {
-          "label": "真正能照顧你的方式",
-          "text": "可運用同理、照顧與察覺氣氛照顧自己"
+          "label": "有效的恢復方式",
+          "text": "有效恢復方式是運用同理、照顧與察覺氣氛"
         },
         {
-          "label": "值得安排的習慣",
-          "text": "恢復節奏宜審慎而穩定"
+          "label": "適合的休息節奏",
+          "text": "休息節奏宜審慎而穩定"
         }
       ],
       "caution": "",
@@ -6215,21 +5955,21 @@
     {
       "chartId": "twelfth_house_stellium",
       "topicId": "health",
-      "questionId": "health-rest-rhythm",
-      "headline": "休息需要保留清楚界線、可靠制度與可預期進度，並順著審慎而穩定的節奏切換。",
-      "summary": "真正的休息是暫時卸下過度把成敗綁在自我價值上帶來的耗損。",
+      "questionId": "health-energy-drain",
+      "headline": "當日常長期缺少靈感、柔軟空間與情感共鳴，又必須面對界線模糊、理想化或逃避現實時最容易耗能。",
+      "summary": "消耗來源通常不是單一事件，而是環境持續阻礙你建立清楚的自我定位並主動承擔。",
       "details": [
         {
-          "label": "適合的休息節奏",
-          "text": "有效休息條件是清楚界線、可靠制度與可預期進度"
+          "label": "容易消耗你的情境",
+          "text": "高耗能情境是長期缺少靈感、柔軟空間與情感共鳴"
         },
         {
-          "label": "恢復精力的方式",
-          "text": "切換方式宜主動而明確"
+          "label": "需要降低的負荷",
+          "text": "需要降低的負荷是過度把成敗綁在自我價值上"
         }
       ],
-      "caution": "",
-      "primary": "planet|Saturn|11|11|",
+      "caution": "若疲憊或不適持續，仍應尋求合格醫療專業協助。",
+      "primary": "planet|Neptune|11|12|",
       "qualityFlags": []
     },
     {
@@ -6435,26 +6175,6 @@
     {
       "chartId": "twelfth_house_stellium",
       "topicId": "social",
-      "questionId": "social-attract-friend",
-      "headline": "容易吸引重視清楚界線、可靠制度與可預期進度、欣賞你以可靠與負責建立信任的人。",
-      "summary": "這類朋友會回應你想要創造價值、和諧與彼此欣賞的傾向。",
-      "details": [
-        {
-          "label": "容易靠近你的朋友類型",
-          "text": "朋友重視清楚界線、可靠制度與可預期進度"
-        },
-        {
-          "label": "友誼中你在意的特質",
-          "text": "互動特點是自然營造好感與合作氣氛"
-        }
-      ],
-      "caution": "",
-      "primary": "planet|Saturn|11|11|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "twelfth_house_stellium",
-      "topicId": "social",
       "questionId": "social-strength",
       "headline": "人際優勢是美感、協調與關係經營，能讓人感到自然營造好感與合作氣氛。",
       "summary": "這項能力有助於你理解資訊並建立清楚的連結。",
@@ -6654,6 +6374,46 @@
     },
     {
       "chartId": "twelfth_house_stellium",
+      "topicId": "study",
+      "questionId": "study-mastery-evidence",
+      "headline": "最適合用能展現洞察、危機處理與資源整合的成果證明自己學會了。",
+      "summary": "真正掌握的標準，是能獨立運用知識去創造價值、和諧與彼此欣賞。",
+      "details": [
+        {
+          "label": "適合的成果形式",
+          "text": "成果形式可展現洞察、危機處理與資源整合"
+        },
+        {
+          "label": "真正學會的判斷標準",
+          "text": "判斷標準是能獨立創造價值、和諧與彼此欣賞"
+        }
+      ],
+      "caution": "不要只用閱讀時間或熟悉感代替實際驗證。",
+      "primary": "planet|Pluto|7|12|",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "twelfth_house_stellium",
+      "topicId": "study",
+      "questionId": "study-knowledge-application",
+      "headline": "把知識用出來，需要把主導、決策與凝聚注意力轉成能實際建立清楚的自我定位並主動承擔的行動或作品。",
+      "summary": "適合的練習不是重複輸入，而是用講究平衡與感受的方式產出並接受回饋。",
+      "details": [
+        {
+          "label": "把知識用出來的方式",
+          "text": "應用方式是運用主導、決策與凝聚注意力解決實際問題"
+        },
+        {
+          "label": "適合的輸出形式",
+          "text": "輸出形式宜講究平衡與感受"
+        }
+      ],
+      "caution": "避免因過度把成敗綁在自我價值上而一直準備、卻沒有實際產出。",
+      "primary": "planet|Sun|11|12|",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "twelfth_house_stellium",
       "topicId": "general",
       "questionId": "general-top-themes",
       "headline": "人生主題圍繞著擴大視野、可能性與成長空間。",
@@ -6735,26 +6495,6 @@
     {
       "chartId": "twelfth_house_stellium",
       "topicId": "general",
-      "questionId": "general-standout-energy",
-      "headline": "命盤中較突出的能量是擴大視野、可能性與成長空間，外在呈現為以樂觀與分享帶動群體。",
-      "summary": "它會讓整合、教導與看見長期機會成為容易被看見的特點。",
-      "details": [
-        {
-          "label": "最突出的能量分布",
-          "text": "突出動力是擴大視野、可能性與成長空間"
-        },
-        {
-          "label": "具體展現的方式",
-          "text": "外顯特徵是以樂觀與分享帶動群體"
-        }
-      ],
-      "caution": "",
-      "primary": "planet|Jupiter|9|10|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "twelfth_house_stellium",
-      "topicId": "general",
       "questionId": "general-inner-tension",
       "headline": "內在拉扯常發生在被看見、被肯定並保有主體性與過度把成敗綁在自我價值上之間。",
       "summary": "一邊想要採取行動、突破阻力並爭取目標，一邊又擔心失去平衡。",
@@ -6770,6 +6510,26 @@
       ],
       "caution": "重點是建立可切換的使用情境。",
       "primary": "balance|水固定|||",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "twelfth_house_stellium",
+      "topicId": "general",
+      "questionId": "general-decision-basis",
+      "headline": "重大選擇時，最可靠的原則是確認它能否長期支持被看見、被肯定並保有主體性。",
+      "summary": "適合的方向不只讓你短暫興奮，也會讓你有空間持續連結想像、同理與超越個人的意義。",
+      "details": [
+        {
+          "label": "最可靠的判斷原則",
+          "text": "判斷原則是是否支持被看見、被肯定並保有主體性"
+        },
+        {
+          "label": "方向是否適合的訊號",
+          "text": "適合的訊號是能穩定運用直覺、創作與感受細微氛圍"
+        }
+      ],
+      "caution": "別讓過度把成敗綁在自我價值上成為唯一的決策理由。",
+      "primary": "planet|Sun|11|12|",
       "qualityFlags": []
     },
     {
@@ -6919,20 +6679,20 @@
     {
       "chartId": "relationship_axis",
       "topicId": "love",
-      "questionId": "love-longterm-value",
-      "headline": "長期關係真正需要的是熟悉感、歸屬感與穩定回應。",
-      "summary": "關係能支持你創造價值、和諧與彼此欣賞時，投入才容易持續。",
+      "questionId": "love-conflict-repair",
+      "headline": "衝突後先恢復熟悉感、歸屬感與穩定回應，再運用同理、照顧與察覺氣氛把問題說清楚。",
+      "summary": "修復的重點不是立刻和好，而是讓彼此重新有條件理解資訊並建立清楚的連結。",
       "details": [
         {
-          "label": "長期真正在意的事",
-          "text": "核心需求是熟悉感、歸屬感與穩定回應"
+          "label": "衝突後的第一步",
+          "text": "第一步是恢復熟悉感、歸屬感與穩定回應"
         },
         {
-          "label": "你需要被理解的需求",
-          "text": "長期價值在於創造價值、和諧與彼此欣賞"
+          "label": "修復關係的方式",
+          "text": "修復方式是運用學習、表達與整理複雜資訊確認感受、責任與下一步"
         }
       ],
-      "caution": "",
+      "caution": "避免讓過度承接他人的情緒取代真正的對話。",
       "primary": "planet|Moon|4|7|",
       "qualityFlags": []
     },
@@ -6999,41 +6759,21 @@
     {
       "chartId": "relationship_axis",
       "topicId": "career",
-      "questionId": "career-monetize",
-      "headline": "需要長期累積、穩紮穩打的專業能力較容易變現。",
-      "summary": "你對還沒有人做過的事特別有敏銳度，這在快速變動的市場裡很有價值。",
-      "details": [
-        {
-          "label": "較容易變現的能力",
-          "text": "需要長年累積資歷才能建立的專業服務"
-        },
-        {
-          "label": "市場願意付費的部分",
-          "text": "擅長提出獨特解決方案的能力"
-        }
-      ],
-      "caution": "留意別因為求穩，而錯過該主動爭取的報酬與機會。",
-      "primary": "planet|Saturn|4|2|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "relationship_axis",
-      "topicId": "career",
       "questionId": "career-work-mode",
-      "headline": "工作模式需要保有公平、舒適與有品質的互動，並採取講究平衡與感受的推進方式。",
-      "summary": "這能讓你持續發揮紀律、規劃與承受長期壓力。",
+      "headline": "工作模式需要保有清楚界線、可靠制度與可預期進度，並採取審慎而穩定的推進方式。",
+      "summary": "這能讓你持續發揮美感、協調與關係經營。",
       "details": [
         {
           "label": "適合的就業型態",
-          "text": "自主程度需符合公平、舒適與有品質的互動"
+          "text": "自主程度需符合清楚界線、可靠制度與可預期進度"
         },
         {
           "label": "你需要的自主程度",
-          "text": "合作節奏偏向審慎而穩定"
+          "text": "合作節奏偏向講究平衡與感受"
         }
       ],
-      "caution": "把為維持和諧而壓下真實立場納入制度設計。",
-      "primary": "planet|Venus|6|7|",
+      "caution": "把過度保守、自我要求或害怕犯錯納入制度設計。",
+      "primary": "planet|Saturn|4|2|",
       "qualityFlags": []
     },
     {
@@ -7218,26 +6958,6 @@
     },
     {
       "chartId": "relationship_axis",
-      "topicId": "family",
-      "questionId": "family-core-lesson",
-      "headline": "家庭關係反覆出現的課題，較可能是「界線模糊、理想化或逃避現實」。",
-      "summary": "這通常不是誰做得不夠好，而是家人都在追求靈感、柔軟空間與情感共鳴時，沿用了不再有效的相處方式。",
-      "details": [
-        {
-          "label": "反覆出現的課題",
-          "text": "界線模糊、理想化或逃避現實"
-        },
-        {
-          "label": "需要練習的相處方式",
-          "text": "把責任、期限與可以做到的範圍明確分配"
-        }
-      ],
-      "caution": "留意不要只要求自己做得更多；真正的改善需要家人共同調整分工與回應方式。",
-      "primary": "planet|Neptune|8|4|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "relationship_axis",
       "topicId": "health",
       "questionId": "health-stress-pattern",
       "headline": "壓力多半在無法採取行動、突破阻力並爭取目標時累積。",
@@ -7303,37 +7023,17 @@
     {
       "chartId": "relationship_axis",
       "topicId": "health",
-      "questionId": "health-emotion-body",
-      "headline": "情緒在缺少交流、變化與足夠的思考空間時較容易累積。",
-      "summary": "若長期不能回應情緒並建立可依靠的安全感，壓力可能透過日常狀態被感覺到。",
-      "details": [
-        {
-          "label": "情緒累積的身體反應",
-          "text": "情緒需求是交流、變化與足夠的思考空間"
-        },
-        {
-          "label": "身心連動的模式",
-          "text": "失衡模式是過度承接他人的情緒"
-        }
-      ],
-      "caution": "不推論疾病或特定身體部位。",
-      "primary": "planet|Mercury|8|10|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "relationship_axis",
-      "topicId": "health",
       "questionId": "health-self-care",
-      "headline": "恢復能量的關鍵是重新取得熟悉感、歸屬感與穩定回應。",
-      "summary": "能讓你建立結構、責任與可長期維持的成果的活動較有恢復效果。",
+      "headline": "最有恢復效果的方式，是重新取得熟悉感、歸屬感與穩定回應並採用依感受調整的節奏。",
+      "summary": "能讓你重新建立結構、責任與可長期維持的成果、而不是繼續承受刺激的活動，才算真正休息。",
       "details": [
         {
-          "label": "真正能照顧你的方式",
-          "text": "可運用同理、照顧與察覺氣氛照顧自己"
+          "label": "有效的恢復方式",
+          "text": "有效恢復方式是運用同理、照顧與察覺氣氛"
         },
         {
-          "label": "值得安排的習慣",
-          "text": "恢復節奏宜審慎而穩定"
+          "label": "適合的休息節奏",
+          "text": "休息節奏宜審慎而穩定"
         }
       ],
       "caution": "",
@@ -7343,21 +7043,21 @@
     {
       "chartId": "relationship_axis",
       "topicId": "health",
-      "questionId": "health-rest-rhythm",
-      "headline": "休息需要保留清楚界線、可靠制度與可預期進度，並順著審慎而穩定的節奏切換。",
-      "summary": "真正的休息是暫時卸下想得太多或注意力分散帶來的耗損。",
+      "questionId": "health-energy-drain",
+      "headline": "當日常長期缺少交流、變化與足夠的思考空間，又必須面對想得太多或注意力分散時最容易耗能。",
+      "summary": "消耗來源通常不是單一事件，而是環境持續阻礙你建立結構、責任與可長期維持的成果。",
       "details": [
         {
-          "label": "適合的休息節奏",
-          "text": "有效休息條件是清楚界線、可靠制度與可預期進度"
+          "label": "容易消耗你的情境",
+          "text": "高耗能情境是長期缺少交流、變化與足夠的思考空間"
         },
         {
-          "label": "恢復精力的方式",
-          "text": "切換方式宜靈活而快速"
+          "label": "需要降低的負荷",
+          "text": "需要降低的負荷是過度保守、自我要求或害怕犯錯"
         }
       ],
-      "caution": "",
-      "primary": "planet|Saturn|4|2|",
+      "caution": "若疲憊或不適持續，仍應尋求合格醫療專業協助。",
+      "primary": "planet|Mercury|8|10|",
       "qualityFlags": []
     },
     {
@@ -7563,26 +7263,6 @@
     {
       "chartId": "relationship_axis",
       "topicId": "social",
-      "questionId": "social-attract-friend",
-      "headline": "容易吸引重視深度、真實與足夠的掌控感、欣賞你以深度與強烈存在感建立連結的人。",
-      "summary": "這類朋友會回應你想要創造價值、和諧與彼此欣賞的傾向。",
-      "details": [
-        {
-          "label": "容易靠近你的朋友類型",
-          "text": "朋友重視深度、真實與足夠的掌控感"
-        },
-        {
-          "label": "友誼中你在意的特質",
-          "text": "互動特點是自然營造好感與合作氣氛"
-        }
-      ],
-      "caution": "",
-      "primary": "planet|Pluto|10|5|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "relationship_axis",
-      "topicId": "social",
       "questionId": "social-strength",
       "headline": "人際優勢是美感、協調與關係經營，能讓人感到自然營造好感與合作氣氛。",
       "summary": "這項能力有助於你理解資訊並建立清楚的連結。",
@@ -7782,6 +7462,46 @@
     },
     {
       "chartId": "relationship_axis",
+      "topicId": "study",
+      "questionId": "study-mastery-evidence",
+      "headline": "最適合用能展現學習、表達與整理複雜資訊的成果證明自己學會了。",
+      "summary": "真正掌握的標準，是能獨立運用知識去連結想像、同理與超越個人的意義。",
+      "details": [
+        {
+          "label": "適合的成果形式",
+          "text": "成果形式可展現學習、表達與整理複雜資訊"
+        },
+        {
+          "label": "真正學會的判斷標準",
+          "text": "判斷標準是能獨立連結想像、同理與超越個人的意義"
+        }
+      ],
+      "caution": "不要只用閱讀時間或熟悉感代替實際驗證。",
+      "primary": "planet|Mercury|8|10|",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "relationship_axis",
+      "topicId": "study",
+      "questionId": "study-knowledge-application",
+      "headline": "把知識用出來，需要把執行、競爭與快速反應轉成能實際採取行動、突破阻力並爭取目標的行動或作品。",
+      "summary": "適合的練習不是重複輸入，而是用靈活而快速的方式產出並接受回饋。",
+      "details": [
+        {
+          "label": "把知識用出來的方式",
+          "text": "應用方式是運用執行、競爭與快速反應解決實際問題"
+        },
+        {
+          "label": "適合的輸出形式",
+          "text": "輸出形式宜靈活而快速"
+        }
+      ],
+      "caution": "避免因求快、急躁或忽略他人節奏而一直準備、卻沒有實際產出。",
+      "primary": "planet|Mars|5|8|",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "relationship_axis",
       "topicId": "general",
       "questionId": "general-top-themes",
       "headline": "人生主題圍繞著回應情緒並建立可依靠的安全感。",
@@ -7863,26 +7583,6 @@
     {
       "chartId": "relationship_axis",
       "topicId": "general",
-      "questionId": "general-standout-energy",
-      "headline": "命盤中較突出的能量是回應情緒並建立可依靠的安全感，外在呈現為讓人感到被理解與接住。",
-      "summary": "它會讓學習、表達與整理複雜資訊成為容易被看見的特點。",
-      "details": [
-        {
-          "label": "最突出的能量分布",
-          "text": "突出動力是回應情緒並建立可依靠的安全感"
-        },
-        {
-          "label": "具體展現的方式",
-          "text": "外顯特徵是透過談話與好奇心拉近距離"
-        }
-      ],
-      "caution": "",
-      "primary": "planet|Moon|4|7|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "relationship_axis",
-      "topicId": "general",
       "questionId": "general-inner-tension",
       "headline": "內在拉扯常發生在被看見、被肯定並保有主體性與過度把成敗綁在自我價值上之間。",
       "summary": "一邊想要創造價值、和諧與彼此欣賞，一邊又擔心失去平衡。",
@@ -7898,6 +7598,26 @@
       ],
       "caution": "重點是建立可切換的使用情境。",
       "primary": "balance|火固定|||",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "relationship_axis",
+      "topicId": "general",
+      "questionId": "general-decision-basis",
+      "headline": "重大選擇時，最可靠的原則是確認它能否長期支持被看見、被肯定並保有主體性。",
+      "summary": "適合的方向不只讓你短暫興奮，也會讓你有空間持續建立結構、責任與可長期維持的成果。",
+      "details": [
+        {
+          "label": "最可靠的判斷原則",
+          "text": "判斷原則是是否支持被看見、被肯定並保有主體性"
+        },
+        {
+          "label": "方向是否適合的訊號",
+          "text": "適合的訊號是能穩定運用紀律、規劃與承受長期壓力"
+        }
+      ],
+      "caution": "別讓過度把成敗綁在自我價值上成為唯一的決策理由。",
+      "primary": "planet|Sun|4|8|",
       "qualityFlags": []
     },
     {
@@ -8047,21 +7767,21 @@
     {
       "chartId": "second_eighth_resources",
       "topicId": "love",
-      "questionId": "love-longterm-value",
-      "headline": "長期關係真正需要的是熟悉感、歸屬感與穩定回應。",
-      "summary": "關係能支持你創造價值、和諧與彼此欣賞時，投入才容易持續。",
+      "questionId": "love-conflict-repair",
+      "headline": "衝突後先恢復深度、真實與足夠的掌控感，再運用洞察、危機處理與資源整合把問題說清楚。",
+      "summary": "修復的重點不是立刻和好，而是讓彼此重新有條件回應情緒並建立可依靠的安全感。",
       "details": [
         {
-          "label": "長期真正在意的事",
-          "text": "核心需求是熟悉感、歸屬感與穩定回應"
+          "label": "衝突後的第一步",
+          "text": "第一步是恢復深度、真實與足夠的掌控感"
         },
         {
-          "label": "你需要被理解的需求",
-          "text": "長期價值在於創造價值、和諧與彼此欣賞"
+          "label": "修復關係的方式",
+          "text": "修復方式是運用同理、照顧與察覺氣氛確認感受、責任與下一步"
         }
       ],
-      "caution": "",
-      "primary": "planet|Moon|3|3|",
+      "caution": "避免讓過度控制、猜疑或長期處於高張力取代真正的對話。",
+      "primary": "planet|Pluto|7|8|",
       "qualityFlags": []
     },
     {
@@ -8122,26 +7842,6 @@
       ],
       "caution": "留意過度把成敗綁在自我價值上。",
       "primary": "planet|Sun|1|2|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "second_eighth_resources",
-      "topicId": "career",
-      "questionId": "career-monetize",
-      "headline": "文字、溝通與資訊整理的能力較容易變現。",
-      "summary": "你天生具有吸引目光的特質，這在需要個人形象與號召力的市場裡很有價值。",
-      "details": [
-        {
-          "label": "較容易變現的能力",
-          "text": "寫作、翻譯或內容整理相關的專長"
-        },
-        {
-          "label": "市場願意付費的部分",
-          "text": "需要站上第一線、建立影響力的能力"
-        }
-      ],
-      "caution": "留意別因為想學的太多太雜，反而沒有一項真正深耕。",
-      "primary": "planet|Mercury|5|4|",
       "qualityFlags": []
     },
     {
@@ -8346,26 +8046,6 @@
     },
     {
       "chartId": "second_eighth_resources",
-      "topicId": "family",
-      "questionId": "family-core-lesson",
-      "headline": "家庭關係反覆出現的課題，較可能是「想得太多或注意力分散」。",
-      "summary": "這通常不是誰做得不夠好，而是家人都在追求交流、變化與足夠的思考空間時，沿用了不再有效的相處方式。",
-      "details": [
-        {
-          "label": "反覆出現的課題",
-          "text": "想得太多或注意力分散"
-        },
-        {
-          "label": "需要練習的相處方式",
-          "text": "輪流表達立場，也讓每個人都有參與決定的空間"
-        }
-      ],
-      "caution": "留意不要只要求自己做得更多；真正的改善需要家人共同調整分工與回應方式。",
-      "primary": "planet|Mercury|5|4|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "second_eighth_resources",
       "topicId": "health",
       "questionId": "health-stress-pattern",
       "headline": "壓力多半在無法採取行動、突破阻力並爭取目標時累積。",
@@ -8431,60 +8111,40 @@
     {
       "chartId": "second_eighth_resources",
       "topicId": "health",
-      "questionId": "health-emotion-body",
-      "headline": "情緒在缺少挑戰、自主與可立即投入的目標時較容易累積。",
-      "summary": "若長期不能創造價值、和諧與彼此欣賞，壓力可能透過日常狀態被感覺到。",
+      "questionId": "health-self-care",
+      "headline": "最有恢復效果的方式，是重新取得挑戰、自主與可立即投入的目標並採用直接而迅速的節奏。",
+      "summary": "能讓你重新回應情緒並建立可依靠的安全感、而不是繼續承受刺激的活動，才算真正休息。",
       "details": [
         {
-          "label": "情緒累積的身體反應",
-          "text": "情緒需求是挑戰、自主與可立即投入的目標"
+          "label": "有效的恢復方式",
+          "text": "有效恢復方式是運用執行、競爭與快速反應"
         },
         {
-          "label": "身心連動的模式",
-          "text": "失衡模式是為維持和諧而壓下真實立場"
+          "label": "適合的休息節奏",
+          "text": "休息節奏宜依感受調整"
         }
       ],
-      "caution": "不推論疾病或特定身體部位。",
+      "caution": "",
       "primary": "planet|Mars|9|6|",
       "qualityFlags": []
     },
     {
       "chartId": "second_eighth_resources",
       "topicId": "health",
-      "questionId": "health-self-care",
-      "headline": "恢復能量的關鍵是重新取得熟悉感、歸屬感與穩定回應。",
-      "summary": "能讓你採取行動、突破阻力並爭取目標的活動較有恢復效果。",
+      "questionId": "health-energy-drain",
+      "headline": "當日常長期缺少公平、舒適與有品質的互動，又必須面對為維持和諧而壓下真實立場時最容易耗能。",
+      "summary": "消耗來源通常不是單一事件，而是環境持續阻礙你採取行動、突破阻力並爭取目標。",
       "details": [
         {
-          "label": "真正能照顧你的方式",
-          "text": "可運用同理、照顧與察覺氣氛照顧自己"
+          "label": "容易消耗你的情境",
+          "text": "高耗能情境是長期缺少公平、舒適與有品質的互動"
         },
         {
-          "label": "值得安排的習慣",
-          "text": "恢復節奏宜直接而迅速"
+          "label": "需要降低的負荷",
+          "text": "需要降低的負荷是求快、急躁或忽略他人節奏"
         }
       ],
-      "caution": "",
-      "primary": "planet|Moon|3|3|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "second_eighth_resources",
-      "topicId": "health",
-      "questionId": "health-rest-rhythm",
-      "headline": "休息需要保留公平、舒適與有品質的互動，並順著講究平衡與感受的節奏切換。",
-      "summary": "真正的休息是暫時卸下過度保守、自我要求或害怕犯錯帶來的耗損。",
-      "details": [
-        {
-          "label": "適合的休息節奏",
-          "text": "有效休息條件是公平、舒適與有品質的互動"
-        },
-        {
-          "label": "恢復精力的方式",
-          "text": "切換方式宜審慎而穩定"
-        }
-      ],
-      "caution": "",
+      "caution": "若疲憊或不適持續，仍應尋求合格醫療專業協助。",
       "primary": "planet|Venus|1|2|",
       "qualityFlags": []
     },
@@ -8691,26 +8351,6 @@
     {
       "chartId": "second_eighth_resources",
       "topicId": "social",
-      "questionId": "social-attract-friend",
-      "headline": "容易吸引重視靈感、柔軟空間與情感共鳴、欣賞你以溫柔、想像與共感建立連結的人。",
-      "summary": "這類朋友會回應你想要創造價值、和諧與彼此欣賞的傾向。",
-      "details": [
-        {
-          "label": "容易靠近你的朋友類型",
-          "text": "朋友重視靈感、柔軟空間與情感共鳴"
-        },
-        {
-          "label": "友誼中你在意的特質",
-          "text": "互動特點是自然營造好感與合作氣氛"
-        }
-      ],
-      "caution": "",
-      "primary": "planet|Neptune|5|10|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "second_eighth_resources",
-      "topicId": "social",
       "questionId": "social-strength",
       "headline": "人際優勢是美感、協調與關係經營，能讓人感到自然營造好感與合作氣氛。",
       "summary": "這項能力有助於你理解資訊並建立清楚的連結。",
@@ -8910,6 +8550,46 @@
     },
     {
       "chartId": "second_eighth_resources",
+      "topicId": "study",
+      "questionId": "study-mastery-evidence",
+      "headline": "最適合用能展現紀律、規劃與承受長期壓力的成果證明自己學會了。",
+      "summary": "真正掌握的標準，是能獨立運用知識去回應情緒並建立可依靠的安全感。",
+      "details": [
+        {
+          "label": "適合的成果形式",
+          "text": "成果形式可展現紀律、規劃與承受長期壓力"
+        },
+        {
+          "label": "真正學會的判斷標準",
+          "text": "判斷標準是能獨立回應情緒並建立可依靠的安全感"
+        }
+      ],
+      "caution": "不要只用閱讀時間或熟悉感代替實際驗證。",
+      "primary": "planet|Saturn|9|2|",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "second_eighth_resources",
+      "topicId": "study",
+      "questionId": "study-knowledge-application",
+      "headline": "把知識用出來，需要把美感、協調與關係經營轉成能實際創造價值、和諧與彼此欣賞的行動或作品。",
+      "summary": "適合的練習不是重複輸入，而是用依感受調整的方式產出並接受回饋。",
+      "details": [
+        {
+          "label": "把知識用出來的方式",
+          "text": "應用方式是運用美感、協調與關係經營解決實際問題"
+        },
+        {
+          "label": "適合的輸出形式",
+          "text": "輸出形式宜依感受調整"
+        }
+      ],
+      "caution": "避免因為維持和諧而壓下真實立場而一直準備、卻沒有實際產出。",
+      "primary": "planet|Venus|1|2|",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "second_eighth_resources",
       "topicId": "general",
       "questionId": "general-top-themes",
       "headline": "人生主題圍繞著理解資訊並建立清楚的連結。",
@@ -8991,26 +8671,6 @@
     {
       "chartId": "second_eighth_resources",
       "topicId": "general",
-      "questionId": "general-standout-energy",
-      "headline": "命盤中較突出的能量是理解資訊並建立清楚的連結，外在呈現為透過談話與好奇心拉近距離。",
-      "summary": "它會讓直覺、創作與感受細微氛圍成為容易被看見的特點。",
-      "details": [
-        {
-          "label": "最突出的能量分布",
-          "text": "突出動力是理解資訊並建立清楚的連結"
-        },
-        {
-          "label": "具體展現的方式",
-          "text": "外顯特徵是以溫柔、想像與共感建立連結"
-        }
-      ],
-      "caution": "",
-      "primary": "planet|Mercury|5|4|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "second_eighth_resources",
-      "topicId": "general",
       "questionId": "general-inner-tension",
       "headline": "內在拉扯常發生在被看見、被肯定並保有主體性與過度把成敗綁在自我價值上之間。",
       "summary": "一邊想要採取行動、突破阻力並爭取目標，一邊又擔心失去平衡。",
@@ -9026,6 +8686,26 @@
       ],
       "caution": "重點是建立可切換的使用情境。",
       "primary": "balance|土本位|||",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "second_eighth_resources",
+      "topicId": "general",
+      "questionId": "general-decision-basis",
+      "headline": "重大選擇時，最可靠的原則是確認它能否長期支持被看見、被肯定並保有主體性。",
+      "summary": "適合的方向不只讓你短暫興奮，也會讓你有空間持續創造價值、和諧與彼此欣賞。",
+      "details": [
+        {
+          "label": "最可靠的判斷原則",
+          "text": "判斷原則是是否支持被看見、被肯定並保有主體性"
+        },
+        {
+          "label": "方向是否適合的訊號",
+          "text": "適合的訊號是能穩定運用美感、協調與關係經營"
+        }
+      ],
+      "caution": "別讓過度把成敗綁在自我價值上成為唯一的決策理由。",
+      "primary": "planet|Sun|1|2|",
       "qualityFlags": []
     },
     {
@@ -9175,21 +8855,21 @@
     {
       "chartId": "fifth_house_creative",
       "topicId": "love",
-      "questionId": "love-longterm-value",
-      "headline": "長期關係真正需要的是熟悉感、歸屬感與穩定回應。",
-      "summary": "關係能支持你創造價值、和諧與彼此欣賞時，投入才容易持續。",
+      "questionId": "love-conflict-repair",
+      "headline": "衝突後先恢復自主、差異性與不被僵化規則限制，再運用創新、獨立判斷與系統改革把問題說清楚。",
+      "summary": "修復的重點不是立刻和好，而是讓彼此重新有條件回應情緒並建立可依靠的安全感。",
       "details": [
         {
-          "label": "長期真正在意的事",
-          "text": "核心需求是熟悉感、歸屬感與穩定回應"
+          "label": "衝突後的第一步",
+          "text": "第一步是恢復自主、差異性與不被僵化規則限制"
         },
         {
-          "label": "你需要被理解的需求",
-          "text": "長期價值在於創造價值、和諧與彼此欣賞"
+          "label": "修復關係的方式",
+          "text": "修復方式是運用同理、照顧與察覺氣氛確認感受、責任與下一步"
         }
       ],
-      "caution": "",
-      "primary": "planet|Moon|6|7|",
+      "caution": "避免讓突然抽離或為反對而反對取代真正的對話。",
+      "primary": "planet|Uranus|6|1|",
       "qualityFlags": []
     },
     {
@@ -9249,26 +8929,6 @@
         }
       ],
       "caution": "留意想得太多或注意力分散。",
-      "primary": "planet|Mercury|8|8|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "fifth_house_creative",
-      "topicId": "career",
-      "questionId": "career-monetize",
-      "headline": "文字、溝通與資訊整理的能力較容易變現。",
-      "summary": "你擅長把不同領域的知識串連起來，這在需要宏觀視野的市場裡很有價值。",
-      "details": [
-        {
-          "label": "較容易變現的能力",
-          "text": "寫作、翻譯或內容整理相關的專長"
-        },
-        {
-          "label": "市場願意付費的部分",
-          "text": "需要跨領域整合資源的能力"
-        }
-      ],
-      "caution": "留意別因為想學的太多太雜，反而沒有一項真正深耕。",
       "primary": "planet|Mercury|8|8|",
       "qualityFlags": []
     },
@@ -9349,7 +9009,7 @@
         }
       ],
       "caution": "留意別為了搶功而忽略團隊其他人的貢獻。",
-      "primary": "planet|Sun|4|5|",
+      "primary": "angle|mc|1||",
       "qualityFlags": []
     },
     {
@@ -9474,26 +9134,6 @@
     },
     {
       "chartId": "fifth_house_creative",
-      "topicId": "family",
-      "questionId": "family-core-lesson",
-      "headline": "家庭關係反覆出現的課題，較可能是「過度保守、自我要求或害怕犯錯」。",
-      "summary": "這通常不是誰做得不夠好，而是家人都在追求清楚界線、可靠制度與可預期進度時，沿用了不再有效的相處方式。",
-      "details": [
-        {
-          "label": "反覆出現的課題",
-          "text": "過度保守、自我要求或害怕犯錯"
-        },
-        {
-          "label": "需要練習的相處方式",
-          "text": "輪流表達立場，也讓每個人都有參與決定的空間"
-        }
-      ],
-      "caution": "留意不要只要求自己做得更多；真正的改善需要家人共同調整分工與回應方式。",
-      "primary": "planet|Saturn|4|12|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "fifth_house_creative",
       "topicId": "health",
       "questionId": "health-stress-pattern",
       "headline": "壓力多半在無法打破慣性並創造更自由的新做法時累積。",
@@ -9559,37 +9199,17 @@
     {
       "chartId": "fifth_house_creative",
       "topicId": "health",
-      "questionId": "health-emotion-body",
-      "headline": "情緒在缺少清楚界線、可靠制度與可預期進度時較容易累積。",
-      "summary": "若長期不能回應情緒並建立可依靠的安全感，壓力可能透過日常狀態被感覺到。",
-      "details": [
-        {
-          "label": "情緒累積的身體反應",
-          "text": "情緒需求是清楚界線、可靠制度與可預期進度"
-        },
-        {
-          "label": "身心連動的模式",
-          "text": "失衡模式是過度承接他人的情緒"
-        }
-      ],
-      "caution": "不推論疾病或特定身體部位。",
-      "primary": "planet|Saturn|4|12|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "fifth_house_creative",
-      "topicId": "health",
       "questionId": "health-self-care",
-      "headline": "恢復能量的關鍵是重新取得熟悉感、歸屬感與穩定回應。",
-      "summary": "能讓你建立結構、責任與可長期維持的成果的活動較有恢復效果。",
+      "headline": "最有恢復效果的方式，是重新取得熟悉感、歸屬感與穩定回應並採用依感受調整的節奏。",
+      "summary": "能讓你重新建立結構、責任與可長期維持的成果、而不是繼續承受刺激的活動，才算真正休息。",
       "details": [
         {
-          "label": "真正能照顧你的方式",
-          "text": "可運用同理、照顧與察覺氣氛照顧自己"
+          "label": "有效的恢復方式",
+          "text": "有效恢復方式是運用同理、照顧與察覺氣氛"
         },
         {
-          "label": "值得安排的習慣",
-          "text": "恢復節奏宜審慎而穩定"
+          "label": "適合的休息節奏",
+          "text": "休息節奏宜審慎而穩定"
         }
       ],
       "caution": "",
@@ -9599,20 +9219,20 @@
     {
       "chartId": "fifth_house_creative",
       "topicId": "health",
-      "questionId": "health-rest-rhythm",
-      "headline": "休息需要保留清楚界線、可靠制度與可預期進度，並順著審慎而穩定的節奏切換。",
-      "summary": "真正的休息是暫時卸下過度承接他人的情緒帶來的耗損。",
+      "questionId": "health-energy-drain",
+      "headline": "當日常長期缺少清楚界線、可靠制度與可預期進度，又必須面對過度保守、自我要求或害怕犯錯時最容易耗能。",
+      "summary": "消耗來源通常不是單一事件，而是環境持續阻礙你採取行動、突破阻力並爭取目標。",
       "details": [
         {
-          "label": "適合的休息節奏",
-          "text": "有效休息條件是清楚界線、可靠制度與可預期進度"
+          "label": "容易消耗你的情境",
+          "text": "高耗能情境是長期缺少清楚界線、可靠制度與可預期進度"
         },
         {
-          "label": "恢復精力的方式",
-          "text": "切換方式宜依感受調整"
+          "label": "需要降低的負荷",
+          "text": "需要降低的負荷是求快、急躁或忽略他人節奏"
         }
       ],
-      "caution": "",
+      "caution": "若疲憊或不適持續，仍應尋求合格醫療專業協助。",
       "primary": "planet|Saturn|4|12|",
       "qualityFlags": []
     },
@@ -9819,26 +9439,6 @@
     {
       "chartId": "fifth_house_creative",
       "topicId": "social",
-      "questionId": "social-attract-friend",
-      "headline": "容易吸引重視交流、變化與足夠的思考空間、欣賞你透過談話與好奇心拉近距離的人。",
-      "summary": "這類朋友會回應你想要創造價值、和諧與彼此欣賞的傾向。",
-      "details": [
-        {
-          "label": "容易靠近你的朋友類型",
-          "text": "朋友重視交流、變化與足夠的思考空間"
-        },
-        {
-          "label": "友誼中你在意的特質",
-          "text": "互動特點是自然營造好感與合作氣氛"
-        }
-      ],
-      "caution": "",
-      "primary": "planet|Mercury|8|8|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "fifth_house_creative",
-      "topicId": "social",
       "questionId": "social-strength",
       "headline": "人際優勢是美感、協調與關係經營，能讓人感到自然營造好感與合作氣氛。",
       "summary": "這項能力有助於你理解資訊並建立清楚的連結。",
@@ -10038,6 +9638,46 @@
     },
     {
       "chartId": "fifth_house_creative",
+      "topicId": "study",
+      "questionId": "study-mastery-evidence",
+      "headline": "最適合用能展現執行、競爭與快速反應的成果證明自己學會了。",
+      "summary": "真正掌握的標準，是能獨立運用知識去創造價值、和諧與彼此欣賞。",
+      "details": [
+        {
+          "label": "適合的成果形式",
+          "text": "成果形式可展現執行、競爭與快速反應"
+        },
+        {
+          "label": "真正學會的判斷標準",
+          "text": "判斷標準是能獨立創造價值、和諧與彼此欣賞"
+        }
+      ],
+      "caution": "不要只用閱讀時間或熟悉感代替實際驗證。",
+      "primary": "planet|Mars|0|5|",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "fifth_house_creative",
+      "topicId": "study",
+      "questionId": "study-knowledge-application",
+      "headline": "把知識用出來，需要把紀律、規劃與承受長期壓力轉成能實際建立結構、責任與可長期維持的成果的行動或作品。",
+      "summary": "適合的練習不是重複輸入，而是用直接而迅速的方式產出並接受回饋。",
+      "details": [
+        {
+          "label": "把知識用出來的方式",
+          "text": "應用方式是運用紀律、規劃與承受長期壓力解決實際問題"
+        },
+        {
+          "label": "適合的輸出形式",
+          "text": "輸出形式宜直接而迅速"
+        }
+      ],
+      "caution": "避免因過度保守、自我要求或害怕犯錯而一直準備、卻沒有實際產出。",
+      "primary": "planet|Saturn|4|12|",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "fifth_house_creative",
       "topicId": "general",
       "questionId": "general-top-themes",
       "headline": "人生主題圍繞著回應情緒並建立可依靠的安全感。",
@@ -10119,26 +9759,6 @@
     {
       "chartId": "fifth_house_creative",
       "topicId": "general",
-      "questionId": "general-standout-energy",
-      "headline": "命盤中較突出的能量是回應情緒並建立可依靠的安全感，外在呈現為讓人感到被理解與接住。",
-      "summary": "它會讓創新、獨立判斷與系統改革成為容易被看見的特點。",
-      "details": [
-        {
-          "label": "最突出的能量分布",
-          "text": "突出動力是回應情緒並建立可依靠的安全感"
-        },
-        {
-          "label": "具體展現的方式",
-          "text": "外顯特徵是以獨特觀點吸引同好"
-        }
-      ],
-      "caution": "",
-      "primary": "planet|Moon|6|7|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "fifth_house_creative",
-      "topicId": "general",
       "questionId": "general-inner-tension",
       "headline": "內在拉扯常發生在被看見、被肯定並保有主體性與過度把成敗綁在自我價值上之間。",
       "summary": "一邊想要採取行動、突破阻力並爭取目標，一邊又擔心失去平衡。",
@@ -10154,6 +9774,26 @@
       ],
       "caution": "重點是建立可切換的使用情境。",
       "primary": "balance|風本位|||",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "fifth_house_creative",
+      "topicId": "general",
+      "questionId": "general-decision-basis",
+      "headline": "重大選擇時，最可靠的原則是確認它能否長期支持熟悉感、歸屬感與穩定回應。",
+      "summary": "適合的方向不只讓你短暫興奮，也會讓你有空間持續建立清楚的自我定位並主動承擔。",
+      "details": [
+        {
+          "label": "最可靠的判斷原則",
+          "text": "判斷原則是是否支持熟悉感、歸屬感與穩定回應"
+        },
+        {
+          "label": "方向是否適合的訊號",
+          "text": "適合的訊號是能穩定運用主導、決策與凝聚注意力"
+        }
+      ],
+      "caution": "別讓過度承接他人的情緒成為唯一的決策理由。",
+      "primary": "planet|Moon|6|7|",
       "qualityFlags": []
     },
     {
@@ -10303,21 +9943,21 @@
     {
       "chartId": "sixth_house_routine",
       "topicId": "love",
-      "questionId": "love-longterm-value",
-      "headline": "長期關係真正需要的是熟悉感、歸屬感與穩定回應。",
-      "summary": "關係能支持你創造價值、和諧與彼此欣賞時，投入才容易持續。",
+      "questionId": "love-conflict-repair",
+      "headline": "衝突後先恢復靈感、柔軟空間與情感共鳴，再運用直覺、創作與感受細微氛圍把問題說清楚。",
+      "summary": "修復的重點不是立刻和好，而是讓彼此重新有條件回應情緒並建立可依靠的安全感。",
       "details": [
         {
-          "label": "長期真正在意的事",
-          "text": "核心需求是熟悉感、歸屬感與穩定回應"
+          "label": "衝突後的第一步",
+          "text": "第一步是恢復靈感、柔軟空間與情感共鳴"
         },
         {
-          "label": "你需要被理解的需求",
-          "text": "長期價值在於創造價值、和諧與彼此欣賞"
+          "label": "修復關係的方式",
+          "text": "修復方式是運用同理、照顧與察覺氣氛確認感受、責任與下一步"
         }
       ],
-      "caution": "",
-      "primary": "planet|Moon|7|10|",
+      "caution": "避免讓界線模糊、理想化或逃避現實取代真正的對話。",
+      "primary": "planet|Neptune|9|5|",
       "qualityFlags": []
     },
     {
@@ -10378,26 +10018,6 @@
       ],
       "caution": "留意想得太多或注意力分散。",
       "primary": "planet|Mercury|5|6|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "sixth_house_routine",
-      "topicId": "career",
-      "questionId": "career-monetize",
-      "headline": "教育訓練、顧問或跨領域整合的能力較容易變現。",
-      "summary": "你對什麼樣的組合讓人感覺舒服、有品味特別有直覺，這在市場上很有辨識度。",
-      "details": [
-        {
-          "label": "較容易變現的能力",
-          "text": "教學、顧問或講師類的專長"
-        },
-        {
-          "label": "市場願意付費的部分",
-          "text": "需要建立關係、談成合作的能力"
-        }
-      ],
-      "caution": "留意別因為涉獵太廣，而每一項都不夠深入。",
-      "primary": "planet|Jupiter|3|2|",
       "qualityFlags": []
     },
     {
@@ -10602,26 +10222,6 @@
     },
     {
       "chartId": "sixth_house_routine",
-      "topicId": "family",
-      "questionId": "family-core-lesson",
-      "headline": "家庭關係反覆出現的課題，較可能是「突然抽離或為反對而反對」。",
-      "summary": "這通常不是誰做得不夠好，而是家人都在追求自主、差異性與不被僵化規則限制時，沿用了不再有效的相處方式。",
-      "details": [
-        {
-          "label": "反覆出現的課題",
-          "text": "突然抽離或為反對而反對"
-        },
-        {
-          "label": "需要練習的相處方式",
-          "text": "把責任、期限與可以做到的範圍明確分配"
-        }
-      ],
-      "caution": "留意不要只要求自己做得更多；真正的改善需要家人共同調整分工與回應方式。",
-      "primary": "planet|Uranus|7|4|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "sixth_house_routine",
       "topicId": "health",
       "questionId": "health-stress-pattern",
       "headline": "壓力多半在無法採取行動、突破阻力並爭取目標時累積。",
@@ -10687,37 +10287,17 @@
     {
       "chartId": "sixth_house_routine",
       "topicId": "health",
-      "questionId": "health-emotion-body",
-      "headline": "情緒在缺少被看見、被肯定並保有主體性時較容易累積。",
-      "summary": "若長期不能理解資訊並建立清楚的連結，壓力可能透過日常狀態被感覺到。",
-      "details": [
-        {
-          "label": "情緒累積的身體反應",
-          "text": "情緒需求是被看見、被肯定並保有主體性"
-        },
-        {
-          "label": "身心連動的模式",
-          "text": "失衡模式是想得太多或注意力分散"
-        }
-      ],
-      "caution": "不推論疾病或特定身體部位。",
-      "primary": "planet|Sun|5|6|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "sixth_house_routine",
-      "topicId": "health",
       "questionId": "health-self-care",
-      "headline": "恢復能量的關鍵是重新取得清楚界線、可靠制度與可預期進度。",
-      "summary": "能讓你建立清楚的自我定位並主動承擔的活動較有恢復效果。",
+      "headline": "最有恢復效果的方式，是重新取得清楚界線、可靠制度與可預期進度並採用審慎而穩定的節奏。",
+      "summary": "能讓你重新建立清楚的自我定位並主動承擔、而不是繼續承受刺激的活動，才算真正休息。",
       "details": [
         {
-          "label": "真正能照顧你的方式",
-          "text": "可運用紀律、規劃與承受長期壓力照顧自己"
+          "label": "有效的恢復方式",
+          "text": "有效恢復方式是運用紀律、規劃與承受長期壓力"
         },
         {
-          "label": "值得安排的習慣",
-          "text": "恢復節奏宜主動而明確"
+          "label": "適合的休息節奏",
+          "text": "休息節奏宜主動而明確"
         }
       ],
       "caution": "",
@@ -10727,21 +10307,21 @@
     {
       "chartId": "sixth_house_routine",
       "topicId": "health",
-      "questionId": "health-rest-rhythm",
-      "headline": "休息需要保留自主、差異性與不被僵化規則限制，並順著跳躍而非線性的節奏切換。",
-      "summary": "真正的休息是暫時卸下過度保守、自我要求或害怕犯錯帶來的耗損。",
+      "questionId": "health-energy-drain",
+      "headline": "當日常長期缺少挑戰、自主與可立即投入的目標，又必須面對求快、急躁或忽略他人節奏時最容易耗能。",
+      "summary": "消耗來源通常不是單一事件，而是環境持續阻礙你建立結構、責任與可長期維持的成果。",
       "details": [
         {
-          "label": "適合的休息節奏",
-          "text": "有效休息條件是自主、差異性與不被僵化規則限制"
+          "label": "容易消耗你的情境",
+          "text": "高耗能情境是長期缺少挑戰、自主與可立即投入的目標"
         },
         {
-          "label": "恢復精力的方式",
-          "text": "切換方式宜審慎而穩定"
+          "label": "需要降低的負荷",
+          "text": "需要降低的負荷是過度保守、自我要求或害怕犯錯"
         }
       ],
-      "caution": "",
-      "primary": "planet|Uranus|7|4|",
+      "caution": "若疲憊或不適持續，仍應尋求合格醫療專業協助。",
+      "primary": "planet|Mars|9|6|",
       "qualityFlags": []
     },
     {
@@ -10947,41 +10527,21 @@
     {
       "chartId": "sixth_house_routine",
       "topicId": "social",
-      "questionId": "social-attract-friend",
-      "headline": "容易吸引重視公平、舒適與有品質的互動、欣賞你自然營造好感與合作氣氛的人。",
-      "summary": "這類朋友會回應你想要回應情緒並建立可依靠的安全感的傾向。",
+      "questionId": "social-strength",
+      "headline": "人際優勢是美感、協調與關係經營，能讓人感到自然營造好感與合作氣氛。",
+      "summary": "這項能力有助於你理解資訊並建立清楚的連結。",
       "details": [
         {
-          "label": "容易靠近你的朋友類型",
-          "text": "朋友重視公平、舒適與有品質的互動"
+          "label": "你在人際中的優勢",
+          "text": "可持續發揮美感、協調與關係經營"
         },
         {
-          "label": "友誼中你在意的特質",
-          "text": "互動特點是讓人感到被理解與接住"
+          "label": "別人依賴你的部分",
+          "text": "他人感受到透過談話與好奇心拉近距離"
         }
       ],
       "caution": "",
       "primary": "planet|Venus|11|12|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "sixth_house_routine",
-      "topicId": "social",
-      "questionId": "social-strength",
-      "headline": "人際優勢是學習、表達與整理複雜資訊，能讓人感到透過談話與好奇心拉近距離。",
-      "summary": "這項能力有助於你創造價值、和諧與彼此欣賞。",
-      "details": [
-        {
-          "label": "你在人際中的優勢",
-          "text": "可持續發揮學習、表達與整理複雜資訊"
-        },
-        {
-          "label": "別人依賴你的部分",
-          "text": "他人感受到自然營造好感與合作氣氛"
-        }
-      ],
-      "caution": "",
-      "primary": "planet|Mercury|5|6|",
       "qualityFlags": []
     },
     {
@@ -11166,6 +10726,46 @@
     },
     {
       "chartId": "sixth_house_routine",
+      "topicId": "study",
+      "questionId": "study-mastery-evidence",
+      "headline": "最適合用能展現美感、協調與關係經營的成果證明自己學會了。",
+      "summary": "真正掌握的標準，是能獨立運用知識去深入核心並完成根本性的轉化。",
+      "details": [
+        {
+          "label": "適合的成果形式",
+          "text": "成果形式可展現美感、協調與關係經營"
+        },
+        {
+          "label": "真正學會的判斷標準",
+          "text": "判斷標準是能獨立深入核心並完成根本性的轉化"
+        }
+      ],
+      "caution": "不要只用閱讀時間或熟悉感代替實際驗證。",
+      "primary": "planet|Venus|11|12|",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "sixth_house_routine",
+      "topicId": "study",
+      "questionId": "study-knowledge-application",
+      "headline": "把知識用出來，需要把創新、獨立判斷與系統改革轉成能實際打破慣性並創造更自由的新做法的行動或作品。",
+      "summary": "適合的練習不是重複輸入，而是用集中而強烈的方式產出並接受回饋。",
+      "details": [
+        {
+          "label": "把知識用出來的方式",
+          "text": "應用方式是運用創新、獨立判斷與系統改革解決實際問題"
+        },
+        {
+          "label": "適合的輸出形式",
+          "text": "輸出形式宜集中而強烈"
+        }
+      ],
+      "caution": "避免因突然抽離或為反對而反對而一直準備、卻沒有實際產出。",
+      "primary": "planet|Uranus|7|4|",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "sixth_house_routine",
       "topicId": "general",
       "questionId": "general-top-themes",
       "headline": "人生主題圍繞著回應情緒並建立可依靠的安全感。",
@@ -11247,26 +10847,6 @@
     {
       "chartId": "sixth_house_routine",
       "topicId": "general",
-      "questionId": "general-standout-energy",
-      "headline": "命盤中較突出的能量是回應情緒並建立可依靠的安全感，外在呈現為讓人感到被理解與接住。",
-      "summary": "它會讓創新、獨立判斷與系統改革成為容易被看見的特點。",
-      "details": [
-        {
-          "label": "最突出的能量分布",
-          "text": "突出動力是回應情緒並建立可依靠的安全感"
-        },
-        {
-          "label": "具體展現的方式",
-          "text": "外顯特徵是以獨特觀點吸引同好"
-        }
-      ],
-      "caution": "",
-      "primary": "planet|Moon|7|10|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "sixth_house_routine",
-      "topicId": "general",
       "questionId": "general-inner-tension",
       "headline": "內在拉扯常發生在被看見、被肯定並保有主體性與過度把成敗綁在自我價值上之間。",
       "summary": "一邊想要採取行動、突破阻力並爭取目標，一邊又擔心失去平衡。",
@@ -11282,6 +10862,26 @@
       ],
       "caution": "重點是建立可切換的使用情境。",
       "primary": "balance|土變動|||",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "sixth_house_routine",
+      "topicId": "general",
+      "questionId": "general-decision-basis",
+      "headline": "重大選擇時，最可靠的原則是確認它能否長期支持被看見、被肯定並保有主體性。",
+      "summary": "適合的方向不只讓你短暫興奮，也會讓你有空間持續理解資訊並建立清楚的連結。",
+      "details": [
+        {
+          "label": "最可靠的判斷原則",
+          "text": "判斷原則是是否支持被看見、被肯定並保有主體性"
+        },
+        {
+          "label": "方向是否適合的訊號",
+          "text": "適合的訊號是能穩定運用學習、表達與整理複雜資訊"
+        }
+      ],
+      "caution": "別讓過度把成敗綁在自我價值上成為唯一的決策理由。",
+      "primary": "planet|Sun|5|6|",
       "qualityFlags": []
     },
     {
@@ -11431,21 +11031,21 @@
     {
       "chartId": "ninth_house_learning",
       "topicId": "love",
-      "questionId": "love-longterm-value",
-      "headline": "長期關係真正需要的是熟悉感、歸屬感與穩定回應。",
-      "summary": "關係能支持你創造價值、和諧與彼此欣賞時，投入才容易持續。",
+      "questionId": "love-conflict-repair",
+      "headline": "衝突後先恢復交流、變化與足夠的思考空間，再運用學習、表達與整理複雜資訊把問題說清楚。",
+      "summary": "修復的重點不是立刻和好，而是讓彼此重新有條件回應情緒並建立可依靠的安全感。",
       "details": [
         {
-          "label": "長期真正在意的事",
-          "text": "核心需求是熟悉感、歸屬感與穩定回應"
+          "label": "衝突後的第一步",
+          "text": "第一步是恢復交流、變化與足夠的思考空間"
         },
         {
-          "label": "你需要被理解的需求",
-          "text": "長期價值在於創造價值、和諧與彼此欣賞"
+          "label": "修復關係的方式",
+          "text": "修復方式是運用同理、照顧與察覺氣氛確認感受、責任與下一步"
         }
       ],
-      "caution": "",
-      "primary": "planet|Moon|10|12|",
+      "caution": "避免讓想得太多或注意力分散取代真正的對話。",
+      "primary": "planet|Mercury|2|9|",
       "qualityFlags": []
     },
     {
@@ -11506,26 +11106,6 @@
       ],
       "caution": "留意過度把成敗綁在自我價值上。",
       "primary": "planet|Sun|8|9|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "ninth_house_learning",
-      "topicId": "career",
-      "questionId": "career-monetize",
-      "headline": "美感或人際協調相關的資源運用能力較容易變現。",
-      "summary": "你擅長把事情系統化、確保品質，這在需要長期可靠度的市場裡很有價值。",
-      "details": [
-        {
-          "label": "較容易變現的能力",
-          "text": "需要美感判斷或風格塑造的收入來源"
-        },
-        {
-          "label": "市場願意付費的部分",
-          "text": "需要長期累積信譽的專業服務"
-        }
-      ],
-      "caution": "留意別因為太重視人情，而不好意思跟熟人談清楚報酬。",
-      "primary": "planet|Venus|2|2|",
       "qualityFlags": []
     },
     {
@@ -11605,7 +11185,7 @@
         }
       ],
       "caution": "留意別為了搶功而忽略團隊其他人的貢獻。",
-      "primary": "planet|Sun|8|9|",
+      "primary": "angle|mc|5||",
       "qualityFlags": []
     },
     {
@@ -11730,26 +11310,6 @@
     },
     {
       "chartId": "ninth_house_learning",
-      "topicId": "family",
-      "questionId": "family-core-lesson",
-      "headline": "家庭關係反覆出現的課題，較可能是「過度保守、自我要求或害怕犯錯」。",
-      "summary": "這通常不是誰做得不夠好，而是家人都在追求清楚界線、可靠制度與可預期進度時，沿用了不再有效的相處方式。",
-      "details": [
-        {
-          "label": "反覆出現的課題",
-          "text": "過度保守、自我要求或害怕犯錯"
-        },
-        {
-          "label": "需要練習的相處方式",
-          "text": "輪流表達立場，也讓每個人都有參與決定的空間"
-        }
-      ],
-      "caution": "留意不要只要求自己做得更多；真正的改善需要家人共同調整分工與回應方式。",
-      "primary": "planet|Saturn|8|5|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "ninth_house_learning",
       "topicId": "health",
       "questionId": "health-stress-pattern",
       "headline": "壓力多半在無法採取行動、突破阻力並爭取目標時累積。",
@@ -11815,37 +11375,17 @@
     {
       "chartId": "ninth_house_learning",
       "topicId": "health",
-      "questionId": "health-emotion-body",
-      "headline": "情緒在缺少公平、舒適與有品質的互動時較容易累積。",
-      "summary": "若長期不能回應情緒並建立可依靠的安全感，壓力可能透過日常狀態被感覺到。",
-      "details": [
-        {
-          "label": "情緒累積的身體反應",
-          "text": "情緒需求是公平、舒適與有品質的互動"
-        },
-        {
-          "label": "身心連動的模式",
-          "text": "失衡模式是過度承接他人的情緒"
-        }
-      ],
-      "caution": "不推論疾病或特定身體部位。",
-      "primary": "planet|Venus|2|2|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "ninth_house_learning",
-      "topicId": "health",
       "questionId": "health-self-care",
-      "headline": "恢復能量的關鍵是重新取得熟悉感、歸屬感與穩定回應。",
-      "summary": "能讓你建立結構、責任與可長期維持的成果的活動較有恢復效果。",
+      "headline": "最有恢復效果的方式，是重新取得熟悉感、歸屬感與穩定回應並採用依感受調整的節奏。",
+      "summary": "能讓你重新建立結構、責任與可長期維持的成果、而不是繼續承受刺激的活動，才算真正休息。",
       "details": [
         {
-          "label": "真正能照顧你的方式",
-          "text": "可運用同理、照顧與察覺氣氛照顧自己"
+          "label": "有效的恢復方式",
+          "text": "有效恢復方式是運用同理、照顧與察覺氣氛"
         },
         {
-          "label": "值得安排的習慣",
-          "text": "恢復節奏宜審慎而穩定"
+          "label": "適合的休息節奏",
+          "text": "休息節奏宜審慎而穩定"
         }
       ],
       "caution": "",
@@ -11855,21 +11395,21 @@
     {
       "chartId": "ninth_house_learning",
       "topicId": "health",
-      "questionId": "health-rest-rhythm",
-      "headline": "休息需要保留清楚界線、可靠制度與可預期進度，並順著審慎而穩定的節奏切換。",
-      "summary": "真正的休息是暫時卸下為維持和諧而壓下真實立場帶來的耗損。",
+      "questionId": "health-energy-drain",
+      "headline": "當日常長期缺少公平、舒適與有品質的互動，又必須面對為維持和諧而壓下真實立場時最容易耗能。",
+      "summary": "消耗來源通常不是單一事件，而是環境持續阻礙你回應情緒並建立可依靠的安全感。",
       "details": [
         {
-          "label": "適合的休息節奏",
-          "text": "有效休息條件是清楚界線、可靠制度與可預期進度"
+          "label": "容易消耗你的情境",
+          "text": "高耗能情境是長期缺少公平、舒適與有品質的互動"
         },
         {
-          "label": "恢復精力的方式",
-          "text": "切換方式宜講究平衡與感受"
+          "label": "需要降低的負荷",
+          "text": "需要降低的負荷是過度承接他人的情緒"
         }
       ],
-      "caution": "",
-      "primary": "planet|Saturn|8|5|",
+      "caution": "若疲憊或不適持續，仍應尋求合格醫療專業協助。",
+      "primary": "planet|Venus|2|2|",
       "qualityFlags": []
     },
     {
@@ -12075,17 +11615,17 @@
     {
       "chartId": "ninth_house_learning",
       "topicId": "social",
-      "questionId": "social-attract-friend",
-      "headline": "容易吸引重視公平、舒適與有品質的互動、欣賞你自然營造好感與合作氣氛的人。",
-      "summary": "這類朋友會回應你想要回應情緒並建立可依靠的安全感的傾向。",
+      "questionId": "social-strength",
+      "headline": "人際優勢是美感、協調與關係經營，能讓人感到自然營造好感與合作氣氛。",
+      "summary": "這項能力有助於你理解資訊並建立清楚的連結。",
       "details": [
         {
-          "label": "容易靠近你的朋友類型",
-          "text": "朋友重視公平、舒適與有品質的互動"
+          "label": "你在人際中的優勢",
+          "text": "可持續發揮美感、協調與關係經營"
         },
         {
-          "label": "友誼中你在意的特質",
-          "text": "互動特點是讓人感到被理解與接住"
+          "label": "別人依賴你的部分",
+          "text": "他人感受到透過談話與好奇心拉近距離"
         }
       ],
       "caution": "",
@@ -12095,41 +11635,21 @@
     {
       "chartId": "ninth_house_learning",
       "topicId": "social",
-      "questionId": "social-strength",
-      "headline": "人際優勢是學習、表達與整理複雜資訊，能讓人感到透過談話與好奇心拉近距離。",
-      "summary": "這項能力有助於你創造價值、和諧與彼此欣賞。",
-      "details": [
-        {
-          "label": "你在人際中的優勢",
-          "text": "可持續發揮學習、表達與整理複雜資訊"
-        },
-        {
-          "label": "別人依賴你的部分",
-          "text": "他人感受到自然營造好感與合作氣氛"
-        }
-      ],
-      "caution": "",
-      "primary": "planet|Mercury|2|9|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "ninth_house_learning",
-      "topicId": "social",
       "questionId": "social-boundary-conflict",
-      "headline": "人際衝突較容易由過度承接他人的情緒引發。",
-      "summary": "通常是交流、變化與足夠的思考空間沒有被說清楚時出現。",
+      "headline": "人際衝突較容易由想得太多或注意力分散引發。",
+      "summary": "通常是熟悉感、歸屬感與穩定回應沒有被說清楚時出現。",
       "details": [
         {
           "label": "面對衝突的反應",
-          "text": "觸發點是缺少熟悉感、歸屬感與穩定回應"
+          "text": "觸發點是缺少交流、變化與足夠的思考空間"
         },
         {
           "label": "容易被跨越的界線",
-          "text": "常見反應是想得太多或注意力分散"
+          "text": "常見反應是過度承接他人的情緒"
         }
       ],
       "caution": "先明確說出界線，再處理立場。",
-      "primary": "planet|Moon|10|12|",
+      "primary": "planet|Mercury|2|9|",
       "qualityFlags": []
     },
     {
@@ -12294,6 +11814,46 @@
     },
     {
       "chartId": "ninth_house_learning",
+      "topicId": "study",
+      "questionId": "study-mastery-evidence",
+      "headline": "最適合用能展現主導、決策與凝聚注意力的成果證明自己學會了。",
+      "summary": "真正掌握的標準，是能獨立運用知識去打破慣性並創造更自由的新做法。",
+      "details": [
+        {
+          "label": "適合的成果形式",
+          "text": "成果形式可展現主導、決策與凝聚注意力"
+        },
+        {
+          "label": "真正學會的判斷標準",
+          "text": "判斷標準是能獨立打破慣性並創造更自由的新做法"
+        }
+      ],
+      "caution": "不要只用閱讀時間或熟悉感代替實際驗證。",
+      "primary": "planet|Sun|8|9|",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "ninth_house_learning",
+      "topicId": "study",
+      "questionId": "study-knowledge-application",
+      "headline": "把知識用出來，需要把美感、協調與關係經營轉成能實際創造價值、和諧與彼此欣賞的行動或作品。",
+      "summary": "適合的練習不是重複輸入，而是用跳躍而非線性的方式產出並接受回饋。",
+      "details": [
+        {
+          "label": "把知識用出來的方式",
+          "text": "應用方式是運用美感、協調與關係經營解決實際問題"
+        },
+        {
+          "label": "適合的輸出形式",
+          "text": "輸出形式宜跳躍而非線性"
+        }
+      ],
+      "caution": "避免因為維持和諧而壓下真實立場而一直準備、卻沒有實際產出。",
+      "primary": "planet|Venus|2|2|",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "ninth_house_learning",
       "topicId": "general",
       "questionId": "general-top-themes",
       "headline": "人生主題圍繞著連結想像、同理與超越個人的意義。",
@@ -12375,26 +11935,6 @@
     {
       "chartId": "ninth_house_learning",
       "topicId": "general",
-      "questionId": "general-standout-energy",
-      "headline": "命盤中較突出的能量是連結想像、同理與超越個人的意義，外在呈現為以溫柔、想像與共感建立連結。",
-      "summary": "它會讓直覺、創作與感受細微氛圍成為容易被看見的特點。",
-      "details": [
-        {
-          "label": "最突出的能量分布",
-          "text": "突出動力是連結想像、同理與超越個人的意義"
-        },
-        {
-          "label": "具體展現的方式",
-          "text": "外顯特徵是以溫柔、想像與共感建立連結"
-        }
-      ],
-      "caution": "",
-      "primary": "planet|Neptune|0|7|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "ninth_house_learning",
-      "topicId": "general",
       "questionId": "general-inner-tension",
       "headline": "內在拉扯常發生在被看見、被肯定並保有主體性與過度把成敗綁在自我價值上之間。",
       "summary": "一邊想要採取行動、突破阻力並爭取目標，一邊又擔心失去平衡。",
@@ -12410,6 +11950,26 @@
       ],
       "caution": "重點是建立可切換的使用情境。",
       "primary": "balance|火變動|||",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "ninth_house_learning",
+      "topicId": "general",
+      "questionId": "general-decision-basis",
+      "headline": "重大選擇時，最可靠的原則是確認它能否長期支持被看見、被肯定並保有主體性。",
+      "summary": "適合的方向不只讓你短暫興奮，也會讓你有空間持續擴大視野、可能性與成長空間。",
+      "details": [
+        {
+          "label": "最可靠的判斷原則",
+          "text": "判斷原則是是否支持被看見、被肯定並保有主體性"
+        },
+        {
+          "label": "方向是否適合的訊號",
+          "text": "適合的訊號是能穩定運用整合、教導與看見長期機會"
+        }
+      ],
+      "caution": "別讓過度把成敗綁在自我價值上成為唯一的決策理由。",
+      "primary": "planet|Sun|8|9|",
       "qualityFlags": []
     },
     {
@@ -12559,20 +12119,20 @@
     {
       "chartId": "fixed_tension",
       "topicId": "love",
-      "questionId": "love-longterm-value",
-      "headline": "長期關係真正需要的是熟悉感、歸屬感與穩定回應。",
-      "summary": "關係能支持你創造價值、和諧與彼此欣賞時，投入才容易持續。",
+      "questionId": "love-conflict-repair",
+      "headline": "衝突後先恢復熟悉感、歸屬感與穩定回應，再運用同理、照顧與察覺氣氛把問題說清楚。",
+      "summary": "修復的重點不是立刻和好，而是讓彼此重新有條件創造價值、和諧與彼此欣賞。",
       "details": [
         {
-          "label": "長期真正在意的事",
-          "text": "核心需求是熟悉感、歸屬感與穩定回應"
+          "label": "衝突後的第一步",
+          "text": "第一步是恢復熟悉感、歸屬感與穩定回應"
         },
         {
-          "label": "你需要被理解的需求",
-          "text": "長期價值在於創造價值、和諧與彼此欣賞"
+          "label": "修復關係的方式",
+          "text": "修復方式是運用美感、協調與關係經營確認感受、責任與下一步"
         }
       ],
-      "caution": "",
+      "caution": "避免讓過度承接他人的情緒取代真正的對話。",
       "primary": "planet|Moon|10|7|",
       "qualityFlags": []
     },
@@ -12633,26 +12193,6 @@
         }
       ],
       "caution": "留意想得太多或注意力分散。",
-      "primary": "planet|Mercury|11|2|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "fixed_tension",
-      "topicId": "career",
-      "questionId": "career-monetize",
-      "headline": "文字、溝通與資訊整理的能力較容易變現。",
-      "summary": "你擅長把不同領域的知識串連起來，這在需要宏觀視野的市場裡很有價值。",
-      "details": [
-        {
-          "label": "較容易變現的能力",
-          "text": "寫作、翻譯或內容整理相關的專長"
-        },
-        {
-          "label": "市場願意付費的部分",
-          "text": "需要跨領域整合資源的能力"
-        }
-      ],
-      "caution": "留意別因為想學的太多太雜，反而沒有一項真正深耕。",
       "primary": "planet|Mercury|11|2|",
       "qualityFlags": []
     },
@@ -12858,26 +12398,6 @@
     },
     {
       "chartId": "fixed_tension",
-      "topicId": "family",
-      "questionId": "family-core-lesson",
-      "headline": "家庭關係反覆出現的課題，較可能是「為維持和諧而壓下真實立場」。",
-      "summary": "這通常不是誰做得不夠好，而是家人都在追求公平、舒適與有品質的互動時，沿用了不再有效的相處方式。",
-      "details": [
-        {
-          "label": "反覆出現的課題",
-          "text": "為維持和諧而壓下真實立場"
-        },
-        {
-          "label": "需要練習的相處方式",
-          "text": "把責任、期限與可以做到的範圍明確分配"
-        }
-      ],
-      "caution": "留意不要只要求自己做得更多；真正的改善需要家人共同調整分工與回應方式。",
-      "primary": "planet|Venus|1|4|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "fixed_tension",
       "topicId": "health",
       "questionId": "health-stress-pattern",
       "headline": "壓力多半在無法建立清楚的自我定位並主動承擔時累積。",
@@ -12943,37 +12463,17 @@
     {
       "chartId": "fixed_tension",
       "topicId": "health",
-      "questionId": "health-emotion-body",
-      "headline": "情緒在缺少挑戰、自主與可立即投入的目標時較容易累積。",
-      "summary": "若長期不能回應情緒並建立可依靠的安全感，壓力可能透過日常狀態被感覺到。",
-      "details": [
-        {
-          "label": "情緒累積的身體反應",
-          "text": "情緒需求是挑戰、自主與可立即投入的目標"
-        },
-        {
-          "label": "身心連動的模式",
-          "text": "失衡模式是過度承接他人的情緒"
-        }
-      ],
-      "caution": "不推論疾病或特定身體部位。",
-      "primary": "planet|Mars|7|10|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "fixed_tension",
-      "topicId": "health",
       "questionId": "health-self-care",
-      "headline": "恢復能量的關鍵是重新取得熟悉感、歸屬感與穩定回應。",
-      "summary": "能讓你建立結構、責任與可長期維持的成果的活動較有恢復效果。",
+      "headline": "最有恢復效果的方式，是重新取得熟悉感、歸屬感與穩定回應並採用依感受調整的節奏。",
+      "summary": "能讓你重新建立結構、責任與可長期維持的成果、而不是繼續承受刺激的活動，才算真正休息。",
       "details": [
         {
-          "label": "真正能照顧你的方式",
-          "text": "可運用同理、照顧與察覺氣氛照顧自己"
+          "label": "有效的恢復方式",
+          "text": "有效恢復方式是運用同理、照顧與察覺氣氛"
         },
         {
-          "label": "值得安排的習慣",
-          "text": "恢復節奏宜審慎而穩定"
+          "label": "適合的休息節奏",
+          "text": "休息節奏宜審慎而穩定"
         }
       ],
       "caution": "",
@@ -12983,21 +12483,21 @@
     {
       "chartId": "fixed_tension",
       "topicId": "health",
-      "questionId": "health-rest-rhythm",
-      "headline": "休息需要保留清楚界線、可靠制度與可預期進度，並順著審慎而穩定的節奏切換。",
-      "summary": "真正的休息是暫時卸下求快、急躁或忽略他人節奏帶來的耗損。",
+      "questionId": "health-energy-drain",
+      "headline": "當日常長期缺少挑戰、自主與可立即投入的目標，又必須面對求快、急躁或忽略他人節奏時最容易耗能。",
+      "summary": "消耗來源通常不是單一事件，而是環境持續阻礙你建立結構、責任與可長期維持的成果。",
       "details": [
         {
-          "label": "適合的休息節奏",
-          "text": "有效休息條件是清楚界線、可靠制度與可預期進度"
+          "label": "容易消耗你的情境",
+          "text": "高耗能情境是長期缺少挑戰、自主與可立即投入的目標"
         },
         {
-          "label": "恢復精力的方式",
-          "text": "切換方式宜直接而迅速"
+          "label": "需要降低的負荷",
+          "text": "需要降低的負荷是過度保守、自我要求或害怕犯錯"
         }
       ],
-      "caution": "",
-      "primary": "planet|Saturn|10|7|",
+      "caution": "若疲憊或不適持續，仍應尋求合格醫療專業協助。",
+      "primary": "planet|Mars|7|10|",
       "qualityFlags": []
     },
     {
@@ -13203,26 +12703,6 @@
     {
       "chartId": "fixed_tension",
       "topicId": "social",
-      "questionId": "social-attract-friend",
-      "headline": "容易吸引重視交流、變化與足夠的思考空間、欣賞你透過談話與好奇心拉近距離的人。",
-      "summary": "這類朋友會回應你想要創造價值、和諧與彼此欣賞的傾向。",
-      "details": [
-        {
-          "label": "容易靠近你的朋友類型",
-          "text": "朋友重視交流、變化與足夠的思考空間"
-        },
-        {
-          "label": "友誼中你在意的特質",
-          "text": "互動特點是自然營造好感與合作氣氛"
-        }
-      ],
-      "caution": "",
-      "primary": "planet|Mercury|11|2|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "fixed_tension",
-      "topicId": "social",
       "questionId": "social-strength",
       "headline": "人際優勢是美感、協調與關係經營，能讓人感到自然營造好感與合作氣氛。",
       "summary": "這項能力有助於你理解資訊並建立清楚的連結。",
@@ -13422,6 +12902,46 @@
     },
     {
       "chartId": "fixed_tension",
+      "topicId": "study",
+      "questionId": "study-mastery-evidence",
+      "headline": "最適合用能展現同理、照顧與察覺氣氛的成果證明自己學會了。",
+      "summary": "真正掌握的標準，是能獨立運用知識去建立結構、責任與可長期維持的成果。",
+      "details": [
+        {
+          "label": "適合的成果形式",
+          "text": "成果形式可展現同理、照顧與察覺氣氛"
+        },
+        {
+          "label": "真正學會的判斷標準",
+          "text": "判斷標準是能獨立建立結構、責任與可長期維持的成果"
+        }
+      ],
+      "caution": "不要只用閱讀時間或熟悉感代替實際驗證。",
+      "primary": "planet|Moon|10|7|",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "fixed_tension",
+      "topicId": "study",
+      "questionId": "study-knowledge-application",
+      "headline": "把知識用出來，需要把執行、競爭與快速反應轉成能實際採取行動、突破阻力並爭取目標的行動或作品。",
+      "summary": "適合的練習不是重複輸入，而是用審慎而穩定的方式產出並接受回饋。",
+      "details": [
+        {
+          "label": "把知識用出來的方式",
+          "text": "應用方式是運用執行、競爭與快速反應解決實際問題"
+        },
+        {
+          "label": "適合的輸出形式",
+          "text": "輸出形式宜審慎而穩定"
+        }
+      ],
+      "caution": "避免因求快、急躁或忽略他人節奏而一直準備、卻沒有實際產出。",
+      "primary": "planet|Mars|7|10|",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "fixed_tension",
       "topicId": "general",
       "questionId": "general-top-themes",
       "headline": "人生主題圍繞著建立清楚的自我定位並主動承擔。",
@@ -13503,26 +13023,6 @@
     {
       "chartId": "fixed_tension",
       "topicId": "general",
-      "questionId": "general-standout-energy",
-      "headline": "命盤中較突出的能量是建立清楚的自我定位並主動承擔，外在呈現為自然成為焦點或代表人物。",
-      "summary": "它會讓同理、照顧與察覺氣氛成為容易被看見的特點。",
-      "details": [
-        {
-          "label": "最突出的能量分布",
-          "text": "突出動力是建立清楚的自我定位並主動承擔"
-        },
-        {
-          "label": "具體展現的方式",
-          "text": "外顯特徵是讓人感到被理解與接住"
-        }
-      ],
-      "caution": "",
-      "primary": "planet|Sun|4|1|",
-      "qualityFlags": []
-    },
-    {
-      "chartId": "fixed_tension",
-      "topicId": "general",
       "questionId": "general-inner-tension",
       "headline": "內在拉扯常發生在被看見、被肯定並保有主體性與過度把成敗綁在自我價值上之間。",
       "summary": "一邊想要採取行動、突破阻力並爭取目標，一邊又擔心失去平衡。",
@@ -13538,6 +13038,26 @@
       ],
       "caution": "重點是建立可切換的使用情境。",
       "primary": "balance|土固定|||",
+      "qualityFlags": []
+    },
+    {
+      "chartId": "fixed_tension",
+      "topicId": "general",
+      "questionId": "general-decision-basis",
+      "headline": "重大選擇時，最可靠的原則是確認它能否長期支持被看見、被肯定並保有主體性。",
+      "summary": "適合的方向不只讓你短暫興奮，也會讓你有空間持續深入核心並完成根本性的轉化。",
+      "details": [
+        {
+          "label": "最可靠的判斷原則",
+          "text": "判斷原則是是否支持被看見、被肯定並保有主體性"
+        },
+        {
+          "label": "方向是否適合的訊號",
+          "text": "適合的訊號是能穩定運用洞察、危機處理與資源整合"
+        }
+      ],
+      "caution": "別讓過度把成敗綁在自我價值上成為唯一的決策理由。",
+      "primary": "planet|Sun|4|1|",
       "qualityFlags": []
     }
   ]

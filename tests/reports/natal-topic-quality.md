@@ -1,10 +1,10 @@
 # Natal Topic Golden Regression Report
 
 - Golden charts: 12
-- Questions per chart: 56
-- Total generated answers: 672
-- QuestionFocus mapping: 56/56 (100%)
-- Planet × category knowledge coverage: 540/540 (100%)
+- Questions per chart: 54
+- Total generated answers: 648
+- QuestionFocus mapping: 54/54 (100%)
+- Planet × category knowledge coverage: 530/530 (100%)
 - General fallback questionFocus: 0
 - Validator flags: 0
 - Forbidden technical-term leaks: 0
@@ -12,7 +12,7 @@
 - undefined/NaN leaks: 0
 - Focused scenario failures: 0
 - Visible content failures: 0
-- Baseline hash: c7b18f84fa037fcd
+- Baseline hash: 323fb087674f0ef8
 
 ## Golden charts
 
