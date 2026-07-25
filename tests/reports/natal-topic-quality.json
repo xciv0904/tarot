@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-25T05:38:28.323Z",
+  "generatedAt": "2026-07-25T05:52:18.241Z",
   "chartCount": 12,
   "questionCount": 56,
   "caseCount": 672,
@@ -12,17 +12,18 @@
     "planetCategoryPresent": 470
   },
   "quality": {
-    "validatorFlags": 195,
+    "validatorFlags": 180,
     "flagBreakdown": {
-      "slot_overlap": 181,
+      "slot_overlap": 166,
       "generic_fallback": 11,
       "knowledge_diversity": 3
     },
     "forbiddenLeaks": 0,
     "emptyAnswers": 0,
-    "undefinedLeaks": 0
+    "undefinedLeaks": 0,
+    "focusedFailures": []
   },
-  "baselineHash": "5af732ded667d66b",
+  "baselineHash": "5da8ddd8bc15181d",
   "charts": [
     {
       "id": "fire_angular",

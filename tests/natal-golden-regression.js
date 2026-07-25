@@ -49,6 +49,7 @@ const forbidden = /角宮位置|角宮對分|canonicalKey|sourceRoles|evidenceBi
 const cases = [];
 let flags = 0, forbiddenLeaks = 0, emptyAnswers = 0, undefinedLeaks = 0;
 const flagBreakdown = {};
+const focusedFailures = [];
 c.GOLDEN_TEST_CHARTS.forEach(chart => {
   Object.entries(c.NATAL_TOPIC_QUESTIONS).forEach(([topicId, questions]) => {
     /* 正式 UI 每次最多選 3 題；按相同契約分批覆蓋完整 56 題，避免把 6-8 題
@@ -70,6 +71,19 @@ c.GOLDEN_TEST_CHARTS.forEach(chart => {
         primary:answer.primaryEvidence ? answer.primaryEvidence.canonicalKey : null,
         qualityFlags:plain(result.qualityFlags.filter(f => String(f.note||'').indexOf(answer.questionId)!==-1)),
       });
+      if (answer.questionId === 'love-meet-scene') {
+        const hasVenue = /工作|活動|聚會|圈|社團|旅行|進修|講座|場合|場域|往來|合作|興趣|朋友|家庭/.test(text);
+        if (!hasVenue) focusedFailures.push(chart.fixtureId + ': love-meet-scene 沒有具體場合');
+      }
+      if (answer.questionId === 'family-core-lesson') {
+        const detailTexts = (answer.details||[]).map(d=>d.text);
+        if (detailTexts.length < 2 || detailTexts[0] === detailTexts[1]) focusedFailures.push(chart.fixtureId + ': family-core-lesson 兩個細節重複');
+        if (!/表達|確認|責任|範圍|對話|分工|討論|說清楚|尊重|冷靜|縮小|承諾|感受|事實/.test(detailTexts[1]||'')) focusedFailures.push(chart.fixtureId + ': family-core-lesson 缺少可練習的相處方式');
+      }
+      if (answer.questionId === 'health-lifestyle-fit') {
+        if (!/生活步調/.test((answer.details||[]).map(d=>d.label).join('')) || !/判斷適不適合/.test((answer.details||[]).map(d=>d.label).join(''))) focusedFailures.push(chart.fixtureId + ': health-lifestyle-fit 缺少步調或適配判斷');
+        if (!/固定|規律|時間|節奏|作息|運動|休息|行程|專注/.test(text)) focusedFailures.push(chart.fixtureId + ': health-lifestyle-fit 缺少具體習慣');
+      }
       });
     }
   });
@@ -77,7 +91,7 @@ c.GOLDEN_TEST_CHARTS.forEach(chart => {
 const snapshot = { schemaVersion:1, chartCount:c.GOLDEN_TEST_CHARTS.length, questionCount, caseCount:cases.length, cases };
 const report = {
   generatedAt:new Date().toISOString(), chartCount:c.GOLDEN_TEST_CHARTS.length, questionCount, caseCount:cases.length,
-  coverage, quality:{validatorFlags:flags, flagBreakdown, forbiddenLeaks, emptyAnswers, undefinedLeaks},
+  coverage, quality:{validatorFlags:flags, flagBreakdown, forbiddenLeaks, emptyAnswers, undefinedLeaks, focusedFailures},
   baselineHash:hash(snapshot), charts:plain(c.GOLDEN_CHART_SPECS.map(x=>({id:x.id,label:x.label}))),
 };
 const markdown = [
@@ -93,6 +107,7 @@ const markdown = [
   `- Forbidden technical-term leaks: ${forbiddenLeaks}`,
   `- Empty answers: ${emptyAnswers}`,
   `- undefined/NaN leaks: ${undefinedLeaks}`,
+  `- Focused scenario failures: ${focusedFailures.length}`,
   `- Baseline hash: ${report.baselineHash}`,'',
   '## Golden charts','',
   ...report.charts.map(x=>`- \`${x.id}\`: ${x.label}`),''
@@ -113,4 +128,7 @@ if (process.argv.includes('--update')) {
   }
 }
 console.log(markdown);
-if (coverage.generalFallback.length || coverage.planetCategoryPresent !== coverage.planetCategoryExpected || forbiddenLeaks || emptyAnswers || undefinedLeaks) process.exitCode = 1;
+if (coverage.generalFallback.length || coverage.planetCategoryPresent !== coverage.planetCategoryExpected || forbiddenLeaks || emptyAnswers || undefinedLeaks || focusedFailures.length) {
+  if (focusedFailures.length) console.error(focusedFailures.join('\n'));
+  process.exitCode = 1;
+}

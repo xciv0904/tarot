@@ -6,14 +6,15 @@
 - QuestionFocus mapping: 56/56 (100%)
 - Planet × category knowledge coverage: 470/470 (100%)
 - General fallback questionFocus: 0
-- Validator flags: 195
+- Validator flags: 180
   - generic_fallback: 11
   - knowledge_diversity: 3
-  - slot_overlap: 181
+  - slot_overlap: 166
 - Forbidden technical-term leaks: 0
 - Empty answers: 0
 - undefined/NaN leaks: 0
-- Baseline hash: 5af732ded667d66b
+- Focused scenario failures: 0
+- Baseline hash: 5da8ddd8bc15181d
 
 ## Golden charts
 

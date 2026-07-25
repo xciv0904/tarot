@@ -9262,6 +9262,77 @@ function unionConceptKeys() {
   }
   return out;
 }
+/* V5.1：三個高風險 questionFocus 使用專屬 Content Plan。
+   通用 intent 模板適合多數題目，但「在哪裡認識」「生活習慣」需要可觀察、
+   可驗證的具體答案；「家庭核心課題」則必須把問題與練習拆成兩件事。 */
+function natalEvidenceHouseNumber(e) {
+  return e && (e.houseFocus || e.house || (e.angleWhich && ANGLE_VIRTUAL_HOUSE[e.angleWhich]));
+}
+function natalPlanetSemantic(e) {
+  if (!e || !e.planetKey || typeof ASTRO_PLANET_SEMANTIC_DATASET === 'undefined') return null;
+  return ASTRO_PLANET_SEMANTIC_DATASET[e.planetKey] || null;
+}
+function applyFocusedQuestionContentPlan(base, question, top, second, third, topicId) {
+  var focus = question.questionFocus;
+  if (focus === 'meeting_context') {
+    var venueEvidence = [top, second, third].filter(Boolean).filter(function (e) { return !!natalEvidenceHouseNumber(e); });
+    var venue1 = venueEvidence[0] ? projectEvidenceForTopic(venueEvidence[0], topicId, focus).projectedMeaning : '共同興趣、工作合作或朋友介紹的場合';
+    var venue2 = '';
+    for (var vi = 1; vi < venueEvidence.length; vi++) {
+      var candidateVenue = projectEvidenceForTopic(venueEvidence[vi], topicId, focus).projectedMeaning;
+      if (candidateVenue && candidateVenue !== venue1) { venue2 = candidateVenue; break; }
+    }
+    var meetSemantic = natalPlanetSemantic(top);
+    var connection = meetSemantic ? ('彼此展現' + meetSemantic.gift) : '自然交談與共同完成事情';
+    base.headline = '較容易在' + venue1 + '認識重要對象。';
+    base.summary = '關係通常不是憑空發生，而是在有共同活動、可以反覆接觸的情境裡，透過' + connection + '慢慢形成。';
+    base.details = [
+      { label:'較可能出現的場合', text:venue1 },
+      { label:'另一種可能情境', text:venue2 || ('先因共同任務或興趣互動，再從' + connection + '逐漸熟悉') },
+    ];
+    base.caution = '';
+    base.headlineConceptKeys = ['meetingVenue:' + venue1];
+    base.summaryConceptKeys = ['meetingConnection:' + connection];
+    base.detailConceptKeys = ['meetingVenuePrimary:' + venue1, 'meetingVenueSecondary:' + (venue2 || connection)];
+    base.cautionConceptKeys = [];
+  } else if (focus === 'family_core_lesson') {
+    var familyPrimary = natalPlanetSemantic(top);
+    var familySupport = natalPlanetSemantic(second) || natalPlanetSemantic(third);
+    var recurring = familyPrimary ? familyPrimary.risk : '把責任與情緒都攬在自己身上';
+    var need = familyPrimary ? familyPrimary.need : '清楚而安全的互動';
+    var practiceKey = (second && second.planetKey) || (third && third.planetKey) || (top && top.planetKey);
+    var practice = (typeof ASTRO_FAMILY_PRACTICE_DATASET !== 'undefined' && ASTRO_FAMILY_PRACTICE_DATASET[practiceKey])
+      || '說清楚需求、分配責任並確認彼此理解';
+    base.headline = '家庭關係反覆出現的課題，較可能是「' + recurring + '」。';
+    base.summary = '這通常不是誰做得不夠好，而是家人都在追求' + need + '時，沿用了不再有效的相處方式。';
+    base.details = [
+      { label:'反覆出現的課題', text:recurring },
+      { label:'需要練習的相處方式', text:practice },
+    ];
+    base.caution = '留意不要只要求自己做得更多；真正的改善需要家人共同調整分工與回應方式。';
+    base.headlineConceptKeys = ['familyRecurring:' + recurring];
+    base.summaryConceptKeys = ['familyNeed:' + need];
+    base.detailConceptKeys = ['familyProblem:' + recurring, 'familyPractice:' + practice];
+    base.cautionConceptKeys = ['familySharedResponsibility'];
+  } else if (focus === 'lifestyle_fit') {
+    var habitKey = top && top.planetKey;
+    var habit = (typeof ASTRO_LIFESTYLE_HABIT_DATASET !== 'undefined' && ASTRO_LIFESTYLE_HABIT_DATASET[habitKey])
+      || (typeof ASTRO_LIFESTYLE_HABIT_DATASET !== 'undefined' && ASTRO_LIFESTYLE_HABIT_DATASET.Saturn);
+    base.headline = '較適合你的，是' + habit.pace + '。';
+    base.summary = '判斷合不合適，不是看能否偶爾做到，而是這套安排能不能連續維持數週，同時讓睡眠、精神與日常任務更穩定。';
+    base.details = [
+      { label:'適合的生活步調', text:habit.pace },
+      { label:'容易維持的作息', text:habit.routine },
+      { label:'怎麼判斷適不適合', text:habit.fit },
+    ];
+    base.caution = '這是生活方式建議；若有持續失眠、疼痛或其他不適，仍應尋求合格醫療專業協助。';
+    base.headlineConceptKeys = ['lifestylePace:' + habit.pace];
+    base.summaryConceptKeys = ['lifestyleFitTest'];
+    base.detailConceptKeys = ['lifestyleRoutine:' + habit.routine, 'lifestyleSignal:' + habit.fit];
+    base.cautionConceptKeys = ['medicalBoundary'];
+  }
+  return base;
+}
 function buildQuestionContent(topicId, question, rankedEvidence, ctx) {
   ctx = ctx || {};
   var usedHeadlines = ctx.usedHeadlines, usedSummaries = ctx.usedSummaries, usedPrimaryKeys = ctx.usedPrimaryKeys, usedCautions = ctx.usedCautions;
@@ -9401,7 +9472,7 @@ function buildQuestionContent(topicId, question, rankedEvidence, ctx) {
   base.detailConceptKeys = detailConceptKeys;
   base.cautionConceptKeys = cautionConceptKeys;
   base.primaryEvidence = top; base.supportingEvidence = others.slice(0, 2);
-  return base;
+  return applyFocusedQuestionContentPlan(base, question, top, second, third, topicId);
 }
 /* 摺疊區顯示：主要占星指標（含 sourceRoles）、配置如何支持結論、互相矛盾的訊號、解讀限制 */
 function buildAdvancedExplanation(question, rankedEvidence, skipped, tensions, mergedSignal) {
@@ -10061,4 +10132,3 @@ try { state.homeTourDismissed = localStorage.getItem('tl_home_tour_seen') === '1
 try { var _savedPersona = localStorage.getItem('tl_ai_persona'); if (_savedPersona && findAiPersona(_savedPersona).key === _savedPersona) state.aiPersona = _savedPersona; } catch (e) {}
 
 render();
-
