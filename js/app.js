@@ -6155,6 +6155,12 @@ function astroCopyAspectEndpoint(key, chart, unknownTime) {
   if (!profile || !position) return '';
   return profile.name + '：' + astroCopyPositionLine(position, unknownTime);
 }
+/* V2 分工說明：這是「命盤解析」的複製給 AI（astroCopyForAI 呼叫），涵蓋整張命盤
+   逐行星逐宮位的完整資料，用途是讓使用者拿到一份完整、系統性的星盤原始判斷依據。
+   跟人生主題分析的 natalTopicCopyForAI() 不同——後者只針對使用者選的 1-3 個具體
+   問題，資料是「依 intent 情境化過的 headline/summary/details/caution + 完整
+   evidence（含 sourceRoles／權重）」，兩者服務目的不同，不應該合併成同一份，也
+   不能讓其中一個只是另一個的截短版本（這是 V2 規格明確要求的）。 */
 function buildAstroCopyText(chart, unknownTime) {
   if (!chart) return '';
   var lines = [];
@@ -8685,17 +8691,76 @@ function astroMoonRangeText() {
   var b = computeNatalChart(+state.astroY,+state.astroM,+state.astroD,23,59,c.lat,c.lon,c.tz,state.astroHouseSystem).planets.Moon;
   return ZODIAC_SIGNS[a.sign].zh + ' ' + a.deg.toFixed(1) + '° ～ ' + ZODIAC_SIGNS[b.sign].zh + ' ' + b.deg.toFixed(1) + '°';
 }
+/* V2：命盤總覽建構一個「假 evidence」餵給跟人生主題分析同一套 contextualizeEvidence()，
+   讓命盤總覽／人生主題分析共用同一份判斷與情境化引擎，只是輸出的目的不同
+   （總覽是整體人格輪廓，主題分析是針對具體問題）——呼應規格要求的「四個輸出功能
+   共用同一份本命盤資料與判斷邏輯」。 */
+function natalQuickEvidence(chart, planetKey) {
+  var p = chart.planets[planetKey];
+  if (!p) return null;
+  var def = findAnyPointDef(planetKey);
+  return { planetKey: planetKey, sign: p.sign, house: state.astroUnknownTime ? null : p.house, canonicalKey: 'quick|' + planetKey, factor: def ? def.zh : planetKey, reason: def ? (def.meaning || def.zh) : '' };
+}
+function natalQuickText(chart, planetKey, intent, seedTag) {
+  var e = natalQuickEvidence(chart, planetKey);
+  return e ? contextualizeEvidence(e, intent, 'quicksummary|' + seedTag) : null;
+}
 function renderAstroQuickSummary(chart) {
-  var sun = ZODIAC_SIGNS[chart.planets.Sun.sign], moon = ZODIAC_SIGNS[chart.planets.Moon.sign];
+  var sunSign = chart.planets.Sun.sign, moonSign = chart.planets.Moon.sign;
   var eq = computeElementQualityBalance(chart);
-  var elems = ['火','土','風','水'];
-  var topElem = elems.reduce(function(a,b){return eq.elem[b]>eq.elem[a]?b:a;}, elems[0]);
-  var major = astroUsableAspects(chart).filter(function(a){return ASTRO_PLANET_BODY_KEYS.indexOf(a.a)>=0&&ASTRO_PLANET_BODY_KEYS.indexOf(a.b)>=0;}).sort(function(a,b){return a.orb-b.orb;}).slice(0,3);
-  var h = '<section style="margin-top:16px;border:1px solid rgba(201,169,110,.38);border-radius:12px;padding:15px 17px;background:rgba(201,169,110,.07)"><h3 style="font:600 14px \'Noto Serif TC\',serif;color:#e6cd9a;margin:0">三分鐘看懂你的星盤</h3>';
-  h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.82);line-height:1.85;margin-top:9px">你的核心自我帶有<strong>' + sun.zh + '</strong>的' + sun.trait + '；情緒需求偏向<strong>' + moon.zh + '</strong>的' + moon.trait + '。整體以<strong>' + topElem + '元素</strong>最突出。' + (state.astroUnknownTime ? '出生時間未知，因此本摘要不採用上升與宮位。' : '你給人的第一印象則帶有<strong>' + ZODIAC_SIGNS[chart.ascSign].zh + '上升</strong>的色彩。') + '</div>';
+  var elems = ['火', '土', '風', '水'];
+  var topElem = elems.reduce(function (a, b) { return eq.elem[b] > eq.elem[a] ? b : a; }, elems[0]);
+
+  /* 一句核心印象＋3個人格關鍵詞 */
+  var coreImpression = natalQuickText(chart, 'Sun', 'overview', 'core');
+  var keywords = [SIGN_KEYWORD[sunSign], SIGN_KEYWORD[moonSign]];
+  if (!state.astroUnknownTime && chart.ascSign != null) keywords.push(SIGN_KEYWORD[chart.ascSign]);
+  else keywords.push(topElem + '特質突出');
+  keywords = keywords.filter(function (k, i) { return keywords.indexOf(k) === i; });
+
+  /* 自我／情緒／人際／行動 四個面向。「自我」面向不套用一般 intent frame（那些
+     frame 是為了回答具體問題設計的，例如 profile 講的是「容易遇到怎樣的人」，
+     套在自我描述上語意會不通），改用專屬於自我描述的固定句型，直接引用
+     coreNeed／behavior 欄位，跟上面的「一句核心印象」（function+mode）引用不同
+     欄位，確保不會整段重複。 */
+  var sunPb = PLANET_BEGINNER.Sun, sunSb = SIGN_BEGINNER[sunSign];
+  var selfText = (sunPb && sunSb) ? ('你習慣透過「' + sunPb.coreNeed[0] + '」來確立自己，具體會' + sunSb.behavior + '。') : null;
+  var dims = [
+    { label: '自我', text: selfText },
+    { label: '情緒', text: natalQuickText(chart, 'Moon', 'overview', 'emotion') },
+    { label: '人際', text: natalQuickText(chart, 'Venus', 'style', 'social') },
+    { label: '行動', text: natalQuickText(chart, 'Mars', 'pattern', 'action') },
+  ].filter(function (d) { return d.text; });
+
+  /* 核心優勢／成長課題：復用 strength／challenge intent，跟人生主題分析同一套字典 */
+  var strengths = [natalQuickText(chart, 'Sun', 'strength', 'str1'), natalQuickText(chart, 'Moon', 'strength', 'str2')].filter(Boolean);
+  var challenges = [natalQuickText(chart, 'Saturn', 'challenge', 'cha1'), natalQuickText(chart, 'Mars', 'challenge', 'cha2')].filter(Boolean);
+
+  var major = astroUsableAspects(chart).filter(function (a) { return ASTRO_PLANET_BODY_KEYS.indexOf(a.a) >= 0 && ASTRO_PLANET_BODY_KEYS.indexOf(a.b) >= 0; }).sort(function (a, b) { return a.orb - b.orb; }).slice(0, 3);
+
+  var h = '<section style="margin-top:16px;border:1px solid rgba(201,169,110,.38);border-radius:12px;padding:16px 17px;background:rgba(201,169,110,.07)"><h3 style="font:600 14px \'Noto Serif TC\',serif;color:#e6cd9a;margin:0">三分鐘看懂你的星盤</h3>';
+  if (coreImpression) h += '<div style="font:500 12.5px \'Noto Sans TC\',sans-serif;color:#f0e9d8;line-height:1.8;margin-top:9px">' + esc(coreImpression) + '</div>';
+  h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:9px">' + keywords.map(function (k) { return '<span style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;background:rgba(201,169,110,.12);border:1px solid rgba(201,169,110,.3);border-radius:20px;padding:3px 11px">' + esc(k) + '</span>'; }).join('') + '</div>';
+  if (state.astroUnknownTime) h += '<div style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-top:8px">出生時間未知，因此本摘要不採用上升與宮位。</div>';
+
+  if (dims.length) {
+    h += '<div style="margin-top:13px;display:grid;grid-template-columns:1fr 1fr;gap:9px">';
+    dims.forEach(function (d) {
+      h += '<div style="border-left:2px solid rgba(201,169,110,.35);padding-left:8px"><span style="font:500 10.5px \'Noto Sans TC\',sans-serif;color:#c9a96e">' + esc(d.label) + '</span><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.65;margin-top:2px">' + esc(d.text) + '</div></div>';
+    });
+    h += '</div>';
+  }
+  if (strengths.length) {
+    h += '<div style="margin-top:12px;font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e">核心優勢</div>';
+    strengths.forEach(function (s) { h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.7;margin-top:3px">・' + esc(s) + '</div>'; });
+  }
+  if (challenges.length) {
+    h += '<div style="margin-top:10px;font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e">成長課題</div>';
+    challenges.forEach(function (c) { h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.65);line-height:1.7;margin-top:3px">・' + esc(c) + '</div>'; });
+  }
   if (major.length) {
     var usedLeads = [];
-    h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:10px">最明顯的三組性格互動</div>' + major.map(function(a){var d=aspectBeginnerDataUnique(a, usedLeads);return '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.68);line-height:1.7;margin-top:4px">• <strong>'+esc(d.title)+'</strong>：'+esc(d.lead)+'</div>';}).join('')+'<details style="margin-top:7px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);cursor:pointer">查看三組相位的專業名稱與容許度</summary><div style="margin-top:5px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);line-height:1.7">'+major.map(function(a){return esc(aspectPlacementText(a));}).join('<br>')+'</div></details>';
+    h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:12px">最明顯的三組性格互動</div>' + major.map(function (a) { var d = aspectBeginnerDataUnique(a, usedLeads); return '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.68);line-height:1.7;margin-top:4px">• <strong>' + esc(d.title) + '</strong>：' + esc(d.lead) + '</div>'; }).join('') + '<details style="margin-top:7px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);cursor:pointer">查看三組相位的專業名稱與容許度</summary><div style="margin-top:5px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);line-height:1.7">' + major.map(function (a) { return esc(aspectPlacementText(a)); }).join('<br>') + '</div></details>';
   }
   return h + '</section>';
 }
@@ -8729,30 +8794,64 @@ function natalSignLabel(sign, house) {
   var s = ZODIAC_SIGNS[sign].zh;
   return house ? (s + '第' + house + '宮') : s;
 }
-/* 優先重用既有的 PLANET_BEGINNER／SIGN_BEGINNER／HOUSE_BEGINNER 內容庫找關鍵字，
-   不另外新寫一套；watchMode=true 時偏向找「需要留意」的措辭，否則偏「優勢」措辭。 */
-function natalTraitFromPlanetSign(planetKey, sign, watchMode) {
-  var pb = PLANET_BEGINNER[planetKey];
-  var sb = SIGN_BEGINNER[sign];
-  if (!pb || !sb) return '';
-  return watchMode ? (pb.watch || sb.watch || sb.shadow) : (pb.strength || sb.strength);
+/* V2：情境化解讀。取代舊的 natalTraitForEvidence(e, watchMode)——舊版只看
+   planetKey+sign，完全不吃 topicId/question/intent，導致同一顆行星同一星座，
+   不管在哪個題目下讀出來的內容都一樣（這正是「對方外型題卻在講情緒需求」的根因）。
+   新版依 INTENT_FRAMES（見 astrology-natal-topics-data.js）決定要引用
+   PLANET_BEGINNER／SIGN_BEGINNER／HOUSE_BEGINNER 的哪些欄位、用什麼句型組合，
+   同一組配置換一個 intent 就會讀出不同角度的句子。缺對應資料時優雅降級回
+   evidence.reason，不會留白也不會硬湊。 */
+function natalIntentFieldValue(obj, fieldName) {
+  if (!obj || !fieldName) return null;
+  if (fieldName === 'coreNeed0') return obj.coreNeed && obj.coreNeed[0];
+  return obj[fieldName] || null;
 }
-function natalTraitFromHouse(houseNum, watchMode) {
-  var hb = HOUSE_BEGINNER[houseNum - 1];
-  if (!hb) return '';
-  return watchMode ? hb.growthTask : hb.lifeArea;
+function contextualizeEvidence(e, intent, seedExtra) {
+  intent = INTENT_ALIAS[intent] || intent || 'overview';
+  var frame = INTENT_FRAMES[intent] || INTENT_FRAMES.overview;
+  var seed = 'ctx|' + intent + '|' + (seedExtra || '') + '|' + (e.canonicalKey || e.factor);
+  if (frame.vibe) {
+    var vibe = (e.sign != null) ? SIGN_VIBE[e.sign] : null;
+    if (!vibe) return e.reason;
+    return fillTpl(astroSeededPick(seed, frame.tpl), { VIBE: vibe });
+  }
+  var pb = e.planetKey ? PLANET_BEGINNER[e.planetKey] : null;
+  var sb = (e.sign != null) ? SIGN_BEGINNER[e.sign] : null;
+  var houseNum = e.houseFocus || e.house;
+  var hb = houseNum ? HOUSE_BEGINNER[houseNum - 1] : null;
+  var pVal = natalIntentFieldValue(pb, frame.p) || '';
+  var p2Val = natalIntentFieldValue(pb, frame.p2) || '';
+  var sVal = natalIntentFieldValue(sb, frame.s) || '';
+  var hVal = natalIntentFieldValue(hb, frame.h) || '';
+  /* 只有這個 intent 模板實際需要的欄位「全部都有資料」時，才套用完整句型；
+     缺欄位時（例如角宮證據沒有 planetKey，pb 就會是 null）不要硬套模板留下
+     「「」」這種空缺痕跡，改成把手上有的片語自然接起來，缺的部分優雅省略。 */
+  var haveAllNeeded = (!frame.p || pVal) && (!frame.p2 || p2Val) && (!frame.s || sVal) && (!frame.h || hVal);
+  if (haveAllNeeded) {
+    return fillTpl(astroSeededPick(seed, frame.tpl), { P_: pVal, S_: sVal, H_: hVal, P2_: p2Val });
+  }
+  var parts = [sVal, pVal, hVal, p2Val].filter(Boolean);
+  if (!parts.length) return e.reason;
+  return parts.join('，') + '。';
 }
-function natalTraitForEvidence(e, watchMode) {
-  if (e.planetKey && e.sign != null) {
-    var t = natalTraitFromPlanetSign(e.planetKey, e.sign, watchMode);
-    if (t) return t;
-  }
-  if (e.houseFocus) { var hT = natalTraitFromHouse(e.houseFocus, watchMode); if (hT) return hT; }
-  if (e.sign != null) {
-    var sb = SIGN_BEGINNER[e.sign];
-    if (sb) return watchMode ? (sb.watch || sb.shadow) : sb.strength;
-  }
-  return watchMode ? '這部分還需要多觀察，暫時沒有更明確的線索' : '這部分的線索目前比較概略';
+/* V2：preferredEvidence／excludedTargets 的實際套用。只有題目自己容易被「宮內
+   行星／宮主星」自動發現的無關配置蓋台的 intent（外型、吸引、第一印象）才套用，
+   其他題目維持依原始權重排序，不做人工干預。回傳的是「用來挑內容」的排序，
+   可折疊區顯示的證據仍然用原始未偏移的權重，維持透明。 */
+function applyEvidenceBias(rankedEvidence, question) {
+  var intent = INTENT_ALIAS[question.intent] || question.intent || 'overview';
+  if (NATAL_INTENT_STRICT_PREFERRED.indexOf(intent) === -1) return rankedEvidence;
+  var preferred = question.preferredPlanets || [];
+  var excluded = question.excludedPlanets || [];
+  var scored = rankedEvidence.map(function (e) {
+    var bonus = 0;
+    if (e.planetKey && preferred.indexOf(e.planetKey) !== -1) bonus += 3;
+    if (e.planetKey && excluded.indexOf(e.planetKey) !== -1) bonus -= 5;
+    if (intent === 'appearance' && e.angleWhich === 'dsc') bonus += 2;
+    return { e: e, score: e.weight + bonus };
+  });
+  scored.sort(function (a, b) { return b.score - a.score; });
+  return scored.map(function (s) { return s.e; });
 }
 
 function getTopicIndicators(topicId, questionId) {
@@ -8764,20 +8863,52 @@ function getTopicIndicators(topicId, questionId) {
 /* 依指標描述，從 chartData 實際擷取證據；找不到就記錄原因並跳過（skipped），不捏造。
    出生時間未知時，跟站內其他星盤功能一樣：不使用上升／天頂／下降／天底／宮位／
    福點／宿命點，月亮相關相位也一併排除（沿用既有的 astroUsableAspects()）。 */
+/* V2：canonicalKey 讓「同一個底層配置」不管是被哪種指標角色發現的（宮內行星／
+   宮主星／直接指定的行星…），都會收斂成同一把 key，供 mergeEvidenceByCanonicalKey
+   合併、避免同一顆行星因為身兼多個指標角色而被算成好幾筆「一致訊號」。 */
+function natalEvidenceCanonicalKey(objType, objName, sign, house, extra) {
+  return [objType, objName, (sign != null ? sign : ''), (house != null ? house : ''), (extra || '')].join('|');
+}
+/* 把同一個 canonicalKey 的多筆證據合併成一筆：權重採「最高權重 + 有限的支持
+   加成」（最多 +2），不是把每個角色的權重直接加總，避免虛增一致性訊號；
+   sourceRoles 保留所有發現這筆配置的指標角色，供可折疊區顯示完整來源。 */
+function mergeEvidenceByCanonicalKey(evidence) {
+  var groups = {}, order = [];
+  evidence.forEach(function (e) {
+    var key = e.canonicalKey || (e.factor + '|' + e.placement);
+    if (!groups[key]) { groups[key] = []; order.push(key); }
+    groups[key].push(e);
+  });
+  return order.map(function (key) {
+    var group = groups[key];
+    if (group.length === 1) {
+      group[0].sourceRoles = [group[0].role].filter(Boolean);
+      return group[0];
+    }
+    var best = group.slice().sort(function (a, b) { return b.weight - a.weight; })[0];
+    var roles = [];
+    group.forEach(function (e) { if (e.role && roles.indexOf(e.role) === -1) roles.push(e.role); });
+    var merged = {};
+    for (var k in best) merged[k] = best[k];
+    merged.weight = best.weight + Math.min(group.length - 1, 2);
+    merged.sourceRoles = roles;
+    return merged;
+  });
+}
 function extractChartEvidence(chart, unknownTime, indicators) {
   var evidence = [], skipped = [];
   function pushPlanetEvidence(key, weight) {
     var p = chart.planets[key], def = findAnyPointDef(key);
     if (!p || !def) { skipped.push({ factor: key, reason: '尚未計算這個天體' }); return; }
     var house = unknownTime ? null : p.house;
-    evidence.push({ factor: def.zh, placement: def.zh + '在' + natalSignLabel(p.sign, house), reason: def.meaning || def.zh, weight: weight, elemTag: ZODIAC_SIGNS[p.sign].elem, planetKey: key, sign: p.sign, house: house });
+    evidence.push({ factor: def.zh, placement: def.zh + '在' + natalSignLabel(p.sign, house), reason: def.meaning || def.zh, weight: weight, elemTag: ZODIAC_SIGNS[p.sign].elem, planetKey: key, sign: p.sign, house: house, role: 'planet:' + key, canonicalKey: natalEvidenceCanonicalKey('planet', key, p.sign, house) });
   }
   indicators.forEach(function (ind) {
     if (ind.type === 'angle') {
       if (unknownTime) { skipped.push({ factor: NATAL_ANGLE_ZH[ind.which] || ind.which, reason: '出生時間未知，無法使用上升／天頂／下降／天底' }); return; }
       var sign = natalAngleSign(chart, ind.which);
       if (sign == null) { skipped.push({ factor: ind.which, reason: '資料不足' }); return; }
-      evidence.push({ factor: NATAL_ANGLE_ZH[ind.which] || ind.which, placement: (NATAL_ANGLE_ZH[ind.which] || ind.which) + '落在' + ZODIAC_SIGNS[sign].zh, reason: '角宮位置，對這個主題有較高的代表性', weight: 9, elemTag: ZODIAC_SIGNS[sign].elem, sign: sign });
+      evidence.push({ factor: NATAL_ANGLE_ZH[ind.which] || ind.which, placement: (NATAL_ANGLE_ZH[ind.which] || ind.which) + '落在' + ZODIAC_SIGNS[sign].zh, reason: '角宮位置，對這個主題有較高的代表性', weight: 9, elemTag: ZODIAC_SIGNS[sign].elem, sign: sign, angleWhich: ind.which, role: 'angle:' + ind.which, canonicalKey: natalEvidenceCanonicalKey('angle', ind.which, sign, null) });
     } else if (ind.type === 'housePlanets') {
       if (unknownTime) { skipped.push({ factor: '第' + ind.house + '宮內行星', reason: '出生時間未知，無法使用宮位' }); return; }
       var found = ASTRO_PLANET_BODY_KEYS.filter(function (k) { return chart.planets[k].house === ind.house; });
@@ -8785,7 +8916,7 @@ function extractChartEvidence(chart, unknownTime, indicators) {
       found.forEach(function (k) {
         var p = chart.planets[k], def = findAnyPointDef(k);
         var w = 8 + (NATAL_PERSONAL_PLANET_KEYS.indexOf(k) !== -1 ? 1 : 0) + (NATAL_ANGULAR_HOUSES.indexOf(ind.house) !== -1 ? 1 : 0);
-        evidence.push({ factor: '第' + ind.house + '宮內行星', placement: def.zh + '在' + natalSignLabel(p.sign, p.house), reason: def.zh + '直接落在第' + ind.house + '宮，代表這個生活領域被明顯啟動', weight: w, elemTag: ZODIAC_SIGNS[p.sign].elem, planetKey: k, sign: p.sign, house: p.house });
+        evidence.push({ factor: '第' + ind.house + '宮內行星', placement: def.zh + '在' + natalSignLabel(p.sign, p.house), reason: def.zh + '直接落在第' + ind.house + '宮，代表這個生活領域被明顯啟動', weight: w, elemTag: ZODIAC_SIGNS[p.sign].elem, planetKey: k, sign: p.sign, house: p.house, role: 'housePlanets:' + ind.house, canonicalKey: natalEvidenceCanonicalKey('planet', k, p.sign, p.house) });
       });
     } else if (ind.type === 'houseRuler' || ind.type === 'chartRuler') {
       var houseNum = ind.type === 'chartRuler' ? 1 : ind.house;
@@ -8794,7 +8925,7 @@ function extractChartEvidence(chart, unknownTime, indicators) {
       if (!rp) { skipped.push({ factor: '第' + houseNum + '宮主星', reason: '守護星資料不足' }); return; }
       var rDef = findAnyPointDef(rp.rulerKey);
       var label = houseNum === 1 ? '上升主星（命主星）' : ('第' + houseNum + '宮主星');
-      evidence.push({ factor: label, placement: rDef.zh + '（' + label + '）在' + natalSignLabel(rp.sign, rp.house), reason: '第' + houseNum + '宮宮頭在' + ZODIAC_SIGNS[rp.cuspSign].zh + '，守護星是' + rDef.zh + '，它實際的落點是這個生活領域怎麼被打理的關鍵線索', weight: 8, elemTag: ZODIAC_SIGNS[rp.sign].elem, planetKey: rp.rulerKey, sign: rp.sign, house: rp.house });
+      evidence.push({ factor: label, placement: rDef.zh + '（' + label + '）在' + natalSignLabel(rp.sign, rp.house), reason: '第' + houseNum + '宮宮頭在' + ZODIAC_SIGNS[rp.cuspSign].zh + '，守護星是' + rDef.zh + '，它實際的落點是這個生活領域怎麼被打理的關鍵線索', weight: 8, elemTag: ZODIAC_SIGNS[rp.sign].elem, planetKey: rp.rulerKey, sign: rp.sign, house: rp.house, role: (ind.type === 'chartRuler' ? 'chartRuler' : 'houseRuler:' + houseNum), canonicalKey: natalEvidenceCanonicalKey('planet', rp.rulerKey, rp.sign, rp.house) });
     } else if (ind.type === 'planet') {
       pushPlanetEvidence(ind.key, 7);
     } else if (ind.type === 'point') {
@@ -8805,7 +8936,7 @@ function extractChartEvidence(chart, unknownTime, indicators) {
       var pt = chart.points[ind.key];
       if (!pt) { skipped.push({ factor: ptDef0.zh, reason: '資料不足' }); return; }
       var ptHouse = unknownTime ? null : pt.house;
-      evidence.push({ factor: ptDef0.zh, placement: ptDef0.zh + '在' + natalSignLabel(pt.sign, ptHouse), reason: ptDef0.meaning || ptDef0.zh, weight: 5, elemTag: ZODIAC_SIGNS[pt.sign].elem, planetKey: ind.key, sign: pt.sign, house: ptHouse });
+      evidence.push({ factor: ptDef0.zh, placement: ptDef0.zh + '在' + natalSignLabel(pt.sign, ptHouse), reason: ptDef0.meaning || ptDef0.zh, weight: 5, elemTag: ZODIAC_SIGNS[pt.sign].elem, planetKey: ind.key, sign: pt.sign, house: ptHouse, role: 'point:' + ind.key, canonicalKey: natalEvidenceCanonicalKey('point', ind.key, pt.sign, ptHouse) });
     } else if (ind.type === 'aspectsInvolving' || ind.type === 'aspectsInvolvingHouseRuler') {
       var keys = ind.type === 'aspectsInvolving' ? ind.keys.slice() : [];
       if (ind.type === 'aspectsInvolvingHouseRuler') {
@@ -8817,24 +8948,25 @@ function extractChartEvidence(chart, unknownTime, indicators) {
       if (!matched.length) { skipped.push({ factor: '相關緊密相位', reason: '沒有找到符合條件的主要相位' }); return; }
       matched.forEach(function (a) {
         var w = Math.max(2, 7 - Math.round(a.orb));
-        evidence.push({ factor: '相位', placement: aspectPlacementText(a), reason: '這組相位牽涉到這題會參考的天體，容許度 ' + a.orb.toFixed(1) + '°', weight: w, natureTag: (a.type === 'square' || a.type === 'opposition') ? 'tense' : (a.type === 'trine' || a.type === 'sextile') ? 'supportive' : 'neutral', aspect: a });
+        var aKey = [a.a, a.b].sort().join('-') + ':' + a.type;
+        evidence.push({ factor: '相位', placement: aspectPlacementText(a), reason: '這組相位牽涉到這題會參考的天體，容許度 ' + a.orb.toFixed(1) + '°', weight: w, natureTag: (a.type === 'square' || a.type === 'opposition') ? 'tense' : (a.type === 'trine' || a.type === 'sextile') ? 'supportive' : 'neutral', aspect: a, role: 'aspect', canonicalKey: natalEvidenceCanonicalKey('aspect', aKey, null, null) });
       });
     } else if (ind.type === 'elementQualityBalance') {
       var bal = computeElementQualityBalance(chart);
       var topElem = Object.keys(bal.elem).sort(function (x, y) { return bal.elem[y] - bal.elem[x]; })[0];
       var topQual = Object.keys(bal.qual).sort(function (x, y) { return bal.qual[y] - bal.qual[x]; })[0];
-      evidence.push({ factor: '元素／性質分布', placement: topElem + '元素（' + bal.elem[topElem] + '顆）、' + topQual + '性質（' + bal.qual[topQual] + '顆）較多', reason: '整體行星分布偏向這個元素與性質，代表比較主要的行動與情感基調', weight: 6, elemTag: topElem });
+      evidence.push({ factor: '元素／性質分布', placement: topElem + '元素（' + bal.elem[topElem] + '顆）、' + topQual + '性質（' + bal.qual[topQual] + '顆）較多', reason: '整體行星分布偏向這個元素與性質，代表比較主要的行動與情感基調', weight: 6, elemTag: topElem, role: 'elementBalance', canonicalKey: natalEvidenceCanonicalKey('balance', topElem + topQual, null, null) });
     } else if (ind.type === 'nodeAxis') {
       var node = chart.points.Node;
       if (!node) { skipped.push({ factor: '南北交點', reason: '資料不足' }); return; }
-      evidence.push({ factor: '北交點', placement: '北交點在' + ZODIAC_SIGNS[node.sign].zh, reason: '交點軸線代表你人生持續在練習、逐漸靠近的方向', weight: 6, elemTag: ZODIAC_SIGNS[node.sign].elem, sign: node.sign });
+      evidence.push({ factor: '北交點', placement: '北交點在' + ZODIAC_SIGNS[node.sign].zh, reason: '交點軸線代表你人生持續在練習、逐漸靠近的方向', weight: 6, elemTag: ZODIAC_SIGNS[node.sign].elem, sign: node.sign, role: 'nodeAxis', canonicalKey: natalEvidenceCanonicalKey('point', 'Node', node.sign, null) });
     } else if (ind.type === 'angularPlanets') {
       if (unknownTime) { skipped.push({ factor: '角宮行星', reason: '出生時間未知，無法使用宮位' }); return; }
       var angular = ASTRO_PLANET_BODY_KEYS.filter(function (k) { return NATAL_ANGULAR_HOUSES.indexOf(chart.planets[k].house) !== -1; });
       if (!angular.length) { skipped.push({ factor: '角宮行星', reason: '目前沒有行星落在角宮（1/4/7/10宮）' }); return; }
       angular.forEach(function (k) {
         var p = chart.planets[k], def = findAnyPointDef(k);
-        evidence.push({ factor: '角宮行星', placement: def.zh + '在第' + p.house + '宮', reason: '角宮的行星力量較容易直接展現在生活中', weight: 8, elemTag: ZODIAC_SIGNS[p.sign].elem, planetKey: k, sign: p.sign, house: p.house });
+        evidence.push({ factor: '角宮行星', placement: def.zh + '在第' + p.house + '宮', reason: '角宮的行星力量較容易直接展現在生活中', weight: 8, elemTag: ZODIAC_SIGNS[p.sign].elem, planetKey: k, sign: p.sign, house: p.house, role: 'angularPlanets', canonicalKey: natalEvidenceCanonicalKey('planet', k, p.sign, p.house) });
       });
     } else if (ind.type === 'stelliumHouse') {
       if (unknownTime) { skipped.push({ factor: '聚集宮位', reason: '出生時間未知，無法使用宮位' }); return; }
@@ -8842,18 +8974,19 @@ function extractChartEvidence(chart, unknownTime, indicators) {
       ASTRO_PLANET_BODY_KEYS.forEach(function (k) { var h = chart.planets[k].house; counts[h] = (counts[h] || 0) + 1; });
       var bestHouse = Object.keys(counts).sort(function (x, y) { return counts[y] - counts[x]; })[0];
       if (!bestHouse || counts[bestHouse] < 3) { skipped.push({ factor: '聚集宮位', reason: '沒有 3 顆以上行星聚集在同一宮，略過此項' }); return; }
-      evidence.push({ factor: '聚集宮位', placement: '第' + bestHouse + '宮聚集了 ' + counts[bestHouse] + ' 顆行星', reason: '多顆行星集中在同一宮，代表這個生活領域是命盤明顯的重心', weight: 8, houseFocus: Number(bestHouse) });
+      evidence.push({ factor: '聚集宮位', placement: '第' + bestHouse + '宮聚集了 ' + counts[bestHouse] + ' 顆行星', reason: '多顆行星集中在同一宮，代表這個生活領域是命盤明顯的重心', weight: 8, houseFocus: Number(bestHouse), role: 'stelliumHouse', canonicalKey: natalEvidenceCanonicalKey('houseFocus', bestHouse, null, null) });
     } else if (ind.type === 'tightAspectsAmongPersonal') {
       var usable2 = astroUsableAspects(chart);
       var matched2 = usable2.filter(function (a) { return NATAL_PERSONAL_PLANET_KEYS.indexOf(a.a) !== -1 && NATAL_PERSONAL_PLANET_KEYS.indexOf(a.b) !== -1 && a.orb <= 5; });
       if (!matched2.length) { skipped.push({ factor: '個人行星緊密相位', reason: '沒有找到符合條件的緊密相位' }); return; }
       matched2.forEach(function (a) {
         var w = Math.max(2, 7 - Math.round(a.orb));
-        evidence.push({ factor: '個人行星相位', placement: aspectPlacementText(a), reason: '個人行星之間的緊密相位，容許度 ' + a.orb.toFixed(1) + '°', weight: w, natureTag: (a.type === 'square' || a.type === 'opposition') ? 'tense' : (a.type === 'trine' || a.type === 'sextile') ? 'supportive' : 'neutral', aspect: a });
+        var aKey2 = [a.a, a.b].sort().join('-') + ':' + a.type;
+        evidence.push({ factor: '個人行星相位', placement: aspectPlacementText(a), reason: '個人行星之間的緊密相位，容許度 ' + a.orb.toFixed(1) + '°', weight: w, natureTag: (a.type === 'square' || a.type === 'opposition') ? 'tense' : (a.type === 'trine' || a.type === 'sextile') ? 'supportive' : 'neutral', aspect: a, role: 'aspect', canonicalKey: natalEvidenceCanonicalKey('aspect', aKey2, null, null) });
       });
     }
   });
-  return { evidence: evidence, skipped: skipped };
+  return { evidence: mergeEvidenceByCanonicalKey(evidence), skipped: skipped };
 }
 
 function rankEvidence(evidence) {
@@ -8890,42 +9023,52 @@ function identifyTensions(rankedEvidence) {
   return tensions;
 }
 
-/* 一般畫面只顯示：問題標題、一句話重點、生活化摘要、主要傾向／需要留意 */
-/* usedSummaries（選填）：同一次產生 2-3 題時，題目彼此的指標池常有重疊（例如愛情的
-   「容易遇到怎樣的對象」跟「對方可能呈現的外型與氣質」都以下降點/七宮為主），
-   如果照樣各自取最高權重指標，容易挑出同一句摘要。這裡比照站內其他地方（例如
-   aspectBeginnerDataUnique）的做法：撞句時先換模板池裡的另一個骨架，還是撞的話
-   改用第二名指標當主敘述，確保同一批產生的題目不會出現一字不差的重複句子。 */
-function buildPublicSummary(topicId, question, rankedEvidence, usedSummaries) {
+/* V2 內容生成流程（取代舊的 buildPublicSummary）。畫面顯示：問題標題、headline
+   （一句話結論）、summary（延伸一句）、details[]（2-4 個依題目動態命名的面向）、
+   caution（需要留意，用 challenge intent 講）。
+   usedHeadlines／usedSummaries（選填）：同一批產生 2-3 題時，題目彼此的指標池
+   常有重疊（例如愛情的「容易遇到怎樣的對象」跟「外型與氣質」都以下降點/七宮為
+   主），如果各自照樣選中同一筆證據、用同一個 intent 骨架，容易撞句。這裡沿用
+   站內既有的「撞句先換候選證據」邏輯（同一精神：aspectBeginnerDataUnique）。 */
+function buildQuestionContent(topicId, question, rankedEvidence, usedHeadlines, usedSummaries) {
+  var intent = INTENT_ALIAS[question.intent] || question.intent || 'overview';
   if (!rankedEvidence.length) {
-    return { title: question.title, oneLiner: '目前可用的星盤資料還不足以形成判斷', summary: '這一題可能是出生時間未知、或相關宮位／天體剛好缺乏明顯配置，目前沒有足夠的星盤依據可以整合成完整判斷。', strengths: [], cautions: [] };
+    return {
+      questionId: question.id, title: question.title, intent: question.intent,
+      headline: '目前線索還不足以形成清楚的判斷',
+      summary: '這一題可能是出生時間未知，或相關宮位／天體剛好缺乏明顯配置，目前沒有足夠的星盤依據可以整合成完整判斷。',
+      details: [], caution: '',
+    };
   }
-  var tplPool = NATAL_TOPIC_SUMMARY_TPL[topicId] || NATAL_TOPIC_SUMMARY_TPL.general;
-  function attempt(top, second) {
-    var seed = topicId + '|' + question.id + '|' + top.factor + '|' + (top.sign != null ? top.sign : '') + '|' + (top.house || '');
-    var tpl = astroSeededPick(seed, tplPool);
-    var trait = natalTraitForEvidence(top, false);
-    return { seed: seed, trait: trait, summary: fillTpl(tpl, { top: top.placement, second: second ? second.placement : top.placement, trait: trait }) };
+  var biased = applyEvidenceBias(rankedEvidence, question);
+  var top = biased[0], second = biased[1], third = biased[2];
+  var seedBase = topicId + '|' + question.id + '|' + top.canonicalKey;
+
+  var headline = contextualizeEvidence(top, intent, seedBase + '|headline');
+  if (usedHeadlines && usedHeadlines.indexOf(headline) !== -1 && second) {
+    headline = contextualizeEvidence(second, intent, seedBase + '|headline2');
   }
-  var top = rankedEvidence[0], second = rankedEvidence[1];
-  var picked = attempt(top, second);
-  if (usedSummaries && usedSummaries.indexOf(picked.summary) !== -1) {
-    var altTpl = tplPool.filter(function (t) { return t !== astroSeededPick(picked.seed, tplPool); })[0];
-    if (altTpl) picked.summary = fillTpl(altTpl, { top: top.placement, second: second ? second.placement : top.placement, trait: picked.trait });
+  if (usedHeadlines) usedHeadlines.push(headline);
+
+  var summarySrc = second || top;
+  var summary = contextualizeEvidence(summarySrc, intent, seedBase + '|summary');
+  if (summary === headline && third) summary = contextualizeEvidence(third, intent, seedBase + '|summary2');
+  if (usedSummaries && usedSummaries.indexOf(summary) !== -1 && third) {
+    summary = contextualizeEvidence(third, intent, seedBase + '|summary3');
   }
-  if (usedSummaries && usedSummaries.indexOf(picked.summary) !== -1 && second) {
-    picked = attempt(second, top); // 換用第二名指標當主敘述，確保跟其他題目的句子不同
-  }
-  if (usedSummaries) usedSummaries.push(picked.summary);
-  var strengths = rankedEvidence.slice(0, 2).map(function (e, i) {
-    return fillTpl(astroSeededPick(picked.seed + '|str' + i, NATAL_TOPIC_STRENGTH_TPL), { trait: natalTraitForEvidence(e, false) });
+  if (usedSummaries) usedSummaries.push(summary);
+
+  var labels = (question.detailLabels && question.detailLabels.length) ? question.detailLabels : (INTENT_DEFAULT_META[intent] || INTENT_DEFAULT_META.overview).labels;
+  var details = labels.map(function (label, i) {
+    var srcE = biased[i + 1] || biased[biased.length - 1];
+    return { label: label, text: contextualizeEvidence(srcE, intent, seedBase + '|d' + i) };
   });
-  var cautions = rankedEvidence.slice(0, 2).map(function (e, i) {
-    return fillTpl(astroSeededPick(picked.seed + '|cau' + i, NATAL_TOPIC_CAUTION_TPL), { trait: natalTraitForEvidence(e, true) });
-  });
-  return { title: question.title, oneLiner: picked.trait, summary: picked.summary, strengths: strengths, cautions: cautions };
+
+  var caution = contextualizeEvidence(top, 'challenge', seedBase + '|caution');
+
+  return { questionId: question.id, title: question.title, intent: question.intent, headline: headline, summary: summary, details: details, caution: caution };
 }
-/* 摺疊區顯示：主要占星指標、配置如何支持結論、互相矛盾的訊號、解讀限制 */
+/* 摺疊區顯示：主要占星指標（含 sourceRoles）、配置如何支持結論、互相矛盾的訊號、解讀限制 */
 function buildAdvancedExplanation(question, rankedEvidence, skipped, tensions, mergedSignal) {
   var supportNote = mergedSignal
     ? ('這幾項指標比較一致地偏向「' + mergedSignal.elemTag + '」元素／基調，互相支持同一個方向：' + mergedSignal.items.map(function (e) { return e.placement; }).join('、') + '。')
@@ -8935,36 +9078,75 @@ function buildAdvancedExplanation(question, rankedEvidence, skipped, tensions, m
   if (question.appearanceCaveat) limitations.push('外型與氣質只是風格傾向的象徵性描述，不能用來精準預測五官、身高、國籍、姓名或特定職業。');
   return { evidence: rankedEvidence, supportNote: supportNote, tensionNotes: tensions.map(function (t) { return t.note; }), limitations: limitations };
 }
-function buildAiCopyData(topicId, question, rankedEvidence, publicSummary, advanced) {
+function buildAiCopyData(topicId, question, rankedEvidence, content, advanced) {
   return {
-    questionId: question.id, title: question.title, summary: publicSummary.summary, details: advanced.supportNote,
-    strengths: publicSummary.strengths, cautions: publicSummary.cautions,
-    evidence: rankedEvidence.map(function (e) { return { factor: e.factor, placement: e.placement, reason: e.reason, weight: e.weight }; }),
-    limitations: advanced.limitations,
+    questionId: question.id, title: question.title, intent: question.intent,
+    headline: content.headline, summary: content.summary, details: content.details, caution: content.caution,
+    supportNote: advanced.supportNote,
+    evidence: rankedEvidence.map(function (e) { return { factor: e.factor, placement: e.placement, reason: e.reason, weight: e.weight, sourceRoles: e.sourceRoles || [] }; }),
+    limitations: content.limitations,
   };
 }
-/* 主流程：主題問題 → 對應占星指標 → 從 chartData 擷取 → 整合多個指標 → 產生一般摘要
-   → 可摺疊依據 → 複製給 AI 的完整資料。selectedQuestionIds 最多 3 個。 */
+/* V2 品質檢查：規則式檢查（沒有 AI API，站內都是規則模板），只做能自動判斷、
+   自動修復的項目；無法自動判斷的（例如「是否確實描述外型」這種語意判斷）留下
+   flag，記錄在回傳的 qualityFlags 讓最終報告誠實列出「尚未處理的限制」。 */
+var NATAL_BANNED_OPENERS = ['從某配置來看', '從這個配置來看'];
+var NATAL_APPEARANCE_BANNED_WORDS = ['情緒需求', '安定下來', '需要休息', '壓力大', '情緒管理'];
+function validateNatalTopicContent(answers, topicId) {
+  var flags = [];
+  var headlines = answers.map(function (a) { return a.headline; });
+  var dupHeadline = headlines.some(function (h, i) { return headlines.indexOf(h) !== i; });
+  if (dupHeadline) flags.push({ check: 'headline_unique', passed: false, note: '同一批題目仍有重複的 headline' });
+  answers.forEach(function (a) {
+    NATAL_BANNED_OPENERS.forEach(function (bad) {
+      if (a.headline.indexOf(bad) === 0 || a.summary.indexOf(bad) === 0) flags.push({ check: 'banned_opener', passed: false, note: a.questionId + ' 使用了禁用開頭「' + bad + '」' });
+    });
+    var intent = INTENT_ALIAS[a.intent] || a.intent;
+    if (intent === 'appearance') {
+      var text = a.headline + a.summary + a.details.map(function (d) { return d.text; }).join('');
+      NATAL_APPEARANCE_BANNED_WORDS.forEach(function (w) {
+        if (text.indexOf(w) !== -1) flags.push({ check: 'appearance_no_emotion', passed: false, note: a.questionId + ' 外型題內容疑似仍在講情緒管理（含「' + w + '」）' });
+      });
+    }
+    if (a.details.length < 2) flags.push({ check: 'min_answer_targets', passed: false, note: a.questionId + ' 少於 2 個 details' });
+  });
+  return flags;
+}
+/* 主題總覽：不重複列出配置名稱、不用「這次選擇了 N 個問題」這種罐頭開場，
+   依這批題目最常見的元素決定整體基調（tone），字數落在 100-180 字之間。 */
+function buildTopicOverview(topicId, answers) {
+  var elemCounts = {};
+  answers.forEach(function (a) {
+    (a.ranked || []).slice(0, 2).forEach(function (e) { if (e.elemTag) elemCounts[e.elemTag] = (elemCounts[e.elemTag] || 0) + 1; });
+  });
+  var elems = Object.keys(elemCounts).sort(function (x, y) { return elemCounts[y] - elemCounts[x]; });
+  var tone = elems.length ? NATAL_ELEM_TONE[elems[0]] : '呈現出多面向的樣貌，沒有單一元素特別突出';
+  var pool = NATAL_TOPIC_OVERVIEW_FRAME[topicId] || NATAL_TOPIC_OVERVIEW_FRAME.general;
+  var seed = topicId + '|overview|' + answers.map(function (a) { return a.questionId; }).join(',');
+  return fillTpl(astroSeededPick(seed, pool), { tone: tone });
+}
+/* 主流程（V2）：主題問題 → 對應占星指標 → 從 chartData 擷取並依 canonicalKey
+   去重 → 依 intent 情境化 → 產生 headline/summary/details/caution → 品質檢查
+   → 主題總覽。selectedQuestionIds 最多 3 個。 */
 function analyzeNatalTopic(chartData, topicId, selectedQuestionIds, unknownTime) {
   var questions = (NATAL_TOPIC_QUESTIONS[topicId] || []).filter(function (q) { return selectedQuestionIds.indexOf(q.id) !== -1; });
-  var usedSummaries = []; // 同一批產生的題目共用，避免指標池重疊時湊出一字不差的重複句子
-  var results = questions.map(function (q) {
+  var usedHeadlines = [], usedSummaries = []; // 同一批產生的題目共用，避免指標池重疊時湊出重複句子
+  var answers = questions.map(function (q) {
     var indicators = getTopicIndicators(topicId, q.id);
     var extracted = extractChartEvidence(chartData, unknownTime, indicators);
     var ranked = rankEvidence(extracted.evidence);
     var merged = mergeSupportingSignals(ranked);
     var tensions = identifyTensions(ranked);
-    var summary = buildPublicSummary(topicId, q, ranked, usedSummaries);
+    var content = buildQuestionContent(topicId, q, ranked, usedHeadlines, usedSummaries);
     var advanced = buildAdvancedExplanation(q, ranked, extracted.skipped, tensions, merged);
-    var aiData = buildAiCopyData(topicId, q, ranked, summary, advanced);
-    return { question: q, ranked: ranked, skipped: extracted.skipped, merged: merged, tensions: tensions, summary: summary, advanced: advanced, aiData: aiData };
+    content.limitations = advanced.limitations.slice();
+    content.ranked = ranked; content.skipped = extracted.skipped; content.merged = merged; content.tensions = tensions; content.advanced = advanced;
+    content.aiData = buildAiCopyData(topicId, q, ranked, content, advanced);
+    return content;
   });
-  /* 主題總覽：整合這次選取的所有題目最高權重證據，先給一段總覽，不是逐題各寫一篇罐頭文章 */
-  var allTop = results.map(function (r) { return r.ranked[0]; }).filter(Boolean);
-  var overview = allTop.length
-    ? ('這次選的 ' + results.length + ' 個問題，命盤上比較一致出現的線索包括：' + allTop.map(function (e) { return e.placement; }).join('、') + '。以下先看整體概況，再分別回答每一題。')
-    : '這次選取的題目，目前可用的星盤資料比較有限，以下逐題說明實際掌握的線索與限制。';
-  return { topicId: topicId, overview: overview, results: results };
+  var qualityFlags = validateNatalTopicContent(answers, topicId);
+  var overview = buildTopicOverview(topicId, answers);
+  return { topicId: topicId, topicOverview: overview, answers: answers, qualityFlags: qualityFlags };
 }
 
 /* ---- 人生主題專題分析：狀態操作 ---- */
@@ -8996,38 +9178,51 @@ function natalTopicGenerate() {
   if (anchor && anchor.scrollIntoView) anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-/* ---- 人生主題專題分析：畫面 ---- */
-function renderNatalTopicQuestionCard(r) {
-  var q = r.question;
-  var expanded = !!state.natalTopicExpanded[q.id];
-  var h = '<div style="margin-top:14px;border:1px solid rgba(201,169,110,.25);border-radius:12px;padding:14px 16px;background:rgba(255,255,255,.02)">';
-  h += '<div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + esc(q.title) + '</div>';
-  h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;color:#e6cd9a;margin-top:8px">' + esc(r.summary.oneLiner) + '</div>';
-  h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.8);line-height:1.8;margin-top:6px">' + esc(r.summary.summary) + '</div>';
-  if (r.summary.cautions.length) {
-    h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:#d9a0a0;line-height:1.7;margin-top:8px">需要留意：' + esc(r.summary.cautions[0]) + '</div>';
+/* ---- 人生主題專題分析：畫面（V2）----
+   卡片結構：標題 → headline（一句話結論，視覺最重）→ summary（延伸說明）→
+   details[]（2-4 個依題目動態命名的面向，小標籤＋內容，不是固定的「可以發揮／
+   需要留意」二分法）→ caution（單一提醒，用小標籤而非整句「需要留意：」開頭）→
+   可折疊的占星依據（預設收合，內含 sourceRoles 與解讀限制）。 */
+function renderNatalTopicQuestionCard(a) {
+  var expanded = !!state.natalTopicExpanded[a.questionId];
+  var h = '<div style="margin-top:16px;border:1px solid rgba(201,169,110,.28);border-radius:14px;padding:16px 17px;background:rgba(255,255,255,.025);box-shadow:0 1px 0 rgba(255,255,255,.02) inset">';
+  h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(201,169,110,.75);letter-spacing:.03em">' + esc(a.title) + '</div>';
+  h += '<div style="font:600 15px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:6px;line-height:1.6">' + esc(a.headline) + '</div>';
+  h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.8);line-height:1.85;margin-top:8px">' + esc(a.summary) + '</div>';
+  if (a.details && a.details.length) {
+    h += '<div style="margin-top:11px;display:flex;flex-direction:column;gap:7px">';
+    a.details.forEach(function (d) {
+      h += '<div style="border-left:2px solid rgba(201,169,110,.35);padding-left:9px"><span style="font:500 10.5px \'Noto Sans TC\',sans-serif;color:#c9a96e">' + esc(d.label) + '</span><div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.75;margin-top:2px">' + esc(d.text) + '</div></div>';
+    });
+    h += '</div>';
   }
-  h += '<button type="button" aria-expanded="' + expanded + '" onclick="natalTopicToggleExpand(\'' + q.id + '\')" style="min-height:44px;margin-top:10px;background:none;border:none;color:#c9a96e;font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(201,169,110,.4);padding:4px 2px">' + (expanded ? '收起占星依據' : '查看占星判斷依據') + '</button>';
+  if (a.caution) {
+    h += '<div style="margin-top:11px;display:flex;gap:7px;align-items:flex-start"><span style="flex:none;font:500 10px \'Noto Sans TC\',sans-serif;color:#d9a0a0;background:rgba(214,120,120,.12);border-radius:8px;padding:2px 7px;margin-top:1px">留意</span><div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.68);line-height:1.75">' + esc(a.caution) + '</div></div>';
+  }
+  h += '<button type="button" aria-expanded="' + expanded + '" onclick="natalTopicToggleExpand(\'' + a.questionId + '\')" style="min-height:44px;margin-top:10px;background:none;border:none;color:#c9a96e;font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(201,169,110,.4);padding:4px 2px">' + (expanded ? '收起占星依據' : '查看占星判斷依據') + '</button>';
   if (expanded) {
     h += '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed rgba(201,169,110,.2)">';
     h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e">主要占星指標</div>';
-    if (r.ranked.length) {
-      r.ranked.forEach(function (e) {
-        h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.7;margin-top:4px">・' + esc(e.placement) + '——' + esc(e.reason) + '</div>';
+    if (a.ranked && a.ranked.length) {
+      a.ranked.forEach(function (e) {
+        var roles = (e.sourceRoles && e.sourceRoles.length > 1) ? ('<span style="font:400 9.5px \'Noto Sans TC\',sans-serif;color:rgba(201,169,110,.6)">［' + e.sourceRoles.length + ' 個指標角色同時指向這筆配置：' + esc(e.sourceRoles.join('、')) + '］</span>') : '';
+        h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.7;margin-top:4px">・' + esc(e.placement) + '（權重 ' + e.weight + '）——' + esc(e.reason) + (roles ? '<br>' + roles : '') + '</div>';
       });
     } else {
       h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:4px">目前沒有可用的指標。</div>';
     }
-    h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:10px">配置如何互相支持</div>';
-    h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.65);line-height:1.75;margin-top:4px">' + esc(r.advanced.supportNote) + '</div>';
-    if (r.advanced.tensionNotes.length) {
-      h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:10px">互相矛盾的訊號</div>';
-      r.advanced.tensionNotes.forEach(function (t) {
-        h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.65);line-height:1.75;margin-top:4px">' + esc(t) + '</div>';
-      });
+    if (a.advanced) {
+      h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:10px">配置如何互相支持</div>';
+      h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.65);line-height:1.75;margin-top:4px">' + esc(a.advanced.supportNote) + '</div>';
+      if (a.advanced.tensionNotes.length) {
+        h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:10px">互相矛盾的訊號</div>';
+        a.advanced.tensionNotes.forEach(function (t) {
+          h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.65);line-height:1.75;margin-top:4px">' + esc(t) + '</div>';
+        });
+      }
     }
     h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:10px">解讀限制</div>';
-    r.advanced.limitations.forEach(function (l) {
+    (a.limitations || []).forEach(function (l) {
       h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);line-height:1.75;margin-top:4px">' + esc(l) + '</div>';
     });
     h += '</div>';
@@ -9036,11 +9231,11 @@ function renderNatalTopicQuestionCard(r) {
   return h;
 }
 function renderNatalTopicResult(result) {
-  var h = '<div style="margin-top:20px;border-top:1px solid rgba(201,169,110,.2);padding-top:16px">';
+  var h = '<div style="margin-top:22px;border-top:1px solid rgba(201,169,110,.2);padding-top:16px">';
   h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;letter-spacing:.05em">主題總覽</div>';
-  h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.8);line-height:1.8;margin-top:6px">' + esc(result.overview) + '</div>';
-  result.results.forEach(function (r) { h += renderNatalTopicQuestionCard(r); });
-  h += '<div style="text-align:center;margin-top:16px"><button id="natal-topic-copy-btn" onclick="natalTopicCopyForAI()" style="min-height:44px;font:400 12px \'Noto Sans TC\',sans-serif;background:none;border:1px solid rgba(201,169,110,.4);color:#c9a96e;padding:10px 20px;border-radius:20px;cursor:pointer">複製給 AI 解讀 Copy for AI</button></div>';
+  h += '<div style="font:400 12.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.82);line-height:1.85;margin-top:6px">' + esc(result.topicOverview) + '</div>';
+  result.answers.forEach(function (a) { h += renderNatalTopicQuestionCard(a); });
+  h += '<div style="text-align:center;margin-top:18px;padding-bottom:8px"><button id="natal-topic-copy-btn" onclick="natalTopicCopyForAI()" style="min-height:44px;font:400 12px \'Noto Sans TC\',sans-serif;background:none;border:1px solid rgba(201,169,110,.4);color:#c9a96e;padding:10px 20px;border-radius:20px;cursor:pointer">複製給 AI 解讀 Copy for AI</button></div>';
   h += '</div>';
   return h;
 }
@@ -9117,19 +9312,20 @@ function natalTopicCopyForAI() {
   lines.push('說明：以下解讀完全根據使用者已經生成的本命星盤資料整合而成，沒有重新排盤，也沒有另外詢問 AI。');
   lines.push('');
   lines.push('【主題總覽】');
-  lines.push(result.overview);
-  result.results.forEach(function (r, i) {
-    var d = r.aiData;
+  lines.push(result.topicOverview);
+  result.answers.forEach(function (a, i) {
+    var d = a.aiData;
     lines.push('');
     lines.push('【問題 ' + (i + 1) + '】' + d.title);
-    lines.push('摘要：' + d.summary);
-    lines.push('配置如何互相支持：' + d.details);
-    if (d.strengths.length) lines.push('可以發揮：' + d.strengths.join('；'));
-    if (d.cautions.length) lines.push('需要留意：' + d.cautions.join('；'));
-    if (r.advanced.tensionNotes.length) lines.push('矛盾訊號：' + r.advanced.tensionNotes.join('；'));
+    lines.push('結論：' + d.headline);
+    lines.push('延伸說明：' + d.summary);
+    (d.details || []).forEach(function (det) { lines.push(det.label + '：' + det.text); });
+    if (d.caution) lines.push('留意：' + d.caution);
+    lines.push('配置如何互相支持：' + d.supportNote);
+    if (a.tensions && a.tensions.length) lines.push('矛盾訊號：' + a.tensions.map(function (t) { return t.note; }).join('；'));
     lines.push('占星依據：');
     if (d.evidence.length) {
-      d.evidence.forEach(function (e) { lines.push('　' + e.factor + '｜' + e.placement + '｜' + e.reason + '｜權重 ' + e.weight); });
+      d.evidence.forEach(function (e) { lines.push('　' + e.factor + '｜' + e.placement + '｜' + e.reason + '｜權重 ' + e.weight + (e.sourceRoles && e.sourceRoles.length > 1 ? '｜來源角色：' + e.sourceRoles.join('、') : '')); });
     } else {
       lines.push('　目前沒有可用的指標。');
     }
