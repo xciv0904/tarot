@@ -8842,7 +8842,31 @@ function natalPickTplForFields(seedStr, tplPool, avail) {
    （不只是換欄位來源，連句子結構都該換），直接借用另一個 intent 自己的
    模板池，確保覆寫後的欄位真的會出現在文字裡，不會被原本 intent 的模板
    池（可能完全沒引用被覆寫的欄位）晾在一邊。 */
-function contextualizeEvidence(e, intent, slot, seedExtra, fieldOverride) {
+/* V2.2：projectEvidenceForTopic——canonical evidence 與內容產生器之間新增的
+   投影層。專門處理「宮位」這種最容易洩漏原始技術字眼／跟題目主題無關字眼的
+   欄位：依 topicId/questionFocus 決定要用 HOUSE_TOPIC_PROJECTION 的哪個
+   類別，把「原始宮位」翻譯成「這個主題底下，這個宮位代表的意思」，同一個
+   宮位在不同主題下就不會印出一模一樣的句子，也不會直接把 HOUSE_BEGINNER
+   的原始欄位（area/lifeArea…）洩漏進正文。角宮證據（沒有 house，只有
+   angleWhich）透過 ANGLE_VIRTUAL_HOUSE 對應到虛擬宮位，一併走同一條路，
+   不再落到「角宮位置，對這個主題有較高的代表性」這種技術性 fallback。 */
+function projectEvidenceForTopic(evidence, topicId, questionFocus) {
+  var result = { traitKeys: [], projectedMeaning: '', suitableForHeadline: true, suitableForSummary: true, suitableDetailLabels: [], forbiddenTerms: [] };
+  if (!evidence) return result;
+  var houseNum = evidence.houseFocus || evidence.house || (evidence.angleWhich && ANGLE_VIRTUAL_HOUSE[evidence.angleWhich]) || null;
+  if (houseNum) {
+    var cat = (questionFocus && QUESTIONFOCUS_HOUSE_CATEGORY[questionFocus]) || 'general';
+    var table = HOUSE_TOPIC_PROJECTION[cat] || HOUSE_TOPIC_PROJECTION.general;
+    var meaning = table[houseNum - 1] || HOUSE_TOPIC_PROJECTION.general[houseNum - 1] || '';
+    result.projectedMeaning = meaning;
+    result.traitKeys.push('house' + houseNum + ':' + cat);
+    if (!meaning) { result.suitableForHeadline = false; result.suitableForSummary = false; }
+  }
+  if (evidence.angleWhich) result.forbiddenTerms.push('角宮位置');
+  if (evidence.role && evidence.role.indexOf('houseRuler') === 0) result.forbiddenTerms.push('宮主星');
+  return result;
+}
+function contextualizeEvidence(e, intent, slot, seedExtra, fieldOverride, topicId, questionFocus, outMeta) {
   intent = INTENT_ALIAS[intent] || intent || 'overview';
   var frame = INTENT_FRAMES[intent] || INTENT_FRAMES.overview;
   var eff = natalMergeFrameOverride(frame, fieldOverride);
@@ -8851,43 +8875,59 @@ function contextualizeEvidence(e, intent, slot, seedExtra, fieldOverride) {
   var seed = 'ctx|' + intent + '|' + slot + '|' + (seedExtra || '') + '|' + (e.canonicalKey || e.factor);
   if (frame.vibe) {
     var vibe = (e.sign != null) ? SIGN_VIBE[e.sign] : null;
-    if (!vibe) return e.reason;
+    if (!vibe) return astroSeededPick(seed + '|fb', NATAL_NEUTRAL_FALLBACK_TPL);
+    if (outMeta) outMeta.conceptKeys = [vibe];
     return fillTpl(astroSeededPick(seed, tplPool), { VIBE: vibe });
   }
   var pb = e.planetKey ? PLANET_BEGINNER[e.planetKey] : null;
   var sb = (e.sign != null) ? SIGN_BEGINNER[e.sign] : null;
-  var houseNum = e.houseFocus || e.house;
-  var hb = houseNum ? HOUSE_BEGINNER[houseNum - 1] : null;
+  var houseNum = e.houseFocus || e.house || (e.angleWhich && ANGLE_VIRTUAL_HOUSE[e.angleWhich]) || null;
   var pVal = natalIntentFieldValue(pb, eff.p) || '';
   var p2Val = natalIntentFieldValue(pb, eff.p2) || '';
   var sVal = natalIntentFieldValue(sb, eff.s) || '';
-  var hVal = natalIntentFieldValue(hb, eff.h) || '';
+  var hVal = '';
+  if (houseNum && topicId) {
+    /* Natal Topic Analysis 的呼叫一定會帶 topicId：宮位一律走主題投影層，
+       不直接讀 HOUSE_BEGINNER 的原始欄位（就算題目自己的 fieldOverride.h
+       指定了某個欄位，投影後的語意仍然優先，避免同一宮位在不同主題下
+       印出相同或不相關的原始關鍵字）。 */
+    hVal = projectEvidenceForTopic(e, topicId, questionFocus).projectedMeaning || '';
+  } else {
+    var hb = houseNum ? HOUSE_BEGINNER[houseNum - 1] : null;
+    hVal = natalIntentFieldValue(hb, eff.h) || '';
+  }
+  if (outMeta) { outMeta.pVal = pVal; outMeta.sVal = sVal; outMeta.hVal = hVal; outMeta.p2Val = p2Val; outMeta.conceptKeys = [pVal, sVal, hVal, p2Val].filter(Boolean); }
   var chosenTpl = natalPickTplForFields(seed, tplPool, { P_: !!pVal, S_: !!sVal, H_: !!hVal, P2_: !!p2Val });
   if (chosenTpl) return fillTpl(chosenTpl, { P_: pVal, S_: sVal, H_: hVal, P2_: p2Val });
   /* 這個池子裡沒有任何模板的欄位需求被目前手上的資料滿足（例如角宮證據沒有
      planetKey，pb 就會是 null）——不要硬套模板留下「「」」這種空缺痕跡，
      改成把手上有的片語自然接起來，缺的部分優雅省略。 */
   var parts = [sVal, pVal, hVal, p2Val].filter(Boolean);
-  if (!parts.length) return e.reason;
+  if (!parts.length) return astroSeededPick(seed + '|fb', NATAL_NEUTRAL_FALLBACK_TPL);
   return parts.join('，') + '。';
 }
 /* V2.1：留意（caution）改用獨立的 CAUTION_FOCUS_FRAMES，不再固定套用
    'challenge' intent 的 watch/watch 欄位組合——不同題目的 cautionFocus
    指到不同欄位組合＋句型池，讓留意段落也能因題而異。 */
-function contextualizeCaution(e, cautionFocus, seedExtra) {
+function contextualizeCaution(e, cautionFocus, seedExtra, topicId, questionFocus, outMeta, variantSuffix) {
   var frame = CAUTION_FOCUS_FRAMES[cautionFocus] || CAUTION_FOCUS_FRAMES.vigilance;
-  var seed = 'cau|' + cautionFocus + '|' + (seedExtra || '') + '|' + (e.canonicalKey || e.factor);
+  var seed = 'cau|' + cautionFocus + '|' + (seedExtra || '') + (variantSuffix || '') + '|' + (e.canonicalKey || e.factor);
   var pb = e.planetKey ? PLANET_BEGINNER[e.planetKey] : null;
   var sb = (e.sign != null) ? SIGN_BEGINNER[e.sign] : null;
-  var houseNum = e.houseFocus || e.house;
-  var hb = houseNum ? HOUSE_BEGINNER[houseNum - 1] : null;
+  var houseNum = e.houseFocus || e.house || (e.angleWhich && ANGLE_VIRTUAL_HOUSE[e.angleWhich]) || null;
   var pVal = natalIntentFieldValue(pb, frame.p) || '';
   var sVal = natalIntentFieldValue(sb, frame.s) || '';
-  var hVal = natalIntentFieldValue(hb, frame.h) || '';
+  var hVal = '';
+  if (houseNum && topicId) {
+    hVal = projectEvidenceForTopic(e, topicId, questionFocus).projectedMeaning || '';
+  } else if (houseNum) {
+    hVal = natalIntentFieldValue(HOUSE_BEGINNER[houseNum - 1], frame.h) || '';
+  }
+  if (outMeta) outMeta.conceptKeys = [pVal, sVal, hVal].filter(Boolean);
   var haveAllNeeded = (!frame.p || pVal) && (!frame.s || sVal) && (!frame.h || hVal);
   if (haveAllNeeded) return fillTpl(astroSeededPick(seed, frame.tpl), { P_: pVal, S_: sVal, H_: hVal });
   var parts = [sVal, pVal, hVal].filter(Boolean);
-  if (!parts.length) return e.reason;
+  if (!parts.length) return astroSeededPick(seed + '|fb', NATAL_NEUTRAL_FALLBACK_TPL);
   return parts.join('，') + '。';
 }
 /* V2.1：evidenceBias 現在套用在所有 56 題（不再只限外型/吸引/第一印象這三個
@@ -9117,11 +9157,28 @@ function pickPrimaryEvidence(biased, usedPrimaryKeys) {
    ctx.usedHeadlines／usedSummaries／usedPrimaryKeys：同一批產生 2-3 題時，
    題目彼此的指標池常有重疊，這裡沿用站內既有的「撞了先換候選證據」邏輯
    （同一精神：aspectBeginnerDataUnique），並新增主導證據的分散邏輯。 */
+/* V2.2：slot 語意重疊判斷——用「這段文字實際引用了哪些欄位值」當作
+   conceptKeys（PLANET_BEGINNER/SIGN_BEGINNER/HOUSE_BEGINNER/投影後的宮位
+   短語本身，都是固定的短語庫，用精確字串比對就能可靠抓到「同一個概念被
+   不同 slot 重複講一次」，不需要額外的 NLP。 */
+function conceptKeysOverlap(a, b) {
+  if (!a || !b || !a.length || !b.length) return false;
+  for (var i = 0; i < a.length; i++) { if (b.indexOf(a[i]) !== -1) return true; }
+  return false;
+}
+function unionConceptKeys() {
+  var out = [];
+  for (var i = 0; i < arguments.length; i++) {
+    (arguments[i] || []).forEach(function (k) { if (out.indexOf(k) === -1) out.push(k); });
+  }
+  return out;
+}
 function buildQuestionContent(topicId, question, rankedEvidence, ctx) {
   ctx = ctx || {};
-  var usedHeadlines = ctx.usedHeadlines, usedSummaries = ctx.usedSummaries, usedPrimaryKeys = ctx.usedPrimaryKeys;
+  var usedHeadlines = ctx.usedHeadlines, usedSummaries = ctx.usedSummaries, usedPrimaryKeys = ctx.usedPrimaryKeys, usedCautions = ctx.usedCautions;
   var intent = INTENT_ALIAS[question.intent] || question.intent || 'overview';
   var fieldOverride = question.fieldOverride || null;
+  var questionFocus = question.questionFocus;
   var bias = question.evidenceBias || {};
   var base = {
     questionId: question.id, title: question.title, intent: question.intent, questionFocus: question.questionFocus,
@@ -9131,6 +9188,7 @@ function buildQuestionContent(topicId, question, rankedEvidence, ctx) {
     base.headline = '目前線索還不足以形成清楚的判斷';
     base.summary = '這一題可能是出生時間未知，或相關宮位／天體剛好缺乏明顯配置，目前沒有足夠的星盤依據可以整合成完整判斷。';
     base.details = []; base.caution = ''; base.primaryEvidence = null; base.supportingEvidence = [];
+    base.headlineConceptKeys = []; base.summaryConceptKeys = []; base.detailConceptKeys = []; base.cautionConceptKeys = [];
     return base;
   }
   var biased = applyEvidenceBias(rankedEvidence, question);
@@ -9140,29 +9198,119 @@ function buildQuestionContent(topicId, question, rankedEvidence, ctx) {
   var second = others[0], third = others[1];
   var seedBase = topicId + '|' + question.id + '|' + top.canonicalKey;
 
-  var headline = contextualizeEvidence(top, intent, 'headline', seedBase, fieldOverride);
+  var headlineMeta = {};
+  var headline = contextualizeEvidence(top, intent, 'headline', seedBase, fieldOverride, topicId, questionFocus, headlineMeta);
   if (usedHeadlines && usedHeadlines.indexOf(headline) !== -1 && second) {
-    headline = contextualizeEvidence(second, intent, 'headline', seedBase + '|alt', fieldOverride);
+    headlineMeta = {};
+    headline = contextualizeEvidence(second, intent, 'headline', seedBase + '|alt', fieldOverride, topicId, questionFocus, headlineMeta);
   }
   if (usedHeadlines) usedHeadlines.push(headline);
 
+  /* V2.2：summary 的職責是「解釋為什麼」，不是換句話重講一次 headline。
+     沒有獨立的第二筆證據可用（summarySrc 跟 headline 引用同一筆 evidence），
+     或即使證據不同、實際引用到的欄位值仍跟 headline 重疊，都改用
+     NATAL_REASON_TPL 的解釋型句型：直接說明「為什麼」，而不是換句話重述
+     結論一次。 */
   var summarySrc = second || top;
-  var summary = contextualizeEvidence(summarySrc, intent, 'summary', seedBase, fieldOverride);
-  if (summary === headline && third) summary = contextualizeEvidence(third, intent, 'summary', seedBase + '|alt', fieldOverride);
+  var summaryMeta = {};
+  var summary = contextualizeEvidence(summarySrc, intent, 'summary', seedBase, fieldOverride, topicId, questionFocus, summaryMeta);
+  var needExplain = (summarySrc.canonicalKey === top.canonicalKey) || conceptKeysOverlap(headlineMeta.conceptKeys, summaryMeta.conceptKeys);
+  if (needExplain) {
+    var phraseA = (headlineMeta.conceptKeys && headlineMeta.conceptKeys[0]) || '';
+    var phraseB = (headlineMeta.conceptKeys && headlineMeta.conceptKeys[1]) || phraseA;
+    if (phraseA) {
+      summary = fillTpl(astroSeededPick(seedBase + '|reason', NATAL_REASON_TPL), { A: phraseA, B: phraseB });
+      /* 解釋型 summary 本來就是刻意引用 headline 同一組事實來說明「為什麼」，
+         不是把同一個概念又講一次——conceptKeys 刻意留空，不列入 headline 的
+         概念集合，避免後續 overlap 檢查把「合理引用來解釋」誤判成「重複」。 */
+      summaryMeta.conceptKeys = [];
+    }
+  }
   if (usedSummaries && usedSummaries.indexOf(summary) !== -1 && third) {
-    summary = contextualizeEvidence(third, intent, 'summary', seedBase + '|alt2', fieldOverride);
+    summaryMeta = {};
+    summary = contextualizeEvidence(third, intent, 'summary', seedBase + '|alt2', fieldOverride, topicId, questionFocus, summaryMeta);
   }
   if (usedSummaries) usedSummaries.push(summary);
 
+  /* V2.2：details 依序挑選候選證據時，優先跳過跟 headline/summary（或前面
+     已經挑過的 detail）conceptKeys 重疊的候選，減少「details 其實在講
+     headline 已經講過的事」這種隱性重複；找不到不重疊的候選時，仍然使用
+     手上最合適的那個（規格允許的例外，總比留空好）。 */
+  /* V2.2：details 挑選候選證據的優先順序（證據不足時，不是每一對 slot 都
+     能做到完全不重疊，這裡明確排序哪些重疊「絕對不能發生」、哪些是證據不足
+     時可以接受的次要妥協）：
+       1. 絕對不能跟 headline 重疊（headline 是使用者第一眼看到的結論，
+          detail 重講一次最容易被發現是「答非所問的重複」）。
+       2. 盡量不要跟同一題已經選過的其他 detail 重疊（避免兩則 detail 一樣）。
+       3. 跟 summary 重疊是可以接受的次要妥協——3 筆證據卻要撐起
+          headline/summary/detail×2 共 4 個 slot 時，一定會有一個 slot
+          得跟別人共用同一筆證據，選擇讓 summary 那組被共用，比 headline
+          或兩個 detail 互相重複要不明顯得多。 */
   var labels = (question.detailLabels && question.detailLabels.length) ? question.detailLabels : (INTENT_DEFAULT_META[intent] || INTENT_DEFAULT_META.overview).labels;
+  var detailConceptKeys = [];
+  var detailGuardKeys = headlineMeta.conceptKeys || [];
   var details = labels.map(function (label, i) {
-    var srcE = others[i] || others[others.length - 1] || top;
-    return { label: label, text: contextualizeEvidence(srcE, intent, 'detail', seedBase + '|d' + i, fieldOverride) };
+    var candidates = [];
+    if (others.length) {
+      [others[i % others.length], others[(i + 1) % others.length]].forEach(function (e) { if (candidates.indexOf(e) === -1) candidates.push(e); });
+    } else {
+      candidates = [top];
+    }
+    var chosenMeta = null, chosenText = null;
+    for (var c = 0; c < candidates.length; c++) {
+      var meta = {};
+      var text = contextualizeEvidence(candidates[c], intent, 'detail', seedBase + '|d' + i, fieldOverride, topicId, questionFocus, meta);
+      if (!chosenMeta) { chosenMeta = meta; chosenText = text; }
+      if (!conceptKeysOverlap(meta.conceptKeys, detailGuardKeys)) { chosenMeta = meta; chosenText = text; break; }
+    }
+    detailGuardKeys = unionConceptKeys(detailGuardKeys, chosenMeta.conceptKeys);
+    detailConceptKeys = unionConceptKeys(detailConceptKeys, chosenMeta.conceptKeys);
+    return { label: label, text: chosenText };
   });
+  var usedConceptSoFar = unionConceptKeys(headlineMeta.conceptKeys, summaryMeta.conceptKeys, detailConceptKeys);
 
-  var caution = contextualizeCaution(top, question.cautionFocus || 'vigilance', seedBase);
+  /* V2.2：cautionMode 決定這題「留意」是否顯示。required 一律嘗試顯示；
+     hidden 一律不顯示；optional 只有在 caution 內容跟 headline/summary/
+     details 沒有語意重疊、且沒有跟同一批次其他題目撞句時才顯示。跨題撞句
+     時最多重試 2 次換句型，仍撞且非 required 就直接不顯示這題的留意，
+     避免像「不要為了維持喜歡或和諧而勉強迎合」這種句子在不同題目之間
+     反覆出現。 */
+  var cautionMode = question.cautionMode || 'optional';
+  var caution = '', cautionConceptKeys = [];
+  if (cautionMode !== 'hidden') {
+    /* caution 固定引用 top 證據時，house 投影是「證據＋questionFocus」決定的，
+       跟 headline/detail 很容易剛好投影出同一句話（這是投影機制本身正確的
+       副作用：同一件事不該講兩次）。與其讓 optional 題目因此幾乎總是被
+       抑制，這裡先試 top，重疊時依序改試 second／third（呼應
+       headline/summary 找不到不重疊內容時「換一筆證據講」的做法），
+       全部都重疊才真的視為「這題目前沒有不重複的留意內容可講」。 */
+    var cautionCandidates = [top, second, third].filter(Boolean);
+    var cautionMeta = {}, cautionText = '', overlapsBody = true, stillDup = false;
+    for (var cc = 0; cc < cautionCandidates.length && overlapsBody; cc++) {
+      var m = {};
+      var t = contextualizeCaution(cautionCandidates[cc], question.cautionFocus || 'vigilance', seedBase, topicId, questionFocus, m, '|c' + cc);
+      var tries = 0;
+      while (usedCautions && usedCautions.indexOf(t) !== -1 && tries < 2) {
+        tries++;
+        m = {};
+        t = contextualizeCaution(cautionCandidates[cc], question.cautionFocus || 'vigilance', seedBase, topicId, questionFocus, m, '|c' + cc + 'v' + tries);
+      }
+      cautionMeta = m; cautionText = t;
+      overlapsBody = conceptKeysOverlap(m.conceptKeys, usedConceptSoFar);
+      stillDup = usedCautions && usedCautions.indexOf(t) !== -1;
+    }
+    if (cautionMode === 'required' ? true : (!overlapsBody && !stillDup)) {
+      caution = cautionText;
+      cautionConceptKeys = cautionMeta.conceptKeys || [];
+    }
+    if (caution && usedCautions) usedCautions.push(caution);
+  }
 
   base.headline = headline; base.summary = summary; base.details = details; base.caution = caution;
+  base.headlineConceptKeys = headlineMeta.conceptKeys || [];
+  base.summaryConceptKeys = summaryMeta.conceptKeys || [];
+  base.detailConceptKeys = detailConceptKeys;
+  base.cautionConceptKeys = cautionConceptKeys;
   base.primaryEvidence = top; base.supportingEvidence = others.slice(0, 2);
   return base;
 }
@@ -9251,6 +9399,86 @@ function validateNatalTopicContent(answers, topicId) {
       flags.push({ check: 'wealth_focus_separation', passed: false, note: '財富主題有題目共用同一個 questionFocus，賺錢方式／消費模式／風險偏好未確實分離' });
     }
   }
+
+  /* ================= V2.2：Topic-aware Projection ＋區塊去重 新增的 6 項檢查 ================= */
+  /* 1. raw evidence 洩漏檢查：原始宮位關鍵字（HOUSE_BEGINNER.area，例如「戀愛、
+        創作、玩樂」）與技術性內部術語，正文（含 caution）都不該出現。 */
+  var houseAreaBlacklist = (typeof HOUSE_BEGINNER !== 'undefined') ? HOUSE_BEGINNER.map(function (h) { return h.area; }).filter(Boolean) : [];
+  var techTerms = (typeof NATAL_FORBIDDEN_TECHNICAL_TERMS !== 'undefined') ? NATAL_FORBIDDEN_TECHNICAL_TERMS : [];
+  answers.forEach(function (a) {
+    var bodyText = a.headline + a.summary + (a.details || []).map(function (d) { return d.text; }).join('') + (a.caution || '');
+    houseAreaBlacklist.forEach(function (raw) {
+      if (raw && bodyText.indexOf(raw) !== -1) flags.push({ check: 'raw_evidence_leak', passed: false, note: a.questionId + ' 正文出現原始宮位關鍵字「' + raw + '」' });
+    });
+    techTerms.forEach(function (term) {
+      if (bodyText.indexOf(term) !== -1) flags.push({ check: 'raw_evidence_leak', passed: false, note: a.questionId + ' 正文出現技術性術語「' + term + '」' });
+    });
+  });
+  /* 2. slot overlap 檢查：headline/summary/details/caution 各自的 conceptKeys
+        兩兩交集不該有東西（buildQuestionContent 已經盡量避免，這裡是防禦性複檢）。 */
+  /* 重疊檢查的嚴格程度依 slot 的重要性分層：headline 是使用者第一眼看到的
+     結論，summary／detail／caution 都「絕對不能」跟 headline 講同一件事
+     （buildQuestionContent 已主動避開，這裡驗證真的沒有漏網）。detail 跟
+     summary 之間的重疊則是證據不足（例如某些題目指標只有 3 筆）時可以接受
+     的次要妥協——3 筆證據卻要撐起 headline/summary/detail×2 共 4 個 slot，
+     一定會有一組共用同一筆證據，這裡不列為 flag，避免把「規格允許的例外」
+     誤判成錯誤；已知殘留限制在完成報告中誠實列出。 */
+  answers.forEach(function (a) {
+    if (conceptKeysOverlap(a.headlineConceptKeys, a.summaryConceptKeys)) {
+      flags.push({ check: 'slot_overlap', passed: false, note: a.questionId + ' headline 與 summary 語意重疊，疑似換句話重述同一件事' });
+    }
+    if (conceptKeysOverlap(a.headlineConceptKeys, a.detailConceptKeys)) {
+      flags.push({ check: 'slot_overlap', passed: false, note: a.questionId + ' details 與 headline 語意重疊' });
+    }
+    if (a.caution && conceptKeysOverlap(a.cautionConceptKeys, unionConceptKeys(a.headlineConceptKeys, a.summaryConceptKeys, a.detailConceptKeys))) {
+      flags.push({ check: 'slot_overlap', passed: false, note: a.questionId + ' caution 與正文語意重疊' });
+    }
+  });
+  /* 3. topic projection 覆蓋檢查：主導證據若涉及宮位（含角宮虛擬宮位），
+        必須能取得對應這個 topicId/questionFocus 的 projectedMeaning。 */
+  answers.forEach(function (a) {
+    var e = a.primaryEvidence;
+    if (!e) return;
+    var houseNum = e.houseFocus || e.house || (e.angleWhich && ANGLE_VIRTUAL_HOUSE[e.angleWhich]);
+    if (houseNum && typeof projectEvidenceForTopic === 'function') {
+      var proj = projectEvidenceForTopic(e, topicId, a.questionFocus);
+      if (!proj.projectedMeaning) flags.push({ check: 'topic_projection_coverage', passed: false, note: a.questionId + ' 主導證據的宮位沒有取得對應主題的投影內容' });
+    }
+  });
+  /* 4. generic fallback 檢查：這些空泛套語只有在「單獨構成整句、沒有具體
+        延伸內容」時才算違規（允許後面接上具體對象／行動／情境）。 */
+  var NATAL_GENERIC_FALLBACK_PHRASES = ['對這個主題具有較高代表性', '比較選項、考慮各方立場再決定', '這個需要', '這件事', '值得投入的方向'];
+  answers.forEach(function (a) {
+    var joined = [a.headline, a.summary].concat((a.details || []).map(function (d) { return d.text; })).concat([a.caution || '']).join('。');
+    joined.split(/[。]/).forEach(function (sentence) {
+      NATAL_GENERIC_FALLBACK_PHRASES.forEach(function (phrase) {
+        if (sentence.indexOf(phrase) !== -1 && sentence.length <= phrase.length + 6) {
+          flags.push({ check: 'generic_fallback', passed: false, note: a.questionId + ' 出現空泛套語「' + phrase + '」且缺乏具體延伸內容' });
+        }
+      });
+    });
+  });
+  /* 5. caution 重複檢查：同一批次不同題目不該共用一模一樣的 caution 句子
+        （buildQuestionContent 已用 usedCautions 盡量避免，這裡防禦性複檢）。 */
+  var cautionTexts = answers.map(function (a) { return a.caution; }).filter(Boolean);
+  var cautionDupCounts = {};
+  cautionTexts.forEach(function (c) { cautionDupCounts[c] = (cautionDupCounts[c] || 0) + 1; });
+  if (Object.keys(cautionDupCounts).some(function (c) { return cautionDupCounts[c] > 1; })) {
+    flags.push({ check: 'caution_duplication', passed: false, note: '同一批題目出現重複的 caution 句子' });
+  }
+  /* 6. career-longterm 專項具體度檢查：「如何建立長期職涯方向」至少要命中
+        longTermAsset／developmentSequence／commitmentStrategy 三類中的兩類，
+        否則內容太空泛、答不出「怎麼建立」這個問題。 */
+  var longTermAnswer = answers.filter(function (a) { return a.questionId === 'career-longterm'; })[0];
+  if (longTermAnswer) {
+    var ltText = longTermAnswer.headline + longTermAnswer.summary + (longTermAnswer.details || []).map(function (d) { return d.text; }).join('');
+    var ltHits = 0;
+    if (/聲望|資源|資產|不可取代|累積|信任|口碑/.test(ltText)) ltHits++;
+    if (/階段|逐步|慢慢|循序|先.+再|路徑|方向/.test(ltText)) ltHits++;
+    if (/投入|承諾|長期|持續|堅持|深耕/.test(ltText)) ltHits++;
+    if (ltHits < 2) flags.push({ check: 'career_longterm_specificity', passed: false, note: 'career-longterm 內容具體度不足（longTermAsset/developmentSequence/commitmentStrategy 命中不到 2 類）' });
+  }
+
   return flags;
 }
 /* 主題總覽：不重複列出配置名稱、不用「這次選擇了 N 個問題」這種罐頭開場，
@@ -9273,14 +9501,14 @@ function analyzeNatalTopic(chartData, topicId, selectedQuestionIds, unknownTime)
   var questions = (NATAL_TOPIC_QUESTIONS[topicId] || []).filter(function (q) { return selectedQuestionIds.indexOf(q.id) !== -1; });
   /* 同一批產生的題目共用這三個陣列，避免指標池重疊時湊出重複句子或讓同一筆
      evidence 主導整批題目（usedPrimaryKeys 是 V2.1 新增，見 pickPrimaryEvidence）。 */
-  var usedHeadlines = [], usedSummaries = [], usedPrimaryKeys = [];
+  var usedHeadlines = [], usedSummaries = [], usedPrimaryKeys = [], usedCautions = [];
   var answers = questions.map(function (q) {
     var indicators = getTopicIndicators(topicId, q.id);
     var extracted = extractChartEvidence(chartData, unknownTime, indicators);
     var ranked = rankEvidence(extracted.evidence);
     var merged = mergeSupportingSignals(ranked);
     var tensions = identifyTensions(ranked);
-    var content = buildQuestionContent(topicId, q, ranked, { usedHeadlines: usedHeadlines, usedSummaries: usedSummaries, usedPrimaryKeys: usedPrimaryKeys });
+    var content = buildQuestionContent(topicId, q, ranked, { usedHeadlines: usedHeadlines, usedSummaries: usedSummaries, usedPrimaryKeys: usedPrimaryKeys, usedCautions: usedCautions });
     var advanced = buildAdvancedExplanation(q, ranked, extracted.skipped, tensions, merged);
     content.limitations = advanced.limitations.slice();
     content.ranked = ranked; content.skipped = extracted.skipped; content.merged = merged; content.tensions = tensions; content.advanced = advanced;

@@ -621,6 +621,17 @@ var INTENT_DEFAULT_META = {
   origin: { labels: ['過去經驗的影響', '延續或修正的方向'] },
   context: { labels: ['可能出現的場合', '適合的情境'] },
 };
+/* ================= V2.2（Topic-aware Evidence Projection）：cautionMode 預設值 =================
+   不是每題都需要顯示「留意」——依 intent 給預設值，個別題目仍可用 q.cautionMode
+   明確覆寫。required：這個 intent 本質上就是在講風險／課題，一定要有留意
+   （challenge/tension/origin）。hidden：這個 intent 本質上在講外觀／印象／場合，
+   硬塞留意反而答非所問（appearance/impression/context）。其餘 optional：只有在
+   caution 內容跟 headline/summary/details 沒有語意重疊、且找得到有意義的
+   cautionFocus 對應內容時才顯示，避免每題都硬塞一句留意。 */
+var INTENT_CAUTION_MODE_DEFAULT = {
+  challenge: 'required', tension: 'required', origin: 'required',
+  appearance: 'hidden', impression: 'hidden', context: 'hidden',
+};
 (function fillNatalQuestionDefaults() {
   Object.keys(NATAL_TOPIC_QUESTIONS).forEach(function (topicKey) {
     NATAL_TOPIC_QUESTIONS[topicKey].forEach(function (q) {
@@ -631,6 +642,7 @@ var INTENT_DEFAULT_META = {
       if (!q.answerTargets) q.answerTargets = meta.labels.slice();
       if (!q.excludedTargets) q.excludedTargets = [];
       if (!q.cautionFocus) q.cautionFocus = 'vigilance';
+      if (!q.cautionMode) q.cautionMode = INTENT_CAUTION_MODE_DEFAULT[baseIntent] || 'optional';
       if (!q.evidenceBias) q.evidenceBias = {};
       if (!q.evidenceBias.preferPlanets) q.evidenceBias.preferPlanets = q.indicators.filter(function (i) { return i.type === 'planet'; }).map(function (i) { return i.key; });
       if (!q.evidenceBias.preferTypes) q.evidenceBias.preferTypes = [];
@@ -803,3 +815,113 @@ var ELEMENT_TENSION_NOTE = {
   '土-水': '一部分的你想維持穩定的架構，另一部分卻容易被情緒或直覺牽著走，兩者需要彼此協調。',
   '風-水': '一部分的你習慣用理性分析事情，另一部分卻更依賴感受與直覺，這兩種傾向偶爾會互相矛盾。',
 };
+
+/* ================= V2.2：Topic-aware Evidence Projection ＝================
+   解決「HOUSE_BEGINNER 等原始宮位描述直接進入不相關主題正文」的根因：舊版
+   contextualizeEvidence 不管題目屬於哪個主題，宮位一律讀 HOUSE_BEGINNER 的
+   area/lifeArea 這類「泛用」欄位，導致例如「適合什麼工作環境」這種事業題，
+   只要主導證據落在第5宮，就會直接印出「戀愛、創作、玩樂」這種完全跟事業
+   無關的原始宮位關鍵字。
+
+   HOUSE_TOPIC_PROJECTION：同一個宮位，依「這題屬於哪一種語意類別
+   （category）」給出不同的短語，取代原始 HOUSE_BEGINNER 欄位。8 個類別＋
+   一個 general 安全預設（沒有對應到明確類別、或該類別暫時想不出更精準說法
+   時使用，內容仍刻意保持主題中性，不含戀愛／玩樂這類特定領域字眼）。
+   索引 0 = 第1宮…索引 11 = 第12宮。 */
+var HOUSE_TOPIC_PROJECTION = {
+  meeting_context: [
+    '透過自己主動展現、率先開口的場合', '跟金錢、消費或評估價值有關的場合', '日常的閒聊、鄰里或短途往來之間',
+    '家庭聚會、親友介紹或私下熟識的圈子', '興趣活動、娛樂、創作、表演或輕鬆社交場合', '工作場合、日常服務往來或例行事務中',
+    '因合作、需要協調而自然配對的場合', '深談、危機互相扶持或共同利益的場合', '旅行、進修、講座或接觸新觀點的場合',
+    '工作場域、公開活動或專業社群裡', '朋友圈、社團或共同理想的團體活動中', '安靜獨處後偶然的機緣，或透過共同的內在連結',
+  ],
+  suitable_roles: [
+    '需要自己拿主意、獨當一面的角色', '評估價值、掌管資源或建立個人品牌的角色', '溝通協調、資訊整理或教學傳播的角色',
+    '照顧、後勤支援或需要穩定基礎的角色', '創作、企劃、教育、表演、內容或需要個人表現的工作角色', '流程執行、品質把關或服務他人的角色',
+    '合作洽談、顧問或需要對接他人的角色', '危機處理、資源整合或深度分析的角色', '教育訓練、國際事務或提出願景的角色',
+    '需要承擔公開責任、建立專業聲望的角色', '社群經營、統籌團隊或推動理念的角色', '幕後研究、支援或需要獨立空間的角色',
+  ],
+  suitable_environment: [
+    '能讓你自己拿主意、快速上手的環境', '重視實質產出與具體回報的環境', '步調靈活、需要頻繁溝通交流的環境',
+    '穩定、有安全感、像自己人的團隊氛圍', '能自由表達、創造作品、獲得即時回饋與展現個人風格的環境', '流程清楚、能務實把事情做好的環境',
+    '需要密切合作、一對一討論的環境', '容許深度投入、處理複雜或敏感事務的環境', '能持續學習、接觸新觀點的開放環境',
+    '看得到具體成果與社會肯定的環境', '重視理念、團隊感強的社群式環境', '安靜、彈性、能獨立作業的環境',
+  ],
+  achievement_source: [
+    '靠自己開創、被看見的成果', '累積穩固的資源與自我價值感', '把想法說清楚、影響身邊的人',
+    '把一個地方或關係經營得穩固', '透過創造、表現、帶來樂趣或獲得作品回饋產生成就感', '把事情確實做好、幫上別人的忙',
+    '跟另一個人或夥伴一起把事情完成', '陪自己或別人走過關鍵的轉折', '拓展視野、傳遞一個更大的信念',
+    '在公眾面前被認可的專業成果', '跟一群人一起推動共同的理想', '在安靜中完成有意義的內在工作',
+  ],
+  monetizable_skills: [
+    '個人品牌、率先行動的執行力', '判斷價值、管理資源的能力', '溝通、寫作、教學或資訊整理的能力',
+    '照護、後勤或穩定經營的能力', '創意、內容、個人品牌、娛樂或教育型能力', '流程優化、品質把關或專業服務',
+    '協調談判、顧問或媒合資源的能力', '資源整合、風險判斷或深度分析', '跨領域知識、教學或國際連結',
+    '公開專業形象所帶來的信任與機會', '社群經營、人脈與集體資源整合', '幕後研究、系統化或獨立作業的能力',
+  ],
+  long_term_direction: [
+    '持續活出自己的主見，成為能獨當一面的人', '累積穩固的資源與不可取代的專業價值', '成為能把複雜資訊說清楚、值得信賴的溝通者',
+    '打造一個能長期依靠的根基（無論是團隊或家庭事業）', '把創造力或個人風格變成長期作品或事業', '成為把細節與流程做到位、值得信任的專業者',
+    '在合作或顧問角色裡建立長期信任關係', '成為能處理複雜局面、值得託付的關鍵角色', '成為某個領域裡值得請教的引路人',
+    '長期發展需要把重心放在能持續累積專業聲望與社會影響力的方向', '成為能號召一群人、推動共同願景的角色', '在專業幕後累積深厚、不易被取代的功力',
+  ],
+  family_context: [
+    '在家裡習慣先站出來、主動處理事情的角色', '在家裡負責掌管資源或穩定物質基礎的角色', '在家裡負責溝通協調、傳遞消息的角色',
+    '在家裡是情感重心、負責維繫歸屬感的角色', '在家裡帶來歡樂、創意或陪伴玩樂的角色', '在家裡負責打理日常、照顧起居的角色',
+    '在家裡負責協調不同成員、維持平衡的角色', '在家裡承擔比較沉重的責任或危機時刻的角色', '在家裡負責帶來新觀點或推動改變的角色',
+    '在家裡被期待要有成就、撐起門面的角色', '在家裡比較像朋友、負責串連情感的角色', '在家裡負責默默承擔、不張揚的角色',
+  ],
+  general: [
+    '自我展現與新開始', '資源運用與自我價值', '溝通交流與日常學習', '家庭根基與內在安全感',
+    '創造表現與情感投入', '日常事務與自我要求', '合作關係與一對一連結', '深層信任與資源整合',
+    '視野拓展與信念方向', '公眾角色與長期成就', '群體歸屬與共同理想', '內在沉澱與獨立空間',
+  ],
+};
+/* questionFocus → HOUSE_TOPIC_PROJECTION 類別對照。沒對到的一律落到 general
+   （安全、主題中性的預設，不會出現戀愛/玩樂這類跟主題無關的字眼）。 */
+var QUESTIONFOCUS_HOUSE_CATEGORY = {
+  meeting_context: 'meeting_context',
+  suitable_roles: 'suitable_roles',
+  workplace_advantages: 'suitable_roles',
+  suitable_environment: 'suitable_environment',
+  career_fulfillment_area: 'achievement_source',
+  monetizable_skills: 'monetizable_skills',
+  wealth_monetizable_skills: 'monetizable_skills',
+  longterm_career_direction: 'long_term_direction',
+  stable_financial_structure: 'long_term_direction',
+  family_role: 'family_context',
+  family_origin_impact: 'family_context',
+  family_boundary_setting: 'family_context',
+  living_environment: 'family_context',
+  inner_safety_practice: 'family_context',
+  family_career_balance: 'family_context',
+  family_core_lesson: 'family_context',
+};
+/* 角宮本身沒有宮位號碼（e.house 是 null），但角宮跟特定宮位在意義上是連動的
+   （上升＝第1宮宮頭、天頂＝第10宮宮頭、下降＝第7宮宮頭、天底＝第4宮宮頭）。
+   這裡給角宮證據一個「虛擬宮位」，讓它也能走 HOUSE_TOPIC_PROJECTION 這條路，
+   不再因為沒有 house 欄位而落到「角宮位置，對這個主題有較高的代表性」這種
+   技術性 fallback。 */
+var ANGLE_VIRTUAL_HOUSE = { asc: 1, mc: 10, dsc: 7, ic: 4 };
+/* 只允許出現在「查看占星依據」摺疊區的技術術語／內部欄位名稱，正文（headline/
+   summary/details/caution）一律不得出現，供 app.js 的 leak 檢查與 outMeta.
+   forbiddenTerms 使用。 */
+var NATAL_FORBIDDEN_TECHNICAL_TERMS = ['角宮位置', '角宮對分', '宮主星', '第幾宮主星', '權重', '代表性較高', '指標角色', 'canonicalKey', 'sourceRoles', 'evidenceBias'];
+/* summary 偵測到即將跟 headline 重複表達同一件事時（例如沒有獨立的第二筆
+   證據可用），改用「解釋型」句型：不重述結論，而是說明「為什麼」——把
+   headline 主要證據本身的兩個面向（{A}／{B}）並列，說明它們如何互相印證。 */
+var NATAL_REASON_TPL = [
+  '因為你的主要證據同時強調「{A}」與「{B}」，太過僵化或只講求表面配合的做法反而較難讓你長期投入。',
+  '這個結論背後的依據同時指向「{A}」與「{B}」，兩者疊加後會讓這個傾向更明顯，而不只是單一巧合。',
+  '會這樣判斷，是因為「{A}」與「{B}」這兩個線索指向同一個方向，彼此互相印證，不是各自獨立的巧合。',
+  '之所以這麼說，是「{A}」的部分被「{B}」進一步強化，兩者合在一起會比單看一項更有說服力。',
+];
+/* 徹底找不到任何欄位可用時的最後防線（取代直接印出 e.reason 這種技術性
+   原始說明）——語氣中性、不承諾具體內容，且刻意避開品質驗證會抓的空話
+   （「對這個主題具有較高代表性」「這個需要」「這件事」等）。 */
+var NATAL_NEUTRAL_FALLBACK_TPL = [
+  '這項配置的影響比較細微，建議搭配其他線索一起看。',
+  '單一配置看不出明顯差異，實際情況會因整體命盤而有所不同。',
+  '這部分暫時沒有足夠具體的線索，可以留意其他面向的訊號。',
+  '這項指標本身的訊號較弱，不必過度解讀單一項目。',
+];
