@@ -8703,7 +8703,7 @@ function natalQuickEvidence(chart, planetKey) {
 }
 function natalQuickText(chart, planetKey, intent, seedTag) {
   var e = natalQuickEvidence(chart, planetKey);
-  return e ? contextualizeEvidence(e, intent, 'quicksummary|' + seedTag) : null;
+  return e ? contextualizeEvidence(e, intent, 'headline', 'quicksummary|' + seedTag) : null;
 }
 function renderAstroQuickSummary(chart) {
   var sunSign = chart.planets.Sun.sign, moonSign = chart.planets.Moon.sign;
@@ -8806,48 +8806,121 @@ function natalIntentFieldValue(obj, fieldName) {
   if (fieldName === 'coreNeed0') return obj.coreNeed && obj.coreNeed[0];
   return obj[fieldName] || null;
 }
-function contextualizeEvidence(e, intent, seedExtra) {
+function natalMergeFrameOverride(frame, override) {
+  if (!override) return frame;
+  var out = {};
+  for (var k in frame) out[k] = frame[k];
+  for (var k2 in override) out[k2] = override[k2];
+  return out;
+}
+/* V2.1：從模板池裡挑一個「這次手上實際有的欄位都能填滿」的模板，而不是要求
+   整個 frame 宣告的欄位全部到齊才給句子（同一個 pool 裡常常有的模板只用
+   {S_}、有的只用 {P_}，例如 challenge 的 headlineTpl）。用 seed 決定起始位置，
+   再依序找第一個「模板裡出現的佔位符都有值」的候選，找不到才降級成拼接片語。 */
+function natalTplPlaceholdersOk(tpl, avail) {
+  var phs = ['P_', 'S_', 'H_', 'P2_'];
+  for (var i = 0; i < phs.length; i++) {
+    if (tpl.indexOf('{' + phs[i] + '}') !== -1 && !avail[phs[i]]) return false;
+  }
+  return true;
+}
+function natalPickTplForFields(seedStr, tplPool, avail) {
+  var rng = astroMulberry32(astroHashSeed(seedStr));
+  var startIdx = Math.floor(rng() * tplPool.length);
+  for (var i = 0; i < tplPool.length; i++) {
+    var idx = (startIdx + i) % tplPool.length;
+    if (natalTplPlaceholdersOk(tplPool[idx], avail)) return tplPool[idx];
+  }
+  return null;
+}
+/* V2.1：slot 決定要從獨立的 headlineTpl／summaryTpl／detailTpl 哪一個池子挑句型
+   （取代 V2.0「headline/summary/details 全部共用同一個 tpl，只靠不同 seed
+   碰運氣避開撞句」的做法）；fieldOverride 讓同一個 intent 底下、不同
+   questionFocus 的題目可以覆寫要引用哪些欄位（例如 career_direction 底下
+   「適合哪類型工作」用 verb/function、「適合什麼工作環境」用 area/mode）。
+   fieldOverride.tplFrom（選填）：當覆寫的欄位組合需要「形狀不同」的句型時
+   （不只是換欄位來源，連句子結構都該換），直接借用另一個 intent 自己的
+   模板池，確保覆寫後的欄位真的會出現在文字裡，不會被原本 intent 的模板
+   池（可能完全沒引用被覆寫的欄位）晾在一邊。 */
+function contextualizeEvidence(e, intent, slot, seedExtra, fieldOverride) {
   intent = INTENT_ALIAS[intent] || intent || 'overview';
   var frame = INTENT_FRAMES[intent] || INTENT_FRAMES.overview;
-  var seed = 'ctx|' + intent + '|' + (seedExtra || '') + '|' + (e.canonicalKey || e.factor);
+  var eff = natalMergeFrameOverride(frame, fieldOverride);
+  var tplFrame = (fieldOverride && fieldOverride.tplFrom && INTENT_FRAMES[fieldOverride.tplFrom]) || frame;
+  var tplPool = (slot === 'summary' ? tplFrame.summaryTpl : slot === 'detail' ? tplFrame.detailTpl : tplFrame.headlineTpl) || tplFrame.headlineTpl;
+  var seed = 'ctx|' + intent + '|' + slot + '|' + (seedExtra || '') + '|' + (e.canonicalKey || e.factor);
   if (frame.vibe) {
     var vibe = (e.sign != null) ? SIGN_VIBE[e.sign] : null;
     if (!vibe) return e.reason;
-    return fillTpl(astroSeededPick(seed, frame.tpl), { VIBE: vibe });
+    return fillTpl(astroSeededPick(seed, tplPool), { VIBE: vibe });
   }
   var pb = e.planetKey ? PLANET_BEGINNER[e.planetKey] : null;
   var sb = (e.sign != null) ? SIGN_BEGINNER[e.sign] : null;
   var houseNum = e.houseFocus || e.house;
   var hb = houseNum ? HOUSE_BEGINNER[houseNum - 1] : null;
-  var pVal = natalIntentFieldValue(pb, frame.p) || '';
-  var p2Val = natalIntentFieldValue(pb, frame.p2) || '';
-  var sVal = natalIntentFieldValue(sb, frame.s) || '';
-  var hVal = natalIntentFieldValue(hb, frame.h) || '';
-  /* 只有這個 intent 模板實際需要的欄位「全部都有資料」時，才套用完整句型；
-     缺欄位時（例如角宮證據沒有 planetKey，pb 就會是 null）不要硬套模板留下
-     「「」」這種空缺痕跡，改成把手上有的片語自然接起來，缺的部分優雅省略。 */
-  var haveAllNeeded = (!frame.p || pVal) && (!frame.p2 || p2Val) && (!frame.s || sVal) && (!frame.h || hVal);
-  if (haveAllNeeded) {
-    return fillTpl(astroSeededPick(seed, frame.tpl), { P_: pVal, S_: sVal, H_: hVal, P2_: p2Val });
-  }
+  var pVal = natalIntentFieldValue(pb, eff.p) || '';
+  var p2Val = natalIntentFieldValue(pb, eff.p2) || '';
+  var sVal = natalIntentFieldValue(sb, eff.s) || '';
+  var hVal = natalIntentFieldValue(hb, eff.h) || '';
+  var chosenTpl = natalPickTplForFields(seed, tplPool, { P_: !!pVal, S_: !!sVal, H_: !!hVal, P2_: !!p2Val });
+  if (chosenTpl) return fillTpl(chosenTpl, { P_: pVal, S_: sVal, H_: hVal, P2_: p2Val });
+  /* 這個池子裡沒有任何模板的欄位需求被目前手上的資料滿足（例如角宮證據沒有
+     planetKey，pb 就會是 null）——不要硬套模板留下「「」」這種空缺痕跡，
+     改成把手上有的片語自然接起來，缺的部分優雅省略。 */
   var parts = [sVal, pVal, hVal, p2Val].filter(Boolean);
   if (!parts.length) return e.reason;
   return parts.join('，') + '。';
 }
-/* V2：preferredEvidence／excludedTargets 的實際套用。只有題目自己容易被「宮內
-   行星／宮主星」自動發現的無關配置蓋台的 intent（外型、吸引、第一印象）才套用，
-   其他題目維持依原始權重排序，不做人工干預。回傳的是「用來挑內容」的排序，
+/* V2.1：留意（caution）改用獨立的 CAUTION_FOCUS_FRAMES，不再固定套用
+   'challenge' intent 的 watch/watch 欄位組合——不同題目的 cautionFocus
+   指到不同欄位組合＋句型池，讓留意段落也能因題而異。 */
+function contextualizeCaution(e, cautionFocus, seedExtra) {
+  var frame = CAUTION_FOCUS_FRAMES[cautionFocus] || CAUTION_FOCUS_FRAMES.vigilance;
+  var seed = 'cau|' + cautionFocus + '|' + (seedExtra || '') + '|' + (e.canonicalKey || e.factor);
+  var pb = e.planetKey ? PLANET_BEGINNER[e.planetKey] : null;
+  var sb = (e.sign != null) ? SIGN_BEGINNER[e.sign] : null;
+  var houseNum = e.houseFocus || e.house;
+  var hb = houseNum ? HOUSE_BEGINNER[houseNum - 1] : null;
+  var pVal = natalIntentFieldValue(pb, frame.p) || '';
+  var sVal = natalIntentFieldValue(sb, frame.s) || '';
+  var hVal = natalIntentFieldValue(hb, frame.h) || '';
+  var haveAllNeeded = (!frame.p || pVal) && (!frame.s || sVal) && (!frame.h || hVal);
+  if (haveAllNeeded) return fillTpl(astroSeededPick(seed, frame.tpl), { P_: pVal, S_: sVal, H_: hVal });
+  var parts = [sVal, pVal, hVal].filter(Boolean);
+  if (!parts.length) return e.reason;
+  return parts.join('，') + '。';
+}
+/* V2.1：evidenceBias 現在套用在所有 56 題（不再只限外型/吸引/第一印象這三個
+   intent），依題目自己指定的 preferPlanets／preferTypes／excludePlanets／
+   angleBonus 調整候選順序，讓「同一主題內不同題目該用不同主導證據」這件事
+   由資料驅動，而不是寫死在程式邏輯裡。回傳的是「用來挑內容」的排序，
    可折疊區顯示的證據仍然用原始未偏移的權重，維持透明。 */
 function applyEvidenceBias(rankedEvidence, question) {
-  var intent = INTENT_ALIAS[question.intent] || question.intent || 'overview';
-  if (NATAL_INTENT_STRICT_PREFERRED.indexOf(intent) === -1) return rankedEvidence;
-  var preferred = question.preferredPlanets || [];
-  var excluded = question.excludedPlanets || [];
+  var bias = question.evidenceBias || {};
+  var preferPlanets = bias.preferPlanets || question.preferredPlanets || [];
+  var excludePlanets = bias.excludePlanets || question.excludedPlanets || [];
+  var preferTypes = bias.preferTypes || [];
+  var excludeTypes = bias.excludeTypes || [];
+  if (!preferPlanets.length && !excludePlanets.length && !preferTypes.length && !excludeTypes.length && !bias.angleBonus && !bias.requirePlanet) return rankedEvidence;
+  function roleMatchesType(role, type) {
+    if (!role) return false;
+    if (role.indexOf(type) === 0) return true;
+    if (type === 'elementQualityBalance' && role === 'elementBalance') return true;
+    if (type === 'tightAspectsAmongPersonal' && role === 'aspect') return true;
+    return false;
+  }
   var scored = rankedEvidence.map(function (e) {
     var bonus = 0;
-    if (e.planetKey && preferred.indexOf(e.planetKey) !== -1) bonus += 3;
-    if (e.planetKey && excluded.indexOf(e.planetKey) !== -1) bonus -= 5;
-    if (intent === 'appearance' && e.angleWhich === 'dsc') bonus += 2;
+    if (e.planetKey && preferPlanets.indexOf(e.planetKey) !== -1) bonus += 3;
+    if (e.planetKey && excludePlanets.indexOf(e.planetKey) !== -1) bonus -= 5;
+    if (preferTypes.some(function (t) { return roleMatchesType(e.role, t); })) bonus += 2;
+    if (excludeTypes.some(function (t) { return roleMatchesType(e.role, t); })) bonus -= 4;
+    if (bias.angleBonus && e.angleWhich) bonus += 2;
+    /* requirePlanet：這題套用的模板池（通常是借用自 capability／strength／pattern
+       這類需要 planetKey 才能填 P_/P2_ 的 intent）如果選到沒有 planetKey 的證據
+       （角宮、元素分布…），會整段落到「找不到任何模板欄位滿足」的降級分支，
+       讀起來像斷句。這裡明確懲罰非 planetKey 證據，讓排序自然避開這個陷阱。 */
+    if (bias.requirePlanet && !e.planetKey) bonus -= 6;
     return { e: e, score: e.weight + bonus };
   });
   scored.sort(function (a, b) { return b.score - a.score; });
@@ -9023,50 +9096,75 @@ function identifyTensions(rankedEvidence) {
   return tensions;
 }
 
-/* V2 內容生成流程（取代舊的 buildPublicSummary）。畫面顯示：問題標題、headline
-   （一句話結論）、summary（延伸一句）、details[]（2-4 個依題目動態命名的面向）、
-   caution（需要留意，用 challenge intent 講）。
-   usedHeadlines／usedSummaries（選填）：同一批產生 2-3 題時，題目彼此的指標池
-   常有重疊（例如愛情的「容易遇到怎樣的對象」跟「外型與氣質」都以下降點/七宮為
-   主），如果各自照樣選中同一筆證據、用同一個 intent 骨架，容易撞句。這裡沿用
-   站內既有的「撞句先換候選證據」邏輯（同一精神：aspectBeginnerDataUnique）。 */
-function buildQuestionContent(topicId, question, rankedEvidence, usedHeadlines, usedSummaries) {
+/* V2.1：pickPrimaryEvidence 讓「同一主題內不同題目的主導證據」有機會分散，
+   而不是每題都被同一筆最高權重的 evidence 主導（例如愛情三題如果都被同一顆
+   月亮主導，答案就會長得很像）。只有在 (a) 這筆證據已經被同一批次前面的題目
+   當過主導、且 (b) 存在權重差距不大（<=3）的替代候選時才換人；如果真的沒有
+   更合適的替代證據，允許沿用（規格明確允許的例外）。 */
+function pickPrimaryEvidence(biased, usedPrimaryKeys) {
+  if (!usedPrimaryKeys || !usedPrimaryKeys.length || usedPrimaryKeys.indexOf(biased[0].canonicalKey) === -1) return biased[0];
+  for (var i = 1; i < biased.length; i++) {
+    if (usedPrimaryKeys.indexOf(biased[i].canonicalKey) === -1 && (biased[0].weight - biased[i].weight) <= 3) return biased[i];
+  }
+  return biased[0];
+}
+/* V2.1 內容生成流程（取代 V2.0 的 buildQuestionContent）。畫面顯示：問題標題、
+   headline（一句話結論）、summary（延伸一句）、details[]（2-4 個依題目動態
+   命名的面向）、caution（用題目自己的 cautionFocus 講，不再全部套用同一組
+   challenge 欄位）。headline/summary/details 現在分別從獨立的模板池挑句型
+   （見 INTENT_FRAMES 的 headlineTpl/summaryTpl/detailTpl），並支援題目的
+   fieldOverride——同一個 intent 底下不同 questionFocus 可以引用不同欄位。
+   ctx.usedHeadlines／usedSummaries／usedPrimaryKeys：同一批產生 2-3 題時，
+   題目彼此的指標池常有重疊，這裡沿用站內既有的「撞了先換候選證據」邏輯
+   （同一精神：aspectBeginnerDataUnique），並新增主導證據的分散邏輯。 */
+function buildQuestionContent(topicId, question, rankedEvidence, ctx) {
+  ctx = ctx || {};
+  var usedHeadlines = ctx.usedHeadlines, usedSummaries = ctx.usedSummaries, usedPrimaryKeys = ctx.usedPrimaryKeys;
   var intent = INTENT_ALIAS[question.intent] || question.intent || 'overview';
+  var fieldOverride = question.fieldOverride || null;
+  var bias = question.evidenceBias || {};
+  var base = {
+    questionId: question.id, title: question.title, intent: question.intent, questionFocus: question.questionFocus,
+    answerTargetsCount: (question.answerTargets || []).length, evidenceBiasExcludePlanets: bias.excludePlanets || [],
+  };
   if (!rankedEvidence.length) {
-    return {
-      questionId: question.id, title: question.title, intent: question.intent,
-      headline: '目前線索還不足以形成清楚的判斷',
-      summary: '這一題可能是出生時間未知，或相關宮位／天體剛好缺乏明顯配置，目前沒有足夠的星盤依據可以整合成完整判斷。',
-      details: [], caution: '',
-    };
+    base.headline = '目前線索還不足以形成清楚的判斷';
+    base.summary = '這一題可能是出生時間未知，或相關宮位／天體剛好缺乏明顯配置，目前沒有足夠的星盤依據可以整合成完整判斷。';
+    base.details = []; base.caution = ''; base.primaryEvidence = null; base.supportingEvidence = [];
+    return base;
   }
   var biased = applyEvidenceBias(rankedEvidence, question);
-  var top = biased[0], second = biased[1], third = biased[2];
+  var top = pickPrimaryEvidence(biased, usedPrimaryKeys);
+  if (usedPrimaryKeys) usedPrimaryKeys.push(top.canonicalKey);
+  var others = biased.filter(function (e) { return e !== top; });
+  var second = others[0], third = others[1];
   var seedBase = topicId + '|' + question.id + '|' + top.canonicalKey;
 
-  var headline = contextualizeEvidence(top, intent, seedBase + '|headline');
+  var headline = contextualizeEvidence(top, intent, 'headline', seedBase, fieldOverride);
   if (usedHeadlines && usedHeadlines.indexOf(headline) !== -1 && second) {
-    headline = contextualizeEvidence(second, intent, seedBase + '|headline2');
+    headline = contextualizeEvidence(second, intent, 'headline', seedBase + '|alt', fieldOverride);
   }
   if (usedHeadlines) usedHeadlines.push(headline);
 
   var summarySrc = second || top;
-  var summary = contextualizeEvidence(summarySrc, intent, seedBase + '|summary');
-  if (summary === headline && third) summary = contextualizeEvidence(third, intent, seedBase + '|summary2');
+  var summary = contextualizeEvidence(summarySrc, intent, 'summary', seedBase, fieldOverride);
+  if (summary === headline && third) summary = contextualizeEvidence(third, intent, 'summary', seedBase + '|alt', fieldOverride);
   if (usedSummaries && usedSummaries.indexOf(summary) !== -1 && third) {
-    summary = contextualizeEvidence(third, intent, seedBase + '|summary3');
+    summary = contextualizeEvidence(third, intent, 'summary', seedBase + '|alt2', fieldOverride);
   }
   if (usedSummaries) usedSummaries.push(summary);
 
   var labels = (question.detailLabels && question.detailLabels.length) ? question.detailLabels : (INTENT_DEFAULT_META[intent] || INTENT_DEFAULT_META.overview).labels;
   var details = labels.map(function (label, i) {
-    var srcE = biased[i + 1] || biased[biased.length - 1];
-    return { label: label, text: contextualizeEvidence(srcE, intent, seedBase + '|d' + i) };
+    var srcE = others[i] || others[others.length - 1] || top;
+    return { label: label, text: contextualizeEvidence(srcE, intent, 'detail', seedBase + '|d' + i, fieldOverride) };
   });
 
-  var caution = contextualizeEvidence(top, 'challenge', seedBase + '|caution');
+  var caution = contextualizeCaution(top, question.cautionFocus || 'vigilance', seedBase);
 
-  return { questionId: question.id, title: question.title, intent: question.intent, headline: headline, summary: summary, details: details, caution: caution };
+  base.headline = headline; base.summary = summary; base.details = details; base.caution = caution;
+  base.primaryEvidence = top; base.supportingEvidence = others.slice(0, 2);
+  return base;
 }
 /* 摺疊區顯示：主要占星指標（含 sourceRoles）、配置如何支持結論、互相矛盾的訊號、解讀限制 */
 function buildAdvancedExplanation(question, rankedEvidence, skipped, tensions, mergedSignal) {
@@ -9080,36 +9178,79 @@ function buildAdvancedExplanation(question, rankedEvidence, skipped, tensions, m
 }
 function buildAiCopyData(topicId, question, rankedEvidence, content, advanced) {
   return {
-    questionId: question.id, title: question.title, intent: question.intent,
+    questionId: question.id, title: question.title, intent: question.intent, questionFocus: question.questionFocus,
     headline: content.headline, summary: content.summary, details: content.details, caution: content.caution,
     supportNote: advanced.supportNote,
+    primaryEvidence: content.primaryEvidence ? { factor: content.primaryEvidence.factor, placement: content.primaryEvidence.placement, weight: content.primaryEvidence.weight } : null,
     evidence: rankedEvidence.map(function (e) { return { factor: e.factor, placement: e.placement, reason: e.reason, weight: e.weight, sourceRoles: e.sourceRoles || [] }; }),
     limitations: content.limitations,
   };
 }
-/* V2 品質檢查：規則式檢查（沒有 AI API，站內都是規則模板），只做能自動判斷、
-   自動修復的項目；無法自動判斷的（例如「是否確實描述外型」這種語意判斷）留下
-   flag，記錄在回傳的 qualityFlags 讓最終報告誠實列出「尚未處理的限制」。 */
+/* V2.1 品質檢查：規則式檢查（沒有 AI API，站內都是規則模板），比 V2.0 增加
+   結構化檢查：detailLabels 組合是否重複、同批題目的主導 evidence 是否過度
+   集中、主導證據是否誤觸這題自己的 excludedTargets、外型題是否至少命中兩類
+   外型描述、環境／職能／場合類問題是否確實在講對應的內容、財富主題的幾題
+   questionFocus 是否確實分開。無法自動判斷的語意問題（例如句子讀起來是否
+   通順）仍然留下 flag，誠實記錄在「尚未處理的限制」。 */
 var NATAL_BANNED_OPENERS = ['從某配置來看', '從這個配置來看'];
 var NATAL_APPEARANCE_BANNED_WORDS = ['情緒需求', '安定下來', '需要休息', '壓力大', '情緒管理'];
 function validateNatalTopicContent(answers, topicId) {
   var flags = [];
   var headlines = answers.map(function (a) { return a.headline; });
-  var dupHeadline = headlines.some(function (h, i) { return headlines.indexOf(h) !== i; });
-  if (dupHeadline) flags.push({ check: 'headline_unique', passed: false, note: '同一批題目仍有重複的 headline' });
+  if (headlines.some(function (h, i) { return headlines.indexOf(h) !== i; })) {
+    flags.push({ check: 'headline_unique', passed: false, note: '同一批題目仍有重複的 headline' });
+  }
+  var detailLabelSets = answers.map(function (a) { return (a.details || []).map(function (d) { return d.label; }).join('|'); });
+  if (detailLabelSets.some(function (s, i) { return s && detailLabelSets.indexOf(s) !== i; })) {
+    flags.push({ check: 'detail_labels_unique', passed: false, note: '同一批題目出現重複的 detailLabels 組合' });
+  }
+  var primaryKeys = answers.map(function (a) { return a.primaryEvidence && a.primaryEvidence.canonicalKey; }).filter(Boolean);
+  var primaryKeyCounts = {};
+  primaryKeys.forEach(function (k) { primaryKeyCounts[k] = (primaryKeyCounts[k] || 0) + 1; });
+  var maxPrimaryDup = Object.keys(primaryKeyCounts).reduce(function (m, k) { return Math.max(m, primaryKeyCounts[k]); }, 0);
+  if (primaryKeys.length >= 2 && maxPrimaryDup === primaryKeys.length) {
+    flags.push({ check: 'primary_evidence_diversity', passed: false, note: '同一批題目的主導 evidence 完全相同，且找不到合適的替代證據' });
+  }
   answers.forEach(function (a) {
+    var fullText = a.headline + a.summary + (a.details || []).map(function (d) { return d.text; }).join('');
     NATAL_BANNED_OPENERS.forEach(function (bad) {
       if (a.headline.indexOf(bad) === 0 || a.summary.indexOf(bad) === 0) flags.push({ check: 'banned_opener', passed: false, note: a.questionId + ' 使用了禁用開頭「' + bad + '」' });
     });
     var intent = INTENT_ALIAS[a.intent] || a.intent;
+    if (!a.details.length) return; // 沒有可用證據時（skip 狀態），以下語意檢查沒有意義
     if (intent === 'appearance') {
-      var text = a.headline + a.summary + a.details.map(function (d) { return d.text; }).join('');
       NATAL_APPEARANCE_BANNED_WORDS.forEach(function (w) {
-        if (text.indexOf(w) !== -1) flags.push({ check: 'appearance_no_emotion', passed: false, note: a.questionId + ' 外型題內容疑似仍在講情緒管理（含「' + w + '」）' });
+        if (fullText.indexOf(w) !== -1) flags.push({ check: 'appearance_no_emotion', passed: false, note: a.questionId + ' 外型題內容疑似仍在講情緒管理（含「' + w + '」）' });
       });
+      var catCount = 0;
+      if (/氣質|氣場|調性/.test(fullText)) catCount++;
+      if (/印象|第一眼|初次|眼神/.test(fullText)) catCount++;
+      if (/穿著|打扮|外型|美感|風格|談吐|舉止|俐落|明亮/.test(fullText)) catCount++;
+      if (catCount < 2) flags.push({ check: 'appearance_category_coverage', passed: false, note: a.questionId + '（visualStyle/firstImpression/presentation）只命中不到 2 類外型描述' });
     }
-    if (a.details.length < 2) flags.push({ check: 'min_answer_targets', passed: false, note: a.questionId + ' 少於 2 個 details' });
+    if (a.details.length < Math.min(2, a.answerTargetsCount || 2)) {
+      flags.push({ check: 'min_answer_targets', passed: false, note: a.questionId + ' details 數量少於題目要求的 answerTargets' });
+    }
+    if (a.primaryEvidence && a.primaryEvidence.planetKey && (a.evidenceBiasExcludePlanets || []).indexOf(a.primaryEvidence.planetKey) !== -1) {
+      flags.push({ check: 'excluded_target_hit', passed: false, note: a.questionId + ' 主導證據命中了這題 excludedTargets 排除的天體' });
+    }
+    if (intent === 'environment' && !/場|環境|節奏|步調|氛圍|場合/.test(fullText)) {
+      flags.push({ check: 'environment_must_describe_setting', passed: false, note: a.questionId + ' 環境題內容未包含場域／氛圍相關描述' });
+    }
+    if (a.questionFocus === 'suitable_roles' && !/角色|職能|任務|工作|執行|發揮|擅長|很會|能力|拿手/.test(fullText)) {
+      flags.push({ check: 'role_must_describe_function', passed: false, note: a.questionId + ' 工作類型題未包含職能／角色相關描述' });
+    }
+    if (a.questionFocus === 'meeting_context' && !/場合|情境|聚會|認識|場景/.test(fullText)) {
+      flags.push({ check: 'scene_must_describe_context', passed: false, note: a.questionId + ' 相遇場合題未包含場域／情境相關描述' });
+    }
   });
+  if (topicId === 'wealth') {
+    var wealthFocus = answers.map(function (a) { return a.questionFocus; });
+    var uniqFocus = wealthFocus.filter(function (f, i) { return wealthFocus.indexOf(f) === i; });
+    if (uniqFocus.length < wealthFocus.length) {
+      flags.push({ check: 'wealth_focus_separation', passed: false, note: '財富主題有題目共用同一個 questionFocus，賺錢方式／消費模式／風險偏好未確實分離' });
+    }
+  }
   return flags;
 }
 /* 主題總覽：不重複列出配置名稱、不用「這次選擇了 N 個問題」這種罐頭開場，
@@ -9130,19 +9271,30 @@ function buildTopicOverview(topicId, answers) {
    → 主題總覽。selectedQuestionIds 最多 3 個。 */
 function analyzeNatalTopic(chartData, topicId, selectedQuestionIds, unknownTime) {
   var questions = (NATAL_TOPIC_QUESTIONS[topicId] || []).filter(function (q) { return selectedQuestionIds.indexOf(q.id) !== -1; });
-  var usedHeadlines = [], usedSummaries = []; // 同一批產生的題目共用，避免指標池重疊時湊出重複句子
+  /* 同一批產生的題目共用這三個陣列，避免指標池重疊時湊出重複句子或讓同一筆
+     evidence 主導整批題目（usedPrimaryKeys 是 V2.1 新增，見 pickPrimaryEvidence）。 */
+  var usedHeadlines = [], usedSummaries = [], usedPrimaryKeys = [];
   var answers = questions.map(function (q) {
     var indicators = getTopicIndicators(topicId, q.id);
     var extracted = extractChartEvidence(chartData, unknownTime, indicators);
     var ranked = rankEvidence(extracted.evidence);
     var merged = mergeSupportingSignals(ranked);
     var tensions = identifyTensions(ranked);
-    var content = buildQuestionContent(topicId, q, ranked, usedHeadlines, usedSummaries);
+    var content = buildQuestionContent(topicId, q, ranked, { usedHeadlines: usedHeadlines, usedSummaries: usedSummaries, usedPrimaryKeys: usedPrimaryKeys });
     var advanced = buildAdvancedExplanation(q, ranked, extracted.skipped, tensions, merged);
     content.limitations = advanced.limitations.slice();
     content.ranked = ranked; content.skipped = extracted.skipped; content.merged = merged; content.tensions = tensions; content.advanced = advanced;
     content.aiData = buildAiCopyData(topicId, q, ranked, content, advanced);
     return content;
+  });
+  /* V2.1：uniqueEvidence——每題自己 ranked 清單裡，那些「沒有被同一批次其他
+     題目拿去當主導證據」的項目，用來讓可折疊區能標示「這是這題獨有的線索」。 */
+  var allPrimaryKeys = answers.map(function (a) { return a.primaryEvidence && a.primaryEvidence.canonicalKey; }).filter(Boolean);
+  answers.forEach(function (a) {
+    var ownKey = a.primaryEvidence && a.primaryEvidence.canonicalKey;
+    a.uniqueEvidence = (a.ranked || []).filter(function (e) {
+      return e.canonicalKey === ownKey || allPrimaryKeys.indexOf(e.canonicalKey) === -1;
+    });
   });
   var qualityFlags = validateNatalTopicContent(answers, topicId);
   var overview = buildTopicOverview(topicId, answers);
