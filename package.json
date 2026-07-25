@@ -1,0 +1,10 @@
+{
+  "name": "mystic-deck-regression",
+  "private": true,
+  "scripts": {
+    "check": "node --check js/app.js && node --check js/data/astrology-knowledge-layer.js && node --check js/data/astrology-knowledge-dataset.js && node --check js/data/astrology-natal-topics-data.js",
+    "test:golden": "node tests/natal-golden-regression.js",
+    "test:golden:update": "node tests/natal-golden-regression.js --update",
+    "test": "npm run check && npm run test:golden"
+  }
+}

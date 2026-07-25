@@ -1,0 +1,76 @@
+{
+  "generatedAt": "2026-07-25T05:38:28.323Z",
+  "chartCount": 12,
+  "questionCount": 56,
+  "caseCount": 672,
+  "coverage": {
+    "questionFocusTotal": 56,
+    "mapped": 56,
+    "generalFallback": [],
+    "categoryTotal": 47,
+    "planetCategoryExpected": 470,
+    "planetCategoryPresent": 470
+  },
+  "quality": {
+    "validatorFlags": 195,
+    "flagBreakdown": {
+      "slot_overlap": 181,
+      "generic_fallback": 11,
+      "knowledge_diversity": 3
+    },
+    "forbiddenLeaks": 0,
+    "emptyAnswers": 0,
+    "undefinedLeaks": 0
+  },
+  "baselineHash": "5af732ded667d66b",
+  "charts": [
+    {
+      "id": "fire_angular",
+      "label": "火象＋角宮強"
+    },
+    {
+      "id": "earth_saturn_career",
+      "label": "土象＋土星事業結構"
+    },
+    {
+      "id": "air_uranus_network",
+      "label": "風象＋天王星人際網絡"
+    },
+    {
+      "id": "water_lunar_home",
+      "label": "水象＋月亮家庭軸"
+    },
+    {
+      "id": "tenth_house_stellium",
+      "label": "群星第十宮"
+    },
+    {
+      "id": "twelfth_house_stellium",
+      "label": "群星第十二宮"
+    },
+    {
+      "id": "relationship_axis",
+      "label": "第七宮關係軸強"
+    },
+    {
+      "id": "second_eighth_resources",
+      "label": "第二／八宮資源軸"
+    },
+    {
+      "id": "fifth_house_creative",
+      "label": "第五宮創作表現"
+    },
+    {
+      "id": "sixth_house_routine",
+      "label": "第六宮工作健康節奏"
+    },
+    {
+      "id": "ninth_house_learning",
+      "label": "第九宮學習跨域"
+    },
+    {
+      "id": "fixed_tension",
+      "label": "固定星座＋張力相位"
+    }
+  ]
+}

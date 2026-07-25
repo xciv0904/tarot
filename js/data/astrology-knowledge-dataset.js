@@ -1,0 +1,90 @@
+/* ================= V5：Composable Astrology Knowledge Dataset =================
+   只存語意資料，不負責畫面或占星計算。這份資料補齊 V4 尚未覆蓋的
+   love / health / wealth / social / study / general questionFocus，並在載入時
+   組合成 projectKnowledge() 已經認得的 PLANET_TOPIC_KNOWLEDGE 介面。 */
+var ASTRO_KNOWLEDGE_SCHEMA_VERSION = 1;
+
+var ASTRO_PLANET_SEMANTIC_DATASET = {
+  Sun:     { drive: '建立清楚的自我定位並主動承擔', gift: '主導、決策與凝聚注意力', need: '被看見、被肯定並保有主體性', risk: '過度把成敗綁在自我價值上', pace: '主動而明確', social: '自然成為焦點或代表人物' },
+  Moon:    { drive: '回應情緒並建立可依靠的安全感', gift: '同理、照顧與察覺氣氛', need: '熟悉感、歸屬感與穩定回應', risk: '過度承接他人的情緒', pace: '依感受調整', social: '讓人感到被理解與接住' },
+  Mercury: { drive: '理解資訊並建立清楚的連結', gift: '學習、表達與整理複雜資訊', need: '交流、變化與足夠的思考空間', risk: '想得太多或注意力分散', pace: '靈活而快速', social: '透過談話與好奇心拉近距離' },
+  Venus:   { drive: '創造價值、和諧與彼此欣賞', gift: '美感、協調與關係經營', need: '公平、舒適與有品質的互動', risk: '為維持和諧而壓下真實立場', pace: '講究平衡與感受', social: '自然營造好感與合作氣氛' },
+  Mars:    { drive: '採取行動、突破阻力並爭取目標', gift: '執行、競爭與快速反應', need: '挑戰、自主與可立即投入的目標', risk: '求快、急躁或忽略他人節奏', pace: '直接而迅速', social: '用行動與鮮明態度帶動互動' },
+  Jupiter: { drive: '擴大視野、可能性與成長空間', gift: '整合、教導與看見長期機會', need: '自由探索、意義感與更大的格局', risk: '承諾過多或高估可用資源', pace: '開放而擴張', social: '以樂觀與分享帶動群體' },
+  Saturn:  { drive: '建立結構、責任與可長期維持的成果', gift: '紀律、規劃與承受長期壓力', need: '清楚界線、可靠制度與可預期進度', risk: '過度保守、自我要求或害怕犯錯', pace: '審慎而穩定', social: '以可靠與負責建立信任' },
+  Uranus:  { drive: '打破慣性並創造更自由的新做法', gift: '創新、獨立判斷與系統改革', need: '自主、差異性與不被僵化規則限制', risk: '突然抽離或為反對而反對', pace: '跳躍而非線性', social: '以獨特觀點吸引同好' },
+  Neptune: { drive: '連結想像、同理與超越個人的意義', gift: '直覺、創作與感受細微氛圍', need: '靈感、柔軟空間與情感共鳴', risk: '界線模糊、理想化或逃避現實', pace: '流動而憑直覺', social: '以溫柔、想像與共感建立連結' },
+  Pluto:   { drive: '深入核心並完成根本性的轉化', gift: '洞察、危機處理與資源整合', need: '深度、真實與足夠的掌控感', risk: '過度控制、猜疑或長期處於高張力', pace: '集中而強烈', social: '以深度與強烈存在感建立連結' },
+};
+
+/* 每個 lens 僅回答一個維度；semanticKeys 供回歸測試與未來知識編輯器使用。 */
+var ASTRO_TOPIC_SEMANTIC_DATASET = {
+  partner_profile: { family: 'love', phrase: '重視{need}、並以{social}的方式進入關係', summary: '這類對象會呼應你對{need}的重視', detail: '{social}；關係態度偏向{pace}', caution: '需要分辨{risk}是否會影響長期相處', keys: ['partnerTrait', 'relationshipAttitude'] },
+  attraction_pattern: { family: 'love', phrase: '容易被能展現{gift}、互動節奏{pace}的人打動', summary: '吸引力來自對方讓你感受到{need}', detail: '心動特質是{gift}；互動上偏好{pace}', caution: '別讓一時吸引掩蓋{risk}', keys: ['attractionTrait', 'interactionSpark'] },
+  appearance_vibe: { family: 'love', phrase: '呈現{pace}、並帶有「{social}」印象的外在氣質', summary: '整體辨識度來自{gift}所形成的風格', detail: '第一印象偏向{pace}；打扮或姿態帶有{gift}的調性', caution: '', keys: ['visualStyle', 'firstImpression', 'presentation'] },
+  relationship_style: { family: 'love', phrase: '適合能保有{need}、互動方式{pace}的關係', summary: '穩定投入的前提是關係允許你{drive}', detail: '相處需要{need}；溝通節奏宜保持{pace}', caution: '衝突時留意{risk}', keys: ['interactionMode', 'conflictStyle'] },
+  relationship_strength: { family: 'love', phrase: '關係中的優勢是{gift}，也能讓對方感到{social}', summary: '你會透過{drive}維持關係品質', detail: '可發揮{gift}；別人容易感受到{social}', caution: '', keys: ['relationshipGift', 'feltByPartner'] },
+  relationship_challenge: { family: 'love', phrase: '感情裡較容易卡在{risk}', summary: '壓力升高時，原本想要{need}的需求可能走向失衡', detail: '觸發點是缺少{need}；常見反應是{risk}', caution: '先辨認需求，再決定如何回應', keys: ['relationshipTrigger', 'stressResponse'] },
+  relationship_values: { family: 'love', phrase: '長期關係真正需要的是{need}', summary: '關係能支持你{drive}時，投入才容易持續', detail: '核心需求是{need}；長期價值在於{drive}', caution: '', keys: ['coreNeed', 'longTermValue'] },
+  employment_mode: { family: 'career', phrase: '工作模式需要保有{need}，並採取{pace}的推進方式', summary: '這能讓你持續發揮{gift}', detail: '自主程度需符合{need}；合作節奏偏向{pace}', caution: '把{risk}納入制度設計', keys: ['workMode', 'autonomyLevel'] },
+  career_challenge: { family: 'career', phrase: '職涯較容易因{risk}而停滯', summary: '原本想要{need}，壓力下卻可能限制了{drive}', detail: '卡點常是{risk}；需要重新運用{gift}', caution: '用可檢查的行動節點取代反覆自我懷疑', keys: ['careerBlock', 'correction'] },
+  health_stress: { family: 'health', phrase: '壓力多半在無法{drive}時累積', summary: '當{need}長期不足，容易出現{risk}的反應', detail: '壓力來源是缺少{need}；反應節奏偏向{pace}', caution: '這是生活模式提醒，不是醫療診斷', keys: ['stressSource', 'stressResponse'] },
+  health_lifestyle: { family: 'health', phrase: '適合能維持{need}、節奏{pace}的生活安排', summary: '保留{drive}的空間有助於維持穩定感', detail: '日常需要{need}；安排方式宜{pace}', caution: '持續不適仍應尋求合格醫療專業協助', keys: ['lifestyleCondition', 'dailyPace'] },
+  health_boundary: { family: 'health', phrase: '較容易忽略的界線是{risk}', summary: '你可能為了維持{need}而延後回應自己的負荷', detail: '界線警訊是{risk}；可用{gift}重新安排負荷', caution: '不以星盤取代醫療判斷', keys: ['boundarySignal', 'loadManagement'] },
+  health_emotion: { family: 'health', phrase: '情緒在缺少{need}時較容易累積', summary: '若長期不能{drive}，壓力可能透過日常狀態被感覺到', detail: '情緒需求是{need}；失衡模式是{risk}', caution: '不推論疾病或特定身體部位', keys: ['emotionNeed', 'accumulationPattern'] },
+  health_selfcare: { family: 'health', phrase: '恢復能量的關鍵是重新取得{need}', summary: '能讓你{drive}的活動較有恢復效果', detail: '可運用{gift}照顧自己；恢復節奏宜{pace}', caution: '', keys: ['recoveryMethod', 'selfCareResource'] },
+  health_rest: { family: 'health', phrase: '休息需要保留{need}，並順著{pace}的節奏切換', summary: '真正的休息是暫時卸下{risk}帶來的耗損', detail: '有效休息條件是{need}；切換方式宜{pace}', caution: '', keys: ['restCondition', 'recoveryRhythm'] },
+  wealth_earning: { family: 'wealth', phrase: '收入較適合建立在{gift}與{drive}之上', summary: '市場價值來自你能穩定提供{gift}', detail: '核心收入能力是{gift}；累積方式偏向{pace}', caution: '避免因{risk}讓收入結構失去穩定', keys: ['earningMechanism', 'valueCreation'] },
+  wealth_behavior: { family: 'wealth', phrase: '金錢決策傾向以{need}為優先', summary: '消費與儲蓄會反映你如何追求{need}', detail: '花費動機常圍繞{need}；決策節奏偏向{pace}', caution: '預算需特別防範{risk}', keys: ['spendingMotive', 'savingPattern'] },
+  wealth_risk: { family: 'wealth', phrase: '面對財務風險時，傾向以{pace}的方式判斷', summary: '是否感到{need}會影響承擔風險的意願', detail: '風險判斷重視{need}；優勢是{gift}', caution: '重大決策仍需依現實資料與專業意見', keys: ['riskStyle', 'decisionCondition'] },
+  wealth_resources: { family: 'wealth', phrase: '資源運用適合以{gift}為核心，再建立支持{need}的合作方式', summary: '個人與合作的比例要能讓你持續{drive}', detail: '個人籌碼是{gift}；合作條件是{need}', caution: '合作前需用明確權責降低{risk}', keys: ['personalLeverage', 'sharedResource'] },
+  wealth_challenge: { family: 'wealth', phrase: '財務上較容易因{risk}而偏離計畫', summary: '這通常發生在急著取得{need}時', detail: '常見盲點是{risk}；修正資源是{gift}', caution: '先寫清楚預算與退出條件', keys: ['financialBlindspot', 'guardrail'] },
+  social_impression: { family: 'social', phrase: '第一印象多半是{social}，整體節奏{pace}', summary: '別人會先感受到你在{drive}上的態度', detail: '外顯印象是{social}；互動速度偏向{pace}', caution: '', keys: ['firstImpression', 'socialPace'] },
+  social_communication: { family: 'social', phrase: '溝通時擅長運用{gift}，表達節奏{pace}', summary: '你希望對話能支持{drive}', detail: '表達優勢是{gift}；交流條件是{need}', caution: '壓力下留意{risk}', keys: ['communicationGift', 'dialogueNeed'] },
+  social_group: { family: 'social', phrase: '團隊裡容易以{gift}承擔關鍵功能', summary: '你會自然透過{drive}影響群體', detail: '團隊貢獻是{gift}；常呈現{social}', caution: '別讓{risk}破壞分工', keys: ['groupFunction', 'teamContribution'] },
+  social_attraction: { family: 'social', phrase: '容易吸引重視{need}、欣賞你{social}的人', summary: '這類朋友會回應你想要{drive}的傾向', detail: '朋友重視{need}；互動特點是{social}', caution: '', keys: ['friendTrait', 'friendshipDynamic'] },
+  social_strength: { family: 'social', phrase: '人際優勢是{gift}，能讓人感到{social}', summary: '這項能力有助於你{drive}', detail: '可持續發揮{gift}；他人感受到{social}', caution: '', keys: ['socialGift', 'relationalImpact'] },
+  social_boundary: { family: 'social', phrase: '人際衝突較容易由{risk}引發', summary: '通常是{need}沒有被說清楚時出現', detail: '觸發點是缺少{need}；常見反應是{risk}', caution: '先明確說出界線，再處理立場', keys: ['boundaryTrigger', 'conflictResponse'] },
+  social_circle: { family: 'social', phrase: '適合重視{need}、並容許你{drive}的人際圈', summary: '這種圈子能讓{gift}成為穩定貢獻', detail: '圈層價值是{need}；你能提供{gift}', caution: '', keys: ['circleValue', 'belongingCondition'] },
+  study_learning: { family: 'study', phrase: '學習時適合運用{gift}，並採取{pace}的節奏', summary: '能讓你{drive}的方式最容易維持投入', detail: '有效方法是{gift}；學習節奏偏向{pace}', caution: '', keys: ['learningMethod', 'learningPace'] },
+  study_memory: { family: 'study', phrase: '較容易透過{gift}建立理解與記憶', summary: '內容能連回{need}時，知識較容易留下', detail: '記憶線索是{gift}；理解條件是{need}', caution: '', keys: ['memoryCue', 'understandingCondition'] },
+  study_block: { family: 'study', phrase: '學習卡住時常與{risk}有關', summary: '表面是拖延，底層可能是{need}沒有被滿足', detail: '觸發點是{risk}；可借助{gift}重新啟動', caution: '把任務縮小成能立即開始的下一步', keys: ['procrastinationTrigger', 'restartMethod'] },
+  study_mode: { family: 'study', phrase: '適合能保有{need}、並發揮{gift}的學習模式', summary: '環境能支持你{drive}時，效率較穩定', detail: '需要的模式是{need}；可運用{gift}', caution: '', keys: ['studyFormat', 'environmentNeed'] },
+  study_overseas: { family: 'study', phrase: '跨域或海外學習需要能支持{drive}與{need}', summary: '真正價值在於擴大{gift}的使用範圍', detail: '適合拓展{gift}；選擇條件是{need}', caution: '仍需評估語言、預算、資格與生活安排', keys: ['expansionValue', 'selectionCondition'] },
+  study_rhythm: { family: 'study', phrase: '讀書節奏適合{pace}，並固定保留{need}', summary: '這能降低{risk}造成的中斷', detail: '有效節奏是{pace}；維持條件是{need}', caution: '', keys: ['studyRhythm', 'consistencyCondition'] },
+  study_balance: { family: 'study', phrase: '思考優勢是{gift}，但也要留意{risk}', summary: '同一項能力失衡時可能從優勢變成阻力', detail: '可發揮{gift}；盲點是{risk}', caution: '用回饋與可驗證成果校正判斷', keys: ['thinkingStrength', 'learningBlindspot'] },
+  general_theme: { family: 'general', phrase: '人生主題圍繞著{drive}', summary: '你會反覆透過{gift}回應對{need}的追求', detail: '核心動力是{drive}；主要資源是{gift}', caution: '', keys: ['lifeTheme', 'coreDrive'] },
+  general_strength: { family: 'general', phrase: '最值得持續發揮的核心能力是{gift}', summary: '它能協助你{drive}', detail: '優勢表現在{gift}；成熟方向是{drive}', caution: '', keys: ['coreStrength', 'matureUse'] },
+  general_challenge: { family: 'general', phrase: '反覆出現的課題常與{risk}有關', summary: '這通常是追求{need}時產生的失衡版本', detail: '觸發條件是缺少{need}；重複模式是{risk}', caution: '先辨認模式，再選擇不同回應', keys: ['recurringIssue', 'trigger'] },
+  general_direction: { family: 'general', phrase: '現階段值得優先累積{gift}，用來支持你{drive}', summary: '方向是否合適，可看它能否穩定提供{need}', detail: '優先資產是{gift}；判斷條件是{need}', caution: '不要只因短期焦慮頻繁更換主軸', keys: ['priorityAsset', 'directionTest'] },
+  general_energy: { family: 'general', phrase: '命盤中較突出的能量是{drive}，外在呈現為{social}', summary: '它會讓{gift}成為容易被看見的特點', detail: '突出動力是{drive}；外顯特徵是{social}', caution: '', keys: ['standoutDrive', 'visibleTrait'] },
+  general_tension: { family: 'general', phrase: '內在拉扯常發生在{need}與{risk}之間', summary: '一邊想要{drive}，一邊又擔心失去平衡', detail: '需要整合{need}；失衡反應是{risk}', caution: '重點是建立可切換的使用情境', keys: ['innerNeed', 'tensionPattern'] },
+};
+
+function astroKnowledgeFillSemantic(template, planet) {
+  return String(template || '').replace(/\{(drive|gift|need|risk|pace|social)\}/g, function (_, key) { return planet[key] || ''; });
+}
+function buildComposableKnowledgeEntry(planetKey, topicKey) {
+  var p = ASTRO_PLANET_SEMANTIC_DATASET[planetKey], t = ASTRO_TOPIC_SEMANTIC_DATASET[topicKey];
+  if (!p || !t) return null;
+  var caution = astroKnowledgeFillSemantic(t.caution, p);
+  return {
+    meanings: {
+      headline: [astroKnowledgeFillSemantic(t.phrase, p) + '。'],
+      summary: [astroKnowledgeFillSemantic(t.summary, p) + '。'],
+      details: astroKnowledgeFillSemantic(t.detail, p).split('；').filter(Boolean),
+      caution: caution ? [caution + '。'] : [],
+    },
+    keywords: t.keys.concat([p.gift, p.need]), strengths: [p.gift], risks: [p.risk],
+    semantic: { schemaVersion: ASTRO_KNOWLEDGE_SCHEMA_VERSION, planet: planetKey, topic: topicKey, family: t.family, conceptKeys: t.keys.slice() },
+  };
+}
+(function installComposableAstrologyDataset() {
+  if (typeof PLANET_TOPIC_KNOWLEDGE === 'undefined') return;
+  Object.keys(ASTRO_PLANET_SEMANTIC_DATASET).forEach(function (planetKey) {
+    if (!PLANET_TOPIC_KNOWLEDGE[planetKey]) PLANET_TOPIC_KNOWLEDGE[planetKey] = {};
+    Object.keys(ASTRO_TOPIC_SEMANTIC_DATASET).forEach(function (topicKey) {
+      if (!PLANET_TOPIC_KNOWLEDGE[planetKey][topicKey]) PLANET_TOPIC_KNOWLEDGE[planetKey][topicKey] = buildComposableKnowledgeEntry(planetKey, topicKey);
+    });
+  });
+})();
