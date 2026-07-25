@@ -8866,6 +8866,71 @@ function projectEvidenceForTopic(evidence, topicId, questionFocus) {
   if (evidence.role && evidence.role.indexOf('houseRuler') === 0) result.forbiddenTerms.push('宮主星');
   return result;
 }
+/* ================= V4：Astrology Knowledge Layer 投影 =================
+   V2.2 的 Topic Projection（上面的 projectEvidenceForTopic）本質上還是
+   「House → Topic → Phrase」：宮位本身是唯一的知識來源，同一宮只要有兩顆
+   以上行星，不同題目容易引用到同一句宮位語意，讀起來像「一直在講同一件
+   事」。V4 把知識來源改成「行星 + 星座 + 宮位 + 主題」共同決定：
+
+     Evidence → Knowledge Projection（本函式）→ Topic Projection（找不到
+     行星知識時的 fallback，projectEvidenceForTopic 完全沒有被移除或改寫）
+     → Content Planner（buildQuestionContent 完全沒有變動，一樣是消費
+     contextualizeEvidence/contextualizeCaution 算出來的字串）。
+
+   優先序：Planet + House（PLANET_HOUSE_TOPIC_KNOWLEDGE，最具體，但只收錄
+   示範性、可持續擴充的組合）> Planet Meaning（PLANET_TOPIC_KNOWLEDGE，
+   10 行星 × 7 主題，不管落在哪一宮都有基本的行星基調）> 兩者都沒有收錄時
+   回傳 confidence:'none'，由呼叫端自然 fallback 回純宮位的 Topic
+   Projection——House 不再永遠主導，但也沒有被拿掉，只是退居最後一層。
+   Sign 不是獨立的知識來源，只在有 Planet／Planet+House 知識可用時，疊加
+   KNOWLEDGE_SIGN_MODIFIER 的一小段語氣修飾。 */
+function natalStripTrailingPeriod(s) {
+  return (s || '').replace(/[。.]\s*$/, '');
+}
+var KNOWLEDGE_TOPIC_MEANING_FIELD = {
+  meeting_context: 'loveMeaning', suitable_roles: 'workMeaning', suitable_environment: 'environmentMeaning',
+  achievement_source: 'workMeaning', monetizable_skills: 'moneyMeaning', long_term_direction: 'workMeaning',
+  family_context: 'familyMeaning',
+};
+function projectKnowledge(planetKey, sign, house, topic, questionFocus) {
+  var out = {
+    projectedMeaning: '', strengths: [], risks: [],
+    workMeaning: '', loveMeaning: '', moneyMeaning: '', familyMeaning: '', relationshipMeaning: '',
+    appearanceMeaning: '', environmentMeaning: '',
+    suitableHeadline: [], suitableSummary: [], suitableDetails: [], suitableCaution: [],
+    confidence: 'none',
+  };
+  if (!planetKey || !topic) return out;
+  var entry = null, tier = 'none';
+  var overrideKey = house ? (planetKey.toLowerCase() + '-' + house + '-' + topic) : null;
+  if (overrideKey && typeof PLANET_HOUSE_TOPIC_KNOWLEDGE !== 'undefined' && PLANET_HOUSE_TOPIC_KNOWLEDGE[overrideKey]) {
+    entry = PLANET_HOUSE_TOPIC_KNOWLEDGE[overrideKey]; tier = 'planet_house';
+  } else if (typeof PLANET_TOPIC_KNOWLEDGE !== 'undefined' && PLANET_TOPIC_KNOWLEDGE[planetKey] && PLANET_TOPIC_KNOWLEDGE[planetKey][topic]) {
+    entry = PLANET_TOPIC_KNOWLEDGE[planetKey][topic]; tier = 'planet';
+  }
+  if (!entry) return out;
+  var mod = (sign != null && typeof KNOWLEDGE_SIGN_MODIFIER !== 'undefined' && KNOWLEDGE_SIGN_MODIFIER[sign]) || '';
+  var seedBase = 'know|' + planetKey + '|' + (sign != null ? sign : '') + '|' + (house || '') + '|' + topic + '|' + (questionFocus || '');
+  /* meanings.headline/summary 是可以獨立成句的完整句子（例如「適合...環境。」），
+     meanings.details 則跟既有 HOUSE_TOPIC_PROJECTION 一樣是「短語」，設計上
+     就是要被嵌進 INTENT_FRAMES 模板的 {H_} 佔位符裡（例如「{H_}——這種場合
+     會讓你比較自在。」）。contextualizeEvidence/contextualizeCaution 只會把
+     hVal 當短語嵌入，所以這裡優先用 details 這組短語，並用
+     natalStripTrailingPeriod 防呆——就算未來擴充的內容不小心用了完整句子，
+     嵌入模板時也不會出現「。，」這種疊標點。 */
+  out.suitableHeadline = (entry.meanings.headline || []).map(function (t) { return t + mod; });
+  out.suitableSummary = (entry.meanings.summary || []).map(function (t) { return t + mod; });
+  out.suitableDetails = (entry.meanings.details || []).map(function (t) { return t + mod; });
+  out.suitableCaution = (entry.meanings.caution || []).slice();
+  var pickPool = out.suitableDetails.length ? out.suitableDetails : (out.suitableHeadline.length ? out.suitableHeadline : []);
+  out.projectedMeaning = pickPool.length ? natalStripTrailingPeriod(astroSeededPick(seedBase, pickPool)) : '';
+  out.strengths = entry.strengths || []; out.risks = entry.risks || [];
+  var field = KNOWLEDGE_TOPIC_MEANING_FIELD[topic];
+  if (field) out[field] = out.projectedMeaning;
+  if (topic === 'meeting_context') out.relationshipMeaning = out.projectedMeaning;
+  out.confidence = tier === 'planet_house' ? 'high' : 'medium';
+  return out;
+}
 function contextualizeEvidence(e, intent, slot, seedExtra, fieldOverride, topicId, questionFocus, outMeta) {
   intent = INTENT_ALIAS[intent] || intent || 'overview';
   var frame = INTENT_FRAMES[intent] || INTENT_FRAMES.overview;
@@ -8887,11 +8952,23 @@ function contextualizeEvidence(e, intent, slot, seedExtra, fieldOverride, topicI
   var sVal = natalIntentFieldValue(sb, eff.s) || '';
   var hVal = '';
   if (houseNum && topicId) {
-    /* Natal Topic Analysis 的呼叫一定會帶 topicId：宮位一律走主題投影層，
-       不直接讀 HOUSE_BEGINNER 的原始欄位（就算題目自己的 fieldOverride.h
-       指定了某個欄位，投影後的語意仍然優先，避免同一宮位在不同主題下
-       印出相同或不相關的原始關鍵字）。 */
-    hVal = projectEvidenceForTopic(e, topicId, questionFocus).projectedMeaning || '';
+    /* Natal Topic Analysis 的呼叫一定會帶 topicId：宮位一律先試 V4 Knowledge
+       Projection（行星+星座+宮位+主題），找不到行星知識才 fallback 回 V2.2
+       的純宮位 Topic Projection，兩者都不會直接讀 HOUSE_BEGINNER 的原始
+       欄位。 */
+    var cat0 = (questionFocus && QUESTIONFOCUS_HOUSE_CATEGORY[questionFocus]) || 'general';
+    var know0 = (e.planetKey && typeof projectKnowledge === 'function') ? projectKnowledge(e.planetKey, e.sign, houseNum, cat0, questionFocus) : null;
+    if (know0 && know0.confidence !== 'none') {
+      /* hVal 一律會被嵌進 INTENT_FRAMES 模板的 {H_} 佔位符裡（例如
+         「{H_}——這種場合會讓你比較自在。」），所以固定用 details 這組
+         「短語」（跟既有 HOUSE_TOPIC_PROJECTION 同一種風格），不用
+         headline/summary 那種本身已經是完整句子的內容，避免嵌入後出現
+         「環境。，更靈活」這種疊標點；natalStripTrailingPeriod 是雙重防呆。 */
+      var pool0 = know0.suitableDetails.length ? know0.suitableDetails : (know0.suitableHeadline.length ? know0.suitableHeadline : [know0.projectedMeaning]);
+      hVal = natalStripTrailingPeriod((pool0.length ? astroSeededPick(seed + '|know', pool0) : know0.projectedMeaning) || '');
+    } else {
+      hVal = projectEvidenceForTopic(e, topicId, questionFocus).projectedMeaning || '';
+    }
   } else {
     var hb = houseNum ? HOUSE_BEGINNER[houseNum - 1] : null;
     hVal = natalIntentFieldValue(hb, eff.h) || '';
@@ -8919,7 +8996,19 @@ function contextualizeCaution(e, cautionFocus, seedExtra, topicId, questionFocus
   var sVal = natalIntentFieldValue(sb, frame.s) || '';
   var hVal = '';
   if (houseNum && topicId) {
-    hVal = projectEvidenceForTopic(e, topicId, questionFocus).projectedMeaning || '';
+    /* caution 的宮位語意也走同一條 Knowledge Projection 優先序：先試
+       行星知識裡的 caution 短語（entry.meanings.caution），找不到就退回
+       行星知識的一般 projectedMeaning，兩者都沒有才 fallback 回純宮位的
+       Topic Projection。 */
+    var catC = (questionFocus && QUESTIONFOCUS_HOUSE_CATEGORY[questionFocus]) || 'general';
+    var knowC = (e.planetKey && typeof projectKnowledge === 'function') ? projectKnowledge(e.planetKey, e.sign, houseNum, catC, questionFocus) : null;
+    if (knowC && knowC.confidence !== 'none' && knowC.suitableCaution && knowC.suitableCaution.length) {
+      hVal = natalStripTrailingPeriod(astroSeededPick(seed + '|know', knowC.suitableCaution) || '');
+    } else if (knowC && knowC.confidence !== 'none' && knowC.projectedMeaning) {
+      hVal = knowC.projectedMeaning;
+    } else {
+      hVal = projectEvidenceForTopic(e, topicId, questionFocus).projectedMeaning || '';
+    }
   } else if (houseNum) {
     hVal = natalIntentFieldValue(HOUSE_BEGINNER[houseNum - 1], frame.h) || '';
   }
@@ -9445,6 +9534,23 @@ function validateNatalTopicContent(answers, topicId) {
       if (!proj.projectedMeaning) flags.push({ check: 'topic_projection_coverage', passed: false, note: a.questionId + ' 主導證據的宮位沒有取得對應主題的投影內容' });
     }
   });
+  /* V4：Knowledge Diversity Validator——同一批題目裡，如果兩題的主導證據
+     落在同一宮，但行星不同，理論上應該因為 Planet Meaning 不同而產生不同
+     語意；如果兩者的 headlineConceptKeys 仍然出現同一句共用字串，代表
+     Knowledge Layer 沒有真的發揮作用（可能是這組行星+主題還沒被收錄，
+     fallback 回了純宮位的 Topic Projection），需要標記出來以便之後擴充。 */
+  for (var kdI = 0; kdI < answers.length; kdI++) {
+    for (var kdJ = kdI + 1; kdJ < answers.length; kdJ++) {
+      var kdA = answers[kdI], kdB = answers[kdJ];
+      var kdEa = kdA.primaryEvidence, kdEb = kdB.primaryEvidence;
+      if (!kdEa || !kdEb || !kdEa.planetKey || !kdEb.planetKey || kdEa.planetKey === kdEb.planetKey) continue;
+      var kdHa = kdEa.houseFocus || kdEa.house || (kdEa.angleWhich && ANGLE_VIRTUAL_HOUSE[kdEa.angleWhich]);
+      var kdHb = kdEb.houseFocus || kdEb.house || (kdEb.angleWhich && ANGLE_VIRTUAL_HOUSE[kdEb.angleWhich]);
+      if (kdHa && kdHb && kdHa === kdHb && conceptKeysOverlap(kdA.headlineConceptKeys, kdB.headlineConceptKeys)) {
+        flags.push({ check: 'knowledge_diversity', passed: false, note: kdA.questionId + ' 與 ' + kdB.questionId + ' 同樣落在第' + kdHa + '宮，行星不同（' + kdEa.planetKey + '/' + kdEb.planetKey + '）卻共用相同的宮位語意，可能是這組行星+主題尚未收錄進 Knowledge Layer' });
+      }
+    }
+  }
   /* 4. generic fallback 檢查：這些空泛套語只有在「單獨構成整句、沒有具體
         延伸內容」時才算違規（允許後面接上具體對象／行動／情境）。 */
   var NATAL_GENERIC_FALLBACK_PHRASES = ['對這個主題具有較高代表性', '比較選項、考慮各方立場再決定', '這個需要', '這件事', '值得投入的方向'];
