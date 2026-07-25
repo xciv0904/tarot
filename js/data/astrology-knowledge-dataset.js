@@ -46,6 +46,16 @@ var ASTRO_FAMILY_PRACTICE_DATASET = {
 
 /* 每個 lens 僅回答一個維度；semanticKeys 供回歸測試與未來知識編輯器使用。 */
 var ASTRO_TOPIC_SEMANTIC_DATASET = {
+  /* V4 已有完整行星文案的七個類別也登記在 semantic planner。install 時不會
+     覆寫既有內容；這裡只讓 Content Planner 知道可直接使用其 headline /
+     summary / details，而不必再塞回舊 intent 模板。 */
+  meeting_context: { family:'love', phrase:'在能自然互動的場合建立連結', summary:'共同活動讓關係有機會逐步形成', detail:'具體場合；形成連結的方式', caution:'', keys:['meetingVenue','connectionPath'] },
+  suitable_roles: { family:'career', phrase:'適合發揮{gift}的工作角色', summary:'這類角色能支持你{drive}', detail:'核心職能是{gift}；工作推進方式偏向{pace}', caution:'留意{risk}', keys:['roleFunction','workContent'] },
+  suitable_environment: { family:'career', phrase:'適合能提供{need}的工作環境', summary:'這種條件有助於穩定發揮{gift}', detail:'環境條件是{need}；工作節奏偏向{pace}', caution:'留意{risk}', keys:['environmentCondition','workPace'] },
+  achievement_source: { family:'career', phrase:'成就感主要來自{drive}', summary:'完成時會確認{gift}確實產生價值', detail:'滿足來源是{drive}；可見成果是{gift}', caution:'', keys:['achievementSource','meaningfulResult'] },
+  monetizable_skills: { family:'wealth', phrase:'較容易變現的能力是{gift}', summary:'市場價值來自穩定運用這項能力', detail:'可變現能力是{gift}；累積方式偏向{pace}', caution:'留意{risk}', keys:['monetizableSkill','marketValue'] },
+  long_term_direction: { family:'career', phrase:'長期方向適合圍繞{drive}持續累積', summary:'核心資產是{gift}', detail:'長期資產是{gift}；發展節奏偏向{pace}', caution:'留意{risk}', keys:['longTermAsset','developmentSequence'] },
+  family_context: { family:'family', phrase:'家庭中的功能與{drive}有關', summary:'你常透過{gift}回應家人需要', detail:'家庭角色是{social}；主要貢獻是{gift}', caution:'留意{risk}', keys:['familyFunction','familyContribution'] },
   partner_profile: { family: 'love', phrase: '重視{need}、並以{social}的方式進入關係', summary: '這類對象會呼應你對{need}的重視', detail: '{social}；關係態度偏向{pace}', caution: '需要分辨{risk}是否會影響長期相處', keys: ['partnerTrait', 'relationshipAttitude'] },
   attraction_pattern: { family: 'love', phrase: '容易被能展現{gift}、互動節奏{pace}的人打動', summary: '吸引力來自對方讓你感受到{need}', detail: '心動特質是{gift}；互動上偏好{pace}', caution: '別讓一時吸引掩蓋{risk}', keys: ['attractionTrait', 'interactionSpark'] },
   appearance_vibe: { family: 'love', phrase: '呈現{pace}、並帶有「{social}」印象的外在氣質', summary: '整體辨識度來自{gift}所形成的風格', detail: '第一印象偏向{pace}；打扮或姿態帶有{gift}的調性', caution: '', keys: ['visualStyle', 'firstImpression', 'presentation'] },
@@ -55,6 +65,13 @@ var ASTRO_TOPIC_SEMANTIC_DATASET = {
   relationship_values: { family: 'love', phrase: '長期關係真正需要的是{need}', summary: '關係能支持你{drive}時，投入才容易持續', detail: '核心需求是{need}；長期價值在於{drive}', caution: '', keys: ['coreNeed', 'longTermValue'] },
   employment_mode: { family: 'career', phrase: '工作模式需要保有{need}，並採取{pace}的推進方式', summary: '這能讓你持續發揮{gift}', detail: '自主程度需符合{need}；合作節奏偏向{pace}', caution: '把{risk}納入制度設計', keys: ['workMode', 'autonomyLevel'] },
   career_challenge: { family: 'career', phrase: '職涯較容易因{risk}而停滯', summary: '原本想要{need}，壓力下卻可能限制了{drive}', detail: '卡點常是{risk}；需要重新運用{gift}', caution: '用可檢查的行動節點取代反覆自我懷疑', keys: ['careerBlock', 'correction'] },
+  career_strength: { family:'career', phrase:'核心職場競爭力是{gift}', summary:'別人會在需要{drive}時倚賴這項能力', detail:'最拿手的是{gift}；穩定表現需要{need}', caution:'留意{risk}', keys:['workplaceStrength','trustedContribution'] },
+  family_role: { family:'family', phrase:'家庭中較常扮演{social}的角色', summary:'你會透過{gift}維持家庭運作', detail:'主要角色是{social}；實際貢獻是{gift}', caution:'', keys:['familyRole','familyContribution'] },
+  family_origin: { family:'family', phrase:'原生家庭可能讓你特別在意{need}', summary:'過去經驗會影響你如何{drive}', detail:'留下的影響是重視{need}；可保留的資源是{gift}', caution:'留意不要讓{risk}成為唯一反應', keys:['originInfluence','retainedResource'] },
+  family_boundary: { family:'family', phrase:'家庭界線需要保護{need}', summary:'界線不是疏遠，而是讓你能持續{drive}', detail:'需要說清楚的是{need}；可運用{gift}協調', caution:'別讓{risk}取代明確溝通', keys:['boundaryNeed','boundaryAction'] },
+  family_living: { family:'family', phrase:'適合能提供{need}的居住氛圍', summary:'環境穩定時較能發揮{gift}', detail:'居住條件是{need}；日常氣氛偏向{pace}', caution:'', keys:['livingCondition','homeAtmosphere'] },
+  family_safety: { family:'family', phrase:'內在安全感來自重新取得{need}', summary:'能讓你{drive}的做法比一味壓抑更有效', detail:'安定條件是{need}；可練習{gift}', caution:'', keys:['safetyNeed','selfSupport'] },
+  family_balance: { family:'family', phrase:'家庭與事業的平衡需要同時保留{need}與{drive}', summary:'關鍵是讓{gift}在兩個領域都能被合理使用', detail:'共同支點是{need}；分配原則是{pace}', caution:'留意{risk}', keys:['balanceAnchor','allocationRule'] },
   health_stress: { family: 'health', phrase: '壓力多半在無法{drive}時累積', summary: '當{need}長期不足，容易出現{risk}的反應', detail: '壓力來源是缺少{need}；反應節奏偏向{pace}', caution: '這是生活模式提醒，不是醫療診斷', keys: ['stressSource', 'stressResponse'] },
   health_lifestyle: { family: 'health', phrase: '適合能維持{need}、節奏{pace}的生活安排', summary: '保留{drive}的空間有助於維持穩定感', detail: '日常需要{need}；安排方式宜{pace}', caution: '持續不適仍應尋求合格醫療專業協助', keys: ['lifestyleCondition', 'dailyPace'] },
   health_boundary: { family: 'health', phrase: '較容易忽略的界線是{risk}', summary: '你可能為了維持{need}而延後回應自己的負荷', detail: '界線警訊是{risk}；可用{gift}重新安排負荷', caution: '不以星盤取代醫療判斷', keys: ['boundarySignal', 'loadManagement'] },

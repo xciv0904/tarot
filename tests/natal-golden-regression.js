@@ -50,6 +50,10 @@ const cases = [];
 let flags = 0, forbiddenLeaks = 0, emptyAnswers = 0, undefinedLeaks = 0;
 const flagBreakdown = {};
 const focusedFailures = [];
+const visibleContentFailures = [];
+function normalizeVisibleText(text) {
+  return String(text||'').replace(/[，。！？、；：「」『』（）\s]/g,'').replace(/^(你|你的|比較|較容易|通常)/,'');
+}
 c.GOLDEN_TEST_CHARTS.forEach(chart => {
   Object.entries(c.NATAL_TOPIC_QUESTIONS).forEach(([topicId, questions]) => {
     /* 正式 UI 每次最多選 3 題；按相同契約分批覆蓋完整 56 題，避免把 6-8 題
@@ -64,6 +68,20 @@ c.GOLDEN_TEST_CHARTS.forEach(chart => {
       if (forbidden.test(text)) forbiddenLeaks++;
       if (!answer.headline || !answer.summary) emptyAnswers++;
       if (/undefined|NaN/.test(text)) undefinedLeaks++;
+      const visibleSlots = [answer.headline,answer.summary].concat((answer.details||[]).map(d=>d.text)).filter(Boolean);
+      const normalizedSlots = visibleSlots.map(normalizeVisibleText);
+      if (normalizedSlots.some((value,index)=>value && normalizedSlots.indexOf(value)!==index)) {
+        visibleContentFailures.push(chart.fixtureId + ': ' + answer.questionId + ' 有完全重複的可見內容');
+      }
+      if (/比較選項、考慮各方立場再決定|對這個主題具有較高代表性|感覺感覺|這個需要|這件事/.test(text)) {
+        visibleContentFailures.push(chart.fixtureId + ': ' + answer.questionId + ' 含空泛或破碎句型');
+      }
+      if (answer.questionFocus === 'suitable_roles' && !/角色|工作|職能|領導|溝通|分析|服務|創作|決策|執行|管理|研究|教學|品牌|公關|危機/.test(text)) {
+        visibleContentFailures.push(chart.fixtureId + ': career-work-type 沒有回答工作角色或職能');
+      }
+      if (answer.questionFocus === 'suitable_environment' && !/環境|場域|團隊|氛圍|步調|制度|交流|作業/.test(text)) {
+        visibleContentFailures.push(chart.fixtureId + ': career-work-env 沒有回答工作環境');
+      }
       cases.push({
         chartId:chart.fixtureId, topicId, questionId:answer.questionId,
         headline:answer.headline, summary:answer.summary,
@@ -91,7 +109,7 @@ c.GOLDEN_TEST_CHARTS.forEach(chart => {
 const snapshot = { schemaVersion:1, chartCount:c.GOLDEN_TEST_CHARTS.length, questionCount, caseCount:cases.length, cases };
 const report = {
   generatedAt:new Date().toISOString(), chartCount:c.GOLDEN_TEST_CHARTS.length, questionCount, caseCount:cases.length,
-  coverage, quality:{validatorFlags:flags, flagBreakdown, forbiddenLeaks, emptyAnswers, undefinedLeaks, focusedFailures},
+  coverage, quality:{validatorFlags:flags, flagBreakdown, forbiddenLeaks, emptyAnswers, undefinedLeaks, focusedFailures, visibleContentFailures},
   baselineHash:hash(snapshot), charts:plain(c.GOLDEN_CHART_SPECS.map(x=>({id:x.id,label:x.label}))),
 };
 const markdown = [
@@ -108,6 +126,7 @@ const markdown = [
   `- Empty answers: ${emptyAnswers}`,
   `- undefined/NaN leaks: ${undefinedLeaks}`,
   `- Focused scenario failures: ${focusedFailures.length}`,
+  `- Visible content failures: ${visibleContentFailures.length}`,
   `- Baseline hash: ${report.baselineHash}`,'',
   '## Golden charts','',
   ...report.charts.map(x=>`- \`${x.id}\`: ${x.label}`),''
@@ -128,7 +147,8 @@ if (process.argv.includes('--update')) {
   }
 }
 console.log(markdown);
-if (coverage.generalFallback.length || coverage.planetCategoryPresent !== coverage.planetCategoryExpected || forbiddenLeaks || emptyAnswers || undefinedLeaks || focusedFailures.length) {
+if (coverage.generalFallback.length || coverage.planetCategoryPresent !== coverage.planetCategoryExpected || forbiddenLeaks || emptyAnswers || undefinedLeaks || focusedFailures.length || visibleContentFailures.length) {
   if (focusedFailures.length) console.error(focusedFailures.join('\n'));
+  if (visibleContentFailures.length) console.error(visibleContentFailures.join('\n'));
   process.exitCode = 1;
 }

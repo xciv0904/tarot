@@ -4,17 +4,15 @@
 - Questions per chart: 56
 - Total generated answers: 672
 - QuestionFocus mapping: 56/56 (100%)
-- Planet × category knowledge coverage: 470/470 (100%)
+- Planet × category knowledge coverage: 540/540 (100%)
 - General fallback questionFocus: 0
-- Validator flags: 180
-  - generic_fallback: 11
-  - knowledge_diversity: 3
-  - slot_overlap: 166
+- Validator flags: 0
 - Forbidden technical-term leaks: 0
 - Empty answers: 0
 - undefined/NaN leaks: 0
 - Focused scenario failures: 0
-- Baseline hash: 5da8ddd8bc15181d
+- Visible content failures: 0
+- Baseline hash: c7b18f84fa037fcd
 
 ## Golden charts
 

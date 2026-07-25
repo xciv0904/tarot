@@ -9272,6 +9272,73 @@ function natalPlanetSemantic(e) {
   if (!e || !e.planetKey || typeof ASTRO_PLANET_SEMANTIC_DATASET === 'undefined') return null;
   return ASTRO_PLANET_SEMANTIC_DATASET[e.planetKey] || null;
 }
+function natalKnowledgeEntryForEvidence(e, category) {
+  if (!e || !e.planetKey || typeof PLANET_TOPIC_KNOWLEDGE === 'undefined') return null;
+  var houseNum = natalEvidenceHouseNumber(e);
+  var overrideKey = houseNum ? (e.planetKey.toLowerCase() + '-' + houseNum + '-' + category) : '';
+  if (overrideKey && typeof PLANET_HOUSE_TOPIC_KNOWLEDGE !== 'undefined' && PLANET_HOUSE_TOPIC_KNOWLEDGE[overrideKey]) return PLANET_HOUSE_TOPIC_KNOWLEDGE[overrideKey];
+  return PLANET_TOPIC_KNOWLEDGE[e.planetKey] && PLANET_TOPIC_KNOWLEDGE[e.planetKey][category];
+}
+function natalPickKnowledgeText(entry, slot, seed) {
+  if (!entry || !entry.meanings) return '';
+  var pool = entry.meanings[slot] || [];
+  return pool.length ? natalStripTrailingPeriod(astroSeededPick(seed, pool)) : '';
+}
+function applySemanticKnowledgeContentPlan(base, question, top, second, third) {
+  var category = QUESTIONFOCUS_HOUSE_CATEGORY[question.questionFocus];
+  /* 只有一題一類的 semantic dataset 才直接驅動 slot；V4 的七個共用大類仍走
+     原本 planner，避免把「適合角色」等成熟輸出一次全部改寫。 */
+  if (!category || typeof ASTRO_TOPIC_SEMANTIC_DATASET === 'undefined' || !ASTRO_TOPIC_SEMANTIC_DATASET[category]) return base;
+  var sources = [top, second, third].filter(Boolean);
+  var entries = [];
+  sources.forEach(function (e) {
+    var direct = natalKnowledgeEntryForEvidence(e, category);
+    if (direct) entries.push(direct);
+    /* 相位證據本身沒有 planetKey；把相位兩端各自投影成同一 questionFocus 的
+       semantic entry，避免張力題只能輸出「訊號較弱」等中性 fallback。 */
+    if (!direct && e.aspect && typeof buildComposableKnowledgeEntry === 'function') {
+      [e.aspect.a, e.aspect.b].forEach(function (planetKey) {
+        if (typeof ASTRO_PLANET_SEMANTIC_DATASET !== 'undefined' && ASTRO_PLANET_SEMANTIC_DATASET[planetKey]) {
+          var aspectEntry = buildComposableKnowledgeEntry(planetKey, category);
+          if (aspectEntry) entries.push(aspectEntry);
+        }
+      });
+    }
+  });
+  if (!entries.length) return base;
+  var seed = 'semantic|' + question.id + '|' + (top.canonicalKey || '');
+  var headline = natalPickKnowledgeText(entries[0], 'headline', seed + '|h');
+  var summaryEntry = entries[1] || entries[0];
+  var summary = natalPickKnowledgeText(summaryEntry, 'summary', seed + '|s');
+  var labels = question.detailLabels || [];
+  var usedDetailText = [];
+  var details = labels.map(function (label, i) {
+    var text = '';
+    for (var ei = 0; ei < entries.length && !text; ei++) {
+      var pool = (entries[(ei + i) % entries.length].meanings.details || []);
+      for (var pi = 0; pi < pool.length; pi++) {
+        var candidate = natalStripTrailingPeriod(pool[(pi + i) % pool.length]);
+        if (candidate && usedDetailText.indexOf(candidate) === -1 && headline.indexOf(candidate) === -1) { text = candidate; break; }
+      }
+    }
+    if (!text) text = i === 0 ? '從最容易維持的方式開始，在日常中觀察實際效果' : '保留調整空間，依持續結果而不是一時感受修正';
+    usedDetailText.push(text);
+    return { label:label, text:text };
+  });
+  var cautionMode = question.cautionMode || 'optional';
+  var caution = '';
+  if (cautionMode !== 'hidden') caution = natalPickKnowledgeText(entries[0], 'caution', seed + '|c');
+  if (cautionMode === 'optional' && caution && (headline.indexOf(caution) !== -1 || summary.indexOf(caution) !== -1 || usedDetailText.indexOf(caution) !== -1)) caution = '';
+  base.headline = headline ? headline + '。' : base.headline;
+  base.summary = summary ? summary + '。' : base.summary;
+  base.details = details;
+  base.caution = caution ? caution + '。' : '';
+  base.headlineConceptKeys = ['semanticHeadline:' + category];
+  base.summaryConceptKeys = ['semanticSummary:' + category];
+  base.detailConceptKeys = details.map(function (_, i) { return 'semanticDetail:' + category + ':' + i; });
+  base.cautionConceptKeys = caution ? ['semanticCaution:' + category] : [];
+  return base;
+}
 function applyFocusedQuestionContentPlan(base, question, top, second, third, topicId) {
   var focus = question.questionFocus;
   if (focus === 'meeting_context') {
@@ -9330,6 +9397,8 @@ function applyFocusedQuestionContentPlan(base, question, top, second, third, top
     base.summaryConceptKeys = ['lifestyleFitTest'];
     base.detailConceptKeys = ['lifestyleRoutine:' + habit.routine, 'lifestyleSignal:' + habit.fit];
     base.cautionConceptKeys = ['medicalBoundary'];
+  } else {
+    base = applySemanticKnowledgeContentPlan(base, question, top, second, third);
   }
   return base;
 }
