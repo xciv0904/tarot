@@ -50,11 +50,19 @@
   ::-webkit-scrollbar{width:6px}
   ::-webkit-scrollbar-thumb{background:rgba(201,169,110,.3);border-radius:3px}
   input::placeholder{color:rgba(240,233,216,.35)}
+  @media (prefers-reduced-motion: reduce) {
+    *,*::before,*::after{
+      animation-duration:.01ms!important;
+      animation-iteration-count:1!important;
+      scroll-behavior:auto!important;
+      transition-duration:.01ms!important
+    }
+  }
 </style>
 </head>
 <body>
 
-<div style="min-height:100vh;background:#14111a;background-image:radial-gradient(circle at 15% 10%, rgba(201,169,110,.10), transparent 40%),radial-gradient(circle at 85% 80%, rgba(124,92,255,.08), transparent 45%),radial-gradient(1px 1px at 10% 8%, rgba(240,233,216,.4), transparent 60%),radial-gradient(1px 1px at 32% 22%, rgba(201,169,110,.35), transparent 60%),radial-gradient(1px 1px at 6% 40%, rgba(240,233,216,.3), transparent 60%),radial-gradient(1px 1px at 22% 62%, rgba(201,169,110,.3), transparent 60%),radial-gradient(1px 1px at 12% 80%, rgba(240,233,216,.3), transparent 60%),radial-gradient(1px 1px at 88% 12%, rgba(201,169,110,.3), transparent 60%),radial-gradient(1px 1px at 94% 30%, rgba(240,233,216,.35), transparent 60%),radial-gradient(1px 1px at 78% 55%, rgba(201,169,110,.3), transparent 60%),radial-gradient(1px 1px at 92% 72%, rgba(240,233,216,.3), transparent 60%),radial-gradient(1px 1px at 82% 90%, rgba(201,169,110,.3), transparent 60%);background-attachment:fixed;display:flex;justify-content:center">
+<div style="min-height:100vh;background:#14111a;background-image:radial-gradient(circle at 15% 10%, rgba(201,169,110,.10), transparent 40%),radial-gradient(circle at 85% 80%, rgba(124,92,255,.08), transparent 45%),radial-gradient(1px 1px at 10% 8%, rgba(240,233,216,.4), transparent 60%),radial-gradient(1px 1px at 32% 22%, rgba(201,169,110,.35), transparent 60%),radial-gradient(1px 1px at 6% 40%, rgba(240,233,216,.3), transparent 60%),radial-gradient(1px 1px at 22% 62%, rgba(201,169,110,.3), transparent 60%),radial-gradient(1px 1px at 12% 80%, rgba(240,233,216,.3), transparent 60%),radial-gradient(1px 1px at 88% 12%, rgba(201,169,110,.3), transparent 60%),radial-gradient(1px 1px at 94% 30%, rgba(240,233,216,.35), transparent 60%),radial-gradient(1px 1px at 78% 55%, rgba(201,169,110,.3), transparent 60%),radial-gradient(1px 1px at 92% 72%, rgba(240,233,216,.3), transparent 60%),radial-gradient(1px 1px at 82% 90%, rgba(201,169,110,.3), transparent 60%);background-attachment:scroll;display:flex;justify-content:center">
 <div style="width:100%;max-width:560px;min-height:100vh;position:relative;padding-bottom:calc(90px + env(safe-area-inset-bottom));box-sizing:border-box">
 
   <!-- Header -->
