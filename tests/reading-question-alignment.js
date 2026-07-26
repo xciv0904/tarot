@@ -11,9 +11,10 @@ const sandbox = {
   lenImg: () => ''
 };
 vm.createContext(sandbox);
-vm.runInContext(source + '\nthis.__presets = SPREAD_QUESTION_PRESETS; this.__subtopics = SUBTOPICS; this.__recs = RECOMMENDATIONS; this.__lenRecs = LEN_RECOMMENDATIONS;', sandbox);
+vm.runInContext(source + '\nthis.__presets = SPREAD_QUESTION_PRESETS; this.__concrete = CONCRETE_QUESTION_EXAMPLES; this.__subtopics = SUBTOPICS; this.__recs = RECOMMENDATIONS; this.__lenRecs = LEN_RECOMMENDATIONS;', sandbox);
 
 const presets = sandbox.__presets;
+const concreteExamples = sandbox.__concrete;
 const subtopics = sandbox.__subtopics;
 const recommendations = sandbox.__recs;
 const lenormandRecommendations = sandbox.__lenRecs;
@@ -28,12 +29,25 @@ Object.keys(recommendationSet).forEach((category) => {
   }
   recommendationSet[category].forEach((spread) => {
     const preset = categoryPresets[spread] || categoryPresets.default;
-    if (!preset.examples || preset.examples.length < 3) {
-      errors.push(`${deckName} ${category}/${spread}: needs at least 3 examples`);
+    const concreteByCategory = concreteExamples[category] || {};
+    const examples = concreteByCategory[spread] || concreteByCategory.default || preset.examples;
+    if (!examples || examples.length < 5) {
+      errors.push(`${deckName} ${category}/${spread}: needs at least 5 concrete examples`);
     }
     const validKeys = new Set((subtopics[category] || []).map((item) => item.key));
     (preset.subtopics || []).forEach((key) => {
       if (!validKeys.has(key)) errors.push(`${deckName} ${category}/${spread}: unknown subtopic ${key}`);
+    });
+    const labels = (subtopics[category] || [])
+      .filter((item) => (preset.subtopics || []).indexOf(item.key) !== -1)
+      .map((item) => item.zh.replace(/[？?，、與及或的\s]/g, ''));
+    (examples || []).forEach((example) => {
+      const normalized = example.replace(/[？?，、與及或的\s]/g, '');
+      labels.forEach((label) => {
+        if (normalized === label || normalized === `我${label}`) {
+          errors.push(`${deckName} ${category}/${spread}: example merely repeats subtopic "${example}"`);
+        }
+      });
     });
   });
 });

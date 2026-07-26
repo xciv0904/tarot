@@ -1549,6 +1549,9 @@ function getSpreadQuestionPreset() {
   return categoryPresets[state.spread] || categoryPresets.default || {};
 }
 function getSpreadQuestionExamples() {
+  var concreteByCategory = CONCRETE_QUESTION_EXAMPLES[state.category] || {};
+  var concrete = concreteByCategory[state.spread] || concreteByCategory.default;
+  if (concrete && concrete.length) return concrete;
   var preset = getSpreadQuestionPreset();
   if (preset.examples && preset.examples.length) return preset.examples;
   var focusCfg = topicQuestionConfig[state.category];
@@ -1710,7 +1713,7 @@ function renderWizard(spreads, isTarot) {
     h += '<label for="question-input" style="display:block;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:18px">具體問題（選填，可點下方範例）</label>';
     h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);margin-top:4px;line-height:1.6">用一句話描述現在的情況即可；不想輸入也可以直接繼續。</div>';
     h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">';
-    spreadQuestionExamples.slice(0, 3).forEach(function (c2, i2) {
+    spreadQuestionExamples.slice(0, 5).forEach(function (c2, i2) {
       h += '<button type="button" onclick="wizChip(' + i2 + ')" style="min-height:44px;display:inline-flex;align-items:center;font:400 11px \'Noto Sans TC\',sans-serif;background:rgba(201,169,110,.08);border:1px solid rgba(201,169,110,.3);color:rgba(240,233,216,.7);padding:8px 12px;border-radius:22px;cursor:pointer">' + esc(c2) + '</button>';
     });
     h += '</div>';
