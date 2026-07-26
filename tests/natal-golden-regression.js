@@ -9,6 +9,7 @@ const ROOT = path.resolve(__dirname, '..');
 const SNAPSHOT = path.join(__dirname, 'snapshots', 'natal-topic-baseline.json');
 const REPORT_JSON = path.join(__dirname, 'reports', 'natal-topic-quality.json');
 const REPORT_MD = path.join(__dirname, 'reports', 'natal-topic-quality.md');
+const HUMAN_REVIEW_MD = path.join(__dirname, 'reports', 'natal-topic-human-review.md');
 
 function element() { return { innerHTML:'', style:{}, classList:{add(){},remove(){}}, addEventListener(){}, setAttribute(){}, appendChild(){}, querySelector(){return null;}, querySelectorAll(){return [];} }; }
 function loadRuntime() {
@@ -90,6 +91,24 @@ c.GOLDEN_TEST_CHARTS.forEach(chart => {
       if (/比較選項、考慮各方立場再決定|對這個主題具有較高代表性|感覺感覺|這個需要|這件事/.test(text)) {
         visibleContentFailures.push(chart.fixtureId + ': ' + answer.questionId + ' 含空泛或破碎句型');
       }
+      if (/這項配置的影響比較細微|單一配置看不出明顯差異|訊號較弱|搭配其他線索一起看|關係態度偏向|自主程度需符合|合作節奏偏向|重新取得.+感|可保留的資源是|練習的重點不是壓抑/.test(text)) {
+        visibleContentFailures.push(chart.fixtureId + ': ' + answer.questionId + ' 含意義不明或只替抽象欄位加標籤的句子');
+      }
+      if (answer.questionId === 'love-partner-type' && !/個性|自信|情緒|好奇|有禮|行動|樂觀|成熟|獨立|溫柔|感情深/.test(text)) {
+        focusedFailures.push(chart.fixtureId + ': love-partner-type 沒有具體描述對象個性');
+      }
+      if (answer.questionId === 'career-work-mode' && !/受僱|接案|自由工作|創業|合夥|專案|正職|副業|顧問/.test(text)) {
+        focusedFailures.push(chart.fixtureId + ': career-work-mode 沒有回答就業、自由工作或創業');
+      }
+      if (answer.questionId === 'family-origin-impact' && !/習慣|家庭|很早|期待|互動/.test(text)) {
+        focusedFailures.push(chart.fixtureId + ': family-origin-impact 沒有描述原生家庭留下的慣性');
+      }
+      if (answer.questionId === 'family-inner-safety' && !/先做|每天|固定|寫|走路|運動|整理|說出|時間|作息/.test(text)) {
+        focusedFailures.push(chart.fixtureId + ': family-inner-safety 沒有提供可執行的安定方法');
+      }
+      if (answer.questionId === 'general-inner-tension' && !/一方面|另一方面|先|接著/.test(text)) {
+        focusedFailures.push(chart.fixtureId + ': general-inner-tension 沒有說明兩股力量與整合順序');
+      }
       if (answer.questionFocus === 'suitable_roles' && !/角色|工作|職能|領導|溝通|分析|服務|創作|決策|執行|管理|研究|教學|品牌|公關|危機/.test(text)) {
         visibleContentFailures.push(chart.fixtureId + ': career-work-type 沒有回答工作角色或職能');
       }
@@ -155,12 +174,28 @@ const markdown = [
   '## Golden charts','',
   ...report.charts.map(x=>`- \`${x.id}\`: ${x.label}`),''
 ].join('\n');
+const reviewChartId = c.GOLDEN_TEST_CHARTS[0].fixtureId;
+const questionById = new Map(allQuestions.map(q => [q.id,q]));
+const topicLabels = { love:'愛情', career:'事業', family:'家庭', health:'健康', wealth:'財運', social:'人際', study:'學習', general:'綜合' };
+const reviewLines = ['# 人生主題分析人工閱讀稿','',`測試命盤：${reviewChartId}`,'','此檔案用來逐題人工檢查正文是否直接、具體且沒有區塊重複。',''];
+Object.keys(c.NATAL_TOPIC_QUESTIONS).forEach(topicId => {
+  reviewLines.push('## ' + (topicLabels[topicId] || topicId),'');
+  cases.filter(x => x.chartId === reviewChartId && x.topicId === topicId).forEach(x => {
+    const q = questionById.get(x.questionId);
+    reviewLines.push('### ' + (q ? q.title : x.questionId),'',x.headline,'',x.summary,'');
+    x.details.forEach(d => reviewLines.push('- **' + d.label + '**：' + d.text));
+    if (x.caution) reviewLines.push('- **留意**：' + x.caution);
+    reviewLines.push('');
+  });
+});
+const humanReviewMarkdown = reviewLines.join('\n');
 
 if (process.argv.includes('--update')) {
-  ensureDir(SNAPSHOT); ensureDir(REPORT_JSON);
+  ensureDir(SNAPSHOT); ensureDir(REPORT_JSON); ensureDir(HUMAN_REVIEW_MD);
   fs.writeFileSync(SNAPSHOT, JSON.stringify(snapshot,null,2)+'\n');
   fs.writeFileSync(REPORT_JSON, JSON.stringify(report,null,2)+'\n');
   fs.writeFileSync(REPORT_MD, markdown+'\n');
+  fs.writeFileSync(HUMAN_REVIEW_MD, humanReviewMarkdown+'\n');
   console.log('Updated snapshot:', path.relative(ROOT,SNAPSHOT));
 } else {
   if (!fs.existsSync(SNAPSHOT)) throw new Error('缺少基準快照；先執行 npm run test:golden:update');

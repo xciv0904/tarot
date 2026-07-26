@@ -9272,6 +9272,18 @@ function natalPlanetSemantic(e) {
   if (!e || !e.planetKey || typeof ASTRO_PLANET_SEMANTIC_DATASET === 'undefined') return null;
   return ASTRO_PLANET_SEMANTIC_DATASET[e.planetKey] || null;
 }
+function natalPlanetKeysFromEvidenceList(evidenceList) {
+  var keys = [];
+  (evidenceList || []).filter(Boolean).forEach(function (e) {
+    var candidates = [];
+    if (e.planetKey) candidates.push(e.planetKey);
+    if (e.aspect) candidates = candidates.concat([e.aspect.a, e.aspect.b]);
+    candidates.forEach(function (key) {
+      if (key && typeof ASTRO_PLANET_SEMANTIC_DATASET !== 'undefined' && ASTRO_PLANET_SEMANTIC_DATASET[key] && keys.indexOf(key) === -1) keys.push(key);
+    });
+  });
+  return keys;
+}
 function natalKnowledgeEntryForEvidence(e, category) {
   if (!e || !e.planetKey || typeof PLANET_TOPIC_KNOWLEDGE === 'undefined') return null;
   var houseNum = natalEvidenceHouseNumber(e);
@@ -9341,7 +9353,103 @@ function applySemanticKnowledgeContentPlan(base, question, top, second, third) {
 }
 function applyFocusedQuestionContentPlan(base, question, top, second, third, topicId) {
   var focus = question.questionFocus;
-  if (focus === 'meeting_context') {
+  if (focus === 'likely_partner_traits') {
+    var partnerKeys = natalPlanetKeysFromEvidenceList([top, second, third]);
+    var partnerPrimaryKey = partnerKeys[0] || 'Moon';
+    var partnerSupportKey = partnerKeys[1] || partnerPrimaryKey;
+    var partnerPrimary = ASTRO_PARTNER_PLAIN_DATASET[partnerPrimaryKey] || ASTRO_PARTNER_PLAIN_DATASET.Moon;
+    var partnerSupport = ASTRO_PARTNER_PLAIN_DATASET[partnerSupportKey] || partnerPrimary;
+    base.headline = '你常遇到的對象，較可能是' + partnerPrimary.personality + '的人。';
+    base.summary = '真正影響長期相處的，不只是第一印象，而是對方能否做到：' + partnerSupport.interaction + '。';
+    base.details = [
+      { label:'你會被什麼特質留住', text:partnerPrimary.staying },
+      { label:'相處時要實際觀察', text:'對方是否能在意見不同時仍願意溝通，並持續做到答應的事' },
+    ];
+    base.caution = '這是較常出現的互動傾向；仍要觀察對方是否能長期把態度落實成行動。';
+    base.headlineConceptKeys = ['partnerPersonality:' + partnerPrimaryKey];
+    base.summaryConceptKeys = ['partnerInteraction:' + partnerSupportKey];
+    base.detailConceptKeys = ['partnerStaying:' + partnerPrimaryKey, 'partnerBehaviorCheck'];
+    base.cautionConceptKeys = ['partnerActionCheck'];
+  } else if (focus === 'employment_mode') {
+    var employmentKeys = natalPlanetKeysFromEvidenceList([top, second, third]);
+    var employmentKey = employmentKeys[0] || 'Saturn';
+    var employment = ASTRO_EMPLOYMENT_MODE_DATASET[employmentKey] || ASTRO_EMPLOYMENT_MODE_DATASET.Saturn;
+    base.headline = '在三種選項中，較值得優先評估的是：' + employment.mode + '。';
+    base.summary = '判斷穩定就業、自由工作或創業哪個更合適，關鍵要看實際工作能否提供以下自主條件。';
+    base.details = [
+      { label:'你需要的自主程度', text:employment.autonomy },
+      { label:'怎麼判斷是否適合', text:employment.test },
+    ];
+    base.caution = '';
+    base.headlineConceptKeys = ['employmentMode:' + employmentKey];
+    base.summaryConceptKeys = ['employmentDecisionRule'];
+    base.detailConceptKeys = ['employmentAutonomy:' + employmentKey, 'employmentTest:' + employmentKey];
+    base.cautionConceptKeys = [];
+  } else if (focus === 'family_origin_impact') {
+    var originKeys = natalPlanetKeysFromEvidenceList([top, second, third]);
+    var originKey = originKeys[0] || 'Moon';
+    var origin = ASTRO_FAMILY_ORIGIN_PLAIN_DATASET[originKey] || ASTRO_FAMILY_ORIGIN_PLAIN_DATASET.Moon;
+    base.headline = '你現在面對關係與責任的方式，可能延續了原生家庭中的一項習慣。';
+    base.summary = '這種早期習慣延續到現在時，常會變成：' + origin.impact + '。';
+    base.details = [
+      { label:'原生家庭留下的慣性', text:origin.habit },
+      { label:'值得修正的模式', text:origin.correction },
+    ];
+    base.caution = '這裡描述的是可能延續的互動習慣，不代表對家人或童年經驗下定論。';
+    base.headlineConceptKeys = ['originHabit:' + originKey];
+    base.summaryConceptKeys = ['originImpact:' + originKey];
+    base.detailConceptKeys = ['originHabitDetail:' + originKey, 'originCorrection:' + originKey];
+    base.cautionConceptKeys = ['originNotDiagnosis'];
+  } else if (focus === 'inner_safety_practice') {
+    var safetyKeys = natalPlanetKeysFromEvidenceList([top, second, third]);
+    var safetyKey = safetyKeys[0] || 'Moon';
+    var safety = ASTRO_INNER_SAFETY_PLAIN_DATASET[safetyKey] || ASTRO_INNER_SAFETY_PLAIN_DATASET.Moon;
+    base.headline = '讓自己安定下來時，最適合先做的是：' + safety.action + '。';
+    base.summary = '真正有效的安全感，應該讓你在情緒下降後更能處理現實問題，而不是只能暫時逃開。';
+    base.details = [
+      { label:'平時可建立的習慣', text:safety.routine },
+      { label:'這個方法要解決什麼', text:'先讓當下的緊繃下降，再回頭處理真正需要決定或溝通的事情' },
+    ];
+    base.caution = '';
+    base.headlineConceptKeys = ['safetyAction:' + safetyKey];
+    base.summaryConceptKeys = ['safetyCurrentPractice'];
+    base.detailConceptKeys = ['safetyRoutine:' + safetyKey, 'safetyPurpose'];
+    base.cautionConceptKeys = [];
+  } else if (focus === 'recovery_method') {
+    var recoveryKeys = natalPlanetKeysFromEvidenceList([top, second, third]);
+    var recoveryKey = recoveryKeys[0] || 'Moon';
+    var recovery = ASTRO_INNER_SAFETY_PLAIN_DATASET[recoveryKey] || ASTRO_INNER_SAFETY_PLAIN_DATASET.Moon;
+    var recoveryHabit = (typeof ASTRO_LIFESTYLE_HABIT_DATASET !== 'undefined' && ASTRO_LIFESTYLE_HABIT_DATASET[recoveryKey])
+      || ASTRO_LIFESTYLE_HABIT_DATASET.Moon;
+    base.headline = '真正能幫你恢復精力的方式是：' + recovery.action + '。';
+    base.summary = '有效休息應該讓疲勞與緊繃逐步下降，而不是只有暫時分心，結束後反而更累。';
+    base.details = [
+      { label:'適合的休息節奏', text:recoveryHabit.pace },
+      { label:'怎麼判斷有沒有效', text:recoveryHabit.fit },
+    ];
+    base.caution = '若疲憊、失眠或其他不適持續，仍應尋求合格醫療專業協助。';
+    base.headlineConceptKeys = ['recoveryAction:' + recoveryKey];
+    base.summaryConceptKeys = ['recoveryEffectTest'];
+    base.detailConceptKeys = ['recoveryPace:' + recoveryKey, 'recoverySignal:' + recoveryKey];
+    base.cautionConceptKeys = ['medicalBoundary'];
+  } else if (focus === 'inner_tension_balance') {
+    var tensionKeys = natalPlanetKeysFromEvidenceList([top, second, third]);
+    var tensionFirstKey = tensionKeys[0] || 'Sun';
+    var tensionSecondKey = tensionKeys[1] || (tensionFirstKey === 'Saturn' ? 'Uranus' : 'Saturn');
+    var tensionFirst = ASTRO_TENSION_PLAIN_DATASET[tensionFirstKey] || ASTRO_TENSION_PLAIN_DATASET.Sun;
+    var tensionSecond = ASTRO_TENSION_PLAIN_DATASET[tensionSecondKey] || ASTRO_TENSION_PLAIN_DATASET.Saturn;
+    base.headline = '你的拉扯較可能發生在「' + tensionFirst.side + '」和「' + tensionSecond.side + '」之間。';
+    base.summary = '平衡不是選邊站，而是先分清楚現在需要解決的是目標、情緒、關係、自由還是風險。';
+    base.details = [
+      { label:'容易卡住的時刻', text:'當你同時想要' + tensionFirst.side + '和' + tensionSecond.side + '，卻無法決定先處理哪一個時，最容易反覆猶豫或一下子用力過猛' },
+      { label:'練習整合的方向', text:tensionFirst.action + '，接著' + tensionSecond.action },
+    ];
+    base.caution = '';
+    base.headlineConceptKeys = ['tensionSides:' + tensionFirstKey + ':' + tensionSecondKey];
+    base.summaryConceptKeys = ['tensionDecisionSequence'];
+    base.detailConceptKeys = ['tensionForces:' + tensionFirstKey + ':' + tensionSecondKey, 'tensionAction:' + tensionFirstKey + ':' + tensionSecondKey];
+    base.cautionConceptKeys = [];
+  } else if (focus === 'meeting_context') {
     var venueEvidence = [top, second, third].filter(Boolean).filter(function (e) { return !!natalEvidenceHouseNumber(e); });
     var venue1 = venueEvidence[0] ? projectEvidenceForTopic(venueEvidence[0], topicId, focus).projectedMeaning : '共同興趣、工作合作或朋友介紹的場合';
     var venue2 = '';
