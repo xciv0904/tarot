@@ -222,7 +222,7 @@ var CATEGORIES = [
   { key: 'love', zh: '愛情', en: 'Love', icon: '♥', desc: '戀愛關係、曖昧、復合、伴侶相處' },
   { key: 'career', zh: '事業', en: 'Career', icon: '♦', desc: '工作、面試、轉職、職場發展' },
   { key: 'family', zh: '家庭', en: 'Family', icon: '⌂', desc: '親子、手足、家族相處' },
-  { key: 'health', zh: '健康', en: 'Health', icon: '✚', desc: '身心狀態、調養、就醫決定' },
+  { key: 'health', zh: '健康', en: 'Health', icon: '✚', desc: '壓力、休息、生活節奏與自我照顧' },
   { key: 'wealth', zh: '財運', en: 'Wealth', icon: '◆', desc: '投資、理財、財務規劃' },
   { key: 'social', zh: '人際', en: 'Social', icon: '☍', desc: '朋友、同事、社交與人脈互動' },
   { key: 'study', zh: '學業', en: 'Study', icon: '✎', desc: '考試、選課、升學、研究進度' },
@@ -392,7 +392,7 @@ var topicQuestionConfig = {
   },
   health: {
     label: '你想從哪些生活面向整理目前的身心狀態？',
-    hint: '身心狀態、調養、就醫決定、生活習慣與自我照顧。',
+    hint: '壓力、休息、生活節奏與自我照顧；不提供醫療診斷或治療建議。',
     placeholder: '例如：我最近一直感到疲憊，生活中最需要先調整什麼？',
     riskNotice: '牌卡解讀僅用於自我反思與生活方向整理，不能取代醫師診斷、檢查、治療或用藥建議。若有持續不適、急性症狀或心理危機，請尋求合格專業人員協助。',
     focusGroups: [
@@ -453,4 +453,3 @@ var topicQuestionConfig = {
     examples: ['我目前人生中最需要優先處理的是什麼？', '接下來三個月的整體發展重點是什麼？', '我現在適合主動改變，還是先等待？', '哪一件事正在阻礙我前進？', '我目前最需要放下的是什麼？', '我的下一步應該從哪裡開始？'],
   },
 };
-

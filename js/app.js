@@ -50,14 +50,15 @@ var state = {
   homeTourIdx: 0,
   astroY: '', astroM: '', astroD: '', astroH: '', astroMin: '',
   astroCityQuery: '', astroCityIdx: null, astroCityUsed: null,
-  astroUnknownTime: false, astroResult: null, astroView: 'chart', astroGenerating: false, astroTourDismissed: false,
-  astroTourIdx: 0, astroTabsMoreOpen: false,
+  astroUnknownTime: false, astroResult: null, astroView: 'chart', astroGenerating: false, astroTourDismissed: true,
+  astroTourIdx: 0, astroTabsMoreOpen: false, astroForecastOpen: false,
   /* 人生主題專題分析：選主題／選題目（每主題各自最多 3 個，keyed 儲存所以切換
      主題不會互相污染，回到同一主題會保留原本已選）／分析結果／摺疊卡展開狀態 */
   natalTopicCat: null,
   natalTopicQSel: {},
   natalTopicResult: null,
   natalTopicExpanded: {},
+  natalTopicShowAll: {},
   natalTopicLimitHit: '',
   astroHouseSystem: 'placidus', astroDetail: null, astroMethodOpen: false,
   astroOpenPlacements: false, astroOpenPoints: false, astroOpenAspects: false,
@@ -1383,6 +1384,12 @@ function quickDraw() {
   go('reading', state.deck || 'tarot');
   startReading();
 }
+function homeDailyGuide() {
+  state.dailyFlipped = true;
+  render();
+  var el = document.getElementById('daily-card-block');
+  if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 
 /* daily card's full meaning text: prefer the rich (upright/reversed) paragraph,
    fall back to the short zh meaning if no rich entry exists for this card */
@@ -1395,20 +1402,13 @@ function renderHome() {
   var h = '';
   h += '<div style="padding:0 24px">';
 
-  // ---- primary entry point ----
-  h += '<div style="display:flex;flex-direction:column;gap:12px;margin-top:6px">';
-  h += '<button onclick="startQuestionFlow()" style="font:600 16px \'Noto Serif TC\',serif;letter-spacing:.04em;background:linear-gradient(120deg,#c9a96e,#e6cd9a);color:#1a1622;border:none;padding:22px 22px;border-radius:14px;cursor:pointer;text-align:left">';
-  h += '<div>我想問一個問題 →</div><div style="font:italic 11px \'EB Garamond\',serif;opacity:.7;margin-top:3px;font-weight:400">I have a question — start a guided reading</div>';
-  h += '</button>';
-  h += '<button onclick="quickDraw()" style="min-height:44px;font:500 13px \'Noto Sans TC\',sans-serif;background:none;border:1px solid rgba(201,169,110,.35);color:rgba(240,233,216,.85);padding:12px 18px;border-radius:14px;cursor:pointer;text-align:left">';
-  h += '<div>快速占卜 · 直接抽一張牌 <span style="opacity:.6;font-style:italic;font:italic 10px \'EB Garamond\',serif">Quick Draw</span></div><div style="font:400 10.5px \'Noto Sans TC\',sans-serif;opacity:.5;margin-top:3px">不特定問題、只想馬上看一張牌的指引時用這個</div>';
-  h += '</button>';
+  // 新手先依需求選入口，不必先理解塔羅、雷諾曼或星盤的差別。
+  h += '<div style="text-align:center;margin:2px 0 16px"><div style="font:600 18px \'Noto Serif TC\',serif;color:#f0e9d8">你現在最想獲得什麼？</div><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.48);margin-top:5px">選一個最接近現在狀態的入口就好</div></div>';
+  h += '<div style="display:flex;flex-direction:column;gap:10px">';
+  h += '<button onclick="homeDailyGuide()" style="min-height:68px;font:500 14px \'Noto Sans TC\',sans-serif;background:rgba(201,169,110,.08);border:1px solid rgba(201,169,110,.35);color:#f0e9d8;padding:14px 17px;border-radius:14px;cursor:pointer;text-align:left"><div style="color:#e6cd9a;font:600 15px \'Noto Serif TC\',serif">今天需要一點指引</div><div style="font-size:11px;opacity:.55;margin-top:4px">不用準備問題，直接看看今天的提醒</div></button>';
+  h += '<button onclick="startQuestionFlow()" style="min-height:72px;font:600 16px \'Noto Serif TC\',serif;background:linear-gradient(120deg,#c9a96e,#e6cd9a);color:#1a1622;border:none;padding:16px 18px;border-radius:14px;cursor:pointer;text-align:left"><div>我有一件事想問 →</div><div style="font:400 11px \'Noto Sans TC\',sans-serif;opacity:.65;margin-top:4px">依照你的問題，一步一步完成占卜</div></button>';
+  h += '<button onclick="go(\'astro\')" style="min-height:68px;font:500 14px \'Noto Sans TC\',sans-serif;background:rgba(124,92,255,.06);border:1px solid rgba(201,169,110,.28);color:#f0e9d8;padding:14px 17px;border-radius:14px;cursor:pointer;text-align:left"><div style="color:#e6cd9a;font:600 15px \'Noto Serif TC\',serif">我想更了解自己</div><div style="font-size:11px;opacity:.55;margin-top:4px">用出生資料建立個人星盤，了解性格與人生主題</div></button>';
   h += '</div>';
-  if (!state.homeTourDismissed) {
-    h += renderHomeTourCard();
-  } else {
-    h += '<div style="text-align:center;margin-top:8px"><button onclick="homeShowTour()" style="background:none;border:none;color:rgba(240,233,216,.35);font:400 10px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">新手導覽 · 再看一次</button></div>';
-  }
 
   // ---- daily card, always shown, no click needed ----
   var c = dailyCard;
@@ -1416,7 +1416,7 @@ function renderHome() {
   var meaningEn = dailyReversed ? c.revEn : c.upEn;
   var todayLabel = new Date().toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' });
   h += '<div id="daily-card-block" style="margin-top:28px">';
-  h += '<div style="text-align:center;font:italic 12px \'EB Garamond\',serif;color:rgba(240,233,216,.5);margin-bottom:16px">' + esc(todayLabel) + '・今日一牌 Daily Card</div>';
+  h += '<div style="text-align:center;font:500 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);margin-bottom:16px">' + esc(todayLabel) + '・今日一牌</div>';
   var frontInner = '<div style="position:absolute;inset:4px;border:1px solid #d8b96c;border-radius:7px;overflow:hidden;display:flex;flex-direction:column">'
     + cardImgHtml(c.img, c.nameZh + ' ' + c.nameEn)
     + '<div style="flex:none;background:#f2e9d8;padding:8px 6px 10px;text-align:center;border-top:1px solid #d8b96c">'
@@ -1434,11 +1434,11 @@ function renderHome() {
   h += '</div>';
   h += '<div style="margin-top:18px;display:flex;flex-direction:column;gap:10px;padding:0 4px">';
   h += '<div style="border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:12px 15px;background:rgba(255,255,255,.02)">';
-  h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;color:#c9a96e">為什麼是這張牌 <span style="opacity:.55;font-style:italic">Why this card</span></div>';
-  h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);margin-top:6px;line-height:1.85;text-align:justify">今天是「' + esc(todayLabel) + '」，宇宙把這一天的訊息，摺進了這張牌裡。它不是隨機翻出來的——今天無論你什麼時候打開，遇見的都會是它；等到明天，時間翻頁，才會換下一張牌與你相遇。就把它當作今天專屬於你的一次低語。</div>';
+  h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;color:#c9a96e">今天可以怎麼看</div>';
+  h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);margin-top:6px;line-height:1.85;text-align:justify">把這張牌當作今天的提醒：留意它描述的狀態，看看是否正出現在你的選擇、情緒或人際互動裡。</div>';
   h += '</div>';
   h += '<div style="border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:12px 15px;background:rgba(255,255,255,.02)">';
-  h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;color:#c9a96e">這張牌的意義 <span style="opacity:.55;font-style:italic">Card Meaning</span></div>';
+  h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;color:#c9a96e">這張牌的意義</div>';
   h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);margin-top:6px;line-height:1.85;text-align:justify">' + esc(dailyFullMeaning(c, dailyReversed)) + '</div>';
   h += '</div>';
   h += '</div>';
@@ -1447,18 +1447,16 @@ function renderHome() {
   // ---- everything else, collapsed by default ----
   h += '<div style="margin-top:32px;border-top:1px solid rgba(201,169,110,.15);padding-top:16px">';
   h += '<div role="button" tabindex="0" aria-expanded="' + state.homeMoreOpen + '" onclick="toggleHomeMore()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();toggleHomeMore()}" style="min-height:44px;display:flex;justify-content:space-between;align-items:center;cursor:pointer">';
-  h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.08em;color:rgba(240,233,216,.5)">更多功能 More</div>';
+  h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.08em;color:rgba(240,233,216,.5)">其他功能</div>';
   h += '<span style="color:#c9a96e;font-size:12px">' + (state.homeMoreOpen ? '︿ 收合' : '﹀ 展開') + '</span>';
   h += '</div>';
   if (state.homeMoreOpen) {
     /* 塔羅百科／星盤已經各自是底部導覽列的獨立分頁，這裡不再重複列出同一個
        目的地，避免使用者以為底部「更多」跟這裡是兩份不一樣的清單 */
     h += '<div style="display:flex;flex-direction:column;gap:10px;margin-top:14px">';
-    h += '<button onclick="go(\'reading\',\'tarot\')" style="font:500 14px \'Noto Sans TC\',sans-serif;background:rgba(255,255,255,.02);color:#f0e9d8;border:1px solid rgba(201,169,110,.3);padding:13px 16px;border-radius:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"><span>塔羅牌占卜 <span style="font:italic 10px \'EB Garamond\',serif;opacity:.5">Tarot Reading</span></span><span>›</span></button>';
-    h += '<button onclick="go(\'reading\',\'lenormand\')" style="font:500 14px \'Noto Sans TC\',sans-serif;background:rgba(255,255,255,.02);color:#f0e9d8;border:1px solid rgba(201,169,110,.3);padding:13px 16px;border-radius:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"><span>雷諾曼占卜 <span style="font:italic 10px \'EB Garamond\',serif;opacity:.5">Lenormand Reading</span></span><span>›</span></button>';
-    h += '<button onclick="go(\'history\')" style="font:500 14px \'Noto Sans TC\',sans-serif;background:rgba(255,255,255,.02);color:#f0e9d8;border:1px solid rgba(201,169,110,.3);padding:13px 16px;border-radius:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"><span>歷史紀錄 <span style="font:italic 10px \'EB Garamond\',serif;opacity:.5">History</span></span><span>›</span></button>';
+    h += '<button onclick="quickDraw()" style="font:500 14px \'Noto Sans TC\',sans-serif;background:rgba(255,255,255,.02);color:#f0e9d8;border:1px solid rgba(201,169,110,.3);padding:13px 16px;border-radius:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"><span>直接抽一張牌<div style="font-size:10px;opacity:.45;margin-top:3px">不設定問題，快速獲得一個方向</div></span><span>›</span></button>';
+    h += '<button onclick="go(\'history\')" style="font:500 14px \'Noto Sans TC\',sans-serif;background:rgba(255,255,255,.02);color:#f0e9d8;border:1px solid rgba(201,169,110,.3);padding:13px 16px;border-radius:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"><span>查看占卜紀錄</span><span>›</span></button>';
     h += '</div>';
-    h += renderTarotLenormandGuide();
     h += renderStudyWidget();
     h += '<div style="text-align:center;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:18px;line-height:1.8;padding:0 10px">初次接觸塔羅嗎？建議先到底部導覽列的「牌典」認識大阿爾克那 22 張牌，<br>再回來開始占卜，解讀會更容易上手。</div>';
     h += renderAbout();
@@ -1621,13 +1619,8 @@ function renderWizard(spreads, isTarot) {
   h += '<div style="font:500 10px \'Noto Sans TC\',sans-serif;letter-spacing:.18em;color:#c9a96e;margin-top:20px">STEP ' + state.wizardStep + ' / 4</div>';
 
   if (state.wizardStep === 1) {
-    h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);margin-top:6px">選擇牌組（不確定可先看下方差異說明）</div>';
-    h += '<div style="display:flex;gap:8px;margin-top:8px">';
-    h += '<button type="button" onclick="wizSetDeck(\'tarot\')" style="min-height:44px;flex:1;text-align:center;background:' + (isTarot ? 'rgba(201,169,110,.15)' : 'rgba(255,255,255,.02)') + ';border:1px solid ' + (isTarot ? '#c9a96e' : 'rgba(201,169,110,.25)') + ';border-radius:10px;padding:9px;cursor:pointer;font:500 12px \'Noto Sans TC\',sans-serif;color:' + (isTarot ? '#f0e9d8' : 'rgba(240,233,216,.6)') + '">塔羅牌 Tarot</button>';
-    h += '<button type="button" onclick="wizSetDeck(\'lenormand\')" style="min-height:44px;flex:1;text-align:center;background:' + (!isTarot ? 'rgba(201,169,110,.15)' : 'rgba(255,255,255,.02)') + ';border:1px solid ' + (!isTarot ? '#c9a96e' : 'rgba(201,169,110,.25)') + ';border-radius:10px;padding:9px;cursor:pointer;font:500 12px \'Noto Sans TC\',sans-serif;color:' + (!isTarot ? '#f0e9d8' : 'rgba(240,233,216,.6)') + '">雷諾曼牌 Lenormand</button>';
-    h += '</div>';
-    h += renderTarotLenormandGuide();
-    h += '<div style="font:600 15px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:18px">你想詢問的是哪個面向？</div>';
+    h += '<div style="font:600 15px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:8px">你想詢問哪一方面？</div>';
+    h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);margin-top:5px;line-height:1.6">先選問題類型即可，系統會依照內容推薦合適的牌陣。</div>';
     h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px">';
     CATEGORIES.forEach(function (cat) {
       var active = cat.key === state.category;
@@ -1640,6 +1633,11 @@ function renderWizard(spreads, isTarot) {
     if (!state.category) {
       h += '<div role="status" style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-top:8px;text-align:right">請先選擇一個想詢問的面向，才能繼續下一步</div>';
     }
+    h += '<details style="margin-top:14px;border-top:1px solid rgba(201,169,110,.16);padding-top:10px"><summary style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.48);cursor:pointer;min-height:36px;display:flex;align-items:center">想自己選牌組？目前使用' + (isTarot ? '塔羅牌' : '雷諾曼牌') + '</summary>';
+    h += '<div style="display:flex;gap:8px;margin-top:8px">';
+    h += '<button type="button" onclick="wizSetDeck(\'tarot\')" style="min-height:44px;flex:1;text-align:center;background:' + (isTarot ? 'rgba(201,169,110,.15)' : 'rgba(255,255,255,.02)') + ';border:1px solid ' + (isTarot ? '#c9a96e' : 'rgba(201,169,110,.25)') + ';border-radius:10px;padding:9px;cursor:pointer;font:500 12px \'Noto Sans TC\',sans-serif;color:' + (isTarot ? '#f0e9d8' : 'rgba(240,233,216,.6)') + '">塔羅牌</button>';
+    h += '<button type="button" onclick="wizSetDeck(\'lenormand\')" style="min-height:44px;flex:1;text-align:center;background:' + (!isTarot ? 'rgba(201,169,110,.15)' : 'rgba(255,255,255,.02)') + ';border:1px solid ' + (!isTarot ? '#c9a96e' : 'rgba(201,169,110,.25)') + ';border-radius:10px;padding:9px;cursor:pointer;font:500 12px \'Noto Sans TC\',sans-serif;color:' + (!isTarot ? '#f0e9d8' : 'rgba(240,233,216,.6)') + '">雷諾曼牌</button>';
+    h += '</div>' + renderTarotLenormandGuide() + '</details>';
     h += wizBtns(false, !!state.category, '下一步', 'wizNext()');
 
   } else if (state.wizardStep === 2) {
@@ -4119,11 +4117,11 @@ var NAV_ICONS = {
 };
 function renderNav() {
   var navDef = [
-    { key: 'home', zh: '首頁', en: 'Home' },
-    { key: 'reading', zh: '占卜', en: 'Reading' },
-    { key: 'astro', zh: '星盤', en: 'Natal Chart' },
-    { key: 'library', zh: '牌典', en: 'Library' },
-    { key: 'more', zh: '更多', en: 'More' },
+    { key: 'home', zh: '首頁' },
+    { key: 'reading', zh: '占卜' },
+    { key: 'astro', zh: '星盤' },
+    { key: 'library', zh: '牌典' },
+    { key: 'more', zh: '更多' },
   ];
   var activeTab = state.tab;
   var h = '';
@@ -4133,7 +4131,6 @@ function renderNav() {
     h += '<button onclick="' + onclick + '" style="flex:1;background:none;border:none;padding:12px 6px 12px;cursor:pointer;color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.4)') + ';text-align:center">';
     h += '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto 2px" aria-hidden="true">' + NAV_ICONS[n.key] + '</svg>';
     h += '<div style="font:500 13px \'Noto Sans TC\',sans-serif">' + n.zh + '</div>';
-    h += '<div style="font:italic 9px \'EB Garamond\',serif;opacity:.55;margin-top:1px">' + n.en + '</div>';
     h += '</button>';
   });
   document.getElementById('nav').innerHTML = h;
@@ -5241,7 +5238,7 @@ function renderNatalWheel(chart) {
 
 /* ---- UI ---- */
 function filterCityList(q) {
-  if (!q) return CITY_LIST.slice(0, 12);
+  if (!q) return CITY_LIST.slice(0, 6);
   var ql = q.toLowerCase();
   return CITY_LIST.filter(function (c) { return c.zh.indexOf(q) !== -1 || c.en.toLowerCase().indexOf(ql) !== -1; }).slice(0, 12);
 }
@@ -5269,7 +5266,7 @@ function renderCityLiveBlock(prefix, genFnName) {
   } else if (state[prefix + 'Y'] && state[prefix + 'M'] && state[prefix + 'D']) {
     h += '<div role="status" style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-top:8px">請從上方選擇或搜尋你的出生地，才能生成星盤</div>';
   }
-  h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.3);margin-top:16px;line-height:1.7">🔒 出生資料只會儲存在你自己的裝置（瀏覽器）中，不會上傳到任何伺服器' + (prefix === 'astro' ? '；你也可以隨時在生成星盤後按「清除已儲存的星盤資料」完全刪除。' : '。') + '</div>';
+  if (prefix !== 'astro') h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.3);margin-top:16px;line-height:1.7">🔒 出生資料只會儲存在你自己的裝置（瀏覽器）中，不會上傳到任何伺服器。</div>';
   var birthErr = validateBirthDate(state[prefix + 'Y'], state[prefix + 'M'], state[prefix + 'D'], state[prefix + 'H'], state[prefix + 'Min'], state[prefix + 'UnknownTime']);
   /* 整體完成度提示要分開算「日期」跟「時間」兩項，不能直接用 birthErr——
      birthErr 是驗證函式回傳的單一訊息，日期沒填完跟時間沒填完都會讓它有值，
@@ -7995,6 +7992,7 @@ function renderLuckyGrid(rng) {
 
 function astroSetView(v) { state.astroView = v; state.astroDetail = null; render(); window.scrollTo(0, 0); }
 function toggleAstroTabsMore() { state.astroTabsMoreOpen = !state.astroTabsMoreOpen; render(); }
+function toggleAstroForecast() { state.astroForecastOpen = !state.astroForecastOpen; render(); }
 function astroDismissTour() {
   state.astroTourDismissed = true;
   try { localStorage.setItem('tl_astro_tour_seen', '1'); } catch (e) {}
@@ -9902,6 +9900,10 @@ function natalTopicToggleExpand(qId) {
   state.natalTopicExpanded[qId] = !state.natalTopicExpanded[qId];
   render();
 }
+function natalTopicToggleShowAll(catKey) {
+  state.natalTopicShowAll[catKey] = !state.natalTopicShowAll[catKey];
+  render();
+}
 function natalTopicGenerate() {
   var catKey = state.natalTopicCat;
   var sel = state.natalTopicQSel[catKey] || [];
@@ -9922,7 +9924,6 @@ function renderNatalTopicQuestionCard(a) {
   var h = '<div style="margin-top:16px;border:1px solid rgba(201,169,110,.28);border-radius:14px;padding:16px 17px;background:rgba(255,255,255,.025);box-shadow:0 1px 0 rgba(255,255,255,.02) inset">';
   h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(201,169,110,.75);letter-spacing:.03em">' + esc(a.title) + '</div>';
   h += '<div style="font:600 15px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:6px;line-height:1.6">' + esc(a.headline) + '</div>';
-  h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.8);line-height:1.85;margin-top:8px">' + esc(a.summary) + '</div>';
   if (a.details && a.details.length) {
     h += '<div style="margin-top:11px;display:flex;flex-direction:column;gap:7px">';
     a.details.forEach(function (d) {
@@ -9930,6 +9931,7 @@ function renderNatalTopicQuestionCard(a) {
     });
     h += '</div>';
   }
+  h += '<details style="margin-top:10px;border-top:1px solid rgba(201,169,110,.14);padding-top:8px"><summary style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(201,169,110,.8);cursor:pointer;min-height:36px;display:flex;align-items:center">為什麼會有這個傾向？</summary><div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.85;padding:2px 0 6px">' + esc(a.summary) + '</div></details>';
   if (a.caution) {
     h += '<div style="margin-top:11px;display:flex;gap:7px;align-items:flex-start"><span style="flex:none;font:500 10px \'Noto Sans TC\',sans-serif;color:#d9a0a0;background:rgba(214,120,120,.12);border-radius:8px;padding:2px 7px;margin-top:1px">留意</span><div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.68);line-height:1.75">' + esc(a.caution) + '</div></div>';
   }
@@ -10001,13 +10003,19 @@ function renderNatalTopicSection(chart) {
   h += '<div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">想了解的具體問題</div>';
   h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:' + (sel.length >= 3 ? '#e6cd9a' : 'rgba(240,233,216,.4)') + '">已選 ' + sel.length + '／3</div>';
   h += '</div>';
-  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);margin-top:4px">最多可複選 3 題，再次點擊已選項目可以取消。</div>';
-  h += '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:10px">';
-  questions.forEach(function (q) {
+  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);margin-top:4px">先從推薦問題開始，最多可選 3 題。</div>';
+  var showAllQuestions = !!state.natalTopicShowAll[catKey];
+  var visibleQuestions = questions.filter(function (q, i) { return showAllQuestions || i < 3 || sel.indexOf(q.id) !== -1; });
+  h += '<div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">';
+  visibleQuestions.forEach(function (q, qi) {
     var active = sel.indexOf(q.id) !== -1;
-    h += '<button type="button" aria-pressed="' + active + '" onclick="natalTopicToggleQ(\'' + catKey + '\',\'' + q.id + '\')" style="min-height:40px;text-align:left;font:400 11.5px \'Noto Sans TC\',sans-serif;background:' + (active ? 'rgba(201,169,110,.22)' : 'rgba(201,169,110,.06)') + ';border:1px solid ' + (active ? '#e6cd9a' : 'rgba(201,169,110,.28)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.72)') + ';padding:8px 12px;border-radius:10px;cursor:pointer">' + (active ? '✓ ' : '') + esc(q.title) + '</button>';
+    var preview = (q.answerTargets || []).slice(0, 2).join('、');
+    h += '<button type="button" aria-pressed="' + active + '" onclick="natalTopicToggleQ(\'' + catKey + '\',\'' + q.id + '\')" style="min-height:54px;text-align:left;font:400 11.5px \'Noto Sans TC\',sans-serif;background:' + (active ? 'rgba(201,169,110,.22)' : 'rgba(201,169,110,.06)') + ';border:1px solid ' + (active ? '#e6cd9a' : 'rgba(201,169,110,.28)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.78)') + ';padding:10px 12px;border-radius:10px;cursor:pointer"><span style="font-weight:500">' + (active ? '✓ ' : (qi < 3 ? '推薦　' : '')) + esc(q.title) + '</span>' + (preview ? '<span style="display:block;font-size:10px;color:rgba(240,233,216,.4);margin-top:4px;line-height:1.5">會分析：' + esc(preview) + '</span>' : '') + '</button>';
   });
   h += '</div>';
+  if (questions.length > 3) {
+    h += '<button type="button" onclick="natalTopicToggleShowAll(\'' + catKey + '\')" style="width:100%;min-height:42px;margin-top:8px;background:none;border:none;color:rgba(201,169,110,.8);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer">' + (showAllQuestions ? '收起其他問題' : '查看其他 ' + (questions.length - 3) + ' 個問題') + '</button>';
+  }
   if (state.natalTopicLimitHit === catKey) {
     h += '<div role="status" style="font:400 11px \'Noto Sans TC\',sans-serif;color:#d67878;margin-top:8px">最多可選 3 題，請先取消一項再選新的</div>';
   }
@@ -10097,13 +10105,13 @@ function renderAstro() {
   h += '<div style="font:600 20px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:4px;text-align:center">個人星盤</div>';
 
   if (!state.astroResult) {
-    h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);margin-top:14px;line-height:1.7;text-align:center">輸入出生日期、時間與地點，生成完整的西洋占星本命星盤——十大行星、上升／天頂、十二宮位與主要相位。</div>';
-    h += '<div style="margin-top:12px;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:11px 13px;background:rgba(255,255,255,.02);font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.6);line-height:1.85">第一次用嗎？開始前你需要知道：①需要出生年月日、時間、地點三項資料；②不確定精確時間也沒關係，下面可以勾選「不確定時間」，一樣能生成星盤；③出生資料只會存在你自己的瀏覽器裡，不會上傳到任何伺服器。</div>';
+    h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.58);margin-top:14px;line-height:1.7;text-align:center">填寫三項出生資料，了解你的性格、關係模式與人生主題。</div>';
+    h += '<div style="margin-top:12px;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px 13px;background:rgba(255,255,255,.02);font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);line-height:1.75">🔒 資料只保存在這台裝置。不知道出生時間也可以建立星盤，但部分結果會省略。</div>';
     h += '<div style="text-align:center;margin-top:10px">';
     h += '<label style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">換新裝置了嗎？點此匯入之前備份的星盤資料<input type="file" accept="application/json,.json" onchange="astroImportProfileFile(this)" style="display:none"></label>';
     h += '</div>';
 
-    h += '<div style="margin-top:22px;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">出生日期</div>';
+    h += '<div style="margin-top:22px;font:600 12px \'Noto Sans TC\',sans-serif;color:#c9a96e">1　出生日期</div>';
     h += '<div style="display:flex;gap:8px;margin-top:6px">';
     h += '<input id="astro-y" aria-label="出生年份" inputmode="numeric" min="1900" max="2100" type="number" placeholder="年 YYYY" value="' + esc(state.astroY) + '" oninput="state.astroY=this.value;birthAutoNext(this,\'astro-m\',4)" onblur="render()" style="width:33%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
     h += '<input id="astro-m" aria-label="出生月份" inputmode="numeric" min="1" max="12" type="number" placeholder="月 MM" value="' + esc(state.astroM) + '" oninput="state.astroM=this.value;birthAutoNext(this,\'astro-d\',2)" onblur="render()" style="width:33%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
@@ -10113,8 +10121,8 @@ function renderAstro() {
     if (astroBirthErr) h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:#d67878;margin-top:6px">⚠ ' + esc(astroBirthErr) + '</div>';
 
     h += '<div style="margin-top:16px;display:flex;justify-content:space-between;align-items:center">';
-    h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">出生時間</div>';
-    h += '<label style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" ' + (state.astroUnknownTime ? 'checked' : '') + ' onchange="astroToggleUnknownTime()">不確定時間（產生無時間星盤）</label>';
+    h += '<div style="font:600 12px \'Noto Sans TC\',sans-serif;color:#c9a96e">2　出生時間</div>';
+    h += '<label style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" ' + (state.astroUnknownTime ? 'checked' : '') + ' onchange="astroToggleUnknownTime()">我不知道確切時間</label>';
     h += '</div>';
     if (state.astroUnknownTime) {
       h += '<div style="margin-top:6px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);line-height:1.7">勾選後：不會顯示上升／天頂／宮位，也會省略跟月亮相關的相位；十大行星本身的星座位置仍然準確。</div>';
@@ -10126,18 +10134,19 @@ function renderAstro() {
       h += '</div>';
       h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:5px">時間會影響上升星座與宮位，請盡量提供準確的出生時間</div>';
     }
-    h += '<div style="margin-top:16px;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">出生地</div>';
+    h += '<div style="margin-top:18px;font:600 12px \'Noto Sans TC\',sans-serif;color:#c9a96e">3　出生城市</div>';
     h += '<input id="astro-city" aria-label="搜尋出生城市" type="text" placeholder="搜尋城市，例如：台北、Tokyo" value="' + esc(state.astroCityQuery) + '" oninput="astroCityInput(this.value)" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
     h += '<div id="astro-city-live">' + renderCityLiveBlock('astro', 'astroGenerate') + '</div>';
 
   } else {
     var chart = state.astroResult;
 
-    /* 9 個子頁面全部平鋪一列在小螢幕上容易換行擠壓，把使用頻率較低的
-       合盤／28星宿／計算方式收進「更多」，主列只留最常用的 6 個；
-       若目前正停在被收起的分頁，自動展開，避免使用者以為分頁不見了。 */
-    var PRIMARY_ASTRO_TABS = [['chart', '本命星盤'], ['natalTopic', '主題分析'], ['daily', '每日'], ['weekly', '本週'], ['monthly', '本月'], ['yearly', '年度'], ['progression', '推運']];
-    var MORE_ASTRO_TABS = [['synastry', '合盤'], ['xiu28', '28星宿'], ['method', '計算方式']];
+    /* 第一層只呈現新手能直接理解的四種需求；每日／週／月／年及推運等
+       專業功能放到第二層，避免一進星盤就看到九個同權重分頁。 */
+    var PRIMARY_ASTRO_TABS = [['chart', '認識自己'], ['natalTopic', '人生主題']];
+    var FORECAST_ASTRO_TABS = [['daily', '今天'], ['weekly', '本週'], ['monthly', '本月'], ['yearly', '今年']];
+    var MORE_ASTRO_TABS = [['progression', '人生階段變化'], ['synastry', '兩人關係'], ['xiu28', '28星宿'], ['method', '計算方式']];
+    var astroForecastOpen = state.astroForecastOpen || FORECAST_ASTRO_TABS.some(function (vt) { return vt[0] === state.astroView; });
     var astroTabsMoreOpen = state.astroTabsMoreOpen || MORE_ASTRO_TABS.some(function (vt) { return vt[0] === state.astroView; });
     function astroTabBtn(vt) {
       var on = (state.astroView || 'chart') === vt[0];
@@ -10145,18 +10154,21 @@ function renderAstro() {
     }
     h += '<div style="display:flex;gap:6px;margin-top:16px;flex-wrap:wrap;justify-content:center">';
     PRIMARY_ASTRO_TABS.forEach(function (vt) { h += astroTabBtn(vt); });
-    h += '<button aria-expanded="' + astroTabsMoreOpen + '" onclick="toggleAstroTabsMore()" style="font:500 11px \'Noto Sans TC\',sans-serif;background:' + (astroTabsMoreOpen ? 'rgba(201,169,110,.2)' : 'rgba(255,255,255,.03)') + ';border:1px solid ' + (astroTabsMoreOpen ? '#c9a96e' : 'rgba(201,169,110,.25)') + ';color:' + (astroTabsMoreOpen ? '#f0e9d8' : 'rgba(240,233,216,.55)') + ';padding:6px 13px;border-radius:14px;cursor:pointer">更多 ' + (astroTabsMoreOpen ? '▴' : '▾') + '</button>';
+    h += '<button aria-expanded="' + astroForecastOpen + '" onclick="toggleAstroForecast()" style="font:500 11px \'Noto Sans TC\',sans-serif;background:' + (astroForecastOpen ? 'rgba(201,169,110,.2)' : 'rgba(255,255,255,.03)') + ';border:1px solid ' + (astroForecastOpen ? '#c9a96e' : 'rgba(201,169,110,.25)') + ';color:' + (astroForecastOpen ? '#f0e9d8' : 'rgba(240,233,216,.55)') + ';padding:6px 13px;border-radius:14px;cursor:pointer">近期運勢 ' + (astroForecastOpen ? '▴' : '▾') + '</button>';
+    h += '<button aria-expanded="' + astroTabsMoreOpen + '" onclick="toggleAstroTabsMore()" style="font:500 11px \'Noto Sans TC\',sans-serif;background:' + (astroTabsMoreOpen ? 'rgba(201,169,110,.2)' : 'rgba(255,255,255,.03)') + ';border:1px solid ' + (astroTabsMoreOpen ? '#c9a96e' : 'rgba(201,169,110,.25)') + ';color:' + (astroTabsMoreOpen ? '#f0e9d8' : 'rgba(240,233,216,.55)') + ';padding:6px 13px;border-radius:14px;cursor:pointer">進階分析 ' + (astroTabsMoreOpen ? '▴' : '▾') + '</button>';
     h += '</div>';
+    if (astroForecastOpen) {
+      h += '<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;justify-content:center">';
+      FORECAST_ASTRO_TABS.forEach(function (vt) { h += astroTabBtn(vt); });
+      h += '</div>';
+    }
     if (astroTabsMoreOpen) {
       h += '<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;justify-content:center">';
       MORE_ASTRO_TABS.forEach(function (vt) { h += astroTabBtn(vt); });
       h += '</div>';
     }
-    if (!state.astroTourDismissed) {
-      h += renderAstroTourCard();
-    } else {
-      h += '<div style="text-align:center;margin-top:8px"><button onclick="astroShowTour()" style="background:none;border:none;color:rgba(240,233,216,.35);font:400 10px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">星盤功能小導覽 · 再看一次</button></div>';
-    }
+    h += '<div style="text-align:center;margin-top:8px"><button onclick="astroShowTour()" style="background:none;border:none;color:rgba(240,233,216,.35);font:400 10px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">不知道從哪開始？查看功能說明</button></div>';
+    if (!state.astroTourDismissed) h += renderAstroTourCard();
 
     if (state.astroView === 'natalTopic') {
       h += renderNatalTopicSection(chart);
@@ -10304,7 +10316,7 @@ function renderAstro() {
 }
 
 astroLoadProfile();
-try { state.astroTourDismissed = localStorage.getItem('tl_astro_tour_seen') === '1'; } catch (e) {}
+try { state.astroTourDismissed = localStorage.getItem('tl_astro_tour_seen') !== '0'; } catch (e) {}
 try { state.homeTourDismissed = localStorage.getItem('tl_home_tour_seen') === '1'; } catch (e) {}
 try { var _savedPersona = localStorage.getItem('tl_ai_persona'); if (_savedPersona && findAiPersona(_savedPersona).key === _savedPersona) state.aiPersona = _savedPersona; } catch (e) {}
 
