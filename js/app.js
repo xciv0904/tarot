@@ -999,17 +999,6 @@ SPREAD_DESC.line5 = '經典的五張敘事線，從起因一路讀到結果。';
 SPREAD_DESC.box9 = '3×3 方陣，行、列、對角線交叉解讀核心主題。';
 SPREAD_DESC.grand = '36 張全展的雷諾曼招牌玩法——不回答單一問題，而是一次看人生全景。適合年度運勢與階段盤點，展開後附新手讀法說明。';
 
-var LEN_RECOMMENDATIONS = {
-  love: ['box9', 'three-time', 'line5', 'grand', 'single'],
-  career: ['box9', 'three-issue', 'line5', 'grand', 'single'],
-  family: ['three-issue', 'box9', 'line5', 'single'],
-  health: ['three-mbs', 'line5', 'box9', 'single'],
-  wealth: ['three-issue', 'line5', 'box9', 'single'],
-  social: ['box9', 'three-time', 'line5', 'single'],
-  study: ['three-issue', 'line5', 'box9', 'single'],
-  general: ['grand', 'box9', 'line5', 'three-time', 'single'],
-};
-
 /* ---- 組合速查器 ---- */
 function comboSet(which, val) {
   if (which === 'a') state.comboA = parseInt(val, 10);
@@ -1342,6 +1331,20 @@ function homeShowTour() {
   try { localStorage.removeItem('tl_home_tour_seen'); } catch (e) {}
   render();
 }
+function openBeginnerGuide() {
+  state.homeTourDismissed = false;
+  state.homeTourIdx = 0;
+  try { localStorage.removeItem('tl_home_tour_seen'); } catch (e) {}
+  go('home');
+}
+function openMoreAbout() {
+  state.aboutOpen = true;
+  render();
+  setTimeout(function () {
+    var section = document.getElementById('more-about-section');
+    if (section && section.scrollIntoView) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 0);
+}
 function homeTourGo(i) {
   var max = HOME_TOUR_ITEMS.length - 1;
   state.homeTourIdx = i < 0 ? 0 : (i > max ? max : i);
@@ -1522,7 +1525,11 @@ function renderModePicker() {
    career-talent（modes 只有 astro/combined）自然不會出現。原名 renderLoveSubtopicPicker，
    Phase 2A 起改為通用名稱；行為對 love 完全不變。 */
 function renderSubtopicPicker() {
-  var options = (SUBTOPICS[state.category] || []).filter(function (s) { return s.modes.indexOf(state.readingMode) !== -1; });
+  var preset = getSpreadQuestionPreset();
+  var allowed = preset.subtopics || [];
+  var options = (SUBTOPICS[state.category] || []).filter(function (s) {
+    return s.modes.indexOf(state.readingMode) !== -1 && (!allowed.length || allowed.indexOf(s.key) !== -1);
+  });
   if (!options.length) return '';
   /* 所有選項收進單一選單，避免和自由輸入、範例問題同時鋪成數十顆按鈕。
      這一項仍直接驅動站內深度解讀，只是降低畫面的選擇負擔。 */
@@ -1535,6 +1542,17 @@ function renderSubtopicPicker() {
   });
   h += '</select>';
   return h;
+}
+
+function getSpreadQuestionPreset() {
+  var categoryPresets = SPREAD_QUESTION_PRESETS[state.category] || {};
+  return categoryPresets[state.spread] || categoryPresets.default || {};
+}
+function getSpreadQuestionExamples() {
+  var preset = getSpreadQuestionPreset();
+  if (preset.examples && preset.examples.length) return preset.examples;
+  var focusCfg = topicQuestionConfig[state.category];
+  return focusCfg ? focusCfg.examples : (QUESTION_TEMPLATES[state.category] || QUESTION_TEMPLATES.general).chips;
 }
 
 /* ================= Step 3「想深入了解的面向」（可複選，最多 3 項）=================
@@ -1663,6 +1681,8 @@ function renderWizard(spreads, isTarot) {
   } else if (state.wizardStep === 3) {
     var tmpl = QUESTION_TEMPLATES[state.category] || QUESTION_TEMPLATES.general;
     var focusCfg = topicQuestionConfig[state.category];
+    var spreadQuestionPreset = getSpreadQuestionPreset();
+    var spreadQuestionExamples = getSpreadQuestionExamples();
     var targetCfg = TARGET_FIELD_CONFIG[state.category];
     /* Step 3 標題／說明文字依 Step 1 選擇的主題動態變化（topicQuestionConfig[category].label／hint），
        沒有對應設定時退回原本固定文案，不會出現 undefined。 */
@@ -1690,11 +1710,11 @@ function renderWizard(spreads, isTarot) {
     h += '<label for="question-input" style="display:block;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:18px">具體問題（選填，可點下方範例）</label>';
     h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);margin-top:4px;line-height:1.6">用一句話描述現在的情況即可；不想輸入也可以直接繼續。</div>';
     h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">';
-    (focusCfg ? focusCfg.examples : tmpl.chips).slice(0, 3).forEach(function (c2, i2) {
+    spreadQuestionExamples.slice(0, 3).forEach(function (c2, i2) {
       h += '<button type="button" onclick="wizChip(' + i2 + ')" style="min-height:44px;display:inline-flex;align-items:center;font:400 11px \'Noto Sans TC\',sans-serif;background:rgba(201,169,110,.08);border:1px solid rgba(201,169,110,.3);color:rgba(240,233,216,.7);padding:8px 12px;border-radius:22px;cursor:pointer">' + esc(c2) + '</button>';
     });
     h += '</div>';
-    h += '<textarea id="question-input" maxlength="300" aria-describedby="q-hint q-count" oninput="updateQHint(this.value)" placeholder="' + esc(focusCfg ? focusCfg.placeholder : tmpl.placeholder) + '" style="width:100%;box-sizing:border-box;margin-top:10px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:11px 14px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none;min-height:74px;resize:vertical">' + esc(state.question) + '</textarea>';
+    h += '<textarea id="question-input" maxlength="300" aria-describedby="q-hint q-count" oninput="updateQHint(this.value)" placeholder="' + esc(spreadQuestionPreset.placeholder || (focusCfg ? focusCfg.placeholder : tmpl.placeholder)) + '" style="width:100%;box-sizing:border-box;margin-top:10px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:11px 14px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none;min-height:74px;resize:vertical">' + esc(state.question) + '</textarea>';
     h += '<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">';
     h += '<div id="q-hint" aria-live="polite" style="flex:1;font:400 11px \'Noto Sans TC\',sans-serif;margin-top:7px;line-height:1.6;min-height:16px"></div>';
     h += '<div id="q-count" aria-live="polite" style="flex:none;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:8px">' + Math.min(state.question.length, 300) + ' / 300</div></div>';
@@ -1765,7 +1785,12 @@ function wizSetReadingMode(mode) {
   if (state.subtopic && (!def || def.modes.indexOf(mode) === -1)) state.subtopic = '';
   render();
 }
-function wizSetSpread(k) { state.spread = k; render(); }
+function wizSetSpread(k) {
+  state.spread = k;
+  var preset = getSpreadQuestionPreset();
+  if (state.subtopic && preset.subtopics && preset.subtopics.indexOf(state.subtopic) === -1) state.subtopic = '';
+  render();
+}
 function wizSetTimeframe(k) { state.timeframe = k; render(); }
 function timeframeLabel() { return ({week:'一週內',month:'一個月內',quarter:'三個月內',half:'半年內',open:'不限時間'})[state.timeframe] || '一個月內'; }
 function wizNext() {
@@ -1785,8 +1810,8 @@ function wizRestart() {
   resetReading(); render(); window.scrollTo(0, 0);
 }
 function wizChip(i) {
-  var focusCfg = topicQuestionConfig[state.category];
-  var t = focusCfg ? focusCfg.examples[i] : (QUESTION_TEMPLATES[state.category] || QUESTION_TEMPLATES.general).chips[i];
+  var t = getSpreadQuestionExamples()[i];
+  if (!t) return;
   state.question = t;
   var ta = document.getElementById('question-input');
   if (ta) ta.value = t;
@@ -4144,15 +4169,15 @@ function renderNav() {
 function renderMore() {
   var h = '<div style="padding:8px 24px 24px"><h2 style="font:600 18px \'Noto Serif TC\',serif;color:#f0e9d8;margin:0 0 16px">更多功能</h2>';
   var items = [
-    ['塔羅牌占卜','Tarot Reading',"go('reading','tarot')"],
-    ['雷諾曼占卜','Lenormand Reading',"go('reading','lenormand')"],
-    ['占卜歷史紀錄','Reading History',"go('history')"]
+    ['占卜歷史紀錄','Review Past Readings',"go('history')"],
+    ['新手使用指南','Beginner Guide',"openBeginnerGuide()"],
+    ['隱私與資料管理','Privacy & Data',"openMoreAbout()"]
   ];
   items.forEach(function (it) { h += '<button onclick="' + it[2] + '" style="width:100%;display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.02);border:1px solid rgba(201,169,110,.28);color:#f0e9d8;padding:14px 15px;border-radius:10px;margin-bottom:9px;cursor:pointer;text-align:left"><span>' + it[0] + '<span style="display:block;font:italic 10px \'EB Garamond\',serif;opacity:.45;margin-top:2px">' + it[1] + '</span></span><span aria-hidden="true">›</span></button>'; });
   h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);line-height:1.8;margin-top:18px">占卜內容僅供自我探索與娛樂參考；健康、財務與法律問題請諮詢合格專業人士。</div>';
   /* 關於本站／隱私／清除資料原本只藏在首頁「更多功能」展開後才看得到；
      底部導覽列「更多」是更常被點的入口，這裡也要能直接找到 */
-  h += renderAbout();
+  h += '<div id="more-about-section">' + renderAbout() + '</div>';
   h += '</div>';
   return h;
 }

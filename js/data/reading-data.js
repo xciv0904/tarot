@@ -241,6 +241,17 @@ var RECOMMENDATIONS = {
   general: ['three-time', 'celtic', 'horseshoe', 'single'],
 };
 
+var LEN_RECOMMENDATIONS = {
+  love: ['box9', 'three-time', 'line5', 'grand', 'single'],
+  career: ['box9', 'three-issue', 'line5', 'grand', 'single'],
+  family: ['three-issue', 'box9', 'line5', 'single'],
+  health: ['three-mbs', 'line5', 'box9', 'single'],
+  wealth: ['three-issue', 'line5', 'box9', 'single'],
+  social: ['box9', 'three-time', 'line5', 'single'],
+  study: ['three-issue', 'line5', 'box9', 'single'],
+  general: ['grand', 'box9', 'line5', 'three-time', 'single'],
+};
+
 var SPREAD_DESC = {
   single: '快速回應單一問題，適合每日指引。',
   'three-time': '看事情的發展脈絡與趨勢。',
@@ -263,6 +274,140 @@ var QUESTION_TEMPLATES = {
   social: { placeholder: '例如：我和某位朋友之間最近有些疏遠，該如何維繫這段關係？', chips: ['我和這位朋友的關係接下來會如何？', '這段友誼／人脈該如何經營？', '對方對我的真實態度是什麼？'] },
   study: { placeholder: '例如：這次期末考／申請學校的結果傾向如何？', chips: ['這次考試結果會如何？', '我該選這個科系／學校嗎？', '我該如何調整讀書方式？', '這份論文／專題能順利完成嗎？'] },
   general: { placeholder: '例如：我想了解自己接下來這段時間整體的運勢與提醒。', chips: ['我接下來這段時間整體運勢如何？', '現在的我最需要注意什麼？', '有沒有什麼是我目前沒留意到的？'] },
+};
+
+/* Step 3 問題必須同時符合「主題」與「已選牌陣」。
+   每個主題提供 default；具有明確使用情境的牌陣再覆寫，避免單身桃花出現交往／復合問題，
+   或二選一牌陣出現無法比較選項的問題。subtopics 同時限制「你最想知道什麼」選單。 */
+var SPREAD_QUESTION_PRESETS = {
+  love: {
+    default: {
+      subtopics: ['pace-pattern', 'crush', 'reunion'],
+      examples: ['這段感情目前最需要我看清什麼？', '這段關係接下來可能如何發展？', '我現在適合採取什麼行動？']
+    },
+    peach: {
+      subtopics: ['partner-type', 'partner-profile', 'meet-scene'],
+      placeholder: '例如：目前單身，想知道新的感情機會可能從哪裡出現。',
+      examples: ['我近期容易遇到什麼類型的新對象？', '新的感情機會可能在哪種情境出現？', '目前阻礙我開始新關係的原因是什麼？']
+    },
+    crush: {
+      subtopics: ['crush', 'pace-pattern'],
+      placeholder: '例如：我對某人有好感，想知道彼此是否有進一步發展的可能。',
+      examples: ['對方目前如何看待我？', '我們之間有進一步發展的可能嗎？', '我現在適合主動表達心意嗎？']
+    },
+    relationship: {
+      subtopics: ['pace-pattern', 'marriage-longterm'],
+      examples: ['我和交往中的對象目前處在什麼狀態？', '這段關係接下來三個月可能如何發展？', '我們要讓關係更穩定，需要一起面對什麼？']
+    },
+    crosslove: {
+      subtopics: ['pace-pattern', 'crush', 'reunion'],
+      examples: ['我和對方目前各自怎麼看待這段關係？', '我們彼此的需求與顧慮有什麼差異？', '這段關係目前最大的阻礙是什麼？']
+    },
+    'three-time': {
+      subtopics: ['pace-pattern', 'crush', 'reunion'],
+      examples: ['這段感情如何走到現在，接下來可能怎麼發展？', '我們目前的互動會帶來什麼後續變化？', '未來三個月這段關係的發展趨勢如何？']
+    },
+    single: {
+      subtopics: ['partner-type', 'crush', 'pace-pattern', 'reunion'],
+      examples: ['我現在最需要看清的感情問題是什麼？', '面對目前的感情狀況，我可以怎麼做？', '今天這段感情最需要給我的提醒是什麼？']
+    }
+  },
+  career: {
+    default: {
+      subtopics: ['industry-fit', 'work-style-fit', 'career-timing', 'workplace-strength-weakness'],
+      examples: ['目前的職涯問題，真正的阻礙是什麼？', '我可以採取什麼行動改善工作現況？', '這個職涯方向接下來可能如何發展？']
+    },
+    timeline: {
+      subtopics: ['career-timing'],
+      examples: ['未來一到六個月的職涯發展趨勢如何？', '這次轉職在不同時間階段可能如何發展？', '我目前的工作狀況何時較可能出現轉機？']
+    },
+    'three-issue': {
+      subtopics: ['career-timing', 'workplace-strength-weakness'],
+      examples: ['目前工作問題的核心阻礙是什麼？', '面對這次職涯選擇，我可以採取什麼行動？', '這次求職或轉職，我最需要注意什麼？']
+    }
+  },
+  family: {
+    default: {
+      subtopics: ['family-dynamics', 'family-relations', 'living-responsibility', 'family-improve'],
+      examples: ['目前家庭關係中最需要處理的是什麼？', '我可以如何改善和家人的互動？', '這項家庭責任接下來可能如何發展？']
+    },
+    relationship: {
+      subtopics: ['family-relations', 'family-improve'],
+      examples: ['我和這位家人目前各自的感受是什麼？', '我們的互動為什麼容易卡住？', '我要如何和這位家人建立更健康的相處方式？']
+    }
+  },
+  health: {
+    default: {
+      subtopics: ['body-lifestyle', 'daily-balance'],
+      examples: ['目前的壓力主要來自哪裡？', '我最需要調整哪一項生活習慣？', '接下來我可以如何安排休息與自我照顧？']
+    },
+    'three-mbs': {
+      subtopics: ['body-lifestyle', 'daily-balance'],
+      examples: ['我的身體、情緒與內在需求目前各需要什麼？', '哪個層面的失衡最影響我現在的狀態？', '我可以如何同時照顧身體與心理壓力？']
+    },
+    timeline: {
+      subtopics: ['body-lifestyle', 'daily-balance'],
+      examples: ['未來一到六個月，我的生活狀態可能如何變化？', '目前的調整方式持續下去，身心狀態可能如何發展？', '我應在哪個階段特別留意休息與壓力？']
+    }
+  },
+  wealth: {
+    default: {
+      subtopics: ['cashflow-risk', 'risk-approach', 'opportunity-source'],
+      examples: ['目前財務上最需要優先處理的是什麼？', '我可以如何改善收入與支出的平衡？', '近期值得留意的財務風險是什麼？']
+    },
+    fork: {
+      subtopics: ['risk-approach', 'opportunity-source'],
+      placeholder: '例如：比較繼續現有方案與改採新方案，哪一個較符合目前條件？',
+      examples: ['選項 A 和選項 B 各自的優勢與風險是什麼？', '兩個財務方案中，哪一個較符合我目前的承受能力？', '做這項選擇前，我最容易忽略什麼成本？']
+    },
+    timeline: {
+      subtopics: ['cashflow-risk', 'opportunity-source'],
+      examples: ['未來一到六個月的收支趨勢如何？', '目前的財務安排持續下去，可能出現什麼變化？', '近期財務狀況何時較可能出現轉機？']
+    }
+  },
+  social: {
+    default: {
+      subtopics: ['attract-type', 'interpersonal-style', 'ally-conflict'],
+      examples: ['目前這段人際關係的核心問題是什麼？', '對方如何看待我們的互動？', '我可以如何改善這段關係？']
+    },
+    relationship: {
+      subtopics: ['interpersonal-style', 'ally-conflict'],
+      examples: ['我和這位朋友目前各自如何看待這段關係？', '我們之間的連結與主要摩擦是什麼？', '這段友誼接下來可能如何發展？']
+    },
+    crosslove: {
+      subtopics: ['interpersonal-style', 'ally-conflict'],
+      examples: ['我和對方的立場與需求有什麼差異？', '這段合作或友誼中，彼此各自顧慮什麼？', '我們要化解誤會，最需要先處理什麼？']
+    }
+  },
+  study: {
+    default: {
+      subtopics: ['major-fit', 'exam-application', 'focus-execution'],
+      examples: ['目前學習上的主要阻礙是什麼？', '我可以如何調整讀書方式與時間安排？', '這次考試或申請最需要準備什麼？']
+    },
+    'three-time': {
+      subtopics: ['exam-application', 'focus-execution'],
+      examples: ['我的準備如何走到現在，接下來可能如何發展？', '目前的讀書方式持續下去，成果趨勢如何？', '這次考試或申請未來三個階段的發展如何？']
+    },
+    timeline: {
+      subtopics: ['exam-application', 'focus-execution'],
+      examples: ['未來一到六個月的學習進度可能如何變化？', '我應如何安排不同階段的準備重點？', '這項學習計畫何時較可能看到成果？']
+    }
+  },
+  general: {
+    default: {
+      subtopics: ['overall-theme', 'priority-focus', 'hidden-blindspot', 'next-direction'],
+      examples: ['我目前人生階段最重要的主題是什麼？', '現在最需要優先處理的是什麼？', '下一步最適合採取什麼行動？']
+    },
+    grand: {
+      subtopics: ['overall-theme', 'priority-focus', 'hidden-blindspot', 'next-direction'],
+      placeholder: '例如：想盤點未來半年生活各面向的主軸、機會與需要留意的事。',
+      examples: ['未來半年各生活面向的主要趨勢是什麼？', '目前最值得投入與最需要留意的領域各是什麼？', '這個人生階段的整體主軸與下一步是什麼？']
+    },
+    'three-time': {
+      subtopics: ['overall-theme', 'next-direction'],
+      examples: ['過去如何影響現在，接下來可能如何發展？', '目前的生活狀態正走向什麼方向？', '未來三個階段最值得留意的變化是什麼？']
+    }
+  }
 };
 
 var TARGET_FIELD_CONFIG = {
