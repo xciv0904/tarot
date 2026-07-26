@@ -51,6 +51,7 @@ var state = {
   astroY: '', astroM: '', astroD: '', astroH: '', astroMin: '',
   astroCityQuery: '', astroCityIdx: null, astroCityUsed: null,
   astroUnknownTime: false, astroResult: null, astroView: 'chart', astroGenerating: false, astroTourDismissed: true,
+  returnToReadingAfterAstro: false,
   astroTourIdx: 0, astroTabsMoreOpen: false, astroForecastOpen: false,
   /* 人生主題專題分析：選主題／選題目（每主題各自最多 3 個，keyed 儲存所以切換
      主題不會互相污染，回到同一主題會保留原本已選）／分析結果／摺疊卡展開狀態 */
@@ -1502,15 +1503,13 @@ function renderModePicker() {
   var hasAstro = !!state.astroResult;
   var cardsActive = state.readingMode === 'cards';
   var combinedActive = state.readingMode === 'combined';
-  var h = '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:14px">解讀來源</div>';
-  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);margin-top:4px;line-height:1.6">牌卡著重目前情境；加入星盤後，會再補充你的長期性格與行動傾向。</div>';
-  h += '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center">';
-  h += '<button type="button" aria-pressed="' + cardsActive + '" onclick="wizSetReadingMode(\'cards\')" style="min-height:44px;font:500 12px \'Noto Sans TC\',sans-serif;background:' + (cardsActive ? 'rgba(201,169,110,.18)' : 'rgba(255,255,255,.02)') + ';border:1px solid ' + (cardsActive ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (cardsActive ? '#f0e9d8' : 'rgba(240,233,216,.6)') + ';padding:8px 14px;border-radius:22px;cursor:pointer">牌卡解讀</button>';
+  var h = '<div style="font:600 12px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:16px">你想用哪種方式解讀？</div>';
+  h += '<div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">';
+  h += '<button type="button" aria-pressed="' + cardsActive + '" onclick="wizSetReadingMode(\'cards\')" style="min-height:58px;text-align:left;background:' + (cardsActive ? 'rgba(201,169,110,.18)' : 'rgba(255,255,255,.02)') + ';border:1px solid ' + (cardsActive ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (cardsActive ? '#f0e9d8' : 'rgba(240,233,216,.7)') + ';padding:10px 13px;border-radius:10px;cursor:pointer"><span style="font:500 12px \'Noto Sans TC\',sans-serif">' + (cardsActive ? '✓ ' : '') + '只用這次抽到的牌</span><span style="display:block;font:400 10.5px \'Noto Sans TC\',sans-serif;opacity:.55;margin-top:4px">分析現在這件事的狀態、發展與可採取的做法</span></button>';
   if (hasAstro) {
-    h += '<button type="button" aria-pressed="' + combinedActive + '" onclick="wizSetReadingMode(\'combined\')" style="min-height:44px;font:500 12px \'Noto Sans TC\',sans-serif;background:' + (combinedActive ? 'rgba(201,169,110,.18)' : 'rgba(255,255,255,.02)') + ';border:1px solid ' + (combinedActive ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (combinedActive ? '#f0e9d8' : 'rgba(240,233,216,.6)') + ';padding:8px 14px;border-radius:22px;cursor:pointer">牌卡＋我的星盤</button>';
+    h += '<button type="button" aria-pressed="' + combinedActive + '" onclick="wizSetReadingMode(\'combined\')" style="min-height:58px;text-align:left;background:' + (combinedActive ? 'rgba(201,169,110,.18)' : 'rgba(255,255,255,.02)') + ';border:1px solid ' + (combinedActive ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (combinedActive ? '#f0e9d8' : 'rgba(240,233,216,.7)') + ';padding:10px 13px;border-radius:10px;cursor:pointer"><span style="font:500 12px \'Noto Sans TC\',sans-serif">' + (combinedActive ? '✓ ' : '') + '抽牌＋我的個人星盤</span><span style="display:block;font:400 10.5px \'Noto Sans TC\',sans-serif;opacity:.55;margin-top:4px">除了現在的牌面，再補充你長期的個性與行動模式</span></button>';
   } else {
-    h += '<button type="button" disabled aria-disabled="true" title="需要先建立你的星盤才能使用" style="min-height:44px;font:500 12px \'Noto Sans TC\',sans-serif;background:rgba(255,255,255,.02);border:1px dashed rgba(201,169,110,.25);color:rgba(240,233,216,.3);padding:8px 14px;border-radius:22px;cursor:not-allowed">牌卡＋我的星盤</button>';
-    h += '<button type="button" onclick="go(\'astro\')" style="min-height:44px;font:400 11px \'Noto Sans TC\',sans-serif;background:none;border:none;color:#c9a96e;cursor:pointer;border-bottom:1px dotted #c9a96e;padding:8px 2px">先建立我的星盤 →</button>';
+    h += '<div style="border:1px dashed rgba(201,169,110,.25);border-radius:10px;padding:10px 13px;color:rgba(240,233,216,.45)"><div style="font:500 12px \'Noto Sans TC\',sans-serif">抽牌＋我的個人星盤</div><div style="font:400 10.5px \'Noto Sans TC\',sans-serif;line-height:1.6;margin-top:4px">建立一次星盤後即可使用；完成後會自動回到這一頁。</div><button type="button" onclick="readingBuildAstro()" style="min-height:40px;margin-top:6px;background:none;border:none;color:#c9a96e;font:500 11px \'Noto Sans TC\',sans-serif;cursor:pointer;padding:4px 0">建立我的星盤 →</button></div>';
   }
   h += '</div>';
   return h;
@@ -1525,16 +1524,16 @@ function renderModePicker() {
 function renderSubtopicPicker() {
   var options = (SUBTOPICS[state.category] || []).filter(function (s) { return s.modes.indexOf(state.readingMode) !== -1; });
   if (!options.length) return '';
-  /* 這裡的標籤特意跟下面新增的 renderFocusAreaPicker()（可複選的「想深入了解的面向」）
-     用不同措辭區分：這組是單選、且會直接驅動下方牌卡／星盤逐項深度解讀；新的那組只是
-     複選標籤，會併入「複製給 AI 解讀」的文字，兩者互不影響。 */
-  var h = '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:14px">加碼看本站牌卡逐項解讀（單選，選填，可再次點選取消）</div>';
-  h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">';
+  /* 所有選項收進單一選單，避免和自由輸入、範例問題同時鋪成數十顆按鈕。
+     這一項仍直接驅動站內深度解讀，只是降低畫面的選擇負擔。 */
+  var h = '<label for="subtopic-select" style="display:block;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);margin-top:16px">你最想知道什麼？（選填）</label>';
+  h += '<select id="subtopic-select" onchange="wizSetSubtopic(this.value)" style="width:100%;box-sizing:border-box;margin-top:7px;background:#1a1622;border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:11px 12px;font:400 12px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+  h += '<option value="">先不選，直接描述問題</option>';
   options.forEach(function (s) {
     var active = state.subtopic === s.key;
-    h += '<button type="button" aria-pressed="' + active + '" onclick="wizToggleSubtopic(\'' + s.key + '\')" style="min-height:44px;display:inline-flex;align-items:center;font:400 11px \'Noto Sans TC\',sans-serif;background:' + (active ? 'rgba(201,169,110,.22)' : 'rgba(201,169,110,.08)') + ';border:1px solid ' + (active ? '#e6cd9a' : 'rgba(201,169,110,.3)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.7)') + ';padding:8px 12px;border-radius:22px;cursor:pointer">' + (active ? '✓ ' : '') + esc(s.zh) + '</button>';
+    h += '<option value="' + esc(s.key) + '"' + (active ? ' selected' : '') + '>' + esc(s.zh) + '</option>';
   });
-  h += '</div>';
+  h += '</select>';
   return h;
 }
 
@@ -1586,7 +1585,7 @@ function renderFocusAreaPicker() {
 
   function optBtn(opt) {
     var active = sel.indexOf(opt) !== -1;
-    return '<button type="button" aria-pressed="' + active + '" onclick="wizToggleFocus(\'' + catKey + '\',' + JSON.stringify(opt) + ')" style="min-height:40px;text-align:left;font:400 11.5px \'Noto Sans TC\',sans-serif;background:' + (active ? 'rgba(201,169,110,.22)' : 'rgba(201,169,110,.06)') + ';border:1px solid ' + (active ? '#e6cd9a' : 'rgba(201,169,110,.28)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.72)') + ';padding:8px 12px;border-radius:10px;cursor:pointer">' + (active ? '✓ ' : '') + esc(opt) + '</button>';
+    return '<button type="button" aria-pressed="' + active + '" onclick="wizToggleFocus(\'' + catKey + '\',&quot;' + esc(opt) + '&quot;)" style="min-height:40px;text-align:left;font:400 11.5px \'Noto Sans TC\',sans-serif;background:' + (active ? 'rgba(201,169,110,.22)' : 'rgba(201,169,110,.06)') + ';border:1px solid ' + (active ? '#e6cd9a' : 'rgba(201,169,110,.28)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.72)') + ';padding:8px 12px;border-radius:10px;cursor:pointer">' + (active ? '✓ ' : '') + esc(opt) + '</button>';
   }
 
   var h = '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px">';
@@ -1667,7 +1666,7 @@ function renderWizard(spreads, isTarot) {
     var targetCfg = TARGET_FIELD_CONFIG[state.category];
     /* Step 3 標題／說明文字依 Step 1 選擇的主題動態變化（topicQuestionConfig[category].label／hint），
        沒有對應設定時退回原本固定文案，不會出現 undefined。 */
-    h += '<div style="font:600 15px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:6px">' + esc(focusCfg ? focusCfg.label : '具體描述你想問的問題') + '</div>';
+    h += '<div style="font:600 15px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:6px">再告訴我一點你的情況</div>';
     if (focusCfg) {
       h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);margin-top:5px;line-height:1.6">' + esc(focusCfg.hint) + '</div>';
     }
@@ -1688,12 +1687,10 @@ function renderWizard(spreads, isTarot) {
          過濾，astro-only 的子問題自然不會出現。 */
       h += renderSubtopicPicker();
     }
-    /* 新增的可複選「想深入了解的面向」（最多 3 項），八個分類都有資料，見 topicQuestionConfig。 */
-    h += renderFocusAreaPicker();
     h += '<label for="question-input" style="display:block;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:18px">具體問題（選填，可點下方範例）</label>';
-    h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);margin-top:4px;line-height:1.6">可以只選上方的面向，也可以自行輸入；兩者都有填寫時，解讀會一起參考，自行輸入的內容仍可隨時修改。</div>';
+    h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);margin-top:4px;line-height:1.6">用一句話描述現在的情況即可；不想輸入也可以直接繼續。</div>';
     h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">';
-    (focusCfg ? focusCfg.examples : tmpl.chips).forEach(function (c2, i2) {
+    (focusCfg ? focusCfg.examples : tmpl.chips).slice(0, 3).forEach(function (c2, i2) {
       h += '<button type="button" onclick="wizChip(' + i2 + ')" style="min-height:44px;display:inline-flex;align-items:center;font:400 11px \'Noto Sans TC\',sans-serif;background:rgba(201,169,110,.08);border:1px solid rgba(201,169,110,.3);color:rgba(240,233,216,.7);padding:8px 12px;border-radius:22px;cursor:pointer">' + esc(c2) + '</button>';
     });
     h += '</div>';
@@ -1749,6 +1746,13 @@ function wizSetCat(k) {
 function wizToggleSubtopic(key) {
   state.subtopic = (state.subtopic === key) ? '' : key;
   render();
+}
+function wizSetSubtopic(key) {
+  state.subtopic = key || '';
+}
+function readingBuildAstro() {
+  state.returnToReadingAfterAstro = true;
+  go('astro');
 }
 /* combined 模式只在目前分類（愛情或事業）已經有 state.astroResult 時才允許選取——沒有星盤
    絕不能選，也絕不臨時生成假星盤。切換模式後，若目前選取的 subtopic 在新模式下不支援，
@@ -4077,6 +4081,7 @@ function resetReading() {
 }
 
 function go(tab, deck) {
+  if (tab !== 'astro') state.returnToReadingAfterAstro = false;
   state.tab = tab;
   state.histSelected = null;
   state.libQuiz = false;
@@ -5448,6 +5453,12 @@ async function astroGenerate() {
     state.astroCityUsed = city;
     state.astroGenerating = false;
     astroSaveProfile();
+    if (state.returnToReadingAfterAstro) {
+      state.returnToReadingAfterAstro = false;
+      state.readingMode = 'combined';
+      state.tab = 'reading';
+      state.phase = 'setup';
+    }
     render();
     window.scrollTo(0, 0);
   }, 30);
