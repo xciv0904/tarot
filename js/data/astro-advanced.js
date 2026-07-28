@@ -4468,18 +4468,53 @@ function progressionAddMonths(date, months) {
   first.setDate(Math.min(date.getDate(), lastDay));
   return first;
 }
+/* 未來十二個月：原本是十二張並排的小卡，每張都寫月份、推運月亮星座與當月最緊密的
+   相位。但推運月亮 2～3 年才換一個星座，十二個月裡最多只換一次——十二張卡有十一張
+   在講同一件事，實測這一區就佔了「1 年」頁面的 65%。
+
+   改成先畫一條十二格的帶子（見 astro-charts.js 的 renderProgressionMonthStrip），
+   再只列出真正不一樣的月份：換座的月份，以及當月主相位跟前一個月不同的月份。
+   資訊沒有變少，只是不再把同一句話寫十二遍。 */
 function renderProgressionMonths(natal, city) {
-  var base = new Date(), charts = [], h = '<div style="margin-top:16px;font:500 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55)">未來 12 個月節奏</div><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:9px">';
+  var base = new Date(), charts = [];
   for (var i = 0; i <= 12; i++) charts.push(computeProgressedChart(natal, city, progressionAddMonths(base, i)));
-  var monthUsedSet = {};
+  var monthUsedSet = {}, months = [];
   for (var m = 0; m < 12; m++) {
     var d = progressionAddMonths(base, m), p = charts[m], next = charts[m + 1];
-    var moon = ZODIAC_SIGNS[p.planets.Moon.sign], moonShift = p.planets.Moon.sign !== next.planets.Moon.sign;
     var aspects = progressionAspects(natal, p), top = aspects[0];
-    var monthPlain=top?progressionAspectPlain(top, monthUsedSet):null;
-    h += '<div style="border:1px solid '+(moonShift?'rgba(230,205,154,.5)':'rgba(201,169,110,.18)')+';border-radius:9px;padding:8px 9px;background:rgba(255,255,255,.018)"><div style="display:flex;justify-content:space-between;gap:5px"><span style="font:600 11px \'Noto Sans TC\',sans-serif;color:#e6cd9a">'+d.getFullYear()+'/'+pad2(d.getMonth()+1)+'</span>'+(moonShift?'<span style="font:500 8px \'Noto Sans TC\',sans-serif;color:#211b15;background:#e6cd9a;border-radius:8px;padding:2px 5px">內在節奏換檔</span>':'')+'</div><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.68);margin-top:4px">情緒節奏：'+esc(SIGN_BEGINNER[p.planets.Moon.sign].mode)+'</div>'+(monthPlain?'<div style="font:400 9px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:4px;line-height:1.5">'+esc(monthPlain.title)+'：'+esc(monthPlain.text)+'</div>':'')+'<details style="margin-top:5px"><summary style="font:400 8px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);cursor:pointer">精確位置與相位</summary><div style="font:400 8px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);line-height:1.5;margin-top:3px">推運月亮 '+moon.zh+' '+p.planets.Moon.deg.toFixed(1)+'°'+(top?'；'+esc(crossAspectText(top,'本命','推運')):'')+'</div></details></div>';
+    months.push({
+      label: (d.getMonth() + 1) + '月',
+      sign: p.planets.Moon.sign,
+      moonShift: p.planets.Moon.sign !== next.planets.Moon.sign,
+      plain: top ? progressionAspectPlain(top, monthUsedSet) : null,
+    });
   }
-  return h + '</div>';
+
+  var h = '<div style="margin-top:16px;font:500 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55)">未來 12 個月節奏</div>';
+  if (typeof renderProgressionMonthStrip === 'function') h += renderProgressionMonthStrip(months);
+
+  /* 只留下有變化的月份：換座的，或主相位標題跟前一個月不同的 */
+  var shown = [], prevTitle = null;
+  months.forEach(function (mo) {
+    var title = mo.plain ? mo.plain.title : null;
+    if (mo.moonShift || (title && title !== prevTitle)) shown.push(mo);
+    if (title) prevTitle = title;
+  });
+  if (shown.length) {
+    h += '<div style="display:flex;flex-direction:column;gap:7px;margin-top:10px">';
+    shown.forEach(function (mo) {
+      h += '<div style="border-left:2px solid ' + (mo.moonShift ? '#e6cd9a' : 'rgba(201,169,110,.3)') + ';padding-left:9px">';
+      h += '<div style="font:600 11px \'Noto Sans TC\',sans-serif;color:#e6cd9a">' + esc(mo.label)
+        + (mo.moonShift ? '　推運月亮換座' : '') + '</div>';
+      if (mo.plain) {
+        h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.7;margin-top:3px">'
+          + esc(mo.plain.text) + '</div>';
+      }
+      h += '</div>';
+    });
+    h += '</div>';
+  }
+  return h;
 }
 function progSetYears(n) { state.progYears = n; state.progExpandedYear = 0; state.progOnlyTransitions = false; render(); window.scrollTo(0, 0); }
 function progToggleYear(i) { state.progExpandedYear = state.progExpandedYear === i ? null : i; render(); }
@@ -4522,14 +4557,19 @@ function renderProgressionYearCard(row, natal, usedSet) {
   h += '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div style="font:600 17px \'Noto Serif TC\',serif;color:#e6cd9a">' + row.year + '</div><div style="display:flex;gap:6px;align-items:center">' + (row.isTransition ? '<span style="font:600 10px \'Noto Sans TC\',sans-serif;color:#211b15;background:#e6cd9a;border-radius:10px;padding:3px 7px">轉折年</span>' : '') + '<span style="font:400 15px sans-serif;color:rgba(240,233,216,.45)">' + (open ? '−' : '＋') + '</span></div></div>';
   h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.82);margin-top:5px;line-height:1.65">' + esc(row.theme) + '</div>';
   h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"><span style="font:400 10px \'Noto Sans TC\',sans-serif;color:#c9a96e">☽ ' + moon.zh + '</span><span style="font:400 10px \'Noto Sans TC\',sans-serif;color:#c9a96e">☉ ' + sun.zh + '</span>' + row.focuses.map(function(f){return '<span style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);border:1px solid rgba(201,169,110,.2);border-radius:10px;padding:2px 6px">'+f+'</span>';}).join('') + '</div>';
-  if (row.aspects.length) { var firstPlain=progressionAspectPlain(row.aspects[0], usedSet); h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:8px;line-height:1.6">今年重點：' + esc(firstPlain.text) + '</div>'; }
+  /* 這一句取的就是第一組相位的內文，展開後那段會再完整出現一次。
+     所以只在收合狀態顯示，當作點開前的引子。 */
+  if (!open && row.aspects.length) { var firstPlain=progressionAspectPlain(row.aspects[0], usedSet); h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:8px;line-height:1.6">今年重點：' + esc(firstPlain.text) + '</div>'; }
   h += '</button>';
   if (open) {
     h += '<div style="border-top:1px solid rgba(201,169,110,.15);padding:12px 14px">';
     h += '<div style="padding:10px 11px;border-radius:9px;background:rgba(201,169,110,.07);font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.75">內心的安全感正用「'+esc(SIGN_BEGINNER[p.planets.Moon.sign].mode)+'」的方式調整；長期自我方向則帶著「'+esc(SIGN_BEGINNER[p.planets.Sun.sign].mode)+'」的色彩。</div>';
     if (row.moonChanged || row.sunChanged) h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:#e6cd9a;margin-top:10px;line-height:1.7">' + (row.moonChanged ? '• 這一年推運月亮將換座，內在需求會出現階段轉換。<br>' : '') + (row.sunChanged ? '• 這一年推運太陽將換座，是較少見的長期自我轉型。' : '') + '</div>';
+    /* 六段「標題＋長解釋＋建議」讀完才知道這年偏順還偏卡；先用一條組成長條
+       把全貌講完，再細講最緊密的三組。 */
+    if (typeof renderProgressionYearAspects === 'function') h += renderProgressionYearAspects(row);
     var expandedUsedSet = {};
-    row.aspects.slice(0, 6).forEach(function (a) { var d=progressionAspectPlain(a, expandedUsedSet); h += '<div style="border-top:1px solid rgba(201,169,110,.12);padding:9px 0"><div style="font:600 11px \'Noto Sans TC\',sans-serif;color:#f0e9d8">'+esc(d.title)+'</div><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.7;margin-top:4px">'+esc(d.text)+'</div><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:#e6cd9a;line-height:1.65;margin-top:4px">建議：'+esc(d.practice)+'</div><details style="margin-top:6px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);cursor:pointer">查看推運相位、容許度與專業解讀</summary><div style="margin-top:5px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.52);line-height:1.65">'+esc(crossAspectText(a,'本命','推運'))+'</div></details></div>'; });
+    row.aspects.slice(0, 3).forEach(function (a) { var d=progressionAspectPlain(a, expandedUsedSet); h += '<div style="border-top:1px solid rgba(201,169,110,.12);padding:9px 0"><div style="font:600 11px \'Noto Sans TC\',sans-serif;color:#f0e9d8">'+esc(d.title)+'</div><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.7;margin-top:4px">'+esc(d.text)+'</div><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:#e6cd9a;line-height:1.65;margin-top:4px">建議：'+esc(d.practice)+'</div><details style="margin-top:6px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);cursor:pointer">查看推運相位、容許度與專業解讀</summary><div style="margin-top:5px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.52);line-height:1.65">'+esc(crossAspectText(a,'本命','推運'))+'</div></details></div>'; });
     h += '<details style="margin-top:8px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);cursor:pointer">查看推運太陽、月亮精確位置</summary><div style="margin-top:5px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.7">推運月亮：'+moon.zh+' '+p.planets.Moon.deg.toFixed(1)+'°；推運太陽：'+sun.zh+' '+p.planets.Sun.deg.toFixed(1)+'°。</div></details>';
     if (!row.aspects.length) h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);line-height:1.7">這一年沒有容許度內特別緊密的主要相位，適合延續既有節奏。</div>';
     h += '</div>';

@@ -240,45 +240,99 @@ function renderElementQualityChart(eq) {
   return h + '</div>';
 }
 
-/* ---------- 二次推運時間軸 ----------
-   推運畫面原本是 4,089 字、零個視覺元素：每一年一張文字卡，要一路讀下去才知道
-   「哪一年比較關鍵」。但 buildProgressionYears() 早就標好了 isTransition
-   （推運月亮或太陽換星座、或有緊密相位），只是沒有畫出來。
+/* ---------- 二次推運總覽圖 ----------
+   推運畫面原本是四千字、零個視覺元素：每一年一張文字卡，要一路讀完才知道
+   「哪幾年重要、內在需求什麼時候換檔」。但這些 buildProgressionYears() 都算好了：
 
-   這條時間軸把整段期間壓成一行：金色實心點＝有轉折的年份，空心點＝相對平穩，
-   點下去會展開該年的詳細內容。先看到「哪幾年要注意」，再決定要讀哪一段。 */
+     · prog.planets.Moon.sign — 推運月亮的星座，每 2～3 年換一次，是這個技法的主軸
+     · prog.planets.Sun.sign  — 推運太陽的星座，28～30 年才換一次
+     · aspects.length          — 那一年有幾組緊密相位，等於那年的「熱鬧程度」
+     · isTransition            — 該年是否有換座或緊密相位
+
+   一張圖分三層疊起來：上面是推運月亮的星座帶（換座就換一段、依元素著色），
+   中間是年份軸與轉折標記，下面是每年的相位數量長條。看完就知道要細讀哪幾年。 */
+var PROG_ELEMENT_FILL = { 火: '#c0704f', 土: '#8c7a55', 風: '#6d87a0', 水: '#5c7f92' };
+
 function renderProgressionTimeline(rows, expandedYear) {
-  if (!rows || rows.length < 2) return '';
+  if (!rows || rows.length < 2 || typeof ZODIAC_SIGNS === 'undefined') return '';
   var n = rows.length;
-  var W = 300, H = 74, padX = 18, y = 34;
-  var step = (W - padX * 2) / Math.max(1, n - 1);
-  var marks = rows.filter(function (r) { return r.isTransition; }).map(function (r) { return r.year; });
-  var desc = '從 ' + rows[0].year + ' 年到 ' + rows[n - 1].year + ' 年的推運時間軸，共 ' + n + ' 年。'
-    + (marks.length ? '其中 ' + marks.join('、') + ' 年有明顯轉折（推運月亮或太陽換星座，或出現緊密相位）。' : '這段期間沒有特別明顯的轉折年。');
+  var W = 300, padX = 16, bandY = 16, bandH = 26, axisY = 62, barTop = 78, barMaxH = 34;
+  var H = barTop + barMaxH + 22;
+  var colW = (W - padX * 2) / n;
 
-  var svg = '<svg role="img" aria-labelledby="prog-tl-title prog-tl-desc" viewBox="0 0 ' + W + ' ' + H + '" width="100%" style="max-width:340px;display:block;margin:0 auto">';
-  svg += '<title id="prog-tl-title">推運轉折時間軸</title><desc id="prog-tl-desc">' + esc(desc) + '</desc>';
-  svg += '<line x1="' + padX + '" y1="' + y + '" x2="' + (W - padX) + '" y2="' + y + '" stroke="rgba(201,169,110,.3)" stroke-width="1"/>';
+  /* 推運月亮的星座分段：連續同一個星座的年份合併成一段 */
+  var segs = [];
   rows.forEach(function (r, i) {
-    var x = padX + step * i;
-    var on = expandedYear === r.index;
-    var r0 = r.isTransition ? 6 : 4;
-    svg += '<circle cx="' + x.toFixed(1) + '" cy="' + y + '" r="' + (on ? r0 + 2.5 : r0) + '"'
-      + ' fill="' + (r.isTransition ? '#e6cd9a' : '#1a1622') + '"'
-      + ' stroke="' + (on ? '#f0e9d8' : 'rgba(201,169,110,.7)') + '" stroke-width="' + (on ? 2 : 1) + '"/>';
-    /* 年份標籤太密會疊在一起，超過 6 年就只標首尾與轉折年 */
-    var showLabel = n <= 6 || i === 0 || i === n - 1 || r.isTransition;
-    if (showLabel) {
-      svg += '<text x="' + x.toFixed(1) + '" y="' + (y + 21) + '" text-anchor="middle" font-size="9" fill="rgba(240,233,216,'
-        + (r.isTransition ? '.8' : '.45') + ')">' + r.year + '</text>';
+    var sign = r.prog && r.prog.planets && r.prog.planets.Moon ? r.prog.planets.Moon.sign : null;
+    if (sign === null) return;
+    var last = segs[segs.length - 1];
+    if (last && last.sign === sign) last.end = i; else segs.push({ sign: sign, start: i, end: i });
+  });
+  var maxAspects = rows.reduce(function (m, r) { return Math.max(m, (r.aspects || []).length); }, 1);
+  var marks = rows.filter(function (r) { return r.isTransition; }).map(function (r) { return r.year; });
+  var sunSigns = [];
+  rows.forEach(function (r) {
+    var sg = r.prog && r.prog.planets && r.prog.planets.Sun ? ZODIAC_SIGNS[r.prog.planets.Sun.sign].zh : null;
+    if (sg && sunSigns.indexOf(sg) === -1) sunSigns.push(sg);
+  });
+
+  var desc = rows[0].year + ' 到 ' + rows[n - 1].year + ' 年共 ' + n + ' 年。推運月亮依序走過 '
+    + segs.map(function (sg) {
+        var yrs = rows[sg.start].year + (sg.end > sg.start ? ('–' + rows[sg.end].year) : '');
+        return ZODIAC_SIGNS[sg.sign].zh + '（' + yrs + '）';
+      }).join('、')
+    + '；推運太陽在' + sunSigns.join('、') + '。'
+    + (marks.length ? '有明顯轉折的是 ' + marks.join('、') + ' 年。' : '這段期間沒有特別明顯的轉折年。')
+    + '每年的緊密相位數量為 ' + rows.map(function (r) { return r.year + ' 年 ' + (r.aspects || []).length + ' 組'; }).join('、') + '。';
+
+  var svg = '<svg role="img" aria-labelledby="prog-tl-title prog-tl-desc" viewBox="0 0 ' + W + ' ' + H
+    + '" width="100%" style="max-width:340px;display:block;margin:0 auto">';
+  svg += '<title id="prog-tl-title">推運總覽</title><desc id="prog-tl-desc">' + esc(desc) + '</desc>';
+
+  /* 第一層：推運月亮星座帶 */
+  segs.forEach(function (sg) {
+    var x = padX + colW * sg.start;
+    var w = colW * (sg.end - sg.start + 1);
+    var def = ZODIAC_SIGNS[sg.sign];
+    var fill = PROG_ELEMENT_FILL[def.elem] || '#8c7a55';
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + bandY + '" width="' + (w - 2).toFixed(1) + '" height="' + bandH
+      + '" rx="5" fill="' + fill + '" opacity="0.5"/>';
+    if (w > 34) {
+      svg += '<text x="' + (x + w / 2 - 1).toFixed(1) + '" y="' + (bandY + 17) + '" text-anchor="middle" font-size="10" fill="#f0e9d8">'
+        + def.sym + ' ' + esc(def.zh.replace('座', '')) + '</text>';
     }
   });
+  svg += '<text x="' + padX + '" y="' + (bandY - 4) + '" font-size="8.5" fill="rgba(240,233,216,.45)">推運月亮走過的星座</text>';
+
+  /* 第二層：年份軸與轉折點 */
+  svg += '<line x1="' + padX + '" y1="' + axisY + '" x2="' + (W - padX) + '" y2="' + axisY + '" stroke="rgba(201,169,110,.28)" stroke-width="1"/>';
+  rows.forEach(function (r, i) {
+    var cx = padX + colW * (i + 0.5);
+    var on = expandedYear === r.index;
+    var rr = r.isTransition ? 5 : 3.5;
+    svg += '<circle cx="' + cx.toFixed(1) + '" cy="' + axisY + '" r="' + (on ? rr + 2 : rr) + '" fill="'
+      + (r.isTransition ? '#e6cd9a' : '#1a1622') + '" stroke="' + (on ? '#f0e9d8' : 'rgba(201,169,110,.7)')
+      + '" stroke-width="' + (on ? 2 : 1) + '"/>';
+  });
+
+  /* 第三層：每年的相位數量長條 */
+  rows.forEach(function (r, i) {
+    var cnt = (r.aspects || []).length;
+    var hgt = Math.max(3, (cnt / maxAspects) * barMaxH);
+    var x = padX + colW * (i + 0.5) - 6;
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + (barTop + barMaxH - hgt).toFixed(1) + '" width="12" height="' + hgt.toFixed(1)
+      + '" rx="2.5" fill="rgba(201,169,110,' + (0.3 + 0.5 * cnt / maxAspects).toFixed(2) + ')"/>';
+    svg += '<text x="' + (x + 6).toFixed(1) + '" y="' + (barTop + barMaxH + 11) + '" text-anchor="middle" font-size="8.5" fill="rgba(240,233,216,'
+      + (r.isTransition ? '.8' : '.45') + ')">' + r.year + '</text>';
+  });
+  svg += '<text x="' + padX + '" y="' + (barTop - 3) + '" font-size="8.5" fill="rgba(240,233,216,.45)">每年被觸發的相位數</text>';
   svg += '</svg>';
 
   var h = '<div style="margin-top:14px">' + svg;
-  h += '<div style="display:flex;gap:14px;justify-content:center;margin-top:2px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">'
+  h += '<div style="display:flex;gap:14px;justify-content:center;margin-top:4px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);flex-wrap:wrap">'
     + '<span style="display:inline-flex;align-items:center;gap:5px"><span aria-hidden="true" style="width:9px;height:9px;border-radius:50%;background:#e6cd9a;display:inline-block"></span>有轉折</span>'
-    + '<span style="display:inline-flex;align-items:center;gap:5px"><span aria-hidden="true" style="width:8px;height:8px;border-radius:50%;border:1px solid rgba(201,169,110,.7);display:inline-block"></span>相對平穩</span></div>';
+    + '<span style="display:inline-flex;align-items:center;gap:5px"><span aria-hidden="true" style="width:8px;height:8px;border-radius:50%;border:1px solid rgba(201,169,110,.7);display:inline-block"></span>相對平穩</span>'
+    + '<span>色帶＝推運月亮的星座（依元素著色）</span></div>';
   if (marks.length) {
     h += '<div style="text-align:center;margin-top:7px;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.6);line-height:1.7">'
       + '這段期間比較關鍵的是 <strong style="color:#e6cd9a">' + esc(marks.join('、')) + '</strong> 年，可以先看這幾段。</div>';
@@ -536,5 +590,130 @@ function renderPlanetaryDayRow(date, city) {
         : '你所在的緯度今天算不出日出或日落，所以不顯示時段。')
     + '</div></details>';
   h += '</div>';
+  return h;
+}
+
+/* ---------- 某一年的推運相位組成 ----------
+   展開一張年卡時，原本會一次列出六組相位，每組都是「標題＋長解釋＋建議」三段。
+   實測那一張卡就佔掉整頁六成的字，讀完才知道這一年是偏順還是偏卡。
+
+   先用一條堆疊長條把組成講完（幾組加分、幾組磨合、幾組融合），再列出參與的行星，
+   下面才放三組最緊密的細講；其餘的維持在原本的摺疊區裡，資訊沒有少。 */
+var PROG_ASPECT_GROUPS = [
+  { key: 'ease', zh: '順勢', color: '#9bc5a3', types: ['trine', 'sextile'] },
+  { key: 'merge', zh: '融合', color: '#e6cd9a', types: ['conjunction'] },
+  { key: 'friction', zh: '磨合', color: '#d9a0a0', types: ['square', 'opposition'] },
+];
+function renderProgressionYearAspects(row) {
+  var aspects = (row && row.aspects) || [];
+  if (aspects.length < 2 || typeof PLANET_DEFS === 'undefined') return '';
+  var counts = {}, total = 0;
+  PROG_ASPECT_GROUPS.forEach(function (g) {
+    counts[g.key] = aspects.filter(function (a) { return g.types.indexOf(a.type) !== -1; }).length;
+    total += counts[g.key];
+  });
+  if (!total) return '';
+
+  /* 參與最多次的行星——哪幾顆星今年被反覆點名，比逐條讀相位更快看出重點 */
+  var tally = {};
+  aspects.forEach(function (a) {
+    [a.aKey, a.bKey].forEach(function (k) { if (k) tally[k] = (tally[k] || 0) + 1; });
+  });
+  var top = Object.keys(tally).sort(function (x, y) { return tally[y] - tally[x]; }).slice(0, 4);
+
+  var desc = row.year + ' 年共 ' + aspects.length + ' 組緊密相位：'
+    + PROG_ASPECT_GROUPS.map(function (g) { return g.zh + ' ' + counts[g.key] + ' 組'; }).join('、')
+    + '。被點名最多次的是 ' + top.map(function (k) {
+        var d = PLANET_DEFS.filter(function (x) { return x.key === k; })[0];
+        return (d ? d.zh : k) + ' ' + tally[k] + ' 次';
+      }).join('、') + '。';
+
+  var h = '<div role="img" aria-label="' + esc(desc) + '" style="margin-top:10px">';
+  h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);margin-bottom:5px">這一年的 ' + aspects.length + ' 組相位怎麼組成</div>';
+  h += '<div aria-hidden="true" style="display:flex;height:9px;border-radius:5px;overflow:hidden;background:rgba(255,255,255,.05)">';
+  PROG_ASPECT_GROUPS.forEach(function (g) {
+    if (!counts[g.key]) return;
+    h += '<div style="width:' + (counts[g.key] / total * 100).toFixed(1) + '%;background:' + g.color + ';opacity:.85"></div>';
+  });
+  h += '</div>';
+  h += '<div aria-hidden="true" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:6px">';
+  PROG_ASPECT_GROUPS.forEach(function (g) {
+    if (!counts[g.key]) return;
+    h += '<span style="display:inline-flex;align-items:center;gap:4px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.6)">'
+      + '<span style="width:8px;height:8px;border-radius:2px;background:' + g.color + ';display:inline-block"></span>'
+      + esc(g.zh) + ' ' + counts[g.key] + '</span>';
+  });
+  h += '</div>';
+  h += '<div aria-hidden="true" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:7px">';
+  top.forEach(function (k) {
+    var d = PLANET_DEFS.filter(function (x) { return x.key === k; })[0];
+    if (!d) return;
+    h += '<span style="font:400 10px \'Noto Sans TC\',sans-serif;color:#c9a96e;border:1px solid rgba(201,169,110,.3);border-radius:11px;padding:3px 8px">'
+      + esc(d.sym + ' ' + d.zh) + ' ×' + tally[k] + '</span>';
+  });
+  h += '</div></div>';
+  return h;
+}
+
+/* ---------- 未來十二個月的推運月亮 ----------
+   原本這一區是十二張並排的小卡，每張都有月份、推運月亮星座、以及當月最緊密的相位。
+   但推運月亮走完一個星座要 2～3 年，所以十二個月裡最多只會換一次座——十二張卡有
+   十一張在講同一件事，難怪讀起來很累（實測這一區就佔了「1 年」頁面的 65%）。
+
+   改成一條十二格的帶子：顏色是推運月亮的星座（依元素），換座的地方直接標出來。
+   下面只列真正不一樣的月份，重複的不再各寫一次。 */
+function renderProgressionMonthStrip(months) {
+  if (!months || months.length < 2 || typeof ZODIAC_SIGNS === 'undefined') return '';
+  var W = 300, padX = 14, y = 18, barH = 24;
+  var colW = (W - padX * 2) / months.length;
+
+  var segs = [];
+  months.forEach(function (m, i) {
+    var last = segs[segs.length - 1];
+    if (last && last.sign === m.sign) last.end = i; else segs.push({ sign: m.sign, start: i, end: i });
+  });
+  var shiftAt = months.map(function (m, i) { return m.moonShift ? i : -1; }).filter(function (i) { return i >= 0; });
+
+  var desc = '未來十二個月的推運月亮：'
+    + segs.map(function (sg) {
+        var a = months[sg.start].label, b = months[sg.end].label;
+        return ZODIAC_SIGNS[sg.sign].zh + '（' + (a === b ? a : a + ' 到 ' + b) + '）';
+      }).join('，接著是 ')
+    + '。' + (shiftAt.length
+        ? shiftAt.map(function (i) { return months[i].label; }).join('、') + ' 會換座，內在需求在那時轉換。'
+        : '這十二個月都在同一個星座，內在需求維持同一個主軸。');
+
+  var svg = '<svg role="img" aria-labelledby="prog-mo-title prog-mo-desc" viewBox="0 0 ' + W + ' 62" width="100%" style="max-width:340px;display:block;margin:0 auto">';
+  svg += '<title id="prog-mo-title">未來十二個月的推運月亮</title><desc id="prog-mo-desc">' + esc(desc) + '</desc>';
+  segs.forEach(function (sg) {
+    var x = padX + colW * sg.start, w = colW * (sg.end - sg.start + 1);
+    var def = ZODIAC_SIGNS[sg.sign];
+    svg += '<rect x="' + x.toFixed(1) + '" y="' + y + '" width="' + (w - 2).toFixed(1) + '" height="' + barH
+      + '" rx="5" fill="' + (PROG_ELEMENT_FILL[def.elem] || '#8c7a55') + '" opacity="0.5"/>';
+    if (w > 40) {
+      svg += '<text x="' + (x + w / 2 - 1).toFixed(1) + '" y="' + (y + 16) + '" text-anchor="middle" font-size="10" fill="#f0e9d8">'
+        + def.sym + ' ' + esc(def.zh.replace('座', '')) + '</text>';
+    }
+  });
+  /* 換座的位置畫一條垂直線，這是這一區唯一真正的轉折 */
+  shiftAt.forEach(function (i) {
+    var x = padX + colW * (i + 1);
+    svg += '<line x1="' + x.toFixed(1) + '" y1="' + (y - 4) + '" x2="' + x.toFixed(1) + '" y2="' + (y + barH + 4)
+      + '" stroke="#e6cd9a" stroke-width="1.6"/>';
+  });
+  months.forEach(function (m, i) {
+    if (i % 2 !== 0 && months.length > 8) return; // 標籤太密就隔一個標一次
+    svg += '<text x="' + (padX + colW * (i + 0.5)).toFixed(1) + '" y="' + (y + barH + 16)
+      + '" text-anchor="middle" font-size="8" fill="rgba(240,233,216,.45)">' + esc(m.label) + '</text>';
+  });
+  svg += '</svg>';
+
+  var h = '<div style="margin-top:12px">' + svg;
+  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.65);line-height:1.8;margin-top:6px">'
+    + (shiftAt.length
+        ? '推運月亮會在 <strong style="color:#e6cd9a">' + esc(shiftAt.map(function (i) { return months[i].label; }).join('、'))
+          + '</strong> 換座，那前後是這一年內在需求最明顯的轉折點。'
+        : '這十二個月推運月亮都在同一個星座，內在需求維持同一個主軸，不會有明顯的階段切換。')
+    + '</div></div>';
   return h;
 }
