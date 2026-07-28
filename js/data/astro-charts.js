@@ -309,12 +309,6 @@ function renderProgressionTimeline(rows, expandedYear) {
 
 /* 四元素各自的色系。同一個元素給三個選項，用日期在該元素內挑，
    所以顏色會跟著月亮換星座而變，不是憑空跳號。 */
-var MOON_ELEMENT_COLORS = {
-  火: [{ zh: '暖橘', hex: '#e08a5e' }, { zh: '磚紅', hex: '#c05f4a' }, { zh: '琥珀金', hex: '#d9a441' }],
-  土: [{ zh: '大地棕', hex: '#a1815c' }, { zh: '苔綠', hex: '#6b7a52' }, { zh: '米杏', hex: '#e0cba8' }],
-  風: [{ zh: '天青', hex: '#9ec5d8' }, { zh: '淺灰藍', hex: '#aab5c4' }, { zh: '淡鵝黃', hex: '#ead9a0' }],
-  水: [{ zh: '深海藍', hex: '#4a6f8a' }, { zh: '霧霾青', hex: '#7c9aa6' }, { zh: '藕紫', hex: '#a48ba8' }],
-};
 var MOON_ELEMENT_RHYTHM = {
   火: '想到就做，今天適合先開口、先出手，不用等準備到完美。',
   土: '慢一點但踏實，今天適合處理具體的、看得到成果的事。',
@@ -361,14 +355,11 @@ function renderDailyRhythm(chart, transitPlanets, scores, unknownTime) {
   var moonSignIdx = Math.floor(astroNormDeg(moonLon) / 30);
   var moonSign = ZODIAC_SIGNS[moonSignIdx];
   var elem = moonSign.elem;
-  var palette = MOON_ELEMENT_COLORS[elem] || MOON_ELEMENT_COLORS.土;
-  /* 在該元素的色系內用月亮度數挑，換星座就換色系，同一天不會跳動 */
-  var color = palette[Math.floor(astroNormDeg(moonLon) % 30 / 10) % palette.length];
   var stage = moonPhaseStage(sunLon, moonLon);
 
+  /* 顏色一律交給下面的行星日那一組。這裡本來也有一個「今日主色」（取自月亮星座的
+     元素），但兩個顏色依據不同、同時出現只會讓人以為系統自相矛盾。 */
   var cells = [
-    renderRhythmCell('<div style="width:22px;height:22px;border-radius:50%;background:' + color.hex + ';border:1px solid rgba(255,255,255,.3)"></div>',
-      color.zh, '今日主色'),
     renderRhythmCell('<div style="font-size:19px">' + esc(moonSign.sym) + '</div>', moonSign.zh, '月亮在'),
     renderRhythmCell('<div style="font-size:19px">◑</div>', stage.zh, '月相階段'),
   ];
@@ -393,13 +384,18 @@ function renderDailyRhythm(chart, transitPlanets, scores, unknownTime) {
   h += '<div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.8;margin-top:8px;padding:0 2px">'
     + esc(MOON_ELEMENT_RHYTHM[elem] || '') + esc(stage.hint) + '。</div>';
   /* 每一項都說得出是怎麼算的——這一區以前是亂數挑的，現在要讓人可以驗證 */
-  h += '<details style="margin-top:8px"><summary style="font:500 10.5px \'Noto Sans TC\',sans-serif;color:#c9a96e;cursor:pointer">這四項是怎麼算出來的？</summary>'
+  h += '<details style="margin-top:8px"><summary style="font:500 10.5px \'Noto Sans TC\',sans-serif;color:#c9a96e;cursor:pointer">這幾項是怎麼算出來的？</summary>'
     + '<div style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.85;margin-top:6px">'
-    + '主色取自今天月亮所在星座的元素（' + esc(moonSign.zh) + '屬' + esc(elem) + '），換星座就換色系；'
+    + '上面那句相處節奏來自月亮所在星座的元素（' + esc(moonSign.zh) + '屬' + esc(elem) + '）；'
     + '月相階段是太陽與月亮的角距（目前 ' + Math.round(astroNormDeg(moonLon - sunLon)) + '°）；'
     + (unknownTime ? '出生時間未知時不顯示宮位焦點，改列分數最高的類別。' : '焦點是今天月亮走到你本命盤的第 ' + houseOfLongitude(chart, moonLon) + ' 宮。')
     + '這裡沒有任何一項是隨機挑的。</div></details>';
   h += '</div>';
+  /* 幸運色／數字／時段掛在「今天由哪顆行星主管」這個古典依據上，跟上面月亮那三項
+     是兩套不同的推導，所以分成兩區塊、各自說明來源。 */
+  if (typeof renderPlanetaryDayRow === 'function') {
+    h += renderPlanetaryDayRow(new Date(), (typeof state !== 'undefined') ? (state.astroCityUsed || null) : null);
+  }
   return h;
 }
 
@@ -421,13 +417,20 @@ function renderPeriodTone(overall, scores, periodLabel) {
     return d ? d.zh : k;
   }
   var band = PERIOD_TONE_BANDS.filter(function (b) { return overall >= b.min; })[0] || PERIOD_TONE_BANDS[2];
-  var topColor = (typeof CATEGORY_COLOR !== 'undefined' && CATEGORY_COLOR[topKey]) ? CATEGORY_COLOR[topKey][0] : '#e6cd9a';
-  var lowColor = (typeof CATEGORY_COLOR !== 'undefined' && CATEGORY_COLOR[lowKey]) ? CATEGORY_COLOR[lowKey][0] : '#8a8fa3';
+  /* 上方的分類長條是 linear-gradient(180deg, col[0], col[1])，這裡如果只填 col[0]
+     或再加 opacity，同一個分類在同一頁會呈現兩種色調，反而讓人以為是不同東西。
+     所以用完全相同的漸層，「相對平淡」改用虛線外框表示，不動顏色本身。 */
+  function catFill(k, fallback) {
+    var col = (typeof CATEGORY_COLOR !== 'undefined') ? CATEGORY_COLOR[k] : null;
+    return col ? ('linear-gradient(180deg,' + col[0] + ',' + col[1] + ')') : fallback;
+  }
+  var topFill = catFill(topKey, '#e6cd9a');
+  var lowFill = catFill(lowKey, '#8a8fa3');
 
   var cells = [
-    renderRhythmCell('<div style="width:22px;height:22px;border-radius:6px;background:' + topColor + ';border:1px solid rgba(255,255,255,.25)"></div>',
+    renderRhythmCell('<div style="width:22px;height:22px;border-radius:6px;background:' + topFill + ';border:1px solid rgba(255,255,255,.25)"></div>',
       zhOf(topKey) + ' ' + scores[topKey], '最被強化'),
-    renderRhythmCell('<div style="width:22px;height:22px;border-radius:6px;background:' + lowColor + ';opacity:.5;border:1px solid rgba(255,255,255,.15)"></div>',
+    renderRhythmCell('<div style="width:22px;height:22px;border-radius:6px;background:' + lowFill + ';border:1px dashed rgba(255,255,255,.45)"></div>',
       zhOf(lowKey) + ' ' + scores[lowKey], '相對平淡'),
     renderRhythmCell('<div style="font-size:19px">≈</div>', band.zh, '整體節奏'),
   ];
@@ -437,6 +440,101 @@ function renderPeriodTone(overall, scores, periodLabel) {
   cells.forEach(function (cellHtml) { h += cellHtml; });
   h += '</div>';
   h += '<div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.8;margin-top:8px;padding:0 2px">' + esc(band.hint) + '。</div>';
+  h += '</div>';
+  return h;
+}
+
+/* ============================================================================
+   幸運色／幸運數字／幸運時段——用古典的「行星日」與「行星時」推導。
+
+   這三項使用者想留下來，但不能再用亂數挑。改成全部掛在同一個依據上：
+   今天由哪顆行星主管。
+
+   · 行星日：星期天到星期六依序由日、月、火、水、木、金、土主管。這是行星日
+     的來源，英文與拉丁語系的星期名稱就是這樣來的（Sunday/Monday/mardi/
+     mercredi…），有明確且單一的出處。
+   · 行星時：日出到日落等分為十二段、日落到隔天日出再十二段，從當日主星起，
+     依迦勒底次序（土、木、火、日、金、水、月）輪流主管。日出日落由
+     Astronomy Engine 依實際經緯度計算，不是查表。
+   · 顏色與數字：沿用行星既有的傳統對應，不自創。
+
+   所以「今天由水星主管，幸運色橙黃、幸運數字 5、幸運時段 05:19–06:26 與
+   13:06–14:13」這句話的每一個部分都能回推，而且換一天、換一個城市就會不同。
+   ============================================================================ */
+var PLANETARY_DAY_RULERS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn']; // 週日→週六
+var CHALDEAN_ORDER = ['Saturn', 'Jupiter', 'Mars', 'Sun', 'Venus', 'Mercury', 'Moon'];
+var PLANET_RULER_INFO = {
+  Sun:     { zh: '太陽', sym: '☉', color: { zh: '金黃', hex: '#e0b04a' }, num: 1, tone: '適合站到台前、把事情做個決定' },
+  Moon:    { zh: '月亮', sym: '☽', color: { zh: '銀白', hex: '#d8dde4' }, num: 2, tone: '適合處理感受、照顧自己與家人' },
+  Mars:    { zh: '火星', sym: '♂', color: { zh: '赤紅', hex: '#c0503f' }, num: 9, tone: '適合出手、把拖著的事推動' },
+  Mercury: { zh: '水星', sym: '☿', color: { zh: '橙黃', hex: '#d99b5f' }, num: 5, tone: '適合溝通、寫東西、談條件' },
+  Jupiter: { zh: '木星', sym: '♃', color: { zh: '靛藍', hex: '#5b6fa8' }, num: 3, tone: '適合擴展、學習、談長遠的事' },
+  Venus:   { zh: '金星', sym: '♀', color: { zh: '青綠', hex: '#6fa88b' }, num: 6, tone: '適合經營關係、處理美感與金錢' },
+  Saturn:  { zh: '土星', sym: '♄', color: { zh: '深褐', hex: '#6b5b4a' }, num: 8, tone: '適合收尾、整理、面對現實條件' },
+};
+
+/* 回傳當日該主星主管的白天時段（可能一到兩段）。
+   算不出日出日落（極區永晝永夜、或引擎不可用）時回傳空陣列，呼叫端就不顯示，
+   不用假資料填充。 */
+function planetaryHoursForRuler(date, lat, lon, tz, rulerKey) {
+  if (typeof Astronomy === 'undefined' || !Astronomy.SearchRiseSet) return [];
+  try {
+    var observer = new Astronomy.Observer(lat, lon, 0);
+    /* 從當地當天 00:00 起算，否則 SearchRiseSet 會抓到隔天的日出、
+       配上今天的日落，得出負的白天長度。 */
+    var localMidnight = zonedTimeToUtc(date.getFullYear(), date.getMonth() + 1, date.getDate(), 0, 0, 0, tz);
+    var rise = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, +1, Astronomy.MakeTime(localMidnight), 2);
+    if (!rise) return [];
+    var set = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, -1, Astronomy.MakeTime(rise.date), 2);
+    if (!set) return [];
+    var span = set.date.getTime() - rise.date.getTime();
+    if (span <= 0) return [];
+    var hourMs = span / 12;
+    var startIdx = CHALDEAN_ORDER.indexOf(rulerKey);
+    if (startIdx < 0) return [];
+    var fmt = new Intl.DateTimeFormat('zh-TW', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false });
+    var out = [];
+    for (var i = 0; i < 12; i++) {
+      if (CHALDEAN_ORDER[(startIdx + i) % 7] !== rulerKey) continue;
+      out.push(fmt.format(new Date(rise.date.getTime() + i * hourMs))
+        + '–' + fmt.format(new Date(rise.date.getTime() + (i + 1) * hourMs)));
+    }
+    return out;
+  } catch (e) { return []; }
+}
+
+function renderPlanetaryDayRow(date, city) {
+  var rulerKey = PLANETARY_DAY_RULERS[date.getDay()];
+  var info = PLANET_RULER_INFO[rulerKey];
+  if (!info) return '';
+  var hours = city ? planetaryHoursForRuler(date, city.lat, city.lon, city.tz, rulerKey) : [];
+
+  var cells = [
+    renderRhythmCell('<div style="font-size:19px;color:#c9a96e">' + esc(info.sym) + '</div>', info.zh, '今日主星'),
+    renderRhythmCell('<div style="width:22px;height:22px;border-radius:50%;background:' + info.color.hex
+      + ';border:1px solid rgba(255,255,255,.3)"></div>', info.color.zh, '幸運色'),
+    renderRhythmCell('<div style="font-size:17px;color:rgba(240,233,216,.5)">#</div>', String(info.num), '幸運數字'),
+  ];
+  /* 極區的永晝永夜算不出日出日落，這一格就不顯示，不用「全天」之類的話矇混 */
+  if (hours.length) {
+    cells.push(renderRhythmCell('<div style="font-size:17px">◷</div>', hours.join('　'), '幸運時段'));
+  }
+
+  var h = '<div style="margin-top:18px">';
+  h += '<div style="display:grid;grid-template-columns:repeat(' + cells.length + ',1fr);border-top:1px solid rgba(201,169,110,.15)">';
+  cells.forEach(function (cellHtml) { h += cellHtml; });
+  h += '</div>';
+  h += '<div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.8;margin-top:8px;padding:0 2px">'
+    + '今天是' + esc(info.zh) + '日，' + esc(info.tone) + '。</div>';
+  h += '<details style="margin-top:6px"><summary style="font:500 10.5px \'Noto Sans TC\',sans-serif;color:#c9a96e;cursor:pointer">這三項是怎麼算出來的？</summary>'
+    + '<div style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.85;margin-top:6px">'
+    + '星期天到星期六依序由日、月、火、水、木、金、土主管，這也是英文星期名稱的由來；今天是'
+    + esc(info.zh) + '日，顏色與數字沿用這顆行星的傳統對應。'
+    + (hours.length
+        ? '幸運時段是「行星時」：把日出到日落等分成十二段，從當日主星起依迦勒底次序輪流，'
+          + esc(info.zh) + '主管的就是上面那幾段——日出日落是用你出生地的經緯度實際算出來的，換城市會不一樣。'
+        : '你所在的緯度今天算不出日出或日落，所以不顯示時段。')
+    + '</div></details>';
   h += '</div>';
   return h;
 }
