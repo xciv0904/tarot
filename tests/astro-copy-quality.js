@@ -46,7 +46,7 @@ function loadRuntime() {
     'js/data/astrology-knowledge-layer.js', 'js/data/astrology-knowledge-dataset.js',
     'js/data/astrology-natal-topics-data.js', 'js/data/card-images.js',
     'js/data/reading-data.js', 'js/data/reading-rich-data.js',
-    'js/app.js', 'js/data/astro-advanced.js', 'tests/golden-charts.js',
+    'js/app.js', 'js/data/astro-charts.js', 'js/data/astro-advanced.js', 'tests/golden-charts.js',
   ].forEach(file => vm.runInContext(fs.readFileSync(path.join(ROOT, file), 'utf8'), c, { filename: file }));
   c.ensureAstrologyBodyKeys();
   return c;

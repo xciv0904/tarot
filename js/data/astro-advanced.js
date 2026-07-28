@@ -792,6 +792,10 @@ function renderElementQualitySummary(chart) {
   h += '<div style="margin-top:10px;font:500 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;line-height:1.8">你最常用「'+topElem+'元素」處理事情，行動節奏偏向「'+qualityPlain[topQual]+'」。</div>';
   h += '<div style="margin-top:6px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.8">'+esc(ELEMENT_DOMINANT_TEXT[topElem])+' '+esc(QUALITY_DOMINANT_TEXT[topQual])+'</div>';
   h += '<div style="margin-top:9px;padding:9px 10px;border-radius:9px;background:rgba(201,169,110,.08);font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.7">比較少自動使用的是「'+lowElem+'元素」；需要時可以'+elementPractice[lowElem]+'。</div>';
+  /* 原本這裡是把元素／性質的數字藏在摺疊區、用四個裸數字呈現。
+     數字本來就算好了，攤開畫成長條之後「哪一種特別多、哪一種完全沒有」
+     一眼就看得出來，不需要自己比大小，也是這一頁少數不用讀文字的地方。 */
+  if (typeof renderElementQualityChart === 'function') h += renderElementQualityChart(eq);
   h += '<details style="margin-top:11px"><summary style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;cursor:pointer">查看元素與性質數字</summary>';
   h += '<div style="display:flex;justify-content:center;gap:14px;margin-top:10px">';
   elemKeys.forEach(function (k) {
@@ -4236,7 +4240,11 @@ async function synGenerate() {
     window.scrollTo(0, 0);
   }, 30);
 }
-function synReset() { state.synResult = null; render(); window.scrollTo(0, 0); }
+function synReset() { state.synResult = null; state.synFacet = null; render(); window.scrollTo(0, 0); }
+function synSetFacet(key) {
+  state.synFacet = (key && state.synFacet !== key) ? key : null;
+  render();
+}
 function synSetRelationship(k) { state.synRelationship = k; render(); }
 function synRelationshipLabel() { return ({love:'戀愛／伴侶',family:'親子／家人',friend:'朋友',work:'工作夥伴'})[state.synRelationship] || '戀愛／伴侶'; }
 
@@ -4367,9 +4375,36 @@ function renderSynastry() {
     (score >= 72 ? '整體默契不錯，彼此的能量容易自然地互相支援。' : score <= 45 ? '相處上需要多一點耐心磨合，摩擦也是認識彼此的機會。' : '有順也有磨，是需要花時間慢慢培養默契的一段關係。');
   h += '<div style="margin-top:16px;border-top:1px solid rgba(201,169,110,.15);border-bottom:1px solid rgba(201,169,110,.15);padding:14px 0;font:400 13px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.8);line-height:1.9">' + esc(summaryTxt) + '</div>';
 
-  h += '<div style="margin-top:18px;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;text-align:center">兩人之間最關鍵的幾組牽動</div>';
+  /* 相性指數、和諧與挑戰的組數、每組相位的緊密程度本來就都算好了，
+     以前只是整包用文字列出來，讓人自己在腦中組裝。這兩張圖用的是同一份
+     aspects，不另外計算，所以圖跟下面的文字一定一致。 */
+  if (typeof renderSynastryLinkChart === 'function') {
+    h += renderSynastryLinkChart(chartA, chartB, aspects, state.synFacet);
+  }
+  if (typeof renderSynastryFacetBars === 'function') {
+    h += renderSynastryFacetBars(aspects, state.synFacet);
+  }
+
+  /* 點了某個面向之後，下面的相位卡片跟著只顯示相關的那幾組——
+     這同時解決「畫面太多字」與「圖跟文字各說各話」兩個問題。 */
+  var activeFacetDef = state.synFacet && typeof SYNASTRY_FACETS !== 'undefined'
+    ? SYNASTRY_FACETS.filter(function (f) { return f.key === state.synFacet; })[0] : null;
+  var listed = activeFacetDef ? aspects.filter(function (asp) {
+    return activeFacetDef.planets.indexOf(asp.aKey) !== -1 || activeFacetDef.planets.indexOf(asp.bKey) !== -1;
+  }) : aspects;
+
+  h += '<div style="margin-top:18px;display:flex;justify-content:space-between;align-items:baseline;gap:10px">';
+  h += '<span style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5)">'
+    + (activeFacetDef ? esc(activeFacetDef.zh) + '　相關的牽動' : '兩人之間最關鍵的幾組牽動') + '</span>';
+  if (activeFacetDef) {
+    h += '<button type="button" onclick="synSetFacet(\'\')" style="flex:none;background:none;border:1px solid rgba(201,169,110,.35);color:#c9a96e;font:400 10.5px \'Noto Sans TC\',sans-serif;padding:5px 10px;border-radius:14px;cursor:pointer">看全部 ✕</button>';
+  }
+  h += '</div>';
+  if (!listed.length) {
+    h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:10px;line-height:1.8">這個面向沒有明顯的交叉相位，代表兩人在這一塊沒有特別強的互相牽動——不是好或壞，就是比較平淡。</div>';
+  }
   var crossUsedSet = {};
-  aspects.slice(0, 10).forEach(function (asp) {
+  listed.slice(0, 10).forEach(function (asp) {
     h += renderCrossAspectBeginnerCard(asp, crossUsedSet);
   });
 
@@ -4512,6 +4547,12 @@ function renderProgression() {
   h += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:14px">';
   [1,3,5,10].forEach(function(n){var on=state.progYears===n;h+='<button aria-pressed="'+on+'" onclick="progSetYears('+n+')" style="padding:8px 4px;border-radius:10px;border:1px solid '+(on?'#c9a96e':'rgba(201,169,110,.28)')+';background:'+(on?'rgba(201,169,110,.18)':'rgba(255,255,255,.02)')+';color:'+(on?'#f0e9d8':'rgba(240,233,216,.55)')+';font:500 11px \'Noto Sans TC\',sans-serif;cursor:pointer">'+n+' 年</button>';});
   h += '</div>';
+
+  /* 先給一條時間軸讓人看出「哪幾年要注意」，再往下讀逐年的內容——
+     buildProgressionYears() 早就標好 isTransition 了，只是以前沒畫出來。 */
+  if (typeof renderProgressionTimeline === 'function') {
+    h += renderProgressionTimeline(years, state.progExpandedYear);
+  }
 
   var progExplainOpen = state.progExplainOpen !== false;
   h += '<details' + (progExplainOpen ? ' open' : '') + ' style="margin-top:12px;border:1px solid rgba(201,169,110,.2);border-radius:12px;padding:11px 14px;background:rgba(255,255,255,.02)" ontoggle="state.progExplainOpen=this.open">';
