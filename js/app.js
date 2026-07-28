@@ -1617,12 +1617,24 @@ function getSpreadQuestionExamples() {
    如果使用者選到的項目剛好落在「更多」裡（例如展開後選了、又收起面板），
    會自動保持展開，避免已選項目被面板收合藏起來、卻沒有任何畫面線索。 */
 var FOCUS_PREVIEW_PER_GROUP = 2;
-/* 依目前選到的牌陣，濾掉這個牌陣答不了的面向分組（對應表在 reading-data.js 的
-   SPREAD_FOCUS_GROUPS）。沒有設限的牌陣回傳全部分組。
+/* 依「目前選到的牌陣」與「已選的具體子問題」濾掉答不了的面向分組。
+   兩份對應表都在 reading-data.js：SPREAD_FOCUS_GROUPS 與 SUBTOPIC_FOCUS_GROUPS。
+
+   子問題比牌陣更能說明使用者的處境（選了「未來可能遇到什麼類型的人」就代表單身），
+   所以兩者都有設定時取交集；交集為空時以子問題為準。
    萬一設定寫錯導致一組都不剩，退回顯示全部——寧可多列，也不要讓畫面空掉。 */
 function focusGroupsForSpread(catKey, cfg) {
-  var allowed = (typeof SPREAD_FOCUS_GROUPS !== 'undefined' && SPREAD_FOCUS_GROUPS[catKey])
+  var bySpread = (typeof SPREAD_FOCUS_GROUPS !== 'undefined' && SPREAD_FOCUS_GROUPS[catKey])
     ? SPREAD_FOCUS_GROUPS[catKey][state.spread] : null;
+  var bySubtopic = (state.subtopic && typeof SUBTOPIC_FOCUS_GROUPS !== 'undefined' && SUBTOPIC_FOCUS_GROUPS[catKey])
+    ? SUBTOPIC_FOCUS_GROUPS[catKey][state.subtopic] : null;
+  var allowed = null;
+  if (bySpread && bySubtopic) {
+    allowed = bySubtopic.filter(function (k) { return bySpread.indexOf(k) !== -1; });
+    if (!allowed.length) allowed = bySubtopic;
+  } else {
+    allowed = bySubtopic || bySpread;
+  }
   if (!allowed || !allowed.length) return cfg.focusGroups;
   var kept = cfg.focusGroups.filter(function (g) { return allowed.indexOf(g.key) !== -1; });
   return kept.length ? kept : cfg.focusGroups;
@@ -1690,7 +1702,9 @@ function renderFocusAreaPicker() {
   h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);margin-top:4px;line-height:1.6">看你現在符合哪一組就好，不必全部看完。最多可複選 3 項，再點一次可以取消。</div>';
   if (filtered) {
     var spreadDef = currentSpreads()[state.spread];
-    h += '<div style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:6px;line-height:1.6;border-left:2px solid rgba(201,169,110,.4);padding-left:8px">已依你選的「' + esc(spreadDef ? spreadDef.zh : '') + '」篩選，只留下這個牌陣答得了的面向。想看其他面向的話，回上一步換一個牌陣。</div>';
+    var subDef = (SUBTOPICS[catKey] || []).filter(function (x) { return x.key === state.subtopic; })[0];
+    var byWhat = subDef ? ('你想知道的「' + subDef.zh + '」') : ('你選的「' + (spreadDef ? spreadDef.zh : '') + '」');
+    h += '<div style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:6px;line-height:1.6;border-left:2px solid rgba(201,169,110,.4);padding-left:8px">已依' + esc(byWhat) + '篩選，只留下用得上的面向。想看其他面向，改上面的選項或回上一步換牌陣。</div>';
   }
 
   h += '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:10px">';
@@ -1850,6 +1864,10 @@ function wizSetCat(k) {
    由 wizSetSubtopic() 接手，已無呼叫端，予以移除。 */
 function wizSetSubtopic(key) {
   state.subtopic = key || '';
+  /* 子問題會連動面向分組的篩選，所以要清掉已經選了、但新處境用不到的面向，
+     並重畫一次讓下方的面向清單跟著換。 */
+  if (state.category) pruneFocusSelection(state.category);
+  render();
 }
 function readingBuildAstro() {
   state.returnToReadingAfterAstro = true;
