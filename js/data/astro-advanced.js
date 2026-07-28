@@ -5291,66 +5291,14 @@ var AVOID_BANK = {
 };
 
 /* ---- lucky items (daily) ---- */
-var LUCKY_COLORS = [
-  { zh: '煙青', hex: '#8a8fa3' }, { zh: '藏青', hex: '#1f3a5f' }, { zh: '杏色', hex: '#e8c39e' },
-  { zh: '珊瑚橘', hex: '#ff7f5e' }, { zh: '薄荷綠', hex: '#98d8c8' }, { zh: '霧霾藍', hex: '#7a92a3' },
-  { zh: '酒紅', hex: '#722f37' }, { zh: '鵝黃', hex: '#f3e5ab' }, { zh: '天青', hex: '#a0d8ef' },
-  { zh: '米白', hex: '#f5f0e6' }, { zh: '墨綠', hex: '#2f4f3f' }, { zh: '藕粉', hex: '#e8c4c4' },
-];
-var LUCKY_ACCESSORIES = ['檀木', '銀飾', '水晶', '珍珠', '麻布', '黃銅', '陶瓷', '玉石', '琥珀', '木質', '絲質', '貝殼'];
+/* 幸運色／配飾／時辰／方位／數字／食物／隨身物／花這一整組資料與渲染函式已移除。
+   它們是從固定清單亂數挑的，跟使用者的星盤與當天行運都沒有關係，違反本專案
+   在二十八星宿那段寫下的「說得清楚、站得住腳」原則；那八項的組合也與市面
+   競品幾乎一致。取代它的是 astro-charts.js 的 renderDailyRhythm() 與
+   renderPeriodTone()，每一項都能回推是怎麼算出來的。 */
 /* 每種配飾材質給對應的圖示，避免像「木質」卻顯示鑽石圖示這種文不對圖的狀況 */
-var LUCKY_ACCESSORY_ICON = {
-  '檀木': '🪵', '木質': '🪵', '銀飾': '💍', '水晶': '🔮', '珍珠': '🦪',
-  '麻布': '🧵', '黃銅': '🔔', '陶瓷': '🏺', '玉石': '🟢', '琥珀': '🍯',
-  '絲質': '🎀', '貝殼': '🐚',
-};
-var LUCKY_HOURS = ['23-01點', '01-03點', '03-05點', '05-07點', '07-09點', '09-11點', '11-13點', '13-15點', '15-17點', '17-19點', '19-21點', '21-23點'];
-var LUCKY_DIRECTIONS = ['東', '南', '西', '北', '東南', '東北', '西南', '西北'];
-var LUCKY_FOODS = ['全麥食品', '堅果', '深色蔬菜', '溫熱湯品', '當季水果', '優格', '燕麥', '魚類', '豆製品', '根莖類'];
 /* 每種食物給對應的圖示，避免像「魚類」卻顯示餐具圖示這種文不對圖的狀況 */
-var LUCKY_FOOD_ICON = {
-  '全麥食品': '🍞', '堅果': '🥜', '深色蔬菜': '🥬', '溫熱湯品': '🍲', '當季水果': '🍎',
-  '優格': '🥣', '燕麥': '🌾', '魚類': '🐟', '豆製品': '🫘', '根莖類': '🥕',
-};
-var LUCKY_ITEMS_LIST = ['抱枕', '鑰匙圈', '手帕', '筆記本', '耳機', '保溫杯', '護手霜', '小鏡子', '香氛小物', '便條紙'];
-var LUCKY_ITEM_ICON = {
-  '抱枕': '🛋️', '鑰匙圈': '🔑', '手帕': '🧣', '筆記本': '📓', '耳機': '🎧',
-  '保溫杯': '☕', '護手霜': '🧴', '小鏡子': '🪞', '香氛小物': '🕯️', '便條紙': '📝',
-};
-var LUCKY_FLOWERS = ['鈴蘭', '玫瑰', '向日葵', '桔梗', '滿天星', '薰衣草', '雛菊', '茉莉', '繡球花', '百合'];
-var LUCKY_FLOWER_ICON = {
-  '鈴蘭': '💮', '玫瑰': '🌹', '向日葵': '🌻', '桔梗': '🪻', '滿天星': '✨',
-  '薰衣草': '💜', '雛菊': '🌼', '茉莉': '🤍', '繡球花': '🔵', '百合': '🏵️',
-};
 
-function renderLuckyCell(iconHtml, value, label) {
-  return '<div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px">' + iconHtml + '<div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;text-align:center">' + esc(value) + '</div><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4)">' + label + '</div></div>';
-}
-function renderLuckyGrid(rng) {
-  var color = astroSeededPickN(rng, LUCKY_COLORS, 1)[0];
-  var accessory = astroSeededPickN(rng, LUCKY_ACCESSORIES, 1)[0];
-  var hour = astroSeededPickN(rng, LUCKY_HOURS, 1)[0];
-  var direction = astroSeededPickN(rng, LUCKY_DIRECTIONS, 1)[0];
-  var food = astroSeededPickN(rng, LUCKY_FOODS, 1)[0];
-  var item = astroSeededPickN(rng, LUCKY_ITEMS_LIST, 1)[0];
-  var flower = astroSeededPickN(rng, LUCKY_FLOWERS, 1)[0];
-  var n1 = Math.floor(rng() * 10), n2 = Math.floor(rng() * 10);
-  if (n2 === n1) n2 = (n2 + 1) % 10;
-  var cells = [
-    renderLuckyCell('<div style="width:22px;height:22px;border-radius:50%;background:' + color.hex + ';border:1px solid rgba(255,255,255,.3)"></div>', color.zh, '幸運色'),
-    renderLuckyCell('<div style="font-size:20px">' + (LUCKY_ACCESSORY_ICON[accessory] || '💎') + '</div>', accessory, '幸運配飾'),
-    renderLuckyCell('<div style="font-size:20px">⏰</div>', hour, '幸運時辰'),
-    renderLuckyCell('<div style="font-size:20px">🧭</div>', direction, '幸運方位'),
-    renderLuckyCell('<div style="font-size:20px">🔢</div>', n1 + '、' + n2, '幸運數字'),
-    renderLuckyCell('<div style="font-size:20px">' + (LUCKY_FOOD_ICON[food] || '🍽️') + '</div>', food, '幸運食物'),
-    renderLuckyCell('<div style="font-size:20px">' + (LUCKY_ITEM_ICON[item] || '🎁') + '</div>', item, '幸運隨身物'),
-    renderLuckyCell('<div style="font-size:20px">' + (LUCKY_FLOWER_ICON[flower] || '🌸') + '</div>', flower, '幸運花'),
-  ];
-  var h = '<div style="display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid rgba(201,169,110,.15)">';
-  cells.forEach(function (c) { h += c; });
-  h += '</div>';
-  return h;
-}
 
 function astroSetView(v) { state.astroView = v; state.astroDetail = null; render(); window.scrollTo(0, 0); }
 function toggleAstroTabsMore() { state.astroTabsMoreOpen = !state.astroTabsMoreOpen; render(); }
@@ -5477,8 +5425,8 @@ function renderDailyHoroscope(chart, transitPlanets, periodCfg, now) {
   h += '<div style="margin-top:18px;border-top:1px solid rgba(201,169,110,.15);border-bottom:1px solid rgba(201,169,110,.15);padding:16px 0;font:400 13px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.8);line-height:1.9">' + esc(narrative) + '</div>';
 
   h += '<div style="display:flex;gap:16px;margin-top:16px">';
-  h += '<div style="flex:1"><div style="font:700 13px \'Noto Sans TC\',sans-serif;color:#e6cd9a">建議</div><div style="margin-top:6px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.7">' + esc(adviceItems.join('、')) + '</div></div>';
-  h += '<div style="flex:1"><div style="font:700 13px \'Noto Sans TC\',sans-serif;color:#d67878">避免</div><div style="margin-top:6px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.7">' + esc(avoidItems.join('、')) + '</div></div>';
+  h += '<div style="flex:1"><div style="font:700 13px \'Noto Sans TC\',sans-serif;color:#e6cd9a">今天適合</div><div style="margin-top:6px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.7">' + esc(adviceItems.join('、')) + '</div></div>';
+  h += '<div style="flex:1"><div style="font:700 13px \'Noto Sans TC\',sans-serif;color:#d67878">今天先避開</div><div style="margin-top:6px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.7">' + esc(avoidItems.join('、')) + '</div></div>';
   h += '</div>';
 
   var categoryOneliners = {};
@@ -5493,8 +5441,13 @@ function renderDailyHoroscope(chart, transitPlanets, periodCfg, now) {
   });
   h += '</div>';
 
-  h += '<div style="margin-top:22px;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;text-align:center">今日幸運關鍵字</div>';
-  h += renderLuckyGrid(rng);
+  /* 這裡以前是「今日幸運關鍵字」八宮格（色／配飾／時辰／方位／數字／食物／
+     隨身物／花），每一項都是從固定清單亂數挑的，跟星盤與行運都無關；那組項目的
+     選擇也跟市面競品幾乎一字不差。改成四項全部可回推的內容，
+     見 astro-charts.js 的 renderDailyRhythm()。 */
+  if (typeof renderDailyRhythm === 'function') {
+    h += renderDailyRhythm(chart, transitPlanets, scores, !!state.astroUnknownTime);
+  }
 
   var dailyScoreBasis = {};
   HOROSCOPE_SCORE_CATS.forEach(function (cat) { dailyScoreBasis[cat.key] = astroCategoryAspectBasis(cat.key, periodCfg, chart, transitPlanets); });
@@ -5520,30 +5473,8 @@ function isoWeekInfo(d) {
   return { year: date.getUTCFullYear(), week: weekNo };
 }
 
-var LUCKY_STONES = ['黃水晶', '白水晶', '粉晶', '紫水晶', '黑曜石', '月光石', '拓帕石', '橄欖石', '紅玉髓', '藍晶石'];
 /* 每種礦石給對應的顏色圖示，跟幸運配飾的作法一致，避免全部都是同一顆鑽石圖示 */
-var LUCKY_STONE_ICON = {
-  '黃水晶': '🟡', '白水晶': '⚪', '粉晶': '💗', '紫水晶': '🟣', '黑曜石': '⚫',
-  '月光石': '🌙', '拓帕石': '🟠', '橄欖石': '🟢', '紅玉髓': '🔴', '藍晶石': '🔵',
-};
 
-function renderLuckyMini(rng) {
-  var color = astroSeededPickN(rng, LUCKY_COLORS, 1)[0];
-  var flower = astroSeededPickN(rng, LUCKY_FLOWERS, 1)[0];
-  var stone = astroSeededPickN(rng, LUCKY_STONES, 1)[0];
-  var n1 = Math.floor(rng() * 10), n2 = Math.floor(rng() * 10);
-  if (n2 === n1) n2 = (n2 + 1) % 10;
-  var cells = [
-    renderLuckyCell('<div style="width:22px;height:22px;border-radius:8px;background:' + color.hex + ';border:1px solid rgba(255,255,255,.3)"></div>', color.zh, '幸運色'),
-    renderLuckyCell('<div style="font-size:20px">' + (LUCKY_FLOWER_ICON[flower] || '🌸') + '</div>', flower, '幸運花'),
-    renderLuckyCell('<div style="font-size:20px">' + (LUCKY_STONE_ICON[stone] || '💎') + '</div>', stone, '幸運石'),
-    renderLuckyCell('<div style="font-size:20px">🔢</div>', n1 + '、' + n2, '幸運數字'),
-  ];
-  var h = '<div style="display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid rgba(201,169,110,.15)">';
-  cells.forEach(function (c) { h += c; });
-  h += '</div>';
-  return h;
-}
 
 /* ---- per-category long-form paragraph bank (week / month / year) ---- */
 function astroToneOf(score) { return score >= 68 ? 'positive' : score <= 48 ? 'challenging' : 'neutral'; }
@@ -5770,7 +5701,11 @@ function renderPeriodDashboard(chart, transitPlanets, periodKey, periodCfg, now,
   h += '<div style="margin-top:18px;border-top:1px solid rgba(201,169,110,.15);border-bottom:1px solid rgba(201,169,110,.15);padding:16px 0;font:400 13px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.8);line-height:1.9">' + esc(summaryText) + '</div>';
   if (state.astroUnknownTime && periodKey !== 'weekly') h += '<div style="margin-top:10px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);line-height:1.7">無出生時間模式不使用回歸盤宮位，分數僅依行運與本命行星相位估算。</div>';
   if (returnChart) h += renderReturnHighlight(returnChart, kindLabel, returnDateLabel, topCatKey);
-  h += '<div style="margin-top:18px">' + renderLuckyMini(rng) + '</div>';
+  /* 週／月／年原本也是幸運色／花／石／數字四格亂數挑；改成用這段期間已經算好的
+     分數推導，見 astro-charts.js 的 renderPeriodTone()。 */
+  if (typeof renderPeriodTone === 'function') {
+    h += renderPeriodTone(overall, scores, (periodKey === 'weekly' ? '本週' : periodKey === 'monthly' ? '本月' : '今年') + '的節奏');
+  }
 
   h += '<div style="margin-top:22px;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;text-align:center">分項解讀</div>';
   var categoryTexts = {}, categoryOneliners = {};

@@ -286,3 +286,157 @@ function renderProgressionTimeline(rows, expandedYear) {
   h += '</div>';
   return h;
 }
+
+/* ============================================================================
+   「今天的節奏」——取代原本的幸運八宮格。
+
+   原本那一區（幸運色／配飾／時辰／方位／數字／食物／隨身物／花）有兩個問題：
+
+   1. 每一項都是 astroSeededPickN() 從固定清單亂數挑的，跟使用者的星盤、跟當天的
+      行運都沒有任何關係。這跟這個專案在二十八星宿那段程式碼寫下的原則直接衝突：
+      「不採用坊間流傳、版本彼此矛盾、找不到單一可靠出處的⋯⋯選擇『說得清楚、
+      站得住腳』優先於『看起來很古典』。」幸運食物與幸運隨身物正是那種東西。
+   2. 那八項的組合與市面上的競品幾乎一字不差，看起來像抄的。
+
+   改成四項，每一項都能講出是怎麼算出來的：
+     · 今日主色    ← 行運月亮所在星座的元素（火／土／風／水各有自己的色系）
+     · 適合的節奏  ← 月相（太陽與月亮的角距）落在新月／上弦／滿月／下弦哪一段
+     · 今天的焦點  ← 行運月亮落在你本命盤第幾宮，取該宮位對應的生活領域
+     · 狀態最好的  ← 已經算好的分類分數中最高的那一項
+
+   同一天、同一張盤，結果必然相同，而且可以回推——這才是可以放進產品裡的東西。
+   ============================================================================ */
+
+/* 四元素各自的色系。同一個元素給三個選項，用日期在該元素內挑，
+   所以顏色會跟著月亮換星座而變，不是憑空跳號。 */
+var MOON_ELEMENT_COLORS = {
+  火: [{ zh: '暖橘', hex: '#e08a5e' }, { zh: '磚紅', hex: '#c05f4a' }, { zh: '琥珀金', hex: '#d9a441' }],
+  土: [{ zh: '大地棕', hex: '#a1815c' }, { zh: '苔綠', hex: '#6b7a52' }, { zh: '米杏', hex: '#e0cba8' }],
+  風: [{ zh: '天青', hex: '#9ec5d8' }, { zh: '淺灰藍', hex: '#aab5c4' }, { zh: '淡鵝黃', hex: '#ead9a0' }],
+  水: [{ zh: '深海藍', hex: '#4a6f8a' }, { zh: '霧霾青', hex: '#7c9aa6' }, { zh: '藕紫', hex: '#a48ba8' }],
+};
+var MOON_ELEMENT_RHYTHM = {
+  火: '想到就做，今天適合先開口、先出手，不用等準備到完美。',
+  土: '慢一點但踏實，今天適合處理具體的、看得到成果的事。',
+  風: '腦子轉得快，今天適合聊、適合問、適合把事情講清楚。',
+  水: '感覺特別敏銳，今天適合處理人的事，也容易被氣氛影響。',
+};
+/* 月相四階段：用太陽與月亮的角距判斷，這是有明確定義、可驗證的天文量。 */
+var MOON_PHASE_STAGES = [
+  { max: 45, zh: '起頭期', hint: '適合開始新的事，還不用急著看成果' },
+  { max: 135, zh: '推進期', hint: '適合往前推、解決卡住的環節' },
+  { max: 225, zh: '收成期', hint: '適合檢視結果、把話講開、做決定' },
+  { max: 315, zh: '收尾期', hint: '適合結束、整理、放掉不需要的' },
+  { max: 361, zh: '起頭期', hint: '適合開始新的事，還不用急著看成果' },
+];
+function moonPhaseStage(sunLon, moonLon) {
+  var d = astroNormDeg(moonLon - sunLon);
+  for (var i = 0; i < MOON_PHASE_STAGES.length; i++) {
+    if (d < MOON_PHASE_STAGES[i].max) return MOON_PHASE_STAGES[i];
+  }
+  return MOON_PHASE_STAGES[0];
+}
+/* 用本命盤的宮首算出某個黃經落在第幾宮。computeNatalChart 內部那個 houseOf 是
+   閉包，外面拿不到，所以這裡依同樣規則重算一次。 */
+function houseOfLongitude(chart, lon) {
+  if (!chart || !chart.houseCusps) return 0;
+  for (var i = 0; i < 12; i++) {
+    var start = chart.houseCusps[i], end = chart.houseCusps[(i + 1) % 12];
+    var arc = astroNormDeg(end - start); if (arc === 0) arc = 360;
+    if (astroNormDeg(lon - start) < arc) return i + 1;
+  }
+  return 12;
+}
+
+function renderRhythmCell(iconHtml, value, label) {
+  return '<div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px">' + iconHtml
+    + '<div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;text-align:center;line-height:1.35">' + esc(value) + '</div>'
+    + '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">' + esc(label) + '</div></div>';
+}
+
+function renderDailyRhythm(chart, transitPlanets, scores, unknownTime) {
+  if (!chart || !transitPlanets || typeof ZODIAC_SIGNS === 'undefined') return '';
+  var moonLon = transitPlanets.Moon, sunLon = transitPlanets.Sun;
+  if (typeof moonLon !== 'number' || typeof sunLon !== 'number') return '';
+  var moonSignIdx = Math.floor(astroNormDeg(moonLon) / 30);
+  var moonSign = ZODIAC_SIGNS[moonSignIdx];
+  var elem = moonSign.elem;
+  var palette = MOON_ELEMENT_COLORS[elem] || MOON_ELEMENT_COLORS.土;
+  /* 在該元素的色系內用月亮度數挑，換星座就換色系，同一天不會跳動 */
+  var color = palette[Math.floor(astroNormDeg(moonLon) % 30 / 10) % palette.length];
+  var stage = moonPhaseStage(sunLon, moonLon);
+
+  var cells = [
+    renderRhythmCell('<div style="width:22px;height:22px;border-radius:50%;background:' + color.hex + ';border:1px solid rgba(255,255,255,.3)"></div>',
+      color.zh, '今日主色'),
+    renderRhythmCell('<div style="font-size:19px">' + esc(moonSign.sym) + '</div>', moonSign.zh, '月亮在'),
+    renderRhythmCell('<div style="font-size:19px">◑</div>', stage.zh, '月相階段'),
+  ];
+  /* 出生時間未知就沒有可信的宮位，這一格改放「狀態最好的一項」而不是硬掰 */
+  if (!unknownTime) {
+    var house = houseOfLongitude(chart, moonLon);
+    var area = (typeof HOUSE_BEGINNER !== 'undefined' && HOUSE_BEGINNER[house - 1])
+      ? HOUSE_BEGINNER[house - 1].lifeArea : '';
+    cells.push(renderRhythmCell('<div style="font-size:19px">◎</div>', area || ('第 ' + house + ' 宮'), '今天的焦點'));
+  } else if (scores) {
+    var best = Object.keys(scores).sort(function (a, b) { return scores[b] - scores[a]; })[0];
+    var bestDef = (typeof HOROSCOPE_SCORE_CATS !== 'undefined')
+      ? HOROSCOPE_SCORE_CATS.filter(function (x) { return x.key === best; })[0] : null;
+    cells.push(renderRhythmCell('<div style="font-size:19px">◎</div>', bestDef ? bestDef.zh : '—', '狀態最好的'));
+  }
+
+  var h = '<div style="margin-top:22px">';
+  h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-align:center">今天的節奏</div>';
+  h += '<div style="display:grid;grid-template-columns:repeat(' + cells.length + ',1fr);border-top:1px solid rgba(201,169,110,.15);margin-top:8px">';
+  cells.forEach(function (cellHtml) { h += cellHtml; });
+  h += '</div>';
+  h += '<div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.8;margin-top:8px;padding:0 2px">'
+    + esc(MOON_ELEMENT_RHYTHM[elem] || '') + esc(stage.hint) + '。</div>';
+  /* 每一項都說得出是怎麼算的——這一區以前是亂數挑的，現在要讓人可以驗證 */
+  h += '<details style="margin-top:8px"><summary style="font:500 10.5px \'Noto Sans TC\',sans-serif;color:#c9a96e;cursor:pointer">這四項是怎麼算出來的？</summary>'
+    + '<div style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.85;margin-top:6px">'
+    + '主色取自今天月亮所在星座的元素（' + esc(moonSign.zh) + '屬' + esc(elem) + '），換星座就換色系；'
+    + '月相階段是太陽與月亮的角距（目前 ' + Math.round(astroNormDeg(moonLon - sunLon)) + '°）；'
+    + (unknownTime ? '出生時間未知時不顯示宮位焦點，改列分數最高的類別。' : '焦點是今天月亮走到你本命盤的第 ' + houseOfLongitude(chart, moonLon) + ' 宮。')
+    + '這裡沒有任何一項是隨機挑的。</div></details>';
+  h += '</div>';
+  return h;
+}
+
+/* 週／月／年沒有「今天月亮在哪」可用（月亮一週就走完半圈），
+   改用該期間已經算好的分數：最高與最低的兩個類別，以及整體分數帶。 */
+var PERIOD_TONE_BANDS = [
+  { min: 72, zh: '順風段', hint: '整體支持度不錯，適合主動推進手上的事' },
+  { min: 55, zh: '平穩段', hint: '沒有特別的推力也沒有明顯阻力，照原本節奏走' },
+  { min: 0, zh: '逆風段', hint: '阻力比較明顯，先守住既有的，不急著擴張' },
+];
+function renderPeriodTone(overall, scores, periodLabel) {
+  if (!scores || typeof HOROSCOPE_SCORE_CATS === 'undefined') return '';
+  var keys = Object.keys(scores);
+  if (!keys.length) return '';
+  var sorted = keys.slice().sort(function (a, b) { return scores[b] - scores[a]; });
+  var topKey = sorted[0], lowKey = sorted[sorted.length - 1];
+  function zhOf(k) {
+    var d = HOROSCOPE_SCORE_CATS.filter(function (x) { return x.key === k; })[0];
+    return d ? d.zh : k;
+  }
+  var band = PERIOD_TONE_BANDS.filter(function (b) { return overall >= b.min; })[0] || PERIOD_TONE_BANDS[2];
+  var topColor = (typeof CATEGORY_COLOR !== 'undefined' && CATEGORY_COLOR[topKey]) ? CATEGORY_COLOR[topKey][0] : '#e6cd9a';
+  var lowColor = (typeof CATEGORY_COLOR !== 'undefined' && CATEGORY_COLOR[lowKey]) ? CATEGORY_COLOR[lowKey][0] : '#8a8fa3';
+
+  var cells = [
+    renderRhythmCell('<div style="width:22px;height:22px;border-radius:6px;background:' + topColor + ';border:1px solid rgba(255,255,255,.25)"></div>',
+      zhOf(topKey) + ' ' + scores[topKey], '最被強化'),
+    renderRhythmCell('<div style="width:22px;height:22px;border-radius:6px;background:' + lowColor + ';opacity:.5;border:1px solid rgba(255,255,255,.15)"></div>',
+      zhOf(lowKey) + ' ' + scores[lowKey], '相對平淡'),
+    renderRhythmCell('<div style="font-size:19px">≈</div>', band.zh, '整體節奏'),
+  ];
+  var h = '<div style="margin-top:22px">';
+  h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-align:center">' + esc(periodLabel || '這段期間的節奏') + '</div>';
+  h += '<div style="display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid rgba(201,169,110,.15);margin-top:8px">';
+  cells.forEach(function (cellHtml) { h += cellHtml; });
+  h += '</div>';
+  h += '<div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.8;margin-top:8px;padding:0 2px">' + esc(band.hint) + '。</div>';
+  h += '</div>';
+  return h;
+}
