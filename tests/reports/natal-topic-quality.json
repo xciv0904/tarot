@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-26T18:48:50.648Z",
+  "generatedAt": "2026-07-28T09:48:09.455Z",
   "chartCount": 12,
   "questionCount": 54,
   "caseCount": 648,
@@ -20,7 +20,7 @@
     "focusedFailures": [],
     "visibleContentFailures": []
   },
-  "baselineHash": "9b2247a368651a61",
+  "baselineHash": "8cf6ecf29baa0c51",
   "charts": [
     {
       "id": "fire_angular",

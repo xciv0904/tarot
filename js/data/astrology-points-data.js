@@ -17,8 +17,8 @@ var POINT_BEGINNER = {
     primaryLabel:'成長方向',coreFunction:'練習還不熟練的能力',motivation:'想突破舒適圈，發展還沒被開發的可能性',expression:'一開始會覺得生疏、不太順手，需要刻意練習才會上手',matureUse:'能逐漸把陌生的能力練成日常可用的技能',imbalance:'因不熟悉而放棄或勉強',growthDirection:'可以從小步驟開始練習，不需要立刻做到完美'},
   SNode:{plain:'這是你很自然就會使用的舊習慣與熟悉能力。',strength:'遇到壓力時，它能讓你快速找到熟悉的處理方式。',watch:'太依賴它可能讓你一直待在安全但沒有新發展的位置。',
     primaryLabel:'熟悉模式',coreFunction:'提供熟練的處理方式',motivation:'想快速回到安全、有把握的做法裡',expression:'遇到狀況時，會不假思索地用這套熟悉的方式回應',matureUse:'能把這份熟練當成後盾，支援自己去嘗試新的方向',imbalance:'只靠老方法，不願調整',growthDirection:'可以練習把熟悉的能力當成基礎，而不是唯一的答案'},
-  Lilith:{plain:'這是你不想被規定、控制，或被要求乖乖配合的部分。',strength:'它保護你的真實慾望、界線與不願妥協的力量。',watch:'被壓抑太久時，可能用極端、突然或防衛的方式爆發。',
-    primaryLabel:'不願被壓抑的部分',coreFunction:'保護不想被控制的需求',motivation:'想按照自己真實的樣子生活，不想勉強配合外界標準',expression:'被要求乖乖配合或被評判時，會出現抗拒、疏離或反彈的反應',matureUse:'能清楚表達自己的界線與慾望，不需要靠對抗來證明自主權',imbalance:'壓抑太久可能突然激烈爆發',growthDirection:'可以練習在安全的關係裡，直接說出真實的需求，而不是等到忍無可忍'},
+  Lilith:{plain:'這是你不想被規定、控制，或被要求乖乖配合的部分。',strength:'它保護你真正想要的、你的底線，以及不願妥協的那股力量。',watch:'被壓抑太久時，可能用極端、突然或防衛的方式爆發。',
+    primaryLabel:'不願被壓抑的部分',coreFunction:'保護不想被控制的需求',motivation:'想按照自己真實的樣子生活，不想勉強配合外界標準',expression:'被要求乖乖配合或被評判時，會出現抗拒、疏離或反彈的反應',matureUse:'能清楚說出自己的底線與想要的東西，不需要靠對抗來證明自主權',imbalance:'壓抑太久可能突然激烈爆發',growthDirection:'可以練習在安全的關係裡，直接說出真實的需求，而不是等到忍無可忍'},
   Chiron:{plain:'這是你特別容易覺得不足或受傷，也最可能理解別人痛苦的地方。',strength:'當你學會照顧這個傷口，常會發展出幫助別人的能力。',watch:'它不是缺陷，也不代表一定會受傷；重點是如何與敏感共處。',
     primaryLabel:'敏感與力量來源',coreFunction:'標記容易受傷敏感的位置',motivation:'渴望被理解，也渴望知道自己的敏感不是缺陷',expression:'在這個主題上，容易反覆想起舊傷，或對相關批評特別敏感',matureUse:'能運用對這份傷痛的理解，去陪伴或看懂正在經歷類似處境的人',imbalance:'把敏感當成弱點藏起來',growthDirection:'可以練習溫柔對待這個敏感位置，不必急著把它完全修好'},
   Fortune:{plain:'這是事情比較容易自然順起來、你也較容易感到滿足的生活領域。',strength:'投入這裡時，資源與機會較容易被你注意和接住。',watch:'它不是保證幸運，仍需要你實際參與與選擇。',
@@ -49,7 +49,7 @@ var FUSE_POINT_SUMMARY_NOHOUSE_TPL = [
   '落在{S}的{P}，讓你較常用「{method}」{coreFunction}。',
 ];
 /* primaryText 必須具體回答動態標題本身的問題（要練習什麼／已經熟悉什麼／在哪裡
-   守住界線／哪裡敏感／怎麼順流／怎麼被推動），不能只是 expression 換句話說，也
+   守住底線／哪裡敏感／怎麼順流／怎麼被推動），不能只是 expression 換句話說，也
    不能和 summary 重複。summary 已經用掉 {method}，這裡改用 {motivation}（星座驅動
    的「為什麼」），已知時間時再帶入 {lifeArea}，讓標題不只是名詞，而是「哪個領域、
    用什麼星座方式」的具體陳述。六個點的措辭各自獨立，不共用同一套包裝句。 */
@@ -76,12 +76,12 @@ var POINT_PRIMARY_TPL = {
   },
   Lilith: {
     house: [
-      '你以{S}式的「{motivation}」，在{lifeArea}守界線。',
-      '在{lifeArea}，你以{S}式的「{motivation}」護界線。',
+      '你以{S}式的「{motivation}」，在{lifeArea}守底線。',
+      '在{lifeArea}，你以{S}式的「{motivation}」護底線。',
     ],
     nohouse: [
-      '你以{S}式的「{motivation}」，守住界線。',
-      '你以{S}式的「{motivation}」，護住界線。',
+      '你以{S}式的「{motivation}」，守住底線。',
+      '你以{S}式的「{motivation}」，護住底線。',
     ],
   },
   Chiron: {

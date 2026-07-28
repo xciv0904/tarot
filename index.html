@@ -38,7 +38,13 @@
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;600&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,500&family=EB+Garamond:ital@0;1&display=swap" rel="stylesheet">
+<!-- 字型清單只保留實際用到的：Cormorant Garamond 全站 0 次引用、Noto Sans TC 300 也沒有任何
+     宣告用到，兩者都移除；中日韓字型每一個字重都是獨立的大檔，少載一個就是實打實的省流量。
+     另外改成非阻塞載入（media="print" + onload 切回 all），字型下載不再擋住首次繪製；
+     因為本來就帶 display=swap，文字會先用系統字型顯示，載完再換上，不會出現空白畫面。 -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600&family=EB+Garamond:ital@0;1&display=swap">
+<link rel="stylesheet" media="print" onload="this.media='all';this.onload=null" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600&family=EB+Garamond:ital@0;1&display=swap">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600&family=EB+Garamond:ital@0;1&display=swap"></noscript>
 <style>
   @keyframes cardIn { from { opacity:0; transform:translateY(10px) scale(.97);} to { opacity:1; transform:translateY(0) scale(1);} }
   body{margin:0;background:#14111a;font-family:'Noto Sans TC',sans-serif;-webkit-tap-highlight-color:transparent}
@@ -119,7 +125,11 @@ var ASTROLOGY_DATA_FILES = [
   'js/data/astrology-aspect-data.js',
   'js/data/astrology-knowledge-layer.js',
   'js/data/astrology-knowledge-dataset.js',
-  'js/data/astrology-natal-topics-data.js'
+  'js/data/astrology-natal-topics-data.js',
+  /* 合盤／二次推運／二十八星宿／回歸與流年運勢的程式碼（約 158KB）從 app.js 拆出來，
+     排在這份清單最後——它只有在使用者切到「星盤」分頁時才需要，而且一定在 app.js
+     之後才執行，所以可以安全地沿用 app.js 定義的共用工具函式。 */
+  'js/data/astro-advanced.js'
 ];
 function ensureAstrologyDataLoaded() {
   if (window.PLANET_DEFS) return Promise.resolve();
@@ -140,10 +150,44 @@ function ensureAstrologyDataLoaded() {
   });
   return astrologyDataLoadPromise;
 }
+
+/* 78 張牌的完整牌義（RICH，約 98KB）同樣改成按需載入。它佔原本 reading-data.js
+   六成的體積，但首頁只用得到「今日一牌」那一張，讓它擋住首次繪製並不划算。
+   讀取端全部都有短牌義可以降級，所以先畫畫面、資料晚一點到並不會出現空白；
+   載入完成後補掛 attachRichMeanings() 再重畫一次，使用者只會看到文字變完整。 */
+var readingRichLoadPromise = null;
+function ensureReadingRichLoaded() {
+  if (window.RICH) return Promise.resolve();
+  if (readingRichLoadPromise) return readingRichLoadPromise;
+  readingRichLoadPromise = new Promise(function (resolve, reject) {
+    var script = document.createElement('script');
+    script.src = 'js/data/reading-rich-data.js';
+    script.onload = function () { resolve(); };
+    script.onerror = function () { reject(new Error('Failed to load reading-rich-data.js')); };
+    document.head.appendChild(script);
+  }).then(function () {
+    if (typeof attachRichMeanings === 'function') attachRichMeanings();
+    if (typeof render === 'function') render();
+  }).catch(function (err) {
+    readingRichLoadPromise = null;
+    throw err;
+  });
+  return readingRichLoadPromise;
+}
+
+/* 首次繪製完成後，趁瀏覽器空檔就把牌義補載進來——使用者通常還在看首頁的今日一牌，
+   等他點進占卜或牌典時資料早就到了，實際上不會感覺到任何等待。 */
+window.addEventListener('load', function () {
+  var kick = function () { ensureReadingRichLoaded().catch(function () {}); };
+  if (window.requestIdleCallback) window.requestIdleCallback(kick, { timeout: 2000 });
+  else setTimeout(kick, 200);
+});
 </script>
-<script src="js/data/card-images.js"></script>
-<script src="js/data/reading-data.js"></script>
-<script src="js/app.js"></script>
+<!-- defer：三支檔案合計約 950KB，維持原本的執行順序（defer 保證依序執行、且都在
+     HTML 解析完成後才跑），但下載階段不再和 HTML 解析互相卡住。 -->
+<script defer src="js/data/card-images.js"></script>
+<script defer src="js/data/reading-data.js"></script>
+<script defer src="js/app.js"></script>
 <script>
 if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
 </script>
