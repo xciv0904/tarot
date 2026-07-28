@@ -2892,6 +2892,48 @@ function natalPickKnowledgeText(entry, slot, seed) {
   var pool = entry.meanings[slot] || [];
   return pool.length ? natalStripTrailingPeriod(astroSeededPick(seed, pool)) : '';
 }
+/* ================= 結論與分項的矛盾偵測 =================
+   結論取自最主要的那顆行星，分項則會輪流取用第二、第三順位的行星，兩者可能給出
+   完全相反的建議——實際看過的例子是結論說「適合制度清楚、講求紀律與長期累積的
+   環境」，下一行分項卻說「步調靈活、允許隨時調整方向的環境」。使用者不會知道
+   這是兩顆行星各說各話，只會覺得這份解讀自相矛盾。
+
+   星盤本來就可能同時有相反的需求，所以正確做法不是隱藏，而是：挑分項時優先避開
+   與結論對立的句子；真正只剩對立選項時仍然照常輸出（那代表這張盤確實有拉扯），
+   而摺疊區的「互相矛盾的訊號」本來就會說明這件事。
+
+   這裡只比對這份資料裡實際反覆出現的幾組對立軸，不做通用語意分析。 */
+var NATAL_CONTRAST_AXES = [
+  [['制度', '規範', '紀律', '穩定', '長期累積', '按部就班', '明確的規則', '可預期'],
+   ['靈活', '彈性', '隨時調整', '不受拘束', '自由發揮', '隨性', '變化快']],
+  [['獨立', '自己一個人', '單打獨鬥', '獨處', '一個人完成'],
+   ['團隊', '合作', '一起', '夥伴', '互相照應', '交換想法']],
+  [['快速', '立刻', '馬上', '搶佔先機', '主動出手', '衝'],
+   ['緩慢', '慢慢', '循序', '耐心等待', '沉澱', '先觀察']],
+  [['熱鬧', '人來人往', '頻繁討論', '資訊流通快'],
+   ['安靜', '低干擾', '不被打擾', '獨立空間']],
+];
+function natalContrastPoles(text) {
+  var poles = [];
+  NATAL_CONTRAST_AXES.forEach(function (axis, ai) {
+    for (var side = 0; side < 2; side++) {
+      for (var i = 0; i < axis[side].length; i++) {
+        if (text.indexOf(axis[side][i]) !== -1) { poles.push(ai + ':' + side); return; }
+      }
+    }
+  });
+  return poles;
+}
+function natalContradicts(a, b) {
+  if (!a || !b) return false;
+  var pa = natalContrastPoles(String(a)), pb = natalContrastPoles(String(b));
+  if (!pa.length || !pb.length) return false;
+  return pa.some(function (x) {
+    var parts = x.split(':');
+    return pb.indexOf(parts[0] + ':' + (parts[1] === '0' ? '1' : '0')) !== -1;
+  });
+}
+
 function applySemanticKnowledgeContentPlan(base, question, top, second, third) {
   var category = QUESTIONFOCUS_HOUSE_CATEGORY[question.questionFocus];
   /* 只有一題一類的 semantic dataset 才直接驅動 slot；V4 的七個共用大類仍走
@@ -2920,15 +2962,24 @@ function applySemanticKnowledgeContentPlan(base, question, top, second, third) {
   var summary = natalPickKnowledgeText(summaryEntry, 'summary', seed + '|s');
   var labels = question.detailLabels || [];
   var usedDetailText = [];
-  var details = labels.map(function (label, i) {
-    var text = '';
-    for (var ei = 0; ei < entries.length && !text; ei++) {
+  /* allowContradiction=false 先跑一輪；找不到任何不與結論對立的句子時，
+     再放寬重跑一輪，確保分項不會因為這個規則而變空。 */
+  function pickDetail(i, allowContradiction) {
+    for (var ei = 0; ei < entries.length; ei++) {
       var pool = (entries[(ei + i) % entries.length].meanings.details || []);
       for (var pi = 0; pi < pool.length; pi++) {
         var candidate = natalStripTrailingPeriod(pool[(pi + i) % pool.length]);
-        if (candidate && usedDetailText.indexOf(candidate) === -1 && headline.indexOf(candidate) === -1) { text = candidate; break; }
+        if (!candidate) continue;
+        if (usedDetailText.indexOf(candidate) !== -1) continue;
+        if (headline.indexOf(candidate) !== -1) continue;
+        if (!allowContradiction && natalContradicts(headline, candidate)) continue;
+        return candidate;
       }
     }
+    return '';
+  }
+  var details = labels.map(function (label, i) {
+    var text = pickDetail(i, false) || pickDetail(i, true);
     if (!text) text = i === 0 ? '從最容易維持的方式開始，在日常中觀察實際效果' : '保留調整空間，依持續結果而不是一時感受修正';
     usedDetailText.push(text);
     return { label:label, text:text };
@@ -3582,11 +3633,37 @@ function visibleNatalDetails(answer) {
   return kept.length ? kept : all;
 }
 
+/* 結論句常常把題目的框架字再說一次：題目「適合什麼工作環境」，結論
+   「適合資訊流通快、需要頻繁討論交流的環境。」——兩行疊在一起看就是重複。
+   把開頭那個沒有實質內容的框架字去掉，結論就變成直接回答。
+
+   只處理白名單裡的框架字（適合／容易／需要／可能／傾向）。試過用「共同開頭＋
+   共同結尾」通用比對，結果會砍出「會給你最深。」「的底線需要保護⋯」這種殘句，
+   所以改成範圍很窄但不會出錯的做法：主詞型的開頭（例如「壓力多半在⋯累積」的
+   「壓力」）一律不動。
+
+   這是顯示層處理，不改 analyzeNatalTopic() 產生的資料——結論單獨出現在歷史紀錄
+   等沒有題目對照的地方時，仍然需要完整的句子。 */
+var NATAL_TITLE_ECHO_PREFIXES = ['適合', '容易', '需要', '可能', '傾向'];
+function natalHeadlineForTitle(title, headline) {
+  var t = String(title || '').replace(/^(我|你)/, '').replace(/[？?。！\s，、]/g, '');
+  var h = String(headline || '');
+  if (!t || !h) return h;
+  for (var i = 0; i < NATAL_TITLE_ECHO_PREFIXES.length; i++) {
+    var w = NATAL_TITLE_ECHO_PREFIXES[i];
+    if (t.indexOf(w) === 0 && h.indexOf(w) === 0) {
+      var core = h.slice(w.length);
+      if (core.length >= 10 && '的是與而也就了在把被和跟或'.indexOf(core.charAt(0)) === -1) return core;
+    }
+  }
+  return h;
+}
+
 function renderNatalTopicQuestionCard(a) {
   var expanded = !!state.natalTopicExpanded[a.questionId];
   var h = '<div style="margin-top:16px;border:1px solid rgba(201,169,110,.28);border-radius:14px;padding:16px 17px;background:rgba(255,255,255,.025);box-shadow:0 1px 0 rgba(255,255,255,.02) inset">';
   h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(201,169,110,.75);letter-spacing:.03em">' + esc(a.title) + '</div>';
-  h += '<div style="font:600 15px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:6px;line-height:1.6">' + esc(a.headline) + '</div>';
+  h += '<div style="font:600 15px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:6px;line-height:1.6">' + esc(natalHeadlineForTitle(a.title, a.headline)) + '</div>';
   var shownDetails = visibleNatalDetails(a);
   if (shownDetails.length) {
     h += '<div style="margin-top:11px;display:flex;flex-direction:column;gap:7px">';
@@ -3723,7 +3800,8 @@ function natalTopicCopyForAI() {
     var d = a.aiData;
     lines.push('');
     lines.push('【問題 ' + (i + 1) + '】' + d.title);
-    lines.push('結論：' + d.headline);
+    /* 與畫面一致：題目就印在上一行，結論不再重複題目的框架字。 */
+    lines.push('結論：' + natalHeadlineForTitle(d.title, d.headline));
     lines.push('延伸說明：' + d.summary);
     /* 與畫面一致：內文已經完整包含在結論裡的分項不重複輸出，
        否則貼給 AI 的提示詞會出現同一句話講兩次。 */

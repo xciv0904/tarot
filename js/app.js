@@ -1617,15 +1617,37 @@ function getSpreadQuestionExamples() {
    如果使用者選到的項目剛好落在「更多」裡（例如展開後選了、又收起面板），
    會自動保持展開，避免已選項目被面板收合藏起來、卻沒有任何畫面線索。 */
 var FOCUS_PREVIEW_PER_GROUP = 2;
-function computeDefaultFocusGroups(cfg) {
-  return cfg.focusGroups.map(function (g) {
+/* 依目前選到的牌陣，濾掉這個牌陣答不了的面向分組（對應表在 reading-data.js 的
+   SPREAD_FOCUS_GROUPS）。沒有設限的牌陣回傳全部分組。
+   萬一設定寫錯導致一組都不剩，退回顯示全部——寧可多列，也不要讓畫面空掉。 */
+function focusGroupsForSpread(catKey, cfg) {
+  var allowed = (typeof SPREAD_FOCUS_GROUPS !== 'undefined' && SPREAD_FOCUS_GROUPS[catKey])
+    ? SPREAD_FOCUS_GROUPS[catKey][state.spread] : null;
+  if (!allowed || !allowed.length) return cfg.focusGroups;
+  var kept = cfg.focusGroups.filter(function (g) { return allowed.indexOf(g.key) !== -1; });
+  return kept.length ? kept : cfg.focusGroups;
+}
+function computeDefaultFocusGroups(cfg, groups) {
+  return (groups || cfg.focusGroups).map(function (g) {
     return { title: g.title, options: g.options.slice(0, FOCUS_PREVIEW_PER_GROUP) };
   });
 }
-function computeDefaultFocusOptions(cfg) {
+function computeDefaultFocusOptions(cfg, groups) {
   var flat = [];
-  computeDefaultFocusGroups(cfg).forEach(function (g) { flat = flat.concat(g.options); });
+  computeDefaultFocusGroups(cfg, groups).forEach(function (g) { flat = flat.concat(g.options); });
   return flat;
+}
+/* 換牌陣時，把已經選了、但新牌陣不適用的面向清掉——留著只會在確認頁與
+   AI 提示詞裡出現這個牌陣根本回答不了的項目。 */
+function pruneFocusSelection(catKey) {
+  var cfg = topicQuestionConfig[catKey];
+  var sel = state.wizFocusSel[catKey];
+  if (!cfg || !sel || !sel.length) return;
+  var usable = {};
+  focusGroupsForSpread(catKey, cfg).forEach(function (g) {
+    g.options.forEach(function (o) { usable[o] = 1; });
+  });
+  state.wizFocusSel[catKey] = sel.filter(function (o) { return usable[o]; });
 }
 function wizToggleFocus(catKey, opt) {
   var sel = state.wizFocusSel[catKey] || (state.wizFocusSel[catKey] = []);
@@ -1650,7 +1672,9 @@ function renderFocusAreaPicker() {
   var cfg = topicQuestionConfig[catKey];
   if (!cfg) return '';
   var sel = state.wizFocusSel[catKey] || [];
-  var defaultOpts = computeDefaultFocusOptions(cfg);
+  var groups = focusGroupsForSpread(catKey, cfg);
+  var filtered = groups.length < cfg.focusGroups.length;
+  var defaultOpts = computeDefaultFocusOptions(cfg, groups);
   var hasHiddenSelection = sel.some(function (o) { return defaultOpts.indexOf(o) === -1; });
   var expanded = !!state.wizFocusExpanded[catKey] || hasHiddenSelection;
 
@@ -1664,11 +1688,15 @@ function renderFocusAreaPicker() {
   h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:' + (sel.length >= 3 ? '#e6cd9a' : 'rgba(240,233,216,.4)') + '">已選 ' + sel.length + '／3</div>';
   h += '</div>';
   h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);margin-top:4px;line-height:1.6">看你現在符合哪一組就好，不必全部看完。最多可複選 3 項，再點一次可以取消。</div>';
+  if (filtered) {
+    var spreadDef = currentSpreads()[state.spread];
+    h += '<div style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:6px;line-height:1.6;border-left:2px solid rgba(201,169,110,.4);padding-left:8px">已依你選的「' + esc(spreadDef ? spreadDef.zh : '') + '」篩選，只留下這個牌陣答得了的面向。想看其他面向的話，回上一步換一個牌陣。</div>';
+  }
 
   h += '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:10px">';
   /* 收合與展開都用同一套分組結構，差別只在每組顯示幾項——
      少了標題的那份清單才是造成選擇障礙的原因，不是選項數量本身。 */
-  (expanded ? cfg.focusGroups : computeDefaultFocusGroups(cfg)).forEach(function (g, gi) {
+  (expanded ? groups : computeDefaultFocusGroups(cfg, groups)).forEach(function (g, gi) {
     h += '<div style="flex-basis:100%;font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:' + (gi === 0 ? '0' : '10') + 'px">' + esc(g.title) + '</div>';
     g.options.forEach(function (opt) { h += optBtn(opt); });
   });
@@ -1842,6 +1870,7 @@ function wizSetSpread(k) {
   state.spread = k;
   var preset = getSpreadQuestionPreset();
   if (state.subtopic && preset.subtopics && preset.subtopics.indexOf(state.subtopic) === -1) state.subtopic = '';
+  if (state.category) pruneFocusSelection(state.category);
   render();
 }
 function wizSetTimeframe(k) { state.timeframe = k; render(); }

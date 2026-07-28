@@ -53,6 +53,7 @@ function loadRuntime() {
 }
 
 const c = loadRuntime();
+const natalHeadlineForTitleAvailable = typeof c.natalHeadlineForTitle === 'function';
 const failures = [];
 const fail = msg => failures.push(msg);
 const END_OK = '。！？」）';
@@ -115,6 +116,52 @@ if (redundantShown > 0 && redundantShown === allDetails) {
   fail(`visibleNatalDetails() 沒有濾掉任何與結論重複的分項（${redundantShown} 條）`);
 }
 
+/* ---------- 3b. 結論與分項不能互相矛盾 ---------- */
+/* 結論取自最主要的行星，分項會輪流取第二、第三順位，兩者曾經給出完全相反的建議
+   （結論說「講求紀律與長期累積」、分項說「步調靈活、允許隨時調整」）。
+   星盤確實可能同時有相反需求，所以留一點額度，但不該是常態。 */
+const CONTRAST_AXES = [
+  [['制度', '規範', '紀律', '穩定', '長期累積', '按部就班', '明確的規則', '可預期'],
+   ['靈活', '彈性', '隨時調整', '不受拘束', '自由發揮', '隨性', '變化快']],
+  [['獨立', '自己一個人', '單打獨鬥', '獨處', '一個人完成'],
+   ['團隊', '合作', '一起', '夥伴', '互相照應', '交換想法']],
+  [['快速', '立刻', '馬上', '搶佔先機', '主動出手', '衝'],
+   ['緩慢', '慢慢', '循序', '耐心等待', '沉澱', '先觀察']],
+  [['熱鬧', '人來人往', '頻繁討論', '資訊流通快'],
+   ['安靜', '低干擾', '不被打擾', '獨立空間']],
+];
+function poles(text) {
+  const out = [];
+  CONTRAST_AXES.forEach((axis, ai) => {
+    for (let side = 0; side < 2; side++) {
+      if (axis[side].some(w => text.includes(w))) { out.push(ai + ':' + side); return; }
+    }
+  });
+  return out;
+}
+let contradictions = 0;
+const contraSamples = [];
+answers.forEach(a => {
+  const hp = poles(a.headline || '');
+  (a.details || []).forEach(d => {
+    const dp = poles(d.text || '');
+    if (hp.some(x => { const [ai, s] = x.split(':'); return dp.includes(ai + ':' + (s === '0' ? '1' : '0')); })) {
+      contradictions++;
+      if (contraSamples.length < 2) contraSamples.push(`結論「${a.headline}」vs 分項「${d.text}」`);
+    }
+  });
+});
+const CONTRA_BUDGET = 2;
+if (contradictions > CONTRA_BUDGET) {
+  fail(`結論與分項互相矛盾 ${contradictions} 處（上限 ${CONTRA_BUDGET}）：${contraSamples.join(' / ')}`);
+}
+
+/* ---------- 3c. 結論不該照抄題目的框架字 ---------- */
+let echoTitle = 0;
+answers.forEach(a => {
+  if (natalHeadlineForTitleAvailable && c.natalHeadlineForTitle(a.title, a.headline) !== a.headline) echoTitle++;
+});
+
 /* ---------- 4. 畫面上未摺疊區的專業術語 ---------- */
 function visibleText(html) {
   const s0 = String(html).replace(/<style[\s\S]*?<\/style>/g, '').replace(/<svg[\s\S]*?<\/svg>/g, ' ');
@@ -174,4 +221,5 @@ if (failures.length) {
   process.exit(1);
 }
 console.log(`Astro copy quality passed: ${answers.length} 筆人生主題答案／${allDetails} 條分項，` +
-  `重述標籤 ${echo}/${ECHO_BUDGET}、缺句尾標點 0、半形逗號 0、未摺疊術語 ${surfaced.length}/${TERM_BUDGET}。`);
+  `重述標籤 ${echo}/${ECHO_BUDGET}、缺句尾標點 0、半形逗號 0、結論與分項矛盾 ${contradictions}/${CONTRA_BUDGET}、` +
+  `顯示時修剪掉題目框架字 ${echoTitle} 筆、未摺疊術語 ${surfaced.length}/${TERM_BUDGET}。`);
