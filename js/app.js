@@ -48,6 +48,7 @@ var state = {
   homeMoreOpen: false,
   homeTourDismissed: false,
   homeTourIdx: 0,
+  moreTourOpen: false,   // 「更多 → 新手使用指南」是否就地展開中
   astroY: '', astroM: '', astroD: '', astroH: '', astroMin: '',
   astroCityQuery: '', astroCityIdx: null, astroCityUsed: null,
   astroUnknownTime: false, astroResult: null, astroView: 'chart', astroGenerating: false, astroTourDismissed: true,
@@ -1336,11 +1337,15 @@ function toggleHomeMore() { state.homeMoreOpen = !state.homeMoreOpen; render(); 
    astroDismissTour——只顯示一次，關掉後記在 localStorage，不會再跳出來。
    內容維持原本 4 則，但改成一次只顯示一則＋上一則/下一則/圓點導覽，
    降低第一次進站時的閱讀負擔（原本是一次列出 4 條文字的長方框）。 */
+/* 導覽內容刻意不寫「下方」「上面」這類跟版面綁定的字，因為這張卡片在首頁和
+   「更多 → 新手使用指南」兩個地方都會出現。原本的文字還跟實際按鈕對不上——
+   寫「我想問一個問題」但按鈕是「我有一件事想問」，寫「快速占卜」但那顆叫
+   「直接抽一張牌」——一併改成畫面上真正看得到的名稱。 */
 var HOME_TOUR_ITEMS = [
-  ['下方「今日一牌」', '不用填任何資料，點卡片就能直接看'],
-  ['「我想問一個問題」', '針對特定困擾，走完整的四步驟占卜'],
-  ['「快速占卜」', '不想選來選去，直接抽一張牌看指引'],
-  ['底部導覽列', '「星盤」「牌典」也都是獨立功能，隨時可以切換'],
+  ['首頁「今天需要一點指引」', '不用填任何資料，直接看今天這張牌的提醒'],
+  ['首頁「我有一件事想問」', '心裡有具體的事，一步一步帶你完成占卜'],
+  ['底部「星盤」', '填出生年月日與地點，算出你的個人星盤'],
+  ['底部「牌典」', '查每一張牌的完整牌義，也可以做記憶測驗'],
 ];
 function homeDismissTour() {
   state.homeTourDismissed = true;
@@ -1353,12 +1358,15 @@ function homeShowTour() {
   try { localStorage.removeItem('tl_home_tour_seen'); } catch (e) {}
   render();
 }
+/* 原本是把 homeTourDismissed 設回 false 再 go('home')：使用者在「更多」按了一個
+   選單項目，卻被丟到首頁，會以為是按錯或當掉，而不是「指南打開了」。
+   改成就地在「更多」頁展開同一張導覽卡，不換頁。 */
 function openBeginnerGuide() {
-  state.homeTourDismissed = false;
+  state.moreTourOpen = true;
   state.homeTourIdx = 0;
-  try { localStorage.removeItem('tl_home_tour_seen'); } catch (e) {}
-  go('home');
+  render();
 }
+function closeBeginnerGuide() { state.moreTourOpen = false; render(); }
 function openMoreAbout() {
   state.aboutOpen = true;
   render();
@@ -1372,7 +1380,8 @@ function homeTourGo(i) {
   state.homeTourIdx = i < 0 ? 0 : (i > max ? max : i);
   render();
 }
-function renderHomeTourCard() {
+function renderHomeTourCard(closeFn) {
+  var onClose = closeFn || 'homeDismissTour()';
   var idx = state.homeTourIdx || 0;
   if (idx > HOME_TOUR_ITEMS.length - 1) idx = HOME_TOUR_ITEMS.length - 1;
   var it = HOME_TOUR_ITEMS[idx];
@@ -1380,7 +1389,7 @@ function renderHomeTourCard() {
   var h = '<div style="margin-top:16px;border:1px solid rgba(201,169,110,.3);border-radius:12px;padding:14px 16px;background:rgba(201,169,110,.05)">';
   h += '<div style="display:flex;justify-content:space-between;align-items:center">';
   h += '<div style="font:600 12px \'Noto Sans TC\',sans-serif;color:#e6cd9a">第一次來嗎？先看這裡 <span style="opacity:.5;font-weight:400">' + (idx + 1) + '/' + HOME_TOUR_ITEMS.length + '</span></div>';
-  h += '<button onclick="homeDismissTour()" aria-label="關閉導覽" style="background:none;border:none;color:rgba(240,233,216,.4);font:400 18px sans-serif;cursor:pointer;line-height:1;padding:0">×</button>';
+  h += '<button onclick="' + onClose + '" aria-label="關閉導覽" style="background:none;border:none;color:rgba(240,233,216,.4);font:400 18px sans-serif;cursor:pointer;line-height:1;padding:0">×</button>';
   h += '</div>';
   h += '<div style="margin-top:10px;min-height:40px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.8);line-height:1.7"><span style="color:#c9a96e;font-weight:600">' + it[0] + '</span><br>' + it[1] + '</div>';
   h += '<div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-top:12px">';
@@ -1392,7 +1401,7 @@ function renderHomeTourCard() {
   h += '</div>';
   h += '<button onclick="homeTourGo(' + (idx + 1) + ')" aria-label="下一則" ' + (atEnd ? 'disabled' : '') + ' style="background:none;border:none;color:' + (atEnd ? 'rgba(240,233,216,.15)' : 'rgba(240,233,216,.6)') + ';font-size:16px;line-height:1;cursor:' + (atEnd ? 'default' : 'pointer') + ';padding:4px 4px">›</button>';
   h += '</div>';
-  h += '<div style="text-align:center;margin-top:10px"><button onclick="homeDismissTour()" style="background:none;border:none;color:rgba(240,233,216,.4);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">我知道了，不用再顯示</button></div>';
+  h += '<div style="text-align:center;margin-top:10px"><button onclick="' + onClose + '" style="background:none;border:none;color:rgba(240,233,216,.4);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">我知道了，不用再顯示</button></div>';
   h += '</div>';
   return h;
 }
@@ -1594,21 +1603,28 @@ function getSpreadQuestionExamples() {
 
 /* ================= Step 3「想深入了解的面向」（可複選，最多 3 項）=================
    資料來源：js/data/reading-data.js 的 topicQuestionConfig，八個分類各自獨立，
-   不在 DOM 裡為每個分類寫死重複區塊。預設只顯示每組的第 1、2 項（跨分組輪流取，
-   湊到最多 7 項最常用選項），其餘要點「顯示更多選項」才會用分組標題展開；
+   不在 DOM 裡為每個分類寫死重複區塊。
+
+   原本收合時是「跨分組輪流取湊滿 7 項、而且不顯示分組標題」，結果使用者看到的是
+   一排沒有脈絡的選項：感情分類會把「對方目前對我的真實感受」（交往中）、「對方只是
+   友善還是有好感」（曖昧）、「復合的可能性與條件」（已分手）混在一起，等於要在四種
+   完全不同的感情狀態之間自己分辨，選擇負擔反而更重。
+
+   改成收合時也保留分組結構、每組只露前兩項：畫面上是 4 個標題各帶 2 個選項，
+   使用者只要看自己現在符合的那一組，實際要考慮的其實只有兩三項。
+   要看完整清單再點「顯示更多選項」。
+
    如果使用者選到的項目剛好落在「更多」裡（例如展開後選了、又收起面板），
    會自動保持展開，避免已選項目被面板收合藏起來、卻沒有任何畫面線索。 */
+var FOCUS_PREVIEW_PER_GROUP = 2;
+function computeDefaultFocusGroups(cfg) {
+  return cfg.focusGroups.map(function (g) {
+    return { title: g.title, options: g.options.slice(0, FOCUS_PREVIEW_PER_GROUP) };
+  });
+}
 function computeDefaultFocusOptions(cfg) {
   var flat = [];
-  var maxLen = 0;
-  cfg.focusGroups.forEach(function (g) { if (g.options.length > maxLen) maxLen = g.options.length; });
-  for (var i = 0; i < maxLen && flat.length < 7; i++) {
-    for (var gi = 0; gi < cfg.focusGroups.length; gi++) {
-      if (flat.length >= 7) break;
-      var opt = cfg.focusGroups[gi].options[i];
-      if (opt) flat.push(opt);
-    }
-  }
+  computeDefaultFocusGroups(cfg).forEach(function (g) { flat = flat.concat(g.options); });
   return flat;
 }
 function wizToggleFocus(catKey, opt) {
@@ -1647,20 +1663,18 @@ function renderFocusAreaPicker() {
   h += '<div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">想深入了解的面向</div>';
   h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:' + (sel.length >= 3 ? '#e6cd9a' : 'rgba(240,233,216,.4)') + '">已選 ' + sel.length + '／3</div>';
   h += '</div>';
-  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);margin-top:4px">最多可複選 3 項，再次點擊已選項目可以取消。</div>';
+  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);margin-top:4px;line-height:1.6">看你現在符合哪一組就好，不必全部看完。最多可複選 3 項，再點一次可以取消。</div>';
 
   h += '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:10px">';
-  if (!expanded) {
-    defaultOpts.forEach(function (opt) { h += optBtn(opt); });
-  } else {
-    cfg.focusGroups.forEach(function (g, gi) {
-      h += '<div style="flex-basis:100%;font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:' + (gi === 0 ? '0' : '10') + 'px">' + esc(g.title) + '</div>';
-      g.options.forEach(function (opt) { h += optBtn(opt); });
-    });
-  }
+  /* 收合與展開都用同一套分組結構，差別只在每組顯示幾項——
+     少了標題的那份清單才是造成選擇障礙的原因，不是選項數量本身。 */
+  (expanded ? cfg.focusGroups : computeDefaultFocusGroups(cfg)).forEach(function (g, gi) {
+    h += '<div style="flex-basis:100%;font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:' + (gi === 0 ? '0' : '10') + 'px">' + esc(g.title) + '</div>';
+    g.options.forEach(function (opt) { h += optBtn(opt); });
+  });
   h += '</div>';
 
-  h += '<div style="text-align:center;margin-top:10px"><button type="button" onclick="wizToggleFocusExpand(\'' + catKey + '\')" style="min-height:44px;background:none;border:none;color:#c9a96e;font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(201,169,110,.4);padding:4px 2px">' + (expanded ? '收起，只看常用選項' : '顯示更多選項（依主題分類）') + '</button></div>';
+  h += '<div style="text-align:center;margin-top:10px"><button type="button" onclick="wizToggleFocusExpand(\'' + catKey + '\')" style="min-height:44px;background:none;border:none;color:#c9a96e;font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(201,169,110,.4);padding:4px 2px">' + (expanded ? '收起，只看常用選項' : '顯示每一組的完整選項') + '</button></div>';
 
   if (state.wizFocusLimitHit === catKey) {
     h += '<div role="status" style="font:400 11px \'Noto Sans TC\',sans-serif;color:#d67878;margin-top:4px;text-align:center">最多可選 3 項，請先取消一項再選新的</div>';
@@ -4289,7 +4303,12 @@ function renderMore() {
     ['新手使用指南','Beginner Guide',"openBeginnerGuide()"],
     ['隱私與資料管理','Privacy & Data',"openMoreAbout()"]
   ];
-  items.forEach(function (it) { h += '<button onclick="' + it[2] + '" style="width:100%;display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.02);border:1px solid rgba(201,169,110,.28);color:#f0e9d8;padding:14px 15px;border-radius:10px;margin-bottom:9px;cursor:pointer;text-align:left"><span>' + it[0] + '<span style="display:block;font:italic 10px \'EB Garamond\',serif;opacity:.45;margin-top:2px">' + it[1] + '</span></span><span aria-hidden="true">›</span></button>'; });
+  var itemsHtml = '';
+  items.forEach(function (it) { itemsHtml += '<button onclick="' + it[2] + '" style="width:100%;display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.02);border:1px solid rgba(201,169,110,.28);color:#f0e9d8;padding:14px 15px;border-radius:10px;margin-bottom:9px;cursor:pointer;text-align:left"><span>' + it[0] + '<span style="display:block;font:italic 10px \'EB Garamond\',serif;opacity:.45;margin-top:2px">' + it[1] + '</span></span><span aria-hidden="true">›</span></button>'; });
+  h += itemsHtml;
+  /* 「新手使用指南」按下去就在這裡展開，不換頁——同一張卡片，關閉行為換成
+     只收起這一頁的展開狀態，不影響首頁那張「第一次來嗎」的已讀記錄。 */
+  if (state.moreTourOpen) h += renderHomeTourCard('closeBeginnerGuide()');
   h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);line-height:1.8;margin-top:18px">占卜內容僅供自我探索與娛樂參考；健康、財務與法律問題請諮詢合格專業人士。</div>';
   /* 關於本站／隱私／清除資料原本只藏在首頁「更多功能」展開後才看得到；
      底部導覽列「更多」是更常被點的入口，這裡也要能直接找到 */
