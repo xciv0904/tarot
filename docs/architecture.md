@@ -8,15 +8,20 @@ Node `vm` to test the natal topic pipeline.
 
 ```text
 index.html
-  └─ js/app.js
-       ├─ tarot/Lenormand data
-       ├─ astrology data and Astronomy Engine
-       ├─ knowledge layer + Question Library
-       ├─ renderers and interaction
-       └─ localStorage / copy / import-export
+  ├─ eager  js/data/card-images.js, js/data/reading-data.js, js/app.js
+  │           └─ shell, navigation, tarot/Lenormand reading, learning, persistence
+  ├─ idle   js/data/reading-rich-data.js         (78-card full meanings)
+  └─ on demand, when the astrology tab opens:
+            js/data/astrology-*.js               (astrology reference data)
+            js/data/astro-advanced.js            (natal, synastry, progression,
+                                                  28 mansions, returns, forecasts)
+            assets/vendor/astronomy-engine-*.js  (calculation engine)
 ```
 
-This coupling is a known constraint, not permission for a wholesale rewrite.
+`js/app.js` is still a large integration file and the remaining coupling inside it
+is a known constraint, not permission for a wholesale rewrite. The loaders live in
+`index.html` (`ensureAstrologyDataLoaded`, `ensureReadingRichLoaded`); every consumer
+of lazily-loaded data must degrade safely when it has not arrived yet.
 
 ## Responsibility boundaries
 

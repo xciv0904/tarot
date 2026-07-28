@@ -1,6 +1,6 @@
 # Project Memory — Mystic Deck
 
-Last verified against repository: 2026-07-27
+Last verified against repository: 2026-07-28
 
 ## Product
 
@@ -23,8 +23,10 @@ history, and AI-copy tools. It does not call an AI service.
 | Path | Responsibility |
 |---|---|
 | `index.html` | App shell, styles, major DOM structure |
-| `js/app.js` | UI orchestration, chart/readings logic, rendering, persistence |
-| `js/data/reading-data.js` | Tarot and Lenormand reading content |
+| `js/app.js` | Shell, navigation, tarot/Lenormand reading UI, learning system, persistence |
+| `js/data/astro-advanced.js` | All astrology UI/engines, lazy-loaded with the astrology bundle |
+| `js/data/reading-data.js` | Card lists, spreads, categories, question presets |
+| `js/data/reading-rich-data.js` | 78-card full meanings (`RICH`), lazy-loaded after first paint |
 | `js/data/card-images.js` | Stable card-to-asset mapping |
 | `js/data/astrology-core-data.js` | Core astrology labels/content |
 | `js/data/astrology-points-data.js` | Point definitions/content |
@@ -68,10 +70,19 @@ they are traced and independently verified. AI agents must not guess them.
 
 ## Testing baseline
 
-`npm test` runs syntax checks plus Golden regression. Snapshot regeneration uses
+`npm test` runs syntax checks, reading-question alignment, reading copy quality
+(`tests/reading-copy-quality.js`), and the Golden regression. Snapshot regeneration uses
 `npm run test:golden:update` and requires explicit review. Reports live under
 `tests/reports/`; the baseline lives at
 `tests/snapshots/natal-topic-baseline.json`.
+
+Baseline hash `8cf6ecf29baa0c51` (2026-07-28). It was regenerated twice on that day,
+both times with explicit approval and a verified diff:
+
+| From | To | Change | How the diff was verified |
+|---|---|---|---|
+| `9b2247a368651a61` | `cbddeea76e602c91` | 「界線」 rewritten as 「底線」／「分寸」 | All 220 changed lines contained 「界線」; 0 changed lines did not |
+| `cbddeea76e602c91` | `8cf6ecf29baa0c51` | Detail text: strip label echo, add sentence-ending punctuation | Only the `details` field changed; all 1308 new values matched `old.endsWith(new_without_period)` |
 
 ## Privacy and safety
 
@@ -84,4 +95,9 @@ user initiated. Do not add automatic transmission or commit exported user data.
 |---|---|---|
 | 2026-07-27 | Keep the current classic-script, no-build architecture | Preserve direct GitHub Pages deployment |
 | 2026-07-27 | Treat Golden snapshot updates as reviewed changes | Prevent accidental content drift |
+| 2026-07-28 | Split `RICH` and all astrology code out of `app.js` into lazy-loaded files | First-load JS was 962KB for a page that only shows one card |
+| 2026-07-28 | Add `tests/reading-copy-quality.js` as a required check | Card-side copy had no regression coverage at all |
+| 2026-07-28 | Replace 「界線」 with 「底線」／「分寸」／plain paraphrase across all 83 sites | Self-help jargon; unclear to a first-time reader |
+| 2026-07-28 | Strip label-echoing prefixes from natal detail text; suppress details already contained in the headline at render time | 60% of answers repeated themselves; validator forbids dropping details from the data |
+| 2026-07-28 | Add `tests/astro-copy-quality.js` as a required check | Golden checks whether answers changed, not whether they read well |
 
