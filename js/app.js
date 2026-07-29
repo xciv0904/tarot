@@ -84,7 +84,7 @@ var SPREAD_GROUPS = [
   { label: '基礎入門 Basics', keys: ['single', 'three-time', 'three-issue', 'three-mbs'] },
   { label: '感情 Love', keys: ['relationship', 'crush', 'peach', 'crosslove'] },
   { label: '進階綜合 Advanced', keys: ['celtic', 'horseshoe'] },
-  { label: '職涯・決策 Career & Decisions', keys: ['fork', 'timeline'] },
+  { label: '決策 Decisions', keys: ['fork', 'yesno', 'timeline'] },
 ];
 
 /* shuffle animation keyframes */
@@ -1594,7 +1594,7 @@ function renderSubtopicPicker() {
 
 function getSpreadQuestionPreset() {
   var categoryPresets = SPREAD_QUESTION_PRESETS[state.category] || {};
-  return categoryPresets[state.spread] || categoryPresets.default || {};
+  return categoryPresets[state.spread] || DECISION_QUESTION_PRESETS[state.spread] || categoryPresets.default || {};
 }
 function getSpreadQuestionExamples() {
   var concreteByCategory = CONCRETE_QUESTION_EXAMPLES[state.category] || {};
@@ -2165,6 +2165,7 @@ function renderReading() {
       });
       h += '</div>';
     }
+    if (isTarot && state.spread === 'yesno') h += renderYesNoResult(state.drawn);
     var analysis = analyzeSpread(state.drawn, isTarot);
     if (analysis.length) {
       h += '<div style="border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:15px 17px;background:rgba(255,255,255,.02);margin-top:12px">';
@@ -2223,7 +2224,7 @@ function allFlipped() {
 
 var NEG_TAROT_IDS = ['m12', 'm13', 'm15', 'm16', 'm18', 'swords-3', 'swords-5', 'swords-9', 'swords-10', 'wands-5', 'cups-5', 'pentacles-5'];
 var NEG_LEN_NS = [6, 7, 8, 10, 11, 14, 21, 23, 36];
-var CAT_OPENERS = { love: '在感情上', career: '在事業上', family: '在家庭方面', health: '在健康方面', wealth: '在財運方面', social: '在人際關係上', study: '在學業上', general: '就你目前的整體狀態而言' };
+var CAT_OPENERS = { love: '在感情上', career: '在事業上', family: '在家庭方面', health: '在健康方面', wealth: '在財運方面', social: '在人際關係上', study: '在學業上', decision: '就這個決定而言', general: '就你目前的整體狀態而言' };
 /* 綜合解讀的結尾建議。原本每個分類只有「正向」「保守」兩句，而且是用 toneIdx 直接
    索引，導致同一個分類、同一種語氣永遠跳出一模一樣的結尾——連抽十次牌，最後一句
    都相同，很快就會讓人覺得是罐頭。改成三種語氣各自有三句，再用抽到的牌做雜湊挑句，
@@ -2269,6 +2270,11 @@ var CAT_ADVICE = {
     neutral: ['先把最在意的那一件事挑出來處理，其他的可以等', '給自己一個檢查點，到那天再用結果決定下一步', '資訊不夠就先去問、去查，不要用猜的做決定'],
     challenging: ['先慢下來，把眼前最急的一件事處理完再說', '這段時間不適合做重大決定，先穩住日常就好', '需要休息就休息，不用把每件事都扛在自己身上'],
   },
+  decision: {
+    positive: ['目前條件支持往前，但仍要確認現實成本是否能承受', '可以先走一個可回頭的小步驟，用實際結果驗證方向', '優勢已經浮現，接下來要把承諾、期限與資源說清楚'],
+    neutral: ['先補齊最關鍵的一項資訊，再決定會更穩妥', '把兩邊不能接受的代價各寫一條，答案會更清楚', '先設定一個檢查點，不必今天就把所有後路封死'],
+    challenging: ['目前阻力高於助力，先處理風險再決定是否推進', '暫緩不是放棄，先確認最壞情況是否承受得起', '不要只因為害怕錯過就答應，先看代價是否合理'],
+  },
 };
 
 /* keywords: prefer rich DB, fall back to legacy meaning strings */
@@ -2287,7 +2293,27 @@ function cardLabel(d, isTarot) {
 
 /* which context column of the rich DB fits the chosen question topic —
    the 7-context database covers every topic directly */
-var CAT_CTX = { love: 'love', career: 'career', wealth: 'wealth', general: 'general', family: 'family', health: 'health', social: 'social', study: 'study' };
+var CAT_CTX = { love: 'love', career: 'career', wealth: 'wealth', decision: 'general', general: 'general', family: 'family', health: 'health', social: 'social', study: 'study' };
+
+/* 三張牌採奇數票避免平手；正逆位只決定方向，牌義本身用來說明成立條件與阻力。 */
+function yesNoVerdict(drawn) {
+  var upright = drawn.filter(function (d) { return !d.reversed; }).length;
+  var total = drawn.length;
+  var label = upright === total ? '明顯偏向「是」'
+    : upright >= 2 ? '目前偏向「是」'
+      : upright === 1 ? '目前偏向「否」' : '明顯偏向「否」';
+  return { label: label, upright: upright, reversed: total - upright };
+}
+
+function renderYesNoResult(drawn) {
+  var verdict = yesNoVerdict(drawn);
+  var h = '<div style="border:1px solid rgba(201,169,110,.45);border-radius:10px;padding:17px;background:rgba(201,169,110,.07);margin-top:12px">';
+  h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:#c9a96e">✧ 是／否結果 YES OR NO</div>';
+  h += '<div style="font:600 20px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:9px">' + verdict.label + '</div>';
+  h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);margin-top:8px;line-height:1.8">正位 ' + verdict.upright + ' 張／逆位 ' + verdict.reversed + ' 張。這代表目前條件的傾向，不是結果保證；三張牌的內容會告訴你答案成立需要什麼，以及最大的阻力在哪裡。</div>';
+  h += '</div>';
+  return h;
+}
 
 /* ---- position roles: the spread position actively reframes the card ---- */
 function posRole(zh) {
@@ -3704,6 +3730,11 @@ function copyForAI() {
   lines.push('初步綜合解讀：' + overallReading());
   var _an = analyzeSpread(state.drawn, isTarot);
   if (_an.length) lines.push('牌陣分析：' + _an.join(' '));
+  if (isTarot && state.spread === 'yesno') {
+    var _yn = yesNoVerdict(state.drawn);
+    lines.push('是／否傾向：' + _yn.label + '（正位 ' + _yn.upright + ' 張／逆位 ' + _yn.reversed + ' 張）');
+    lines.push('判讀提醒：這是目前條件的象徵性傾向，不是結果保證；請綜合三張牌說明答案成立的條件、阻力與可採取的行動。');
+  }
   /* Phase 1A/1C：純新增段落，只有愛情分類且選了具體子問題時才會輸出，不影響既有輸出內容。
      combined 模式（且有 state.astroResult）時，額外附加星盤依據與綜合觀察段落。 */
   if (state.category === 'love' && state.subtopic) {

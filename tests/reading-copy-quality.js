@@ -54,6 +54,27 @@ function loadRuntime() {
 
 const c = loadRuntime();
 
+/* 決策入口與是／否判讀屬於公開互動，避免日後改推薦清單時意外消失。 */
+if (!c.__TS.yesno || c.__TS.yesno.positions.length !== 3) {
+  throw new Error('是／否牌陣必須存在且固定為三張牌。');
+}
+for (const key of ['fork', 'yesno']) {
+  if (vm.runInContext(`RECOMMENDATIONS.decision.indexOf('${key}')`, c) === -1) {
+    throw new Error(`決策入口缺少 ${key} 牌陣。`);
+  }
+}
+const yesNoCases = [
+  { reversed: [false, false, false], expected: '明顯偏向「是」' },
+  { reversed: [false, false, true], expected: '目前偏向「是」' },
+  { reversed: [false, true, true], expected: '目前偏向「否」' },
+  { reversed: [true, true, true], expected: '明顯偏向「否」' },
+];
+yesNoCases.forEach(test => {
+  c.state.drawn = test.reversed.map(reversed => ({ reversed }));
+  const actual = c.yesNoVerdict(c.state.drawn).label;
+  if (actual !== test.expected) throw new Error(`是／否判讀錯誤：預期 ${test.expected}，實際 ${actual}`);
+});
+
 /* ---------- 產生語料 ---------- */
 function drawSet(deck, spreadKey, seed) {
   const sp = deck === 'tarot' ? c.__TS[spreadKey] : c.__LS[spreadKey];

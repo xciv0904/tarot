@@ -202,6 +202,9 @@ const TAROT_SPREADS = {
     {zh:'現況',en:'Situation'},{zh:'選項A・優勢',en:'A: Strength'},{zh:'選項A・挑戰',en:'A: Challenge'},{zh:'選項A・結果',en:'A: Outcome'},
     {zh:'選項B・優勢',en:'B: Strength'},{zh:'選項B・挑戰',en:'B: Challenge'},{zh:'選項B・結果',en:'B: Outcome'},
   ]},
+  yesno: {zh:'是／否牌陣', en:'Yes or No', positions:[
+    {zh:'第一個訊號',en:'Signal One'},{zh:'第二個訊號',en:'Signal Two'},{zh:'關鍵訊號',en:'Deciding Signal'},
+  ]},
   timeline: {zh:'時間軸牌陣', en:'Timeline', positions:[
     {zh:'未來一個月',en:'1 Month'},{zh:'未來三個月',en:'3 Months'},{zh:'未來六個月',en:'6 Months'},
   ]},
@@ -228,6 +231,7 @@ var CATEGORIES = [
   { key: 'wealth', zh: '財運', en: 'Wealth', icon: '◆', desc: '投資、理財、財務規劃' },
   { key: 'social', zh: '人際', en: 'Social', icon: '☍', desc: '朋友、同事、社交與人脈互動' },
   { key: 'study', zh: '學業', en: 'Study', icon: '✎', desc: '考試、選課、升學、研究進度' },
+  { key: 'decision', zh: '決策', en: 'Decision', icon: '⇄', desc: '不限定主題，適合二選一或是非題' },
   { key: 'general', zh: '綜合', en: 'General', icon: '✦', desc: '不特定方向，想看整體運勢' },
 ];
 
@@ -240,6 +244,7 @@ var RECOMMENDATIONS = {
   wealth: ['three-issue', 'fork', 'timeline', 'single'],
   social: ['relationship', 'crosslove', 'three-issue', 'single'],
   study: ['three-issue', 'three-time', 'timeline', 'single'],
+  decision: ['fork', 'yesno', 'three-issue', 'single'],
   general: ['three-time', 'celtic', 'horseshoe', 'single'],
 };
 
@@ -251,6 +256,7 @@ var LEN_RECOMMENDATIONS = {
   wealth: ['three-issue', 'line5', 'box9', 'single'],
   social: ['box9', 'three-time', 'line5', 'single'],
   study: ['three-issue', 'line5', 'box9', 'single'],
+  decision: ['three-issue', 'line5', 'single'],
   general: ['grand', 'box9', 'line5', 'three-time', 'single'],
 };
 
@@ -264,6 +270,7 @@ var SPREAD_DESC = {
   celtic: '最完整的深度剖析，適合複雜問題。',
   horseshoe: '介於三張牌與凱爾特十字之間的完整度。',
   fork: '比較兩個選項的優劣與可能結果。',
+  yesno: '用三張牌看目前偏向是或否，以及答案成立的條件。',
   timeline: '依 1 / 3 / 6 個月看發展時程。',
 };
 
@@ -275,7 +282,20 @@ var QUESTION_TEMPLATES = {
   wealth: { placeholder: '例如：這筆投資／這個財務決定現在適合進行嗎？', chips: ['這個投資決定現在適合嗎？', '我近期的財運趨勢如何？', '該如何規劃接下來的財務方向？'] },
   social: { placeholder: '例如：我和某位朋友之間最近有些疏遠，該如何維繫這段關係？', chips: ['我和這位朋友的關係接下來會如何？', '這段友誼／人脈該如何經營？', '對方對我的真實態度是什麼？'] },
   study: { placeholder: '例如：這次期末考／申請學校的結果傾向如何？', chips: ['這次考試結果會如何？', '我該選這個科系／學校嗎？', '我該如何調整讀書方式？', '這份論文／專題能順利完成嗎？'] },
+  decision: { placeholder: '請先選擇二選一或是／否牌陣，再把要決定的事情寫清楚。', chips: ['選項 A 與選項 B，哪個更符合我現在的需要？', '我現在適合接受這個機會嗎？', '我現在適合主動推進這件事嗎？'] },
   general: { placeholder: '例如：我想了解自己接下來這段時間整體的運勢與提醒。', chips: ['我接下來這段時間整體運勢如何？', '現在的我最需要注意什麼？', '有沒有什麼是我目前沒留意到的？'] },
+};
+
+/* 決策牌陣本身就決定提問格式，不應再受愛情、工作等分類限制。 */
+var DECISION_QUESTION_PRESETS = {
+  fork: {
+    placeholder: '請寫清楚兩個選項，例如：選項 A 留在現職；選項 B 接受新工作。',
+    examples: ['選項 A 與選項 B，哪個更符合我現在的需要？', '留在目前狀態，或主動做出改變，各自會帶來什麼？', '兩個方案的優勢、代價與可能結果分別是什麼？']
+  },
+  yesno: {
+    placeholder: '請用可以回答「是／否」的方式提問，例如：我現在適合接受這個機會嗎？',
+    examples: ['我現在適合接受這個機會嗎？', '我現在適合主動聯絡對方嗎？', '我現在適合推進這項計畫嗎？']
+  }
 };
 
 /* Step 3 問題必須同時符合「主題」與「已選牌陣」。
@@ -394,6 +414,13 @@ var SPREAD_QUESTION_PRESETS = {
       subtopics: ['exam-application', 'focus-execution'],
       examples: ['未來一到六個月的學習進度可能如何變化？', '我應如何安排不同階段的準備重點？', '這項學習計畫何時較可能看到成果？']
     }
+  },
+  decision: {
+    default: {
+      examples: ['這個決定目前最需要我看清什麼？', '做決定前，我最容易忽略哪項條件？', '我現在可以先採取哪個可回頭的小步驟？']
+    },
+    fork: DECISION_QUESTION_PRESETS.fork,
+    yesno: DECISION_QUESTION_PRESETS.yesno
   },
   general: {
     default: {
@@ -539,6 +566,29 @@ var CONCRETE_QUESTION_EXAMPLES = {
       '目前成績起伏很大，接下來幾個月是否可能逐步穩定？',
       '論文預計半年完成，哪個階段最容易遇到進度瓶頸？',
       '我正在學一項新技能，何時較可能看見明顯成果？'
+    ]
+  },
+  decision: {
+    default: [
+      '我收到一個臨時邀請，現在答應前最需要確認什麼？',
+      '這件事拖了一段時間，我現在適合行動還是暫緩？',
+      '我擔心錯過機會，這個焦慮是否正在影響判斷？',
+      '目前資訊還不完整，我應該先補查哪個關鍵條件？',
+      '這個決定如果先試一小步，最適合從哪裡開始？'
+    ],
+    fork: [
+      '選項 A 留在現況，選項 B 主動改變，兩邊各自的優勢與代價是什麼？',
+      '我有兩個合作方案，哪一個更符合目前的時間與資源？',
+      '選項 A 比較穩定，選項 B 成長較快，我現在更適合哪一邊？',
+      '兩個住處條件不同，各自可能如何影響接下來的生活？',
+      '繼續投入或及時停下，兩條路各自可能帶來什麼結果？'
+    ],
+    yesno: [
+      '我現在適合接受這個機會嗎？',
+      '我現在適合主動聯絡對方嗎？',
+      '我現在適合推進這項計畫嗎？',
+      '我現在適合簽下這份合作嗎？',
+      '我現在適合把這個想法公開嗎？'
     ]
   },
   general: {
