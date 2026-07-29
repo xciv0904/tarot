@@ -5141,7 +5141,7 @@ function natalPackTheme(asp) {
    「福點 四分相 天王星」「南交點 四分相 太陽」這種把配角放在主詞位置的句子。
    一律照這個排序寫，讓比較重要的天體在前面。 */
 var NATAL_PACK_BODY_ORDER = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn',
-  'Uranus', 'Neptune', 'Pluto', 'Node', 'SNode', 'Chiron', 'Lilith', 'Fortune', 'Vertex'];
+  'Uranus', 'Neptune', 'Pluto', 'ASC', 'MC', 'Node', 'SNode', 'Chiron', 'Lilith', 'Fortune', 'Vertex'];
 function natalPackOrderedEnds(asp) {
   var ia = NATAL_PACK_BODY_ORDER.indexOf(asp.a), ib = NATAL_PACK_BODY_ORDER.indexOf(asp.b);
   if (ia === -1) ia = 99;
@@ -5159,10 +5159,40 @@ function natalPackDeg(position) {
    又容易跟「天頂」搞混），所以這幾個一律附上英文原名，避免 AI 認錯對象。
    十大行星沒有這個問題，不加英文以免整份資料變得冗長。 */
 function natalPackName(key) {
+  if (key === 'ASC') return '上升點 ASC';
+  if (key === 'MC') return '天頂 MC';
   var def = findAnyPointDef(key);
   if (!def) return key;
   var isPoint = EXTRA_POINT_DEFS.some(function (x) { return x.key === key; });
   return isPoint ? pointDisplayName(def) + ' ' + key : def.zh;
+}
+
+/* 角度點相位只補在「純資料」複製包：畫面與 astroUsableAspects() 維持原樣，
+   因此不會改變既有命盤卡片或 Golden 快照。只計十大行星對 ASC／MC，沿用本命盤
+   原有五種主要相位與容許度；出生時間未知時不應呼叫。 */
+function natalPackAngleAspects(chart) {
+  if (!chart || typeof chart.asc !== 'number' || typeof chart.mc !== 'number') return [];
+  var angleDefs = [
+    ['conjunction', 0, 8], ['sextile', 60, 4], ['square', 90, 6],
+    ['trine', 120, 6], ['opposition', 180, 8],
+  ];
+  var angles = { ASC: astroNormDeg(chart.asc), MC: astroNormDeg(chart.mc) };
+  var out = [];
+  ASTRO_PLANET_BODY_KEYS.forEach(function (key) {
+    var p = chart.planets[key];
+    if (!p || typeof p.lon !== 'number') return;
+    Object.keys(angles).forEach(function (angleKey) {
+      var distance = Math.abs(astroNormDeg(p.lon) - angles[angleKey]);
+      if (distance > 180) distance = 360 - distance;
+      var best = null;
+      angleDefs.forEach(function (row) {
+        var orb = Math.abs(distance - row[1]);
+        if (orb <= row[2] && (!best || orb < best.orb)) best = { type: row[0], orb: orb };
+      });
+      if (best) out.push({ a: key, b: angleKey, type: best.type, orb: best.orb, anglePoint: true });
+    });
+  });
+  return out;
 }
 function natalPackPlacement(key, chart, unknownTime) {
   var p = natalAspectPosition(chart, key);
@@ -5211,15 +5241,18 @@ function buildAstroDataPackText(chart, unknownTime) {
   if (!chart) return '';
   var L = [];
   var city = state.astroCityUsed;
-  var aspects = astroUsableAspects(chart).slice().sort(function (a, b) { return a.orb - b.orb; });
+  var aspects = astroUsableAspects(chart).slice();
+  if (!unknownTime) aspects = aspects.concat(natalPackAngleAspects(chart));
+  aspects.sort(function (a, b) { return a.orb - b.orb; });
 
-  L.push('【資料導讀 · 西洋占星 · 本命盤】');
-  L.push('· 這份是什麼：一個人出生當下的星盤原始數據，對應的是長期的性格、天賦與行為模式。');
-  L.push('· 這份不是：流年、行運、次限推運等跟時間有關的資料。要問「最近」「某一天」「今年」請改用本站對應頁面的複製功能，不要拿這份推算時間點。');
-  L.push('· 閱讀規則：只依據下列欄位推論；不要引入這份資料以外的設定，也不要跟合盤或推運資料混在一起讀。');
+  L.push('【本命盤觀測值｜供 AI 自行綜合】');
+  L.push('這是一份沒有預先解讀的排盤結果。請從各項數值之間的呼應與矛盾建立結論，不要把單一落點直接等同於人格定論。');
+  L.push('適用範圍：長期性格傾向、需求、能力與反覆出現的人生模式。');
+  L.push('範圍之外：近期運勢、特定日期或事件時機；這些問題需要另外提供行運或推運盤。');
+  L.push('資料邊界：不要自行補入未列出的天體、相位、合盤對象或其他占星系統。');
   L.push('');
 
-  L.push('【基本資料】');
+  L.push('【出生條件與計算方式】');
   L.push('- 出生日期：' + state.astroY + '-' + pad2(state.astroM) + '-' + pad2(state.astroD));
   L.push('- 出生時間：' + (unknownTime ? '未提供' : pad2(state.astroH) + ':' + pad2(state.astroMin)));
   L.push('- 出生地：' + (city ? city.zh + '（' + city.en + '）' : '未提供'));
@@ -5227,19 +5260,16 @@ function buildAstroDataPackText(chart, unknownTime) {
     L.push('- 經緯度：' + city.lat.toFixed(4) + ', ' + city.lon.toFixed(4));
     L.push('- 時區：' + city.tz);
   }
-  L.push('');
-
-  L.push('【排盤設定】');
   L.push('- 黃道系統：回歸黃道 Tropical');
   L.push('- 宮位制：' + (state.astroHouseSystem === 'whole' ? '整宮制 Whole Sign' : '普拉西德制 Placidus'));
   L.push('- 真太陽時：否');
-  L.push('- 資料可靠度：' + (unknownTime
+  L.push('- 時間資料限制：' + (unknownTime
     ? '出生時間未知，因此不提供上升、天頂、宮位、福點與命定點；月亮當日可能範圍為 ' + astroMoonRangeText() + '。請勿推測任何與宮位或上升有關的內容。'
-    : '出生時間已提供，上升、天頂與宮位皆可使用。'));
+    : '出生時間已提供，可採用上升、天頂、宮位及其衍生資料。'));
   L.push('');
 
   /* 優先閱讀摘要：先給六條主線，讓 AI 知道從哪裡開始，而不是一進來就淹在附錄裡。 */
-  L.push('【優先閱讀摘要】');
+  L.push('【先抓主軸】');
   var st = natalPackStructure(chart);
   var coreLine = natalPackPlacement('Sun', chart, unknownTime) + '；' + natalPackPlacement('Moon', chart, unknownTime);
   if (!unknownTime) coreLine += '；上升 ' + ZODIAC_SIGNS[chart.ascSign].zh + ' ' + natalPackDeg({ deg: chart.asc % 30 });
@@ -5255,7 +5285,7 @@ function buildAstroDataPackText(chart, unknownTime) {
     + (!unknownTime && st.emphasis.length ? '；宮位重點 ' + st.emphasis.join('、') : ''));
   L.push('');
 
-  L.push('【核心落點】');
+  L.push('【六個閱讀錨點】');
   ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Saturn'].forEach(function (k) {
     L.push('- ' + natalPackPlacement(k, chart, unknownTime));
   });
@@ -5267,7 +5297,7 @@ function buildAstroDataPackText(chart, unknownTime) {
   }
   L.push('');
 
-  L.push('【星盤結構摘要】');
+  L.push('【全盤分布】');
   L.push('- 元素分布：火象 ' + eq.elem['火'] + '，土象 ' + eq.elem['土'] + '，風象 ' + eq.elem['風'] + '，水象 ' + eq.elem['水']);
   L.push('- 性質分布：本位 ' + eq.qual['本位'] + '，固定 ' + eq.qual['固定'] + '，變動 ' + eq.qual['變動']);
   if (!unknownTime) {
@@ -5280,14 +5310,14 @@ function buildAstroDataPackText(chart, unknownTime) {
   L.push('');
 
   var topN = Math.min(10, aspects.length);
-  L.push('【最緊密的 ' + topN + ' 組相位】');
+  L.push('【相位焦點｜容許度最小的 ' + topN + ' 組】');
   aspects.slice(0, topN).forEach(function (asp) {
     L.push('- ' + natalPackAspectLine(asp) + ' · ' + natalPackTheme(asp));
   });
   L.push('');
 
-  L.push('【相位的主題分類】');
-  L.push('· 每組相位只列在一個主題下，以兩端中主題最明確的那顆天體為準；同一組相位在其他主題裡往往也說得通，請自行斟酌。');
+  L.push('【生活面向索引】');
+  L.push('以下是方便檢索的單一歸類，不代表一組相位只能解讀成這個面向；綜合時仍須回看相位兩端。');
   var grouped = {};
   aspects.forEach(function (asp) {
     var t = natalPackTheme(asp);
@@ -5300,7 +5330,7 @@ function buildAstroDataPackText(chart, unknownTime) {
   });
   L.push('');
 
-  L.push('【附錄 A：完整行星與敏感點落點】');
+  L.push('【明細表一｜全部落點】');
   PLANET_DEFS.forEach(function (d) { L.push('- ' + natalPackPlacement(d.key, chart, unknownTime)); });
   EXTRA_POINT_DEFS.forEach(function (d) {
     if (unknownTime && (d.key === 'Fortune' || d.key === 'Vertex')) return;
@@ -5315,7 +5345,7 @@ function buildAstroDataPackText(chart, unknownTime) {
   L.push('');
 
   if (!unknownTime) {
-    L.push('【附錄 B：十二宮起點】');
+    L.push('【明細表二｜十二宮起點】');
     chart.houseCusps.forEach(function (cusp, i) {
       L.push('- 第' + (i + 1) + '宮：' + ZODIAC_SIGNS[Math.floor(astroNormDeg(cusp) / 30)].zh + ' '
         + natalPackDeg({ deg: astroNormDeg(cusp) % 30 }) + '（' + HOUSE_BEGINNER[i].lifeArea + '）');
@@ -5323,19 +5353,21 @@ function buildAstroDataPackText(chart, unknownTime) {
     L.push('');
   }
 
-  L.push('【附錄 C：完整相位清單（共 ' + aspects.length + ' 組，依容許度由緊到鬆）】');
+  L.push('【明細表三｜全部主要相位：' + aspects.length + ' 組】');
   aspects.forEach(function (asp) { L.push('- ' + natalPackAspectLine(asp)); });
   L.push('');
-  L.push('· 說明：容許度是實際角度與標準角度的差，數字越小影響越明顯。標示「核心」的是雙個人行星、或牽涉日月且容許度在 4 度內、或容許度在 2 度內的相位。');
-  L.push('· 本資料未計算入相／出相，請不要推測。');
+  L.push('讀表備註：容許度越接近 0°，相位越精確。資料涵蓋十大行星彼此、既有敏感點，以及出生時間可靠時十大行星對 ASC／MC 的主要相位。');
+  L.push('「核心」標記條件：雙個人行星、日月參與且容許度不超過 4°，或任何容許度不超過 2° 的相位。');
+  L.push('此處沒有入相／出相資料，解讀時略過這項判斷。');
   L.push('');
 
-  L.push('【請你這樣解讀】');
-  L.push('1. 先看整體結構（' + (unknownTime ? '元素、性質' : '元素、性質、半球、宮位重點') + '），判斷這張盤的基本傾向。');
-  L.push('2. 再看核心落點與最緊密的相位，找出重複出現的主題——同一個訊息由多個配置指向時，才把它當成主線。');
-  L.push('3. 說明時請標明是根據哪幾項配置推論的，並清楚區分「資料直接支持的」與「你的推測」。');
-  L.push('4. 不要使用宿命式斷言，也不要預測具體事件或時間點。');
-  L.push('5. 星盤中相反的傾向請並陳，不要為了讓結論一致而略過其中一邊。');
+  L.push('【交給 AI 的任務】');
+  L.push('請先用' + (unknownTime ? '元素與性質分布' : '元素、性質、半球及宮位分布') + '描述整體輪廓，再以六個閱讀錨點和精確相位交叉驗證。');
+  L.push('只有在兩項以上資料共同指向時，才把某個傾向列為主題；若盤中同時存在相反訊號，請保留兩邊並說明各自可能出現的情境。');
+  L.push('請整理 3–5 個最有辨識度、會反覆出現的人生模式。每個模式盡量寫清楚：常見觸發情境 → 當下反應 → 內在想保護或滿足的需求 → 容易付出的代價 → 較成熟的運用方式。');
+  L.push('把模式放進關係、工作／學習、壓力下的選擇等具體生活場景；不要只列形容詞，也不要使用換成任何人都成立的模糊句。');
+  L.push('每個重要結論請附上至少兩項所依據的落點或相位。把直接可讀出的傾向與延伸推論分開表達，使用可能性語氣，不做事件預言；證據不足就明說，不要為了完整感硬湊。');
+  L.push('結尾提出 2–3 個可由本人核對的具體問題，讓使用者確認哪些模式吻合、哪些需要修正。');
   L.push(personaInstructionLine());
   return L.join('\n');
 }
@@ -6433,4 +6465,3 @@ function renderAstroMethodology() {
   rows.forEach(function(r){h+='<div style="margin-top:10px"><strong style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e">'+r[0]+'</strong><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.7);line-height:1.75;margin-top:2px">'+r[1]+'</div></div>';});
   return h+'</section>';
 }
-
