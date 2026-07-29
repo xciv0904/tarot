@@ -4050,7 +4050,6 @@ function renderAstro() {
     }
 
     h += renderPersonaPicker();
-    h += renderAstroCopyModePicker(chart);
     h += '<button id="astro-copy-btn" onclick="astroCopyForAI()" style="width:100%;margin-top:24px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製給 AI 解讀 Copy for AI</button>';
     h += '<button onclick="astroReset()" style="width:100%;margin-top:10px;padding:12px;border-radius:12px;border:1px solid rgba(201,169,110,.3);background:rgba(255,255,255,.02);color:rgba(240,233,216,.6);font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">重新輸入 ↺</button>';
     h += '<div style="text-align:center;margin-top:10px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap">';
@@ -5371,68 +5370,11 @@ function buildAstroDataPackText(chart, unknownTime) {
   return L.join('\n');
 }
 
-function setAstroCopyMode(mode) {
-  state.astroCopyMode = mode === 'full' ? 'full' : 'data';
-  try { localStorage.setItem('tl_astro_copy_mode', state.astroCopyMode); } catch (e) {}
-  render();
-}
-
-/* 兩種格式的差別不是「詳細一點或簡略一點」，而是「誰來做解讀」——這件事光看
-   按鈕名稱看不出來，所以直接把兩者的內容、字數與後果寫在選項裡。
-   字數是當場算出來的（兩份加起來約 4ms），不寫死，換一張盤也不會失準。 */
-var ASTRO_COPY_MODES = [
-  {
-    key: 'data', name: '純資料', badge: '預設',
-    what: '只給落點、宮位、相位等原始數字，不附任何解讀。',
-    effect: 'AI 會自己讀整張盤，把重複出現的主題串起來。多數情況解讀更貼切，也比較好接著追問。',
-  },
-  {
-    key: 'full', name: '含本站解讀',
-    what: '原始數字之外，連本站已經寫好的每一段解讀一起附上。',
-    effect: 'AI 多半會以這些現成文字為主去改寫，較少自己重新讀盤。適合把本站內容整理成一份報告。',
-  },
-];
-function renderAstroCopyModePicker(chart) {
-  if (!chart) return '';
-  var unknown = !!state.astroUnknownTime;
-  var lens = {};
-  try {
-    lens.data = buildAstroDataPackText(chart, unknown).length;
-    lens.full = buildAstroCopyText(chart, unknown).length;
-  } catch (e) { lens = {}; }
-
-  var h = '<div style="margin-top:16px">';
-  h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-bottom:6px">貼給 AI 的內容 Copy Format</div>';
-  h += '<div style="display:flex;flex-direction:column;gap:6px">';
-  ASTRO_COPY_MODES.forEach(function (m) {
-    var on = state.astroCopyMode === m.key;
-    var len = lens[m.key];
-    var lenTxt = len ? '約 ' + (len < 10000 ? String(Math.round(len / 100) * 100) : (Math.round(len / 1000) + ',000')) + ' 字' : '';
-    h += '<button type="button" aria-pressed="' + on + '" onclick="setAstroCopyMode(\'' + m.key + '\')"'
-      + ' style="text-align:left;padding:9px 11px;border-radius:10px;border:1px solid ' + (on ? '#c9a96e' : 'rgba(201,169,110,.28)')
-      + ';background:' + (on ? 'rgba(201,169,110,.18)' : 'rgba(255,255,255,.02)') + ';cursor:pointer">';
-    h += '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">';
-    h += '<span style="font:500 12px \'Noto Sans TC\',sans-serif;color:' + (on ? '#f0e9d8' : 'rgba(240,233,216,.72)') + '">'
-      + (on ? '✓ ' : '') + esc(m.name) + (m.badge ? '<span style="font:400 9px \'Noto Sans TC\',sans-serif;color:rgba(201,169,110,.75);margin-left:6px">' + esc(m.badge) + '</span>' : '') + '</span>';
-    h += '<span style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);white-space:nowrap">' + esc(lenTxt) + '</span>';
-    h += '</div>';
-    h += '<div style="font:400 9.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:3px;line-height:1.55">' + esc(m.what) + '</div>';
-    h += '<div style="font:400 9.5px \'Noto Sans TC\',sans-serif;color:' + (on ? 'rgba(230,205,154,.72)' : 'rgba(240,233,216,.35)') + ';margin-top:2px;line-height:1.55">→ ' + esc(m.effect) + '</div>';
-    h += '</button>';
-  });
-  h += '</div>';
-  h += '<div style="font:400 9.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:6px;line-height:1.6">兩份的星盤數字完全一樣，差別只在要不要一起附上本站的解讀文字。</div>';
-  h += '</div>';
-  return h;
-}
-
 function astroCopyForAI() {
   var chart = state.astroResult;
   if (!chart) return;
   var unknown = !!state.astroUnknownTime;
-  var text = state.astroCopyMode === 'full'
-    ? buildAstroCopyText(chart, unknown)
-    : buildAstroDataPackText(chart, unknown);
+  var text = buildAstroDataPackText(chart, unknown);
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(astroFlashCopied).catch(function () { fallbackCopy(text, astroFlashCopied); });
   } else {
