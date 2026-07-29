@@ -4380,6 +4380,8 @@ function renderAstroLoading() {
 
 function render() {
   var view = document.getElementById('view');
+  if (state.tab === 'home') document.body.classList.add('is-home');
+  else document.body.classList.remove('is-home');
   if (state.tab === 'home') view.innerHTML = renderHome();
   else if (state.tab === 'reading') view.innerHTML = renderReading();
   /* renderAstro() 現在住在延後載入的 astro-advanced.js 裡。go('astro') 會先觸發載入、
