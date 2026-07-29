@@ -65,6 +65,9 @@ var state = {
   astroHouseSystem: 'placidus', astroDetail: null, astroMethodOpen: false,
   astroOpenPlacements: false, astroOpenPoints: false, astroOpenAspects: false,
   aiPersona: 'moon',
+  /* 'data' = 只給原始數據讓 AI 自己綜合；'full' = 連同本站寫好的解讀一起附上。
+     預設 data，因為實測後者會讓 AI 退化成改寫既有文字，而不是自己讀盤。 */
+  astroCopyMode: 'data',
   astroReturnCityIdx: null, synRelationship: 'love',
   progYears: 1, progExpandedYear: 0, progOnlyTransitions: false,
   horoDayAnchor: null, horoWeekOffset: 0, horoMonthOffset: 0, horoYearOffset: 0, horoYearRange: 1,
@@ -1262,6 +1265,7 @@ function aboutToggle() { state.aboutOpen = !state.aboutOpen; render(); }
 var APP_STORAGE_KEYS = [
   'tl_history', 'tl_learn', 'tl_study', 'tl_astro_profile',
   'tl_xiu_partners', 'tl_ai_persona', 'tl_home_tour_seen', 'tl_astro_tour_seen',
+  'tl_astro_copy_mode',
 ];
 function clearAllData() {
   try {
@@ -4659,5 +4663,6 @@ try {
 try { state.astroTourDismissed = localStorage.getItem('tl_astro_tour_seen') !== '0'; } catch (e) {}
 try { state.homeTourDismissed = localStorage.getItem('tl_home_tour_seen') === '1'; } catch (e) {}
 try { var _savedPersona = localStorage.getItem('tl_ai_persona'); if (_savedPersona && findAiPersona(_savedPersona).key === _savedPersona) state.aiPersona = _savedPersona; } catch (e) {}
+try { var _savedCopyMode = localStorage.getItem('tl_astro_copy_mode'); if (_savedCopyMode === 'data' || _savedCopyMode === 'full') state.astroCopyMode = _savedCopyMode; } catch (e) {}
 
 render();

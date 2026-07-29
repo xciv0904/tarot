@@ -214,6 +214,41 @@ answers.forEach(a => {
 });
 if (halfComma.length) fail(`星盤答案中文句子出現半形逗號：${halfComma.length} 處，例如「${halfComma[0]}」`);
 
+/* ---------- 6. 「純資料」複製格式 ----------
+ * 這份是要貼給外部 AI 的，錯了不會在畫面上顯現，只會讓別人拿到壞資料，
+ * 所以這裡守的是三件事：該有的區塊都在、宣告的數量與實際列出的一致、
+ * 以及出生時間未知時絕對不外洩任何宮位資訊（那是我們宣告過不提供的）。 */
+const PACK_SECTIONS = ['【資料導讀', '【基本資料】', '【排盤設定】', '【優先閱讀摘要】', '【核心落點】',
+  '【星盤結構摘要】', '【最緊密的', '【相位的主題分類】', '【附錄 A', '【附錄 C', '【請你這樣解讀】'];
+let packRuns = 0;
+[[chartA, city, false], [chartB, city2, false], [chartA, city, true]].forEach(([ch, ct, unknown]) => {
+  c.state.astroResult = ch; c.state.astroCityUsed = ct; c.state.astroUnknownTime = unknown;
+  c.state.astroY = '1990'; c.state.astroM = '5'; c.state.astroD = '20';
+  c.state.astroH = '14'; c.state.astroMin = '30';
+  let text;
+  try { text = c.buildAstroDataPackText(ch, unknown); } catch (e) { fail(`純資料格式產生失敗：${e.message}`); return; }
+  packRuns++;
+  const tag = `${ct.zh}${unknown ? '（時間未知）' : ''}`;
+  PACK_SECTIONS.forEach(s => { if (!text.includes(s)) fail(`純資料格式 ${tag} 缺少區塊 ${s}`); });
+  ['undefined', 'NaN', '[object'].forEach(w => { if (text.includes(w)) fail(`純資料格式 ${tag} 出現 ${w}`); });
+  if (/°60'/.test(text)) fail(`純資料格式 ${tag} 出現 60 分未進位的度數`);
+  if (/座座/.test(text)) fail(`純資料格式 ${tag} 星座名重複「座座」`);
+
+  const declared = Number((text.match(/完整相位清單（共 (\d+) 組/) || [])[1]);
+  const listed = text.split('【附錄 C')[1].split('\n').filter(l => l.startsWith('- ')).length;
+  if (declared !== listed) fail(`純資料格式 ${tag} 附錄 C 宣告 ${declared} 組、實際列出 ${listed} 組`);
+  const themed = text.split('【相位的主題分類】')[1].split('【附錄 A')[0].split('\n').filter(l => l.startsWith('- ')).length;
+  if (themed !== listed) fail(`純資料格式 ${tag} 主題分類漏列相位：${themed} ≠ ${listed}`);
+
+  if (unknown) {
+    if (/第\d+宮×|半球分布|角宮 \d|第\d+宮：/.test(text)) fail('純資料格式在出生時間未知時仍輸出宮位資訊');
+    if (text.includes('【附錄 B')) fail('純資料格式在出生時間未知時仍輸出十二宮起點');
+  } else if (!text.includes('【附錄 B')) {
+    fail(`純資料格式 ${tag} 缺少十二宮起點`);
+  }
+});
+if (packRuns < 3) fail('純資料格式測試樣本不足');
+
 /* ---------- 結果 ---------- */
 if (failures.length) {
   console.error('Astro copy quality FAILED:');
@@ -222,4 +257,5 @@ if (failures.length) {
 }
 console.log(`Astro copy quality passed: ${answers.length} 筆人生主題答案／${allDetails} 條分項，` +
   `重述標籤 ${echo}/${ECHO_BUDGET}、缺句尾標點 0、半形逗號 0、結論與分項矛盾 ${contradictions}/${CONTRA_BUDGET}、` +
-  `顯示時修剪掉題目框架字 ${echoTitle} 筆、未摺疊術語 ${surfaced.length}/${TERM_BUDGET}。`);
+  `顯示時修剪掉題目框架字 ${echoTitle} 筆、未摺疊術語 ${surfaced.length}/${TERM_BUDGET}、` +
+  `純資料複製格式 ${packRuns} 組全數通過。`);

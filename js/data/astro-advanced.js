@@ -4050,6 +4050,7 @@ function renderAstro() {
     }
 
     h += renderPersonaPicker();
+    h += renderAstroCopyModePicker(chart);
     h += '<button id="astro-copy-btn" onclick="astroCopyForAI()" style="width:100%;margin-top:24px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製給 AI 解讀 Copy for AI</button>';
     h += '<button onclick="astroReset()" style="width:100%;margin-top:10px;padding:12px;border-radius:12px;border:1px solid rgba(201,169,110,.3);background:rgba(255,255,255,.02);color:rgba(240,233,216,.6);font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">重新輸入 ↺</button>';
     h += '<div style="text-align:center;margin-top:10px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap">';
@@ -5078,10 +5079,329 @@ function buildAstroCopyText(chart, unknownTime) {
   lines.push(personaInstructionLine());
   return lines.join('\n');
 }
+/* ============================================================================
+   「精簡資料版」複製給 AI
+
+   起因：把同一組出生資料的輸出拆開來算，buildAstroCopyText() 送出去的三萬多字
+   裡，真正的原始資料（度數、宮位、容許度）只佔 7.8%，其餘九成是本站模板已經
+   寫好的解讀。外部 AI 拿到之後最省力的做法就是把現成的文字重組——它不會、也
+   沒必要重新綜合一次星盤，等於把它最擅長的「跨行星、跨宮位、跨相位一起看」
+   關掉了。
+
+   這份格式反過來：只給事實、不給結論，並補上三項本站算得出來、原本卻沒送出去
+   的整體結構（半球分布、角宮／續宮／果宮、宮位重點）——這些正是判斷「這個人
+   整體是什麼樣子」的第一層資訊。另外加上閱讀範圍的界定與閱讀優先序，避免 AI
+   把本命資料當成流年來回答，或一頭栽進附錄的細節裡。
+
+   兩種格式都保留，因為用途不同：想讓 AI 自己解讀就用這份，想把本站既有內容
+   整理成一份報告則用完整版。
+   ============================================================================ */
+
+/* 相位歸到哪個人生主題：由兩端中主題最明確的那一顆決定。
+   順序不是單純「由外而內」——冥王、海王、土星確實會蓋過個人行星（太陽冥王的
+   四分相實際上是在講轉化，不只是在講自我），但木星與天王星本身沒有對應的人生
+   主題，讓它們勝出只會把月亮、水星的相位全部吸走，反而讓「情緒」「溝通」兩個
+   使用者最常問的主題整個消失，所以把這兩顆排在最後。
+   三顆外行星彼此的相位是同一世代的人幾乎都有的，另外歸類並註明，免得被當成
+   個人特質來解讀。 */
+var NATAL_PACK_THEMES = [
+  { key: 'Pluto', zh: '轉化與深層心理' },
+  { key: 'Neptune', zh: '直覺、想像與理想化' },
+  { key: 'Saturn', zh: '責任、壓力與長期課題' },
+  { key: 'Venus', zh: '愛情與親密' },
+  { key: 'Mars', zh: '行動力與衝突模式' },
+  { key: 'Mercury', zh: '思維與溝通' },
+  { key: 'Moon', zh: '情緒與安全感' },
+  { key: 'Sun', zh: '自我與生命力' },
+  { key: 'Jupiter', zh: '擴展、機會與信念' },
+  { key: 'Uranus', zh: '改變、獨立與突破' },
+];
+/* 分類區塊的排列順序：從最貼身的自我、情緒，往外排到世代背景，
+   而不是照相位緊密度出現的先後——後者會讓「自我與生命力」隨機掉到很後面。 */
+var NATAL_PACK_THEME_ORDER = [
+  '自我與生命力', '情緒與安全感', '思維與溝通', '愛情與親密', '行動力與衝突模式',
+  '責任、壓力與長期課題', '擴展、機會與信念', '改變、獨立與突破',
+  '直覺、想像與理想化', '轉化與深層心理',
+  '世代共有的背景（同齡人多半也有）', '交點與敏感點補充',
+];
+var NATAL_PACK_OUTER_KEYS = ['Uranus', 'Neptune', 'Pluto'];
+var NATAL_PACK_THEME_GENERATIONAL = '世代共有的背景（同齡人多半也有）';
+var NATAL_PACK_THEME_OTHER = '交點與敏感點補充';
+function natalPackTheme(asp) {
+  if (NATAL_PACK_OUTER_KEYS.indexOf(asp.a) !== -1 && NATAL_PACK_OUTER_KEYS.indexOf(asp.b) !== -1) {
+    return NATAL_PACK_THEME_GENERATIONAL;
+  }
+  for (var i = 0; i < NATAL_PACK_THEMES.length; i++) {
+    if (asp.a === NATAL_PACK_THEMES[i].key || asp.b === NATAL_PACK_THEMES[i].key) return NATAL_PACK_THEMES[i].zh;
+  }
+  return NATAL_PACK_THEME_OTHER;
+}
+
+/* 相位兩端的書寫順序。asp.a／asp.b 的先後取決於內部計算迴圈，印出來會變成
+   「福點 四分相 天王星」「南交點 四分相 太陽」這種把配角放在主詞位置的句子。
+   一律照這個排序寫，讓比較重要的天體在前面。 */
+var NATAL_PACK_BODY_ORDER = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn',
+  'Uranus', 'Neptune', 'Pluto', 'Node', 'SNode', 'Chiron', 'Lilith', 'Fortune', 'Vertex'];
+function natalPackOrderedEnds(asp) {
+  var ia = NATAL_PACK_BODY_ORDER.indexOf(asp.a), ib = NATAL_PACK_BODY_ORDER.indexOf(asp.b);
+  if (ia === -1) ia = 99;
+  if (ib === -1) ib = 99;
+  return ia <= ib ? [asp.a, asp.b] : [asp.b, asp.a];
+}
+
+/* 度分表示法。四捨五入到 60 分時要進位成下一度，否則會印出 11°60'。 */
+function natalPackDeg(position) {
+  var d = Math.floor(position.deg), m = Math.round((position.deg - d) * 60);
+  if (m >= 60) { m -= 60; d += 1; }
+  return d + '°' + (m < 10 ? '0' + m : m) + '\'';
+}
+/* 敏感點的中文譯名各家不同（「命定點」有些書叫「宿命點」，站上顯示成「頂點」
+   又容易跟「天頂」搞混），所以這幾個一律附上英文原名，避免 AI 認錯對象。
+   十大行星沒有這個問題，不加英文以免整份資料變得冗長。 */
+function natalPackName(key) {
+  var def = findAnyPointDef(key);
+  if (!def) return key;
+  var isPoint = EXTRA_POINT_DEFS.some(function (x) { return x.key === key; });
+  return isPoint ? pointDisplayName(def) + ' ' + key : def.zh;
+}
+function natalPackPlacement(key, chart, unknownTime) {
+  var p = natalAspectPosition(chart, key);
+  if (!p || typeof p.sign !== 'number' || !ZODIAC_SIGNS[p.sign]) return '';
+  return natalPackName(key) + ' ' + ZODIAC_SIGNS[p.sign].zh + ' ' + natalPackDeg(p)
+    + (unknownTime || !p.house ? '' : ' · 第' + p.house + '宮')
+    + (p.retro ? ' · 逆行' : '');
+}
+
+/* 半球與宮位性質：本站一直都算得出來，只是從來沒放進複製出去的資料裡。
+   東半球 = 第10–12、1–3 宮（靠近上升的那一側），上半球 = 第7–12 宮（地平線之上）。 */
+function natalPackStructure(chart) {
+  var east = 0, west = 0, upper = 0, lower = 0, ang = 0, suc = 0, cad = 0, byHouse = {};
+  PLANET_DEFS.forEach(function (d) {
+    var p = chart.planets[d.key];
+    if (!p || !p.house) return;
+    var hs = p.house;
+    if (hs >= 10 || hs <= 3) east++; else west++;
+    if (hs >= 7) upper++; else lower++;
+    if ([1, 4, 7, 10].indexOf(hs) !== -1) ang++;
+    else if ([2, 5, 8, 11].indexOf(hs) !== -1) suc++;
+    else cad++;
+    byHouse[hs] = (byHouse[hs] || 0) + 1;
+  });
+  var emphasis = Object.keys(byHouse).map(Number).filter(function (h) { return byHouse[h] >= 2; })
+    .sort(function (a, b) { return byHouse[b] - byHouse[a] || a - b; })
+    .map(function (h) { return '第' + h + '宮×' + byHouse[h] + '（' + HOUSE_BEGINNER[h - 1].lifeArea + '）'; });
+  return { east: east, west: west, upper: upper, lower: lower, ang: ang, suc: suc, cad: cad, emphasis: emphasis };
+}
+
+/* 某顆行星最緊密的一組相位，用在優先閱讀摘要裡當作該主題的第二條線索。 */
+function natalPackTightest(aspects, key) {
+  var hit = aspects.filter(function (a) { return a.a === key || a.b === key; })
+    .sort(function (a, b) { return a.orb - b.orb; })[0];
+  if (!hit) return '';
+  var e = natalPackOrderedEnds(hit);
+  return natalPackName(e[0]) + ' ' + ASPECT_DEFS[hit.type].zh + ' ' + natalPackName(e[1]) + '（' + hit.orb.toFixed(2) + '°）';
+}
+function natalPackAspectLine(asp) {
+  var e = natalPackOrderedEnds(asp);
+  return natalPackName(e[0]) + ' ' + ASPECT_DEFS[asp.type].zh + ' ' + natalPackName(e[1])
+    + '（容許度 ' + asp.orb.toFixed(2) + '°；' + (natalAspectPriority(asp) === 'core' ? '核心' : '次要') + '）';
+}
+
+function buildAstroDataPackText(chart, unknownTime) {
+  if (!chart) return '';
+  var L = [];
+  var city = state.astroCityUsed;
+  var aspects = astroUsableAspects(chart).slice().sort(function (a, b) { return a.orb - b.orb; });
+
+  L.push('【資料導讀 · 西洋占星 · 本命盤】');
+  L.push('· 這份是什麼：一個人出生當下的星盤原始數據，對應的是長期的性格、天賦與行為模式。');
+  L.push('· 這份不是：流年、行運、次限推運等跟時間有關的資料。要問「最近」「某一天」「今年」請改用本站對應頁面的複製功能，不要拿這份推算時間點。');
+  L.push('· 閱讀規則：只依據下列欄位推論；不要引入這份資料以外的設定，也不要跟合盤或推運資料混在一起讀。');
+  L.push('');
+
+  L.push('【基本資料】');
+  L.push('- 出生日期：' + state.astroY + '-' + pad2(state.astroM) + '-' + pad2(state.astroD));
+  L.push('- 出生時間：' + (unknownTime ? '未提供' : pad2(state.astroH) + ':' + pad2(state.astroMin)));
+  L.push('- 出生地：' + (city ? city.zh + '（' + city.en + '）' : '未提供'));
+  if (city) {
+    L.push('- 經緯度：' + city.lat.toFixed(4) + ', ' + city.lon.toFixed(4));
+    L.push('- 時區：' + city.tz);
+  }
+  L.push('');
+
+  L.push('【排盤設定】');
+  L.push('- 黃道系統：回歸黃道 Tropical');
+  L.push('- 宮位制：' + (state.astroHouseSystem === 'whole' ? '整宮制 Whole Sign' : '普拉西德制 Placidus'));
+  L.push('- 真太陽時：否');
+  L.push('- 資料可靠度：' + (unknownTime
+    ? '出生時間未知，因此不提供上升、天頂、宮位、福點與命定點；月亮當日可能範圍為 ' + astroMoonRangeText() + '。請勿推測任何與宮位或上升有關的內容。'
+    : '出生時間已提供，上升、天頂與宮位皆可使用。'));
+  L.push('');
+
+  /* 優先閱讀摘要：先給六條主線，讓 AI 知道從哪裡開始，而不是一進來就淹在附錄裡。 */
+  L.push('【優先閱讀摘要】');
+  var st = natalPackStructure(chart);
+  var coreLine = natalPackPlacement('Sun', chart, unknownTime) + '；' + natalPackPlacement('Moon', chart, unknownTime);
+  if (!unknownTime) coreLine += '；上升 ' + ZODIAC_SIGNS[chart.ascSign].zh + ' ' + natalPackDeg({ deg: chart.asc % 30 });
+  L.push('- 核心人格結構：' + coreLine);
+  L.push('- 情緒需求：' + natalPackPlacement('Moon', chart, unknownTime) + (natalPackTightest(aspects, 'Moon') ? '；最緊密相位 ' + natalPackTightest(aspects, 'Moon') : ''));
+  L.push('- 思維與溝通：' + natalPackPlacement('Mercury', chart, unknownTime) + (natalPackTightest(aspects, 'Mercury') ? '；最緊密相位 ' + natalPackTightest(aspects, 'Mercury') : ''));
+  L.push('- 愛情與親密：' + natalPackPlacement('Venus', chart, unknownTime) + (natalPackTightest(aspects, 'Venus') ? '；最緊密相位 ' + natalPackTightest(aspects, 'Venus') : ''));
+  L.push('- 行動與衝突：' + natalPackPlacement('Mars', chart, unknownTime) + (natalPackTightest(aspects, 'Mars') ? '；最緊密相位 ' + natalPackTightest(aspects, 'Mars') : ''));
+  L.push('- 責任與壓力：' + natalPackPlacement('Saturn', chart, unknownTime) + (natalPackTightest(aspects, 'Saturn') ? '；最緊密相位 ' + natalPackTightest(aspects, 'Saturn') : ''));
+  var eq = computeElementQualityBalance(chart);
+  L.push('- 整體結構：元素 火' + eq.elem['火'] + '／土' + eq.elem['土'] + '／風' + eq.elem['風'] + '／水' + eq.elem['水']
+    + '；性質 本位' + eq.qual['本位'] + '／固定' + eq.qual['固定'] + '／變動' + eq.qual['變動']
+    + (!unknownTime && st.emphasis.length ? '；宮位重點 ' + st.emphasis.join('、') : ''));
+  L.push('');
+
+  L.push('【核心落點】');
+  ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Saturn'].forEach(function (k) {
+    L.push('- ' + natalPackPlacement(k, chart, unknownTime));
+  });
+  if (!unknownTime) {
+    L.push('- 上升點 ASC：' + ZODIAC_SIGNS[chart.ascSign].zh + ' ' + natalPackDeg({ deg: chart.asc % 30 }));
+    L.push('- 天頂 MC：' + ZODIAC_SIGNS[Math.floor(chart.mc / 30)].zh + ' ' + natalPackDeg({ deg: chart.mc % 30 }));
+    var ruler = natalChartRulerPlacement(chart);
+    if (ruler) L.push('- 上升守護星：' + natalPackPlacement(ruler.rulerKey, chart, unknownTime));
+  }
+  L.push('');
+
+  L.push('【星盤結構摘要】');
+  L.push('- 元素分布：火象 ' + eq.elem['火'] + '，土象 ' + eq.elem['土'] + '，風象 ' + eq.elem['風'] + '，水象 ' + eq.elem['水']);
+  L.push('- 性質分布：本位 ' + eq.qual['本位'] + '，固定 ' + eq.qual['固定'] + '，變動 ' + eq.qual['變動']);
+  if (!unknownTime) {
+    L.push('- 宮位重點：' + (st.emphasis.length ? st.emphasis.join('、') : '沒有任何一宮聚集兩顆以上行星'));
+    L.push('- 半球分布：東半球 ' + st.east + '，西半球 ' + st.west + '，上半球 ' + st.upper + '，下半球 ' + st.lower + '（東＝第10至3宮，上＝第7至12宮）');
+    L.push('- 角宮／續宮／果宮：角宮 ' + st.ang + '，續宮 ' + st.suc + '，果宮 ' + st.cad);
+  } else {
+    L.push('- 宮位相關統計：出生時間未知，不提供。');
+  }
+  L.push('');
+
+  var topN = Math.min(10, aspects.length);
+  L.push('【最緊密的 ' + topN + ' 組相位】');
+  aspects.slice(0, topN).forEach(function (asp) {
+    L.push('- ' + natalPackAspectLine(asp) + ' · ' + natalPackTheme(asp));
+  });
+  L.push('');
+
+  L.push('【相位的主題分類】');
+  L.push('· 每組相位只列在一個主題下，以兩端中主題最明確的那顆天體為準；同一組相位在其他主題裡往往也說得通，請自行斟酌。');
+  var grouped = {};
+  aspects.forEach(function (asp) {
+    var t = natalPackTheme(asp);
+    (grouped[t] || (grouped[t] = [])).push(asp);
+  });
+  NATAL_PACK_THEME_ORDER.forEach(function (t) {
+    if (!grouped[t]) return;
+    L.push('# ' + t);
+    grouped[t].forEach(function (asp) { L.push('- ' + natalPackAspectLine(asp)); });
+  });
+  L.push('');
+
+  L.push('【附錄 A：完整行星與敏感點落點】');
+  PLANET_DEFS.forEach(function (d) { L.push('- ' + natalPackPlacement(d.key, chart, unknownTime)); });
+  EXTRA_POINT_DEFS.forEach(function (d) {
+    if (unknownTime && (d.key === 'Fortune' || d.key === 'Vertex')) return;
+    if (chart.points[d.key]) L.push('- ' + natalPackPlacement(d.key, chart, unknownTime));
+  });
+  if (!unknownTime) {
+    L.push('- 上升點 ' + ZODIAC_SIGNS[chart.ascSign].zh + ' ' + natalPackDeg({ deg: chart.asc % 30 }));
+    L.push('- 天頂 ' + ZODIAC_SIGNS[Math.floor(chart.mc / 30)].zh + ' ' + natalPackDeg({ deg: chart.mc % 30 }));
+    L.push('- 下降點 ' + ZODIAC_SIGNS[Math.floor(astroNormDeg(chart.asc + 180) / 30)].zh + ' ' + natalPackDeg({ deg: astroNormDeg(chart.asc + 180) % 30 }));
+    L.push('- 天底 ' + ZODIAC_SIGNS[Math.floor(astroNormDeg(chart.mc + 180) / 30)].zh + ' ' + natalPackDeg({ deg: astroNormDeg(chart.mc + 180) % 30 }));
+  }
+  L.push('');
+
+  if (!unknownTime) {
+    L.push('【附錄 B：十二宮起點】');
+    chart.houseCusps.forEach(function (cusp, i) {
+      L.push('- 第' + (i + 1) + '宮：' + ZODIAC_SIGNS[Math.floor(astroNormDeg(cusp) / 30)].zh + ' '
+        + natalPackDeg({ deg: astroNormDeg(cusp) % 30 }) + '（' + HOUSE_BEGINNER[i].lifeArea + '）');
+    });
+    L.push('');
+  }
+
+  L.push('【附錄 C：完整相位清單（共 ' + aspects.length + ' 組，依容許度由緊到鬆）】');
+  aspects.forEach(function (asp) { L.push('- ' + natalPackAspectLine(asp)); });
+  L.push('');
+  L.push('· 說明：容許度是實際角度與標準角度的差，數字越小影響越明顯。標示「核心」的是雙個人行星、或牽涉日月且容許度在 4 度內、或容許度在 2 度內的相位。');
+  L.push('· 本資料未計算入相／出相，請不要推測。');
+  L.push('');
+
+  L.push('【請你這樣解讀】');
+  L.push('1. 先看整體結構（' + (unknownTime ? '元素、性質' : '元素、性質、半球、宮位重點') + '），判斷這張盤的基本傾向。');
+  L.push('2. 再看核心落點與最緊密的相位，找出重複出現的主題——同一個訊息由多個配置指向時，才把它當成主線。');
+  L.push('3. 說明時請標明是根據哪幾項配置推論的，並清楚區分「資料直接支持的」與「你的推測」。');
+  L.push('4. 不要使用宿命式斷言，也不要預測具體事件或時間點。');
+  L.push('5. 星盤中相反的傾向請並陳，不要為了讓結論一致而略過其中一邊。');
+  L.push(personaInstructionLine());
+  return L.join('\n');
+}
+
+function setAstroCopyMode(mode) {
+  state.astroCopyMode = mode === 'full' ? 'full' : 'data';
+  try { localStorage.setItem('tl_astro_copy_mode', state.astroCopyMode); } catch (e) {}
+  render();
+}
+
+/* 兩種格式的差別不是「詳細一點或簡略一點」，而是「誰來做解讀」——這件事光看
+   按鈕名稱看不出來，所以直接把兩者的內容、字數與後果寫在選項裡。
+   字數是當場算出來的（兩份加起來約 4ms），不寫死，換一張盤也不會失準。 */
+var ASTRO_COPY_MODES = [
+  {
+    key: 'data', name: '純資料', badge: '預設',
+    what: '只給落點、宮位、相位等原始數字，不附任何解讀。',
+    effect: 'AI 會自己讀整張盤，把重複出現的主題串起來。多數情況解讀更貼切，也比較好接著追問。',
+  },
+  {
+    key: 'full', name: '含本站解讀',
+    what: '原始數字之外，連本站已經寫好的每一段解讀一起附上。',
+    effect: 'AI 多半會以這些現成文字為主去改寫，較少自己重新讀盤。適合把本站內容整理成一份報告。',
+  },
+];
+function renderAstroCopyModePicker(chart) {
+  if (!chart) return '';
+  var unknown = !!state.astroUnknownTime;
+  var lens = {};
+  try {
+    lens.data = buildAstroDataPackText(chart, unknown).length;
+    lens.full = buildAstroCopyText(chart, unknown).length;
+  } catch (e) { lens = {}; }
+
+  var h = '<div style="margin-top:16px">';
+  h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-bottom:6px">貼給 AI 的內容 Copy Format</div>';
+  h += '<div style="display:flex;flex-direction:column;gap:6px">';
+  ASTRO_COPY_MODES.forEach(function (m) {
+    var on = state.astroCopyMode === m.key;
+    var len = lens[m.key];
+    var lenTxt = len ? '約 ' + (len < 10000 ? String(Math.round(len / 100) * 100) : (Math.round(len / 1000) + ',000')) + ' 字' : '';
+    h += '<button type="button" aria-pressed="' + on + '" onclick="setAstroCopyMode(\'' + m.key + '\')"'
+      + ' style="text-align:left;padding:9px 11px;border-radius:10px;border:1px solid ' + (on ? '#c9a96e' : 'rgba(201,169,110,.28)')
+      + ';background:' + (on ? 'rgba(201,169,110,.18)' : 'rgba(255,255,255,.02)') + ';cursor:pointer">';
+    h += '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">';
+    h += '<span style="font:500 12px \'Noto Sans TC\',sans-serif;color:' + (on ? '#f0e9d8' : 'rgba(240,233,216,.72)') + '">'
+      + (on ? '✓ ' : '') + esc(m.name) + (m.badge ? '<span style="font:400 9px \'Noto Sans TC\',sans-serif;color:rgba(201,169,110,.75);margin-left:6px">' + esc(m.badge) + '</span>' : '') + '</span>';
+    h += '<span style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);white-space:nowrap">' + esc(lenTxt) + '</span>';
+    h += '</div>';
+    h += '<div style="font:400 9.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:3px;line-height:1.55">' + esc(m.what) + '</div>';
+    h += '<div style="font:400 9.5px \'Noto Sans TC\',sans-serif;color:' + (on ? 'rgba(230,205,154,.72)' : 'rgba(240,233,216,.35)') + ';margin-top:2px;line-height:1.55">→ ' + esc(m.effect) + '</div>';
+    h += '</button>';
+  });
+  h += '</div>';
+  h += '<div style="font:400 9.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:6px;line-height:1.6">兩份的星盤數字完全一樣，差別只在要不要一起附上本站的解讀文字。</div>';
+  h += '</div>';
+  return h;
+}
+
 function astroCopyForAI() {
   var chart = state.astroResult;
   if (!chart) return;
-  var text = buildAstroCopyText(chart, !!state.astroUnknownTime);
+  var unknown = !!state.astroUnknownTime;
+  var text = state.astroCopyMode === 'full'
+    ? buildAstroCopyText(chart, unknown)
+    : buildAstroDataPackText(chart, unknown);
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(astroFlashCopied).catch(function () { fallbackCopy(text, astroFlashCopied); });
   } else {

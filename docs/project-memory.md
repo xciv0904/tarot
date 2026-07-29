@@ -100,4 +100,5 @@ user initiated. Do not add automatic transmission or commit exported user data.
 | 2026-07-28 | Replace 「界線」 with 「底線」／「分寸」／plain paraphrase across all 83 sites | Self-help jargon; unclear to a first-time reader |
 | 2026-07-28 | Strip label-echoing prefixes from natal detail text; suppress details already contained in the headline at render time | 60% of answers repeated themselves; validator forbids dropping details from the data |
 | 2026-07-28 | Add `tests/astro-copy-quality.js` as a required check | Golden checks whether answers changed, not whether they read well |
+| 2026-07-29 | Natal copy-to-AI defaults to a data-only pack (`buildAstroDataPackText`); the prose version is opt-in | Measured on one chart: only 7.8% of the 31,024-character export was actual chart data. Given nine parts pre-written interpretation, an external model rewrites our text instead of reading the chart itself, which is the one thing it does better than our templates |
 
