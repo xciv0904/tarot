@@ -218,8 +218,8 @@ if (halfComma.length) fail(`星盤答案中文句子出現半形逗號：${halfC
  * 這份是要貼給外部 AI 的，錯了不會在畫面上顯現，只會讓別人拿到壞資料，
  * 所以這裡守的是三件事：該有的區塊都在、宣告的數量與實際列出的一致、
  * 以及出生時間未知時絕對不外洩任何宮位資訊（那是我們宣告過不提供的）。 */
-const PACK_SECTIONS = ['【資料導讀', '【基本資料】', '【排盤設定】', '【優先閱讀摘要】', '【核心落點】',
-  '【星盤結構摘要】', '【最緊密的', '【相位的主題分類】', '【附錄 A', '【附錄 C', '【請你這樣解讀】'];
+const PACK_SECTIONS = ['【本命盤觀測值', '【出生條件與計算方式】', '【先抓主軸】', '【六個閱讀錨點】',
+  '【全盤分布】', '【相位焦點', '【生活面向索引】', '【明細表一', '【明細表三', '【交給 AI 的任務】'];
 let packRuns = 0;
 [[chartA, city, false], [chartB, city2, false], [chartA, city, true]].forEach(([ch, ct, unknown]) => {
   c.state.astroResult = ch; c.state.astroCityUsed = ct; c.state.astroUnknownTime = unknown;
@@ -234,17 +234,24 @@ let packRuns = 0;
   if (/°60'/.test(text)) fail(`純資料格式 ${tag} 出現 60 分未進位的度數`);
   if (/座座/.test(text)) fail(`純資料格式 ${tag} 星座名重複「座座」`);
 
-  const declared = Number((text.match(/完整相位清單（共 (\d+) 組/) || [])[1]);
-  const listed = text.split('【附錄 C')[1].split('\n').filter(l => l.startsWith('- ')).length;
-  if (declared !== listed) fail(`純資料格式 ${tag} 附錄 C 宣告 ${declared} 組、實際列出 ${listed} 組`);
-  const themed = text.split('【相位的主題分類】')[1].split('【附錄 A')[0].split('\n').filter(l => l.startsWith('- ')).length;
+  const declared = Number((text.match(/全部主要相位：(\d+) 組/) || [])[1]);
+  const listed = text.split('【明細表三')[1].split('\n').filter(l => l.startsWith('- ')).length;
+  if (declared !== listed) fail(`純資料格式 ${tag} 明細表三宣告 ${declared} 組、實際列出 ${listed} 組`);
+  const themed = text.split('【生活面向索引】')[1].split('【明細表一')[0].split('\n').filter(l => l.startsWith('- ')).length;
   if (themed !== listed) fail(`純資料格式 ${tag} 主題分類漏列相位：${themed} ≠ ${listed}`);
 
   if (unknown) {
-    if (/第\d+宮×|半球分布|角宮 \d|第\d+宮：/.test(text)) fail('純資料格式在出生時間未知時仍輸出宮位資訊');
-    if (text.includes('【附錄 B')) fail('純資料格式在出生時間未知時仍輸出十二宮起點');
-  } else if (!text.includes('【附錄 B')) {
+    if (/第\d+宮×|半球分布|角宮 \d|第\d+宮：|上升點 ASC (?:合相|六分相|四分相|三分相|對分相)|天頂 MC (?:合相|六分相|四分相|三分相|對分相)|(?:合相|六分相|四分相|三分相|對分相) 上升點 ASC|(?:合相|六分相|四分相|三分相|對分相) 天頂 MC/.test(text)) fail('純資料格式在出生時間未知時仍輸出宮位或角度點相位');
+    if (text.includes('【明細表二')) fail('純資料格式在出生時間未知時仍輸出十二宮起點');
+  } else if (!text.includes('【明細表二')) {
     fail(`純資料格式 ${tag} 缺少十二宮起點`);
+  } else {
+    const angleAspects = c.natalPackAngleAspects(ch);
+    if (!angleAspects.length) fail(`純資料格式 ${tag} 未算出任何 ASC／MC 相位，測試樣本失效`);
+    angleAspects.forEach(a => {
+      const line = c.natalPackAspectLine(a);
+      if (!text.includes(line)) fail(`純資料格式 ${tag} 缺少角度點相位：${line}`);
+    });
   }
 });
 if (packRuns < 3) fail('純資料格式測試樣本不足');
