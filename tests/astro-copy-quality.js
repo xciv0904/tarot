@@ -230,7 +230,7 @@ let packRuns = 0;
   packRuns++;
   const tag = `${ct.zh}${unknown ? '（時間未知）' : ''}`;
   PACK_SECTIONS.forEach(s => { if (!text.includes(s)) fail(`純資料格式 ${tag} 缺少區塊 ${s}`); });
-  ['觸發', '至少兩項', '生活片段', '這週就能執行'].forEach(s => {
+  ['觸發', '至少兩項', '生活片段', '由近到深', '核心主軸', '這週就能執行'].forEach(s => {
     if (!text.includes(s)) fail(`純資料格式 ${tag} 缺少深度綜合要求「${s}」`);
   });
   ['使用可能性語氣', '本人核對'].forEach(s => {
