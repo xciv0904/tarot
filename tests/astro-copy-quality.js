@@ -53,6 +53,13 @@ function loadRuntime() {
 }
 
 const c = loadRuntime();
+
+/* 牌卡側新增的分類不得自動流入占星運勢計分；運勢只支援七個有守護星設定的生活分類。 */
+const horoscopeCatKeys = vm.runInContext('HOROSCOPE_SCORE_CATS.map(function (x) { return x.key; })', c);
+if (horoscopeCatKeys.length !== 7 || horoscopeCatKeys.includes('decision') || horoscopeCatKeys.includes('general') ||
+    horoscopeCatKeys.some(key => !vm.runInContext(`!!ASTRO_CATEGORY_RULERS['${key}'] && !!CATEGORY_COLOR['${key}']`, c))) {
+  throw new Error('每日／週／月／年運勢包含未支援的評分類別。');
+}
 const natalHeadlineForTitleAvailable = typeof c.natalHeadlineForTitle === 'function';
 const failures = [];
 const fail = msg => failures.push(msg);
@@ -234,7 +241,12 @@ let packRuns = 0;
     '思考、學習與溝通', '感情與親密關係', '工作能力與發展方式',
     '壓力反應與主要盲點', '核心人生課題', '現在可以怎麼運用',
     '三個跨分類模式', '至少兩項', '1,800–2,400', '90–140', '不得換句話重複',
-    '本週行動', '每項不超過 60 字'].forEach(s => {
+    '【易讀性與具體化規則】', '具體觸發情境', '超過約 40 個中文字', '一般人能辨認的生活表現',
+    '原本能力 → 過度反應 → 實際代價', '完全沒有占星背景', '空話檢查',
+    '初次接觸時別人怎麼看', '哪些訊號引起不安或失落', '溝通最容易在哪裡失真',
+    '長期相處需要什麼條件', '先談任務與工作方式', '壓力初期訊號',
+    '從哪種舊方法轉向哪種新方法', '一條簡單判斷原則',
+    '不同領域為何出現同一反應', '七天內完成', '每項不超過 60 字'].forEach(s => {
     if (!text.includes(s)) fail(`純資料格式 ${tag} 缺少深度綜合要求「${s}」`);
   });
   ['使用可能性語氣', '本人核對'].forEach(s => {
