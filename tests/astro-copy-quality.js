@@ -196,6 +196,48 @@ const chartB = c.computeNatalChart(1985, 11, 3, 7, 15, city2.lat, city2.lon, cit
 c.state.astroResult = chartA; c.state.astroCityUsed = city; c.state.astroUnknownTime = false;
 c.state.synResult = chartB; c.state.synCityUsed = city2; c.state.synRelationship = 'love';
 
+/* 合盤與推運畫面不得把「思考溝通／核心自我」等內部分類名稱直接當成解讀。
+   使用者先看到的內容必須說清楚是兩人怎麼互動，或這段時間什麼正在改變。 */
+['conjunction', 'sextile', 'trine', 'square', 'opposition'].forEach(type => {
+  const asp = { aKey: 'Mercury', bKey: 'Mercury', type, orb: 1.2 };
+  const visibleCard = c.renderCrossAspectBeginnerCard(asp, {}).split('<details')[0];
+  if (!visibleCard.includes('你的溝通與理解方式') || !visibleCard.includes('對方的溝通與理解方式')) {
+    fail(`合盤 ${type} 沒有把水星翻成雙方可辨認的溝通行為`);
+  }
+  if (/本人的思考溝通|對方的思考溝通|主動使用才會出現/.test(visibleCard)) {
+    fail(`合盤 ${type} 仍直接顯示內部分類名稱`);
+  }
+
+  const progression = c.progressionAspectPlain({ aKey: 'Sun', bKey: 'Venus', type, orb: 1.2 }, {});
+  if (!progression.text.includes('這段時間') || !progression.text.includes('自我方向') ||
+      !progression.text.includes('關係與價值選擇')) {
+    fail(`推運 ${type} 沒有說清楚這段時間正在互動的生活面向`);
+  }
+  if (/核心自我|愛與美感|互相影響|幾乎不用刻意練習/.test(progression.text)) {
+    fail(`推運 ${type} 仍顯示抽象分類模板`);
+  }
+});
+['Jupiter', 'Saturn', 'Uranus', 'Pluto'].forEach(point => {
+  const label = c.crossPointEveryday(point, '你');
+  if (/你的對|你的面對|鼓勵彼此/.test(label)) fail(`合盤 ${point} 的生活化名稱仍有語病：「${label}」`);
+});
+[
+  ['Node', '正在練習'],
+  ['SNode', '很容易自動'],
+  ['Lilith', '被控制'],
+  ['Chiron', '感到受傷'],
+  ['Fortune', '比較順手'],
+  ['Vertex', '重要的人'],
+].forEach(([point, expected]) => {
+  const def = c.EXTRA_POINT_DEFS.find(d => d.key === point);
+  const reading = c.extraPointReading(def, chartA.points[point], chartA, false);
+  const visible = [reading.summary, reading.primaryText, reading.lifeExpression, reading.caution].join('');
+  if (!visible.includes(expected)) fail(`額外本命點 ${point} 缺少生活化重點「${expected}」`);
+  if (/練習還不熟練的能力|提供熟練的處理方式|透過「|被啟動時|常表現為/.test(visible)) {
+    fail(`額外本命點 ${point} 仍顯示內部拼接模板：「${visible.slice(0, 80)}」`);
+  }
+});
+
 /* 術語出現在未摺疊區時，同一段文字裡必須至少有一個白話說明的線索，
    否則第一次接觸占星的人只會看到一串看不懂的名詞。 */
 const HARD_TERMS = ['合相', '對分相', '四分相', '三分相', '六分相', '容許度', '宮主星', '守護星', '入相位', '出相位', '截奪', '互容', '定位星'];

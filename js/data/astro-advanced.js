@@ -49,6 +49,55 @@ function ensureAstrologyBodyKeys() {
 function pointDisplayName(pointDef) { return EXTRA_POINT_DISPLAY_NAMES[pointDef.key] || pointDef.zh; }
 /* 二十八星宿：宿別資料、日期換算與兩宿關係 已移到 js/data/astro-advanced.js（見檔頭說明）。 */
 
+function extraPointVisibleCopy(pointDef, pb, sb, hb, useHouse) {
+  var area = useHouse ? hb.lifeArea : '日常生活';
+  var example = useHouse ? hb.example : '遇到相關情境';
+  var byPoint = {
+    Node: {
+      summary: '在' + area + '裡，你正在練習一種還不熟悉的做法：' + sb.method + '。',
+      primaryText: '先從一個小步驟開始，比要求自己立刻熟練更有效。',
+      lifeExpression: '剛開始可能覺得生疏或不順；反覆實做後，才會慢慢變成真正用得上的能力。',
+      caution: '不要因為不熟就放棄，也不必用力過猛；允許自己邊做邊修正。',
+    },
+    SNode: {
+      summary: '當你面對' + area + '的事情時，很容易自動採用熟悉的做法：' + sb.method + '。',
+      primaryText: '這是你已經會的能力，可以拿來穩住自己，但不必每次都只用這一招。',
+      lifeExpression: '壓力越大，越容易不假思索地回到這套反應，因此常覺得安全又省力。',
+      caution: '熟悉不等於最適合眼前情況；採用老方法前，先確認它這次是否真的有效。',
+    },
+    Lilith: {
+      summary: '在' + area + '裡，只要覺得被控制、被評判或被要求配合，你特別容易抗拒。',
+      primaryText: '你想守住的是用「' + sb.method + '」做自己的空間與底線。',
+      lifeExpression: '例如' + example + '，你可能直接拒絕、拉開距離，或在忍耐後突然反彈。',
+      caution: '不要一路忍到爆發；第一次感到不舒服時，就把不能接受的做法說清楚。',
+    },
+    Chiron: {
+      summary: '在' + area + '裡，你較容易因批評、比較或不被理解而感到受傷。',
+      primaryText: '這個敏感點常跟「' + sb.motivation + '」的需要有關。',
+      lifeExpression: '例如' + example + '，你可能特別在意自己是否做得不夠好，或別人是否真正理解你。',
+      caution: '敏感不等於缺陷；先說清楚哪句話或哪個行為讓你受傷，不必急著證明自己沒事。',
+    },
+    Fortune: {
+      summary: '投入' + area + '時，' + sb.method + '，往往會讓事情比較順手，也更容易感到滿足。',
+      primaryText: '這不是保證幸運，而是你比較容易注意並接住機會的方式。',
+      lifeExpression: '例如' + example + '，主動參與通常比等待好事自己發生更容易得到成果。',
+      caution: '順手不代表不必投入；把時間放進去，這項優勢才會真正累積。',
+    },
+    Vertex: {
+      summary: '在' + area + '裡，重要的人、邀請或事件較容易改變你原本的看法。',
+      primaryText: '你通常會用「' + sb.method + '」回應這些突如其來的轉折。',
+      lifeExpression: '例如' + example + '，一次互動可能帶來新的選項，但最後仍由你決定是否跟進。',
+      caution: '重要相遇不等於命中注定；先看對方後續的實際行動，再決定投入多少。',
+    },
+  };
+  return byPoint[pointDef.key] || {
+    summary: pb.plain,
+    primaryText: pb.strength,
+    lifeExpression: pb.expression,
+    caution: pb.watch,
+  };
+}
+
 /* ---- 額外本命點：本命點核心功能＋星座表現方式＋宮位觸發領域融合 ----
    六個點各有自己的心理功能（POINT_BEGINNER 的 coreFunction/motivation/expression/
    matureUse/imbalance/growthDirection），不是套同一套人格模板；星座／宮位則沿用
@@ -63,20 +112,6 @@ function extraPointReading(pointDef, placement, chart, unknownTime) {
   var seed = pointDef.key + '|' + placement.sign + '|' + (useHouse ? placement.house : 'nohouse');
   var P = pointDisplayName(pointDef), S = sign.zh;
 
-  var summary = useHouse
-    ? fillTpl(astroSeededPick(seed + 'sum', FUSE_POINT_SUMMARY_HOUSE_TPL), { P: P, S: S, coreFunction: pb.coreFunction, method: sb.method, lifeArea: hb.lifeArea })
-    : fillTpl(astroSeededPick(seed + 'sum', FUSE_POINT_SUMMARY_NOHOUSE_TPL), { P: P, S: S, coreFunction: pb.coreFunction, method: sb.method });
-  var primaryTpl = POINT_PRIMARY_TPL[pointDef.key];
-  var primaryText = useHouse
-    ? fillTpl(astroSeededPick(seed + 'pri', primaryTpl.house), { S: S, motivation: sb.motivation, lifeArea: hb.lifeArea })
-    : fillTpl(astroSeededPick(seed + 'pri', primaryTpl.nohouse), { S: S, motivation: sb.motivation });
-  var lifeExpression = useHouse
-    ? fillTpl(astroSeededPick(seed + 'life', FUSE_POINT_LIFE_HOUSE_TPL), { P: P, lifeArea: hb.lifeArea, pointExpression: pb.expression })
-    : fillTpl(astroSeededPick(seed + 'life', FUSE_POINT_LIFE_NOHOUSE_TPL), { P: P, pointExpression: pb.expression });
-  var caution = useHouse
-    ? fillTpl(astroSeededPick(seed + 'cau', FUSE_POINT_CAUTION_HOUSE_TPL), { P: P, lifeArea: hb.lifeArea, imbalance: pb.imbalance, growthDirection: pb.growthDirection })
-    : fillTpl(astroSeededPick(seed + 'cau', FUSE_POINT_CAUTION_NOHOUSE_TPL), { imbalance: pb.imbalance, growthDirection: pb.growthDirection });
-
   var coreFunctionText = fillTpl(astroSeededPick(seed + 'fn', FUSE_POINT_FUNCTION_TPL), { P: P, coreFunction: pb.coreFunction, motivation: pb.motivation });
   var signMethod = fillTpl(astroSeededPick(seed + 'sm', FUSE_POINT_SIGNMETHOD_TPL), { S: S, signMotivation: sb.motivation, method: sb.method });
   var houseActivation = useHouse
@@ -88,6 +123,7 @@ function extraPointReading(pointDef, placement, chart, unknownTime) {
   var growth = useHouse
     ? fillTpl(astroSeededPick(seed + 'gr', FUSE_POINT_GROWTH_TPL), { matureUse: pb.matureUse, growthTask: hb.growthTask })
     : fillTpl(astroSeededPick(seed + 'gr', FUSE_POINT_GROWTH_NOHOUSE_TPL), { matureUse: pb.matureUse, growthDirection: pb.growthDirection });
+  var visibleCopy = extraPointVisibleCopy(pointDef, pb, sb, hb, useHouse);
 
   var axisContext = '';
   if (pointDef.key === 'Node' || pointDef.key === 'SNode') {
@@ -122,11 +158,11 @@ function extraPointReading(pointDef, placement, chart, unknownTime) {
     retroNote;
 
   return {
-    summary: summary,
+    summary: visibleCopy.summary,
     primaryLabel: pb.primaryLabel,
-    primaryText: primaryText,
-    lifeExpression: lifeExpression,
-    caution: caution,
+    primaryText: visibleCopy.primaryText,
+    lifeExpression: visibleCopy.lifeExpression,
+    caution: visibleCopy.caution,
     advanced: { coreFunction: coreFunctionText, signMethod: signMethod, houseActivation: houseActivation, axisContext: axisContext, synthesis: synthesis, growth: growth },
     technical: technical
   };
@@ -4288,6 +4324,59 @@ function crossAspectText(asp, labelA, labelB) {
   var body = def.tpl.replace('{A}', labelA + aDef.zh).replace('{B}', labelB + bDef.zh).replace('{ak}', aDef.kw).replace('{bk}', bDef.kw);
   return labelA + aDef.zh + def.zh + labelB + bDef.zh + '（誤差 ' + asp.orb.toFixed(1) + '°）：' + body + '。';
 }
+var CROSS_POINT_EVERYDAY = {
+  Sun: '自我定位與人生方向',
+  Moon: '情緒反應與安全感',
+  Mercury: '溝通與理解方式',
+  Venus: '表達喜歡與經營關係的方式',
+  Mars: '採取行動與處理衝突的方式',
+  Jupiter: '鼓勵對方與看待成長的方式',
+  Saturn: '承擔責任、設定界線與面對壓力的方式',
+  Uranus: '自由、改變與新鮮感的需要',
+  Neptune: '想像、同理與理想化的傾向',
+  Pluto: '控制局面、建立信任與面對重大改變的方式',
+};
+function crossPointEveryday(key, owner) {
+  var def = findAnyPointDef(key);
+  return owner + '的' + (CROSS_POINT_EVERYDAY[key] || (def ? def.meaning : '反應方式'));
+}
+function crossAspectEveryday(asp) {
+  var a = crossPointEveryday(asp.aKey, '你');
+  var b = crossPointEveryday(asp.bKey, '對方');
+  var byType = {
+    conjunction: {
+      lead: a + '很容易直接帶動' + b + '，兩人的反應常會在同一時間被放大。',
+      strength: '彼此一有反應，另一方通常很快就能接到，容易形成鮮明而緊密的互動。',
+      watch: '兩人的反應黏得太近時，可能分不清現在真正需要處理的是誰的需求。',
+      practice: '事情升溫時，先各自說一句「我現在需要什麼」，再決定下一步。',
+    },
+    sextile: {
+      lead: '只要其中一人先開口或採取行動，' + a + '和' + b + '通常就能互相配合。',
+      strength: '願意主動確認彼此想法時，這一塊很容易成為關係中的助力。',
+      watch: '因為平時沒有明顯衝突，兩人可能忽略這份默契需要主動使用才看得見。',
+      practice: '遇到相關事情時，直接提出一個具體邀請或問題，不要只等對方先反應。',
+    },
+    trine: {
+      lead: a + '和' + b + '很容易接上，相處時通常不必花太多力氣磨合這一塊。',
+      strength: '兩人容易理解彼此的節奏，合作或相處時較少在這件事上互相消耗。',
+      watch: '太習慣事情自然順下去，可能把對方的配合視為理所當然。',
+      practice: '把這份默契用在一件共同目標上，並明確說出你欣賞對方的哪個做法。',
+    },
+    square: {
+      lead: a + '容易碰到' + b + '的敏感點，同一件事常讓兩人採取不同反應。',
+      strength: '如果願意把差異說清楚，這種摩擦能幫兩人看見原本忽略的角度。',
+      watch: '壓力一高，雙方容易各自加大力道，最後從處理事情變成互相防衛。',
+      practice: '發生摩擦時先只談一件具體事件，不翻舊帳，也不猜測對方動機。',
+    },
+    opposition: {
+      lead: a + '和' + b + '常站在不同位置，一方越往前，另一方越容易往相反方向反應。',
+      strength: '兩人能補到彼此看不到的一面，適合在決策前交換不同立場。',
+      watch: '若只認為自己的反應合理，關係容易變成一人推進、另一人抵抗。',
+      practice: '做決定前，各自說出最在意的一項需求，再找能同時保留兩邊的方案。',
+    },
+  };
+  return byType[asp.type] || byType.conjunction;
+}
 /* 合盤原本用上面那段 crossAspectText（術語堆砌、每種相位類型只有一套固定敘述）
    直接顯示給使用者看，這正是個人星盤在任務 #61/#63 修過的同一個問題——現在
    改用跟本命盤同一套 aspectBeginnerData／ASPECT_BEGINNER 白話系統，只是標題
@@ -4300,22 +4389,9 @@ function crossAspectText(asp, labelA, labelB) {
    會各自檢查、避開同一份清單裡已經用過的模板骨架；不傳就跟原本行為一樣。 */
 function renderCrossAspectBeginnerCard(asp, usedSet) {
   var aDef = findAnyPointDef(asp.aKey), bDef = findAnyPointDef(asp.bKey);
-  var base = ASPECT_BEGINNER[asp.type];
-  var seedBase = 'cross|' + asp.aKey + '|' + asp.bKey + '|' + asp.type;
-  function pickField(name) {
-    var tpl = astroSeededPick(seedBase + '|' + name, base[name]);
-    if (usedSet) {
-      var key = asp.type + '|' + name + '|' + tpl;
-      if (usedSet[key]) {
-        var alt = base[name].filter(function (t) { return !usedSet[asp.type + '|' + name + '|' + t]; })[0];
-        if (alt) tpl = alt;
-      }
-      usedSet[asp.type + '|' + name + '|' + tpl] = true;
-    }
-    return fillAspectTemplate(tpl, '本人的' + aDef.kw, '對方的' + bDef.kw);
-  }
-  var title = '本人' + aDef.zh + ' × 對方' + bDef.zh;
-  var lead = pickField('lead'), strength = pickField('strength'), watch = pickField('watch'), practice = pickField('practice');
+  var d = crossAspectEveryday(asp);
+  var title = crossPointEveryday(asp.aKey, '你') + ' × ' + crossPointEveryday(asp.bKey, '對方');
+  var lead = d.lead, strength = d.strength, watch = d.watch, practice = d.practice;
   return '<article style="border-top:1px solid rgba(201,169,110,.15);padding:12px 0"><div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + esc(title) + '</div><div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.75;margin-top:5px">' + esc(lead) + '</div><div style="margin-top:7px;font:400 11px \'Noto Sans TC\',sans-serif;color:#9bc5a3;line-height:1.65">優勢：' + esc(strength) + '</div><div style="margin-top:3px;font:400 11px \'Noto Sans TC\',sans-serif;color:#d9a0a0;line-height:1.65">容易卡住：' + esc(watch) + '</div><div style="margin-top:3px;font:400 11px \'Noto Sans TC\',sans-serif;color:#e6cd9a;line-height:1.65">可以怎麼練習：' + esc(practice) + '</div><details style="margin-top:8px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);cursor:pointer">查看相位名稱、容許度與專業解讀</summary><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.7;margin-top:6px">' + esc(crossAspectText(asp, '本人', '對方')) + '</div></details></article>';
 }
 function synastryFlashCopied() {
@@ -4523,34 +4599,60 @@ function renderProgressionMonths(natal, city) {
 function progSetYears(n) { state.progYears = n; state.progExpandedYear = 0; state.progOnlyTransitions = false; render(); window.scrollTo(0, 0); }
 function progToggleYear(i) { state.progExpandedYear = state.progExpandedYear === i ? null : i; render(); }
 function progToggleTransitions() { state.progOnlyTransitions = !state.progOnlyTransitions; render(); }
-/* 修正：base.lead／base.strength／base.practice 都是模板「陣列」（每種相位
-   類型有 2 個版本，供 astroSeededPick 挑選），原本這裡直接把陣列跟字串相加，
-   JS 會把整個陣列用逗號接成字串塞進去——不但沒有代入關鍵字（畫面上會直接
-   看到「{Akw}」「{Bkw}」這種未代入的原始佔位符），還會把 2 個版本一次全部
-   顯示、中間夾一個逗號。改成跟其他相位敘述一樣，先用 astroSeededPick 挑一
-   個版本、再用 fillAspectTemplate 代入關鍵字。usedSet（選填）則跟其他相位
-   清單一樣，用來避免同一份清單（例如「未來 12 個月節奏」的 12 張月卡，或
-   一次顯示多年的推運卡片）裡巧合選到同一個版本、讀起來像同一句話重複。 */
+/* 推運摘要不直接顯示「核心自我／情緒安全感互相影響」這類內部分類名稱。
+   先把本命端翻成「原本怎麼做」，推運端翻成「這段時間正在怎麼改變」，
+   再說明兩者是互相幫助、自然配合或彼此干擾，讓沒有占星背景的人也能讀懂。 */
+var PROGRESSION_POINT_EVERYDAY = {
+  Sun: { short: '自我方向', natal: '你一向重視的自我方向', moving: '逐漸形成的自我定位' },
+  Moon: { short: '情緒安全感', natal: '你原本的情緒安全感', moving: '正在改變的情緒需求' },
+  Mercury: { short: '思考與溝通', natal: '你原本的思考與溝通方式', moving: '正在形成的新想法與表達方式' },
+  Venus: { short: '關係與價值選擇', natal: '你原本的關係期待與價值選擇', moving: '逐漸改變的關係與價值選擇' },
+  Mars: { short: '行動方向', natal: '你原本的行動方式', moving: '逐漸增強的行動動機' },
+};
+function progressionPointEveryday(key, phase) {
+  var d = PROGRESSION_POINT_EVERYDAY[key];
+  var fallback = findAnyPointDef(key);
+  if (!d) return phase === 'moving' ? '正在改變的' + fallback.kw : '你原本的' + fallback.kw;
+  return d[phase];
+}
 function progressionAspectPlain(a, usedSet) {
-  var natal=findAnyPointDef(a.aKey), moving=findAnyPointDef(a.bKey), base=ASPECT_BEGINNER[a.type];
-  var seedBase = a.aKey + '|' + a.bKey + '|' + a.type;
-  function pickField(name) {
-    var tpl = astroSeededPick(seedBase + '|' + name, base[name]);
-    if (usedSet) {
-      var key = a.type + '|' + name + '|' + tpl;
-      if (usedSet[key]) {
-        var alt = base[name].filter(function (t) { return !usedSet[a.type + '|' + name + '|' + t]; })[0];
-        if (alt) tpl = alt;
-      }
-      usedSet[a.type + '|' + name + '|' + tpl] = true;
-    }
-    return fillAspectTemplate(tpl, natal.kw, moving.kw);
-  }
+  var natal = PROGRESSION_POINT_EVERYDAY[a.aKey] || { short: findAnyPointDef(a.aKey).kw };
+  var moving = PROGRESSION_POINT_EVERYDAY[a.bKey] || { short: findAnyPointDef(a.bKey).kw };
+  var original = progressionPointEveryday(a.aKey, 'natal');
+  var developing = progressionPointEveryday(a.bKey, 'moving');
+  var byType = {
+    conjunction: {
+      text: '這段時間，' + original + '和' + developing + '會一起被放大，做決定時很難只顧其中一邊。',
+      strength: '兩股動力集中，適合把力氣放在一個清楚目標上。',
+      practice: '先寫下現在最重要的一個目標，再刪掉與它無關的安排。',
+    },
+    sextile: {
+      text: '這段時間，只要你主動安排，' + original + '就能幫助' + developing + '順利往前。',
+      strength: '原有經驗能替正在發展的新方向提供支持。',
+      practice: '選一件想推進的事，排入明確日期，不要只停在想法。',
+    },
+    trine: {
+      text: '這段時間，' + original + '和' + developing + '很容易配合，相關事情通常推進得較自然。',
+      strength: '你能沿用熟悉的方法，較省力地適應目前的變化。',
+      practice: '把這份順勢用在一件稍有難度的目標上，避免只維持原狀。',
+    },
+    square: {
+      text: '這段時間，' + original + '容易和' + developing + '互相干擾，越急著一次處理越容易卡住。',
+      strength: '衝突會迫使你看清楚目前真正需要調整的地方。',
+      practice: '把問題拆成兩步，先處理眼前最急的一項，再安排下一項。',
+    },
+    opposition: {
+      text: '這段時間，' + original + '和' + developing + '容易把你拉向不同方向，常需要重新排優先順序。',
+      strength: '你能同時看見舊需求與新方向，不必倉促放棄任何一邊。',
+      practice: '列出兩邊各自不能放掉的一件事，再選能同時保留它們的方案。',
+    },
+  };
+  var d = byType[a.type] || byType.conjunction;
   return {
-    title: natal.zh + '與' + moving.zh,
-    text: '你原本的「' + natal.kw + '」，正和正在發展的「' + moving.kw + '」互相影響。' + pickField('lead'),
-    strength: pickField('strength'),
-    practice: pickField('practice'),
+    title: natal.short + ' × ' + moving.short,
+    text: d.text,
+    strength: d.strength,
+    practice: d.practice,
   };
 }
 function renderProgressionYearCard(row, natal, usedSet) {
