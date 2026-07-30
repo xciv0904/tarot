@@ -1519,6 +1519,8 @@ function renderHome() {
 function toggleDailyFlip() {
   state.dailyFlipped = !state.dailyFlipped;
   doFlip('daily', state.dailyFlipped);
+  var flipButton = document.querySelector('[aria-label="翻開或收起今日一牌"]');
+  if (flipButton) flipButton.setAttribute('aria-pressed', String(state.dailyFlipped));
   /* #daily-meaning 只有首頁才存在；少了這個判斷，只要在非首頁的狀態下被呼叫到
      （例如鍵盤事件在切分頁的空檔觸發），就會丟出 TypeError 中斷後續程式。 */
   var meaning = document.getElementById('daily-meaning');
