@@ -17,6 +17,149 @@ var ASTRO_PLANET_SEMANTIC_DATASET = {
   Pluto:   { drive: '深入核心並完成根本性的轉化', gift: '洞察、危機處理與資源整合', need: '深度、真實與足夠的掌控感', risk: '過度控制、猜疑或長期處於高張力', pace: '集中而強烈', social: '以深度與強烈存在感建立連結' },
 };
 
+/* V6：主題分析先累積「可比較的語義維度」，再由分數組成正文。
+   這些資料不是可直接輸出的完整解讀；planet 只提供它會推高哪些維度，
+   dimension 則提供可觀察行為、觸發條件、過度使用與可執行修正。 */
+var ASTRO_TOPIC_SEMANTIC_VERSION = '6.0.0';
+var ASTRO_PLANET_DIMENSION_WEIGHTS = {
+  Sun:     { visibility:1.00, selfDirection:.85 },
+  Moon:    { emotionalResponse:1.00, practicalCare:.70 },
+  Mercury: { dialogue:.95, novelty:.45 },
+  Venus:   { harmony:.95, consistency:.45 },
+  Mars:    { selfDirection:1.00, intensity:.55 },
+  Jupiter: { novelty:.85, visibility:.45 },
+  Saturn:  { structure:1.00, consistency:.90 },
+  Uranus:  { freedom:1.00, novelty:.90 },
+  Neptune: { emotionalResponse:.80, harmony:.55 },
+  Pluto:   { depthTrust:1.00, intensity:.90 },
+};
+/* 角度沒有 planetKey，必須由實際星座提供語義；否則上升雖是最高權重，
+   在第一印象／人際題卻完全無法進入中間判斷。索引 0 = 牡羊…11 = 雙魚。 */
+var ASTRO_SIGN_DIMENSION_WEIGHTS = [
+  { selfDirection:1.00, intensity:.55 },
+  { consistency:1.00, practicalCare:.55 },
+  { dialogue:1.00, novelty:.65 },
+  { emotionalResponse:1.00, practicalCare:.70 },
+  { visibility:1.00, selfDirection:.55 },
+  { structure:.75, practicalCare:.70 },
+  { harmony:1.00, dialogue:.55 },
+  { depthTrust:1.00, intensity:.75 },
+  { novelty:1.00, freedom:.60 },
+  { structure:1.00, consistency:.75 },
+  { freedom:1.00, novelty:.75 },
+  { emotionalResponse:.85, harmony:.70 },
+];
+var ASTRO_TOPIC_DIMENSIONS = {
+  visibility: {
+    label:'被看見與主動表態',
+    behavior:'會先表明立場，也願意在眾人面前承擔結果',
+    strength:'把方向說清楚，讓其他人知道現在由誰做決定',
+    trigger:'成果無人負責或自己的投入沒有被看見時',
+    overuse:'把不同意見理解成對能力的否定',
+    cost:'容易為了證明自己而接下過多責任',
+    action:'先說明這次要負責的範圍，不替整件事全部收尾',
+  },
+  emotionalResponse: {
+    label:'情緒回應與安全感',
+    behavior:'會先讀取對方的情緒，再決定自己要靠近還是退開',
+    strength:'察覺沒有說出口的感受，並用陪伴或照顧回應',
+    trigger:'回覆忽冷忽熱、熟悉節奏突然改變時',
+    overuse:'把對方的情緒全部接到自己身上',
+    cost:'還沒確認責任，就先忙著安撫或補位',
+    action:'先問「你現在要我聽，還是一起想辦法？」再投入',
+  },
+  dialogue: {
+    label:'資訊交換與說清楚',
+    behavior:'會用提問、比較資訊和來回討論確認彼此是否理解一致',
+    strength:'把複雜資訊拆開，找出真正需要確認的問題',
+    trigger:'資訊不完整、說法前後不一致時',
+    overuse:'持續追問和分析，卻延後表明自己的決定',
+    cost:'對話變長，但真正要處理的選擇沒有前進',
+    action:'把問題縮成一個能直接回答的句子，取得答案後就決定下一步',
+  },
+  harmony: {
+    label:'公平協調與相處品質',
+    behavior:'會先找雙方都能接受的做法，並留意互動是否公平、得體',
+    strength:'在不同需求之間協調出可合作的方案',
+    trigger:'氣氛緊張、有人可能失望或關係失去對等時',
+    overuse:'先維持表面順利，把真正不同意的地方留到最後',
+    cost:'短期沒有衝突，長期卻累積委屈和模糊期待',
+    action:'在仍能平靜討論時，說出一項不同意與一個可接受方案',
+  },
+  structure: {
+    label:'責任分工與可預期性',
+    behavior:'會先確認規則、期限和誰負責哪一段，再放心投入',
+    strength:'把承諾變成能追蹤的分工與進度',
+    trigger:'責任不清、標準反覆改變或他人沒有按約定交付時',
+    overuse:'增加規則與檢查，甚至把別人的部分也接過來',
+    cost:'事情暫時穩住，自己卻成為所有流程的瓶頸',
+    action:'只確認負責人、期限與完成標準，不直接替原負責人補做',
+  },
+  consistency: {
+    label:'持續投入與兌現承諾',
+    behavior:'會觀察一個人是否長期說到做到，而不是只看當下熱度',
+    strength:'在熱情退去後仍維持可靠的投入',
+    trigger:'承諾與實際行動出現落差時',
+    overuse:'因一次失誤就提前判定整段合作不可靠',
+    cost:'保護了自己，也可能錯過仍可修正的關係',
+    action:'先指出一次具體落差並約定修正期限，再決定是否退出',
+  },
+  freedom: {
+    label:'自主空間與非典型做法',
+    behavior:'會保留自己的時間與方法，不喜歡每一步都被規定',
+    strength:'看見舊規則卡住人的地方，提出不同做法',
+    trigger:'被要求照固定方式行動、沒有調整空間時',
+    overuse:'尚未說明需要就突然降低聯絡或抽離',
+    cost:'自己得到空間，別人卻只感到關係無預警中斷',
+    action:'先說明需要多少空間、何時恢復聯絡，再暫停互動',
+  },
+  novelty: {
+    label:'新鮮感與擴大選項',
+    behavior:'會主動接觸新題目、新圈子或不同做法，從變化中找到動力',
+    strength:'快速看見原本方案之外的新可能',
+    trigger:'流程長期重複、看不到學習或擴展空間時',
+    overuse:'同時打開太多選項，尚未驗證就轉向下一個',
+    cost:'開始很多，能累積成成果的卻很少',
+    action:'新選項先做一次小規模測試，完成後才增加投入',
+  },
+  depthTrust: {
+    label:'深度信任與核心真相',
+    behavior:'會追問表面說法背後的動機，重要事情不接受含糊帶過',
+    strength:'在複雜或敏感情境中找出真正影響結果的核心',
+    trigger:'察覺隱瞞、權力不對等或資源分配不透明時',
+    overuse:'在證據不足時持續試探、查證或掌控細節',
+    cost:'想確認安全，反而讓互信更難建立',
+    action:'列出已知事實與仍需確認的一題，只針對那一題要求回答',
+  },
+  intensity: {
+    label:'集中投入與突破阻力',
+    behavior:'一旦認定重要，就會迅速集中資源把問題推到底',
+    strength:'在壓力高、別人想避開時仍能採取行動',
+    trigger:'期限逼近、局勢失控或重要成果受到威脅時',
+    overuse:'把每件事都提高到必須立刻解決的強度',
+    cost:'短期推進很快，長期容易耗盡自己與合作關係',
+    action:'先標記只有今天必須處理的一件事，其餘排入明確日期',
+  },
+  selfDirection: {
+    label:'自主決定與立即行動',
+    behavior:'看到方向後傾向先動手，不等所有人完全同意',
+    strength:'在停滯時率先做出可測試的第一步',
+    trigger:'討論反覆、沒有人願意做決定時',
+    overuse:'用自己的速度推進，沒有確認他人是否跟得上',
+    cost:'事情開始了，後續合作卻因資訊落差而返工',
+    action:'開始前先確認目標、負責人和下一個回報點',
+  },
+  practicalCare: {
+    label:'日常照顧與生活配合',
+    behavior:'會透過安排時間、處理生活細節或穩定陪伴表達在意',
+    strength:'把抽象關心轉成對方實際感受得到的支持',
+    trigger:'身邊的人疲累、生病或日常秩序混亂時',
+    overuse:'沒有先問就接手別人的生活責任',
+    cost:'對方得到照顧，自己卻逐漸沒有休息空間',
+    action:'只提供一項明確協助，其他部分先問對方是否需要',
+  },
+};
+
 /* 生活習慣題需要的是可以實際判斷「合不合適」的日常條件，不能只把行星
    的思考／人格語意換句話說。每顆行星提供步調、作息與可觀察的適配訊號。 */
 var ASTRO_LIFESTYLE_HABIT_DATASET = {

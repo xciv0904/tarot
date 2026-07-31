@@ -12,7 +12,7 @@
 - undefined/NaN leaks: 0
 - Focused scenario failures: 0
 - Visible content failures: 0
-- Baseline hash: 8253aba283115f4c
+- Baseline hash: 31bcf42d51cee227
 
 ## Golden charts
 

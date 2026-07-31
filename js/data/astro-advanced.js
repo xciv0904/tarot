@@ -1109,6 +1109,7 @@ async function astroLoadProfile() {
       var hh = state.astroUnknownTime ? 12 : (parseInt(state.astroH, 10) || 0);
       var mm = state.astroUnknownTime ? 0 : (parseInt(state.astroMin, 10) || 0);
       state.astroResult = computeNatalChart(parseInt(state.astroY, 10), parseInt(state.astroM, 10), parseInt(state.astroD, 10), hh, mm, city.lat, city.lon, city.tz, state.astroHouseSystem);
+      resetNatalTopicAnalysisForChartChange();
       state.astroCityUsed = city;
       render();
     }
@@ -1182,6 +1183,7 @@ function astroForget() {
   state.astroY = ''; state.astroM = ''; state.astroD = ''; state.astroH = ''; state.astroMin = '';
   state.astroCityQuery = ''; state.astroCityIdx = null; state.astroCityUsed = null;
   state.astroUnknownTime = false; state.astroHouseSystem = 'placidus'; state.astroResult = null;
+  resetNatalTopicAnalysisForChartChange();
   render(); window.scrollTo(0, 0);
 }
 async function astroGenerate() {
@@ -1206,6 +1208,7 @@ async function astroGenerate() {
     var mm = state.astroUnknownTime ? 0 : (parseInt(state.astroMin, 10) || 0);
     var chart = computeNatalChart(parseInt(state.astroY, 10), parseInt(state.astroM, 10), parseInt(state.astroD, 10), hh, mm, city.lat, city.lon, city.tz, state.astroHouseSystem);
     state.astroResult = chart;
+    resetNatalTopicAnalysisForChartChange();
     state.astroCityUsed = city;
     state.astroGenerating = false;
     astroSaveProfile();
@@ -1224,6 +1227,7 @@ function astroReset() {
     if (!confirm('確定要重新輸入嗎？\n目前算好的星盤解讀會被清除（出生日期／時間／地點資料還在，可以直接修改後重新生成）。')) return;
   } catch (e) {}
   state.astroResult = null;
+  resetNatalTopicAnalysisForChartChange();
   state.astroHouseSystem = 'placidus';
   render();
   window.scrollTo(0, 0);
@@ -2670,7 +2674,6 @@ function applyEvidenceBias(rankedEvidence, question) {
   var excludePlanets = bias.excludePlanets || question.excludedPlanets || [];
   var preferTypes = bias.preferTypes || [];
   var excludeTypes = bias.excludeTypes || [];
-  if (!preferPlanets.length && !excludePlanets.length && !preferTypes.length && !excludeTypes.length && !bias.angleBonus && !bias.requirePlanet) return rankedEvidence;
   function roleMatchesType(role, type) {
     if (!role) return false;
     if (role.indexOf(type) === 0) return true;
@@ -2680,7 +2683,9 @@ function applyEvidenceBias(rankedEvidence, question) {
   }
   var scored = rankedEvidence.map(function (e) {
     var bonus = 0;
-    if (e.planetKey && preferPlanets.indexOf(e.planetKey) !== -1) bonus += 3;
+    /* 行星偏好只用來打破同分，不可蓋過原始權重較高的宮主星／宮內行星。
+       舊值 +3 會讓 Venus/Moon 等預設行星在每張盤都勝出，正是跨盤撞句來源。 */
+    if (e.planetKey && preferPlanets.indexOf(e.planetKey) !== -1) bonus += .5;
     if (e.planetKey && excludePlanets.indexOf(e.planetKey) !== -1) bonus -= 5;
     if (preferTypes.some(function (t) { return roleMatchesType(e.role, t); })) bonus += 2;
     if (excludeTypes.some(function (t) { return roleMatchesType(e.role, t); })) bonus -= 4;
@@ -2690,7 +2695,11 @@ function applyEvidenceBias(rankedEvidence, question) {
        （角宮、元素分布…），會整段落到「找不到任何模板欄位滿足」的降級分支，
        讀起來像斷句。這裡明確懲罰非 planetKey 證據，讓排序自然避開這個陷阱。 */
     if (bias.requirePlanet && !e.planetKey) bonus -= 6;
-    return { e: e, score: e.weight + bonus };
+    var copy = Object.assign({}, e);
+    copy.rawWeight = e.weight;
+    copy.biasBonus = bonus;
+    copy.selectionScore = e.weight + bonus;
+    return { e: copy, score: copy.selectionScore };
   });
   scored.sort(function (a, b) { return b.score - a.score; });
   return scored.map(function (s) { return s.e; });
@@ -2828,7 +2837,20 @@ function extractChartEvidence(chart, unknownTime, indicators) {
       });
     }
   });
-  return { evidence: mergeEvidenceByCanonicalKey(evidence), skipped: skipped };
+  var mergedEvidence = mergeEvidenceByCanonicalKey(evidence);
+  var emptyHouses = skipped.filter(function (s) { return /^第\d+宮內行星$/.test(s.factor) && /沒有行星/.test(s.reason); }).map(function (s) {
+    return Number((s.factor.match(/\d+/) || [])[0]);
+  });
+  mergedEvidence.forEach(function (e) {
+    var match = String(e.role || '').match(/^houseRuler:(\d+)$/);
+    var houseNum = match ? Number(match[1]) : null;
+    if (houseNum && emptyHouses.indexOf(houseNum) !== -1) {
+      e.fallbackUsed = true;
+      e.fallbackSource = 'houseRuler';
+      e.fallbackReason = 'No planets in house ' + houseNum;
+    }
+  });
+  return { evidence: mergedEvidence, skipped: skipped };
 }
 
 function rankEvidence(evidence) {
@@ -2873,9 +2895,119 @@ function identifyTensions(rankedEvidence) {
 function pickPrimaryEvidence(biased, usedPrimaryKeys) {
   if (!usedPrimaryKeys || !usedPrimaryKeys.length || usedPrimaryKeys.indexOf(biased[0].canonicalKey) === -1) return biased[0];
   for (var i = 1; i < biased.length; i++) {
-    if (usedPrimaryKeys.indexOf(biased[i].canonicalKey) === -1 && (biased[0].weight - biased[i].weight) <= 3) return biased[i];
+    if (usedPrimaryKeys.indexOf(biased[i].canonicalKey) === -1 && (biased[0].selectionScore - biased[i].selectionScore) <= 1.5) return biased[i];
   }
   return biased[0];
+}
+
+/* V6：raw evidence → semantic score → prose。
+   同一顆行星在證據池出現多次時只取最高有效分，避免「被多個 indicator 重複
+   列入」人為放大。相位兩端各以較低係數參與；題目 bias 後的 selectionScore
+   會一路保留到正文、依據與 debug，不再算完就丟掉。 */
+function natalSemanticProfile(biasedEvidence) {
+  var perSource = {}, excluded = [];
+  (biasedEvidence || []).slice(0, 8).forEach(function (e) {
+    var keys = e.planetKey ? [e.planetKey] : (e.aspect ? [e.aspect.a, e.aspect.b] : []);
+    if (e.sign != null && typeof ASTRO_SIGN_DIMENSION_WEIGHTS !== 'undefined') {
+      var signWeights = ASTRO_SIGN_DIMENSION_WEIGHTS[e.sign] || {};
+      Object.keys(signWeights).forEach(function (dimension) {
+        var contribution = e.selectionScore * signWeights[dimension];
+        var sourceKey = 'sign' + e.sign + ':' + e.canonicalKey + '|' + dimension;
+        if (!perSource[sourceKey] || contribution > perSource[sourceKey].score) {
+          perSource[sourceKey] = { dimension:dimension, score:contribution, planetKey:null, evidenceKey:e.canonicalKey };
+        }
+      });
+    }
+    keys.forEach(function (planetKey) {
+      var weights = typeof ASTRO_PLANET_DIMENSION_WEIGHTS !== 'undefined' && ASTRO_PLANET_DIMENSION_WEIGHTS[planetKey];
+      if (!weights) return;
+      Object.keys(weights).forEach(function (dimension) {
+        var contribution = e.selectionScore * weights[dimension] * (e.aspect && !e.planetKey ? .55 : 1);
+        var sourceKey = planetKey + '|' + dimension;
+        if (!perSource[sourceKey] || contribution > perSource[sourceKey].score) {
+          perSource[sourceKey] = { dimension:dimension, score:contribution, planetKey:planetKey, evidenceKey:e.canonicalKey };
+        }
+      });
+    });
+  });
+  var totals = {}, sources = {};
+  Object.keys(perSource).forEach(function (key) {
+    var item = perSource[key];
+    (sources[item.dimension] || (sources[item.dimension] = [])).push(item);
+  });
+  Object.keys(sources).forEach(function (dimension) {
+    sources[dimension].sort(function (a, b) { return b.score - a.score; });
+    /* 最高分決定主軸；其他同向證據只提供 20% 支持，避免題庫固定列入的
+       Sun+Mars 等組合靠數量相加，永遠壓過真正與此盤相關的宮主星。 */
+    totals[dimension] = sources[dimension].reduce(function (sum, item, index) {
+      return sum + item.score * (index === 0 ? 1 : .2);
+    }, 0);
+  });
+  var ranked = Object.keys(totals).map(function (dimension) {
+    return { key:dimension, score:Math.round(totals[dimension] * 10) / 10, sources:sources[dimension] || [] };
+  }).sort(function (a, b) { return b.score - a.score; });
+  var dominant = ranked[0] || null, secondary = ranked[1] || null;
+  var gap = dominant && secondary ? Math.round((dominant.score - secondary.score) * 10) / 10 : (dominant ? dominant.score : 0);
+  var close = !!(dominant && secondary && gap < Math.max(1.5, dominant.score * .16));
+  ranked.slice(2).forEach(function (item) {
+    excluded.push({ semanticKey:item.key, reason:'分數 ' + item.score + ' 低於主導維度 ' + dominant.score });
+  });
+  return { scores:ranked, dominant:dominant, secondary:secondary, gap:gap, close:close, excludedConclusions:excluded };
+}
+function natalSemanticDefinition(item) {
+  return item && typeof ASTRO_TOPIC_DIMENSIONS !== 'undefined' ? ASTRO_TOPIC_DIMENSIONS[item.key] : null;
+}
+function natalSemanticFocusKind(questionFocus) {
+  if (/blindspot|recurring_life_issue/.test(questionFocus || '')) return 'blindspot';
+  if (/strength|advantages/.test(questionFocus || '')) return 'strength';
+  if (/first_impression|group_role|family_role/.test(questionFocus || '')) return 'role';
+  return '';
+}
+function applySemanticQuestionPlan(base, question, biasedEvidence) {
+  var kind = natalSemanticFocusKind(question.questionFocus);
+  var profile = natalSemanticProfile(biasedEvidence);
+  base.semanticProfile = profile;
+  if (!kind || !profile.dominant) return base;
+  var d = natalSemanticDefinition(profile.dominant);
+  var s = natalSemanticDefinition(profile.secondary);
+  if (!d) return base;
+  if (kind === 'strength') {
+    base.headline = '遇到需要「' + d.label + '」的情況時，你最能發揮的是：' + d.strength + '。' + (s ? '你通常再用「' + s.label + '」補上第二步。' : '');
+    base.summary = profile.close && s
+      ? '「' + s.label + '」的分數也很接近，所以你通常會先' + d.behavior + '，再用另一種方式補足：' + s.strength + '。'
+      : '這項能力通常表現在：' + d.behavior + '。';
+    base.details = [
+      { label:question.title + '會在哪裡發揮', text:d.trigger + '，這項能力最容易被啟動。' },
+      { label:question.title + '用過頭的代價', text:d.overuse + '，結果是' + d.cost + '。' },
+    ];
+    base.caution = '保留優勢的做法：' + d.action + '。';
+  } else if (kind === 'blindspot') {
+    base.headline = '當' + d.trigger + '，你容易' + d.overuse + '。';
+    base.summary = '這個反應原本想保住「' + d.label + '」，實際代價是' + d.cost + '。';
+    base.details = [
+      { label:question.title + '背後原本的能力', text:d.strength + '。' },
+      { label:question.title + '可換成的反應', text:d.action + '。' },
+    ];
+    base.caution = profile.close && s
+      ? '次要反應來自「' + s.label + '」：壓力升高時，也可能' + s.overuse + '。'
+      : '';
+  } else {
+    base.headline = (question.questionFocus === 'family_role' ? '家人最常依賴你的是：你' : '別人最先看到的是：你') + d.behavior + '。' + (s ? '接著才會出現「' + s.label + '」的反應。' : '');
+    base.summary = profile.close && s
+      ? '熟悉之後，才會再看到「' + s.label + '」的一面：你' + s.behavior + '。'
+      : '這不是抽象氣質，而是你在' + d.trigger + '常出現的實際反應。';
+    base.details = [
+      { label:question.title + '帶來的作用', text:d.strength + '。' },
+      { label:question.title + '可能被誤解之處', text:d.overuse + '，因此' + d.cost + '。' },
+    ];
+    base.caution = d.action + '。';
+  }
+  base.semanticKey = kind + ':' + profile.dominant.key + (profile.close && profile.secondary ? '+' + profile.secondary.key : '');
+  base.headlineConceptKeys = [base.semanticKey + ':headline'];
+  base.summaryConceptKeys = [base.semanticKey + ':summary'];
+  base.detailConceptKeys = [base.semanticKey + ':detail'];
+  base.cautionConceptKeys = base.caution ? [base.semanticKey + ':caution'] : [];
+  return base;
 }
 /* V2.1 內容生成流程（取代 V2.0 的 buildQuestionContent）。畫面顯示：問題標題、
    headline（一句話結論）、summary（延伸一句）、details[]（2-4 個依題目動態
@@ -3384,15 +3516,21 @@ function buildQuestionContentRaw(topicId, question, rankedEvidence, ctx) {
   base.detailConceptKeys = detailConceptKeys;
   base.cautionConceptKeys = cautionConceptKeys;
   base.primaryEvidence = top; base.supportingEvidence = others.slice(0, 2);
-  return applyFocusedQuestionContentPlan(base, question, top, second, third, topicId);
+  base.selectionRanked = biased;
+  return applySemanticQuestionPlan(applyFocusedQuestionContentPlan(base, question, top, second, third, topicId), question, biased);
 }
 /* 摺疊區顯示：主要占星指標（含 sourceRoles）、配置如何支持結論、互相矛盾的訊號、解讀限制 */
 function buildAdvancedExplanation(question, rankedEvidence, skipped, tensions, mergedSignal) {
+  var first = rankedEvidence[0], second = rankedEvidence[1];
   var supportNote = mergedSignal
-    ? ('這幾項指標比較一致地偏向「' + mergedSignal.elemTag + '」元素／基調，互相支持同一個方向：' + mergedSignal.items.map(function (e) { return e.placement; }).join('、') + '。')
-    : '這次的指標分布比較分散，沒有單一元素／基調明顯佔多數，解讀時已同時保留不同面向，沒有勉強湊出單一結論。';
+    ? ('共同支持「' + mergedSignal.elemTag + '」基調的配置是：' + mergedSignal.items.map(function (e) { return e.placement; }).join('、') + '。')
+    : first
+      ? (second
+        ? ('本題原始權重最高的是「' + first.placement + '」（' + first.weight + '），其次是「' + second.placement + '」（' + second.weight + '）；兩者沒有形成相同元素結論，因此分別保留為主軸與補充。')
+        : ('本題目前只有「' + first.placement + '」（' + first.weight + '）可用，結論強度已降低。'))
+      : '本題沒有可用指標，未產生推測性結論。';
   var limitations = skipped.map(function (s) { return s.factor + '：' + s.reason; });
-  limitations.push('以上是「較容易出現的傾向」，實際情況仍會受成長環境、個人選擇與後天努力影響，不是絕對命定的結果。');
+  if (rankedEvidence.length < 2) limitations.push('可用指標少於兩項，本題只保留低強度描述。');
   if (question.appearanceCaveat) limitations.push('外型與氣質只是風格傾向的象徵性描述，不能用來精準預測五官、身高、國籍、姓名或特定職業。');
   return { evidence: rankedEvidence, supportNote: supportNote, tensionNotes: tensions.map(function (t) { return t.note; }), limitations: limitations };
 }
@@ -3429,7 +3567,13 @@ function validateNatalTopicContent(answers, topicId) {
   primaryKeys.forEach(function (k) { primaryKeyCounts[k] = (primaryKeyCounts[k] || 0) + 1; });
   var maxPrimaryDup = Object.keys(primaryKeyCounts).reduce(function (m, k) { return Math.max(m, primaryKeyCounts[k]); }, 0);
   if (primaryKeys.length >= 2 && maxPrimaryDup === primaryKeys.length) {
-    flags.push({ check: 'primary_evidence_diversity', passed: false, note: '同一批題目的主導 evidence 完全相同，且找不到合適的替代證據' });
+    var hasClearDominance = answers.every(function (a) {
+      var first = a.primaryEvidence, second = (a.supportingEvidence || [])[0];
+      return first && (!second || ((first.selectionScore == null ? first.weight : first.selectionScore) - (second.selectionScore == null ? second.weight : second.selectionScore)) >= 1.5);
+    });
+    var semanticKeys = answers.map(function (a) { return a.semanticKey; }).filter(Boolean);
+    var semanticDuplicate = semanticKeys.length > 1 && semanticKeys.every(function (key) { return key === semanticKeys[0]; });
+    if (!hasClearDominance && semanticDuplicate) flags.push({ check: 'primary_evidence_diversity', passed: false, note: '同一批題目的主導 evidence 與 semantic key 都完全相同，且分數差距不足以支持重複使用' });
   }
   answers.forEach(function (a) {
     var fullText = a.headline + a.summary + (a.details || []).map(function (d) { return d.text; }).join('');
@@ -3573,6 +3717,17 @@ function validateNatalTopicContent(answers, topicId) {
 /* 主題總覽：不重複列出配置名稱、不用「這次選擇了 N 個問題」這種罐頭開場，
    依這批題目最常見的元素決定整體基調（tone），字數落在 100-180 字之間。 */
 function buildTopicOverview(topicId, answers) {
+  var semanticTotals = {};
+  answers.forEach(function (a) {
+    ((a.semanticProfile && a.semanticProfile.scores) || []).slice(0, 2).forEach(function (item) {
+      semanticTotals[item.key] = (semanticTotals[item.key] || 0) + item.score;
+    });
+  });
+  var semanticKeys = Object.keys(semanticTotals).sort(function (a, b) { return semanticTotals[b] - semanticTotals[a]; });
+  if (semanticKeys.length) {
+    var d = ASTRO_TOPIC_DIMENSIONS[semanticKeys[0]], s = semanticKeys[1] && ASTRO_TOPIC_DIMENSIONS[semanticKeys[1]];
+    if (d) return '這個主題最強的主軸是「' + d.label + '」：你' + d.behavior + '。' + (s ? '第二條線索是「' + s.label + '」，它只在主軸需要補充時加入，不會取代最高分的方向。' : '');
+  }
   var elemCounts = {};
   answers.forEach(function (a) {
     (a.ranked || []).slice(0, 2).forEach(function (e) { if (e.elemTag) elemCounts[e.elemTag] = (elemCounts[e.elemTag] || 0) + 1; });
@@ -3582,6 +3737,35 @@ function buildTopicOverview(topicId, answers) {
   var pool = NATAL_TOPIC_OVERVIEW_FRAME[topicId] || NATAL_TOPIC_OVERVIEW_FRAME.general;
   var seed = topicId + '|overview|' + answers.map(function (a) { return a.questionId; }).join(',');
   return fillTpl(astroSeededPick(seed, pool), { tone: tone });
+}
+
+var NATAL_TOPIC_PROMPT_VERSION = 'topic-rules-v6';
+var NATAL_TOPIC_KNOWLEDGE_VERSION = typeof ASTRO_TOPIC_SEMANTIC_VERSION !== 'undefined' ? ASTRO_TOPIC_SEMANTIC_VERSION : 'unknown';
+function natalChartFingerprint(chart, unknownTime) {
+  if (!chart) return '';
+  var parts = ['u:' + !!unknownTime, 'hs:' + (chart.houseSystem || '')];
+  Object.keys(chart.planets || {}).sort().forEach(function (key) {
+    var p = chart.planets[key] || {};
+    parts.push('p:' + key + ':' + Number(p.lon || 0).toFixed(4) + ':' + (p.house == null ? '' : p.house));
+  });
+  Object.keys(chart.points || {}).sort().forEach(function (key) {
+    var p = chart.points[key] || {};
+    parts.push('x:' + key + ':' + Number(p.lon || 0).toFixed(4) + ':' + (p.house == null ? '' : p.house));
+  });
+  if (!unknownTime) parts.push('a:' + Number(chart.asc || 0).toFixed(4), 'm:' + Number(chart.mc || 0).toFixed(4));
+  var input = parts.join('|'), hash = 2166136261;
+  for (var i = 0; i < input.length; i++) { hash ^= input.charCodeAt(i); hash = Math.imul(hash, 16777619); }
+  return ('00000000' + (hash >>> 0).toString(16)).slice(-8);
+}
+function resetNatalTopicAnalysisForChartChange() {
+  state.natalTopicResult = null;
+  state.natalTopicExpanded = {};
+  state.natalTopicLimitHit = '';
+}
+function natalTopicDevelopmentMode() {
+  try {
+    return /^(localhost|127\.0\.0\.1)$/.test(location.hostname) || /(?:\?|&)astroDebug=1(?:&|$)/.test(location.search);
+  } catch (e) { return false; }
 }
 /* 主流程（V2）：主題問題 → 對應占星指標 → 從 chartData 擷取並依 canonicalKey
    去重 → 依 intent 情境化 → 產生 headline/summary/details/caution → 品質檢查
@@ -3598,9 +3782,30 @@ function analyzeNatalTopic(chartData, topicId, selectedQuestionIds, unknownTime)
     var merged = mergeSupportingSignals(ranked);
     var tensions = identifyTensions(ranked);
     var content = buildQuestionContent(topicId, q, ranked, { usedHeadlines: usedHeadlines, usedSummaries: usedSummaries, usedPrimaryKeys: usedPrimaryKeys, usedCautions: usedCautions });
-    var advanced = buildAdvancedExplanation(q, ranked, extracted.skipped, tensions, merged);
+    var effectiveRanked = content.selectionRanked || ranked;
+    var advanced = buildAdvancedExplanation(q, effectiveRanked, extracted.skipped, tensions, merged);
     content.limitations = advanced.limitations.slice();
-    content.ranked = ranked; content.skipped = extracted.skipped; content.merged = merged; content.tensions = tensions; content.advanced = advanced;
+    content.ranked = effectiveRanked; content.skipped = extracted.skipped; content.merged = merged; content.tensions = tensions; content.advanced = advanced;
+    effectiveRanked.forEach(function (e) {
+      var matched = ((content.semanticProfile && content.semanticProfile.scores) || []).filter(function (item) {
+        return item.sources.some(function (src) { return src.evidenceKey === e.canonicalKey; });
+      })[0];
+      var def = matched && natalSemanticDefinition(matched);
+      e.semanticSupport = def ? ('支持「' + def.label + '」：' + def.behavior) : '這項資料只作為次要占星背景，沒有直接決定主結論';
+      e.semanticLimitation = def ? ('過度使用時：' + def.overuse) : '權重不足以單獨形成結論';
+    });
+    content.debug = {
+      topic:topicId,
+      selectedIndicators:effectiveRanked.map(function (e) { return e.canonicalKey; }),
+      rawWeights:effectiveRanked.map(function (e) { return { key:e.canonicalKey, raw:e.rawWeight == null ? e.weight : e.rawWeight, bias:e.biasBonus || 0, effective:e.selectionScore == null ? e.weight : e.selectionScore }; }),
+      semanticScores:(content.semanticProfile && content.semanticProfile.scores) || [],
+      dominantDimension:content.semanticProfile && content.semanticProfile.dominant,
+      secondaryDimension:content.semanticProfile && content.semanticProfile.secondary,
+      conflicts:tensions,
+      excludedConclusions:(content.semanticProfile && content.semanticProfile.excludedConclusions) || [],
+      fallbackUsed:effectiveRanked.filter(function (e) { return e.fallbackUsed; }).map(function (e) { return { source:e.fallbackSource, reason:e.fallbackReason, key:e.canonicalKey }; }),
+      generatedCardIds:[content.questionId + ':' + (content.semanticKey || 'legacy')],
+    };
     content.aiData = buildAiCopyData(topicId, q, ranked, content, advanced);
     return content;
   });
@@ -3615,7 +3820,17 @@ function analyzeNatalTopic(chartData, topicId, selectedQuestionIds, unknownTime)
   });
   var qualityFlags = validateNatalTopicContent(answers, topicId);
   var overview = buildTopicOverview(topicId, answers);
-  return { topicId: topicId, topicOverview: overview, answers: answers, qualityFlags: qualityFlags };
+  var fingerprint = natalChartFingerprint(chartData, unknownTime);
+  return {
+    topicId: topicId,
+    topicOverview: overview,
+    answers: answers,
+    qualityFlags: qualityFlags,
+    chartFingerprint:fingerprint,
+    promptVersion:NATAL_TOPIC_PROMPT_VERSION,
+    knowledgeVersion:NATAL_TOPIC_KNOWLEDGE_VERSION,
+    analysisKey:[fingerprint, topicId, NATAL_TOPIC_PROMPT_VERSION, NATAL_TOPIC_KNOWLEDGE_VERSION].join('|'),
+  };
 }
 
 /* ---- 人生主題專題分析：狀態操作 ---- */
@@ -3727,7 +3942,9 @@ function renderNatalTopicQuestionCard(a) {
     if (a.ranked && a.ranked.length) {
       a.ranked.forEach(function (e) {
         var roles = (e.sourceRoles && e.sourceRoles.length > 1) ? ('<span style="font:400 9.5px \'Noto Sans TC\',sans-serif;color:rgba(201,169,110,.6)">［' + e.sourceRoles.length + ' 個指標角色同時指向這筆配置：' + esc(e.sourceRoles.join('、')) + '］</span>') : '';
-        h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.7;margin-top:4px">・' + esc(e.placement) + '（權重 ' + e.weight + '）——' + esc(e.reason) + (roles ? '<br>' + roles : '') + '</div>';
+        var effective = e.selectionScore == null ? e.weight : e.selectionScore;
+        var scoreText = effective === e.weight ? ('權重 ' + e.weight) : ('原始 ' + e.weight + '＋題目調整 ' + (e.biasBonus >= 0 ? '+' : '') + e.biasBonus + '＝有效 ' + effective);
+        h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.7;margin-top:6px">・' + esc(e.placement) + '（' + scoreText + '）<br><span style="color:#9bc5a3">支持：</span>' + esc(e.semanticSupport || e.reason) + '<br><span style="color:#d9a0a0">限制：</span>' + esc(e.semanticLimitation || '不能單獨決定整體結論') + (e.fallbackUsed ? '<br><span style="color:rgba(240,233,216,.45)">替代資料：' + esc(e.fallbackSource + '；' + e.fallbackReason) + '</span>' : '') + (roles ? '<br>' + roles : '') + '</div>';
       });
     } else {
       h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:4px">目前沒有可用的指標。</div>';
@@ -3746,6 +3963,9 @@ function renderNatalTopicQuestionCard(a) {
     (a.limitations || []).forEach(function (l) {
       h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);line-height:1.75;margin-top:4px">' + esc(l) + '</div>';
     });
+    if (natalTopicDevelopmentMode() && a.debug) {
+      h += '<details style="margin-top:10px"><summary style="font:500 10px \'Noto Sans TC\',sans-serif;color:#9bc5a3;cursor:pointer">Development diagnostics</summary><pre style="white-space:pre-wrap;word-break:break-word;font:400 9px monospace;color:rgba(240,233,216,.55);line-height:1.5">' + esc(JSON.stringify(a.debug, null, 2)) + '</pre></details>';
+    }
     h += '</div>';
   }
   h += '</div>';
@@ -3810,7 +4030,7 @@ function renderNatalTopicSection(chart) {
   h += '</div>';
 
   h += '<div id="natal-topic-result">';
-  if (state.natalTopicResult && state.natalTopicResult.topicId === catKey) {
+  if (state.natalTopicResult && state.natalTopicResult.topicId === catKey && state.natalTopicResult.chartFingerprint === natalChartFingerprint(chart, !!state.astroUnknownTime) && state.natalTopicResult.promptVersion === NATAL_TOPIC_PROMPT_VERSION && state.natalTopicResult.knowledgeVersion === NATAL_TOPIC_KNOWLEDGE_VERSION) {
     h += renderNatalTopicResult(state.natalTopicResult);
   }
   h += '</div>';
@@ -6446,6 +6666,7 @@ function astroSetHouseSystem(k) {
     var hh = state.astroUnknownTime ? 12 : (parseInt(state.astroH, 10) || 0);
     var mm = state.astroUnknownTime ? 0 : (parseInt(state.astroMin, 10) || 0);
     state.astroResult = computeNatalChart(parseInt(state.astroY, 10), parseInt(state.astroM, 10), parseInt(state.astroD, 10), hh, mm, state.astroCityUsed.lat, state.astroCityUsed.lon, state.astroCityUsed.tz, k);
+    resetNatalTopicAnalysisForChartChange();
     astroSaveProfile();
   }
   render();
