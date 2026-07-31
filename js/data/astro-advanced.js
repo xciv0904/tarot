@@ -6138,7 +6138,7 @@ function renderDailyHoroscope(chart, transitPlanets, periodCfg, now) {
      選擇也跟市面競品幾乎一字不差。改成四項全部可回推的內容，
      見 astro-charts.js 的 renderDailyRhythm()。 */
   if (typeof renderDailyRhythm === 'function') {
-    h += renderDailyRhythm(chart, transitPlanets, scores, !!state.astroUnknownTime);
+    h += renderDailyRhythm(chart, transitPlanets, scores, !!state.astroUnknownTime, now);
   }
 
   var dailyScoreBasis = {};

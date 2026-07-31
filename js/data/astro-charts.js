@@ -402,7 +402,7 @@ function renderRhythmCell(iconHtml, value, label) {
     + '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">' + esc(label) + '</div></div>';
 }
 
-function renderDailyRhythm(chart, transitPlanets, scores, unknownTime) {
+function renderDailyRhythm(chart, transitPlanets, scores, unknownTime, selectedDate) {
   if (!chart || !transitPlanets || typeof ZODIAC_SIGNS === 'undefined') return '';
   var moonLon = transitPlanets.Moon, sunLon = transitPlanets.Sun;
   if (typeof moonLon !== 'number' || typeof sunLon !== 'number') return '';
@@ -448,7 +448,9 @@ function renderDailyRhythm(chart, transitPlanets, scores, unknownTime) {
   /* 幸運色／數字／時段掛在「今天由哪顆行星主管」這個古典依據上，跟上面月亮那三項
      是兩套不同的推導，所以分成兩區塊、各自說明來源。 */
   if (typeof renderPlanetaryDayRow === 'function') {
-    h += renderPlanetaryDayRow(new Date(), (typeof state !== 'undefined') ? (state.astroCityUsed || null) : null);
+    var rhythmDate = selectedDate instanceof Date && !isNaN(selectedDate.getTime())
+      ? selectedDate : new Date();
+    h += renderPlanetaryDayRow(rhythmDate, (typeof state !== 'undefined') ? (state.astroCityUsed || null) : null);
   }
   return h;
 }

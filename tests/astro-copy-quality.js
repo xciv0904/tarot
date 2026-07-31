@@ -60,6 +60,40 @@ if (horoscopeCatKeys.length !== 7 || horoscopeCatKeys.includes('decision') || ho
     horoscopeCatKeys.some(key => !vm.runInContext(`!!ASTRO_CATEGORY_RULERS['${key}'] && !!CATEGORY_COLOR['${key}']`, c))) {
   throw new Error('每日／週／月／年運勢包含未支援的評分類別。');
 }
+
+/* 切換日運日期時，節奏區必須把選定日期交給主星列，不能偷偷改回裝置今天。 */
+let planetaryRowDate = null;
+const originalPlanetaryDayRow = c.renderPlanetaryDayRow;
+c.renderPlanetaryDayRow = function (date) {
+  planetaryRowDate = date;
+  return '<div>date-probe</div>';
+};
+const selectedDailyDate = new Date(2026, 7, 1, 12, 0, 0);
+c.renderDailyRhythm(
+  c.GOLDEN_TEST_CHARTS[0].chart || c.GOLDEN_TEST_CHARTS[0],
+  { Sun: 128, Moon: 42 },
+  { career: 60 },
+  true,
+  selectedDailyDate
+);
+if (!planetaryRowDate || planetaryRowDate.getTime() !== selectedDailyDate.getTime()) {
+  throw new Error('切換日運日期後，今日主星仍使用裝置今天。');
+}
+c.renderPlanetaryDayRow = originalPlanetaryDayRow;
+
+/* 相鄰兩天的主星、顏色、數字、時段都應重新推導。 */
+const taipei = { lat: 25.033, lon: 121.5654, tz: 'Asia/Taipei' };
+const fridayRow = c.renderPlanetaryDayRow(new Date(2026, 6, 31, 12, 0, 0), taipei);
+const saturdayRow = c.renderPlanetaryDayRow(selectedDailyDate, taipei);
+[['金星', '青綠', '>6<'], ['土星', '深褐', '>8<']].forEach((expected, index) => {
+  const row = index ? saturdayRow : fridayRow;
+  expected.forEach(value => {
+    if (!row.includes(value)) throw new Error(`日運日期切換後缺少預期值：${value}`);
+  });
+  if (!row.includes('幸運時段')) throw new Error('日運日期切換後沒有重新產生幸運時段。');
+});
+if (fridayRow === saturdayRow) throw new Error('相鄰兩天的主星、顏色、數字與時段完全相同。');
+
 const natalHeadlineForTitleAvailable = typeof c.natalHeadlineForTitle === 'function';
 const failures = [];
 const fail = msg => failures.push(msg);
