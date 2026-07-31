@@ -464,7 +464,7 @@ var NATAL_TOPIC_QUESTIONS = {
     { id: 'study-overseas', title: '海外學習或高等教育傾向', intent: 'direction', questionFocus: 'overseas_education_direction',
       answerTargets: ['海外或高等教育的傾向', '值得投入的長期學習方向'],
       excludedTargets: ['適合的學習形式（屬於另一題）'],
-      detailLabels: ['海外或高等教育傾向', '值得投入的方向'],
+      detailLabels: ['適合拓展的能力', '現實條件要先確認'],
       cautionFocus: 'overextension',
       evidenceBias: { preferPlanets: ['Jupiter'], preferTypes: ['housePlanets', 'houseRuler'] },
       indicators: [
@@ -559,7 +559,7 @@ var NATAL_TOPIC_QUESTIONS = {
     { id: 'general-decision-basis', title: '面對重大選擇時，我最可靠的判斷依據是什麼？', intent: 'direction', questionFocus: 'major_decision_basis',
       answerTargets: ['重大選擇時最可靠的判斷原則', '辨認方向是否適合的條件'],
       excludedTargets: ['單純的人生發展方向', '命盤核心優勢'],
-      detailLabels: ['最可靠的判斷原則', '方向是否適合的訊號'],
+      detailLabels: ['做決定時先確認什麼', '方向適合你的具體訊號'],
       cautionFocus: 'vigilance',
       evidenceBias: { preferPlanets: ['Sun', 'Moon', 'Saturn', 'Jupiter'], preferTypes: ['chartRuler', 'nodeAxis'] },
       indicators: [

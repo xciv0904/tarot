@@ -2911,7 +2911,10 @@ function natalSemanticProfile(biasedEvidence) {
     if (e.sign != null && typeof ASTRO_SIGN_DIMENSION_WEIGHTS !== 'undefined') {
       var signWeights = ASTRO_SIGN_DIMENSION_WEIGHTS[e.sign] || {};
       Object.keys(signWeights).forEach(function (dimension) {
-        var contribution = e.selectionScore * signWeights[dimension];
+        /* 題庫本來固定會列入月亮、金星等天體；若行星本質和落座同分，
+           物件插入順序會讓行星本質永遠勝出，換星座後正文仍不變。
+           落座描述的是這張盤實際採用的表現方式，因此給極小的決勝係數。 */
+        var contribution = e.selectionScore * signWeights[dimension] * 1.1;
         var sourceKey = 'sign' + e.sign + ':' + e.canonicalKey + '|' + dimension;
         if (!perSource[sourceKey] || contribution > perSource[sourceKey].score) {
           perSource[sourceKey] = { dimension:dimension, score:contribution, planetKey:null, evidenceKey:e.canonicalKey };
@@ -2963,46 +2966,206 @@ function natalSemanticFocusKind(questionFocus) {
   if (/first_impression|group_role|family_role/.test(questionFocus || '')) return 'role';
   return '';
 }
+function natalEvidenceLifeContext(e) {
+  if (!e) return '';
+  if (e.pointKey === 'Node' || /Node/.test(e.canonicalKey || '')) return '決定下一步要往哪裡投入時';
+  if (e.planetKey === 'Saturn') return '責任增加或必須長期撐住時';
+  if (e.planetKey === 'Moon') return '關係回應或日常節奏改變時';
+  if (e.planetKey === 'Mercury') return '資訊不完整或需要說清楚時';
+  if (e.planetKey === 'Venus') return '需要協調關係與實際選擇時';
+  if (e.planetKey === 'Mars') return '時間緊迫或必須立刻行動時';
+  if (e.angleWhich) return '進入新環境、還在判斷如何表現時';
+  return '';
+}
+function natalDistinctEvidenceCount(evidenceList) {
+  var seen = {};
+  (evidenceList || []).slice(0, 4).forEach(function (e) {
+    if (e && e.canonicalKey) seen[e.canonicalKey] = 1;
+  });
+  return Object.keys(seen).length;
+}
+function natalTriggerReaction(trigger, reaction) {
+  var scene = String(trigger || '').replace(/時$/, '');
+  var oneSentence = '當' + trigger + '，你' + reaction;
+  return oneSentence.length <= 44
+    ? oneSentence
+    : '常見情況是：' + scene + '。這時，你' + reaction;
+}
 function applySemanticQuestionPlan(base, question, biasedEvidence) {
   var kind = natalSemanticFocusKind(question.questionFocus);
   var profile = natalSemanticProfile(biasedEvidence);
   base.semanticProfile = profile;
-  if (!kind || !profile.dominant) return base;
+  if (!profile.dominant) return base;
   var d = natalSemanticDefinition(profile.dominant);
   var s = natalSemanticDefinition(profile.secondary);
   if (!d) return base;
-  if (kind === 'strength') {
-    base.headline = '遇到需要「' + d.label + '」的情況時，你最能發揮的是：' + d.strength + '。' + (s ? '你通常再用「' + s.label + '」補上第二步。' : '');
-    base.summary = profile.close && s
-      ? '「' + s.label + '」的分數也很接近，所以你通常會先' + d.behavior + '，再用另一種方式補足：' + s.strength + '。'
-      : '這項能力通常表現在：' + d.behavior + '。';
+  var dominantSource = profile.dominant.sources && profile.dominant.sources[0];
+  var dominantEvidence = dominantSource && (biasedEvidence || []).filter(function (e) {
+    return e.canonicalKey === dominantSource.evidenceKey;
+  })[0];
+  var dominantPlanetMeaning = dominantEvidence && natalPlanetSemantic(dominantEvidence);
+  var sourceContext = natalEvidenceLifeContext(dominantEvidence);
+  var sourceBehavior = dominantEvidence && dominantEvidence.sign != null
+    && typeof SIGN_BEGINNER !== 'undefined' && SIGN_BEGINNER[dominantEvidence.sign]
+    ? SIGN_BEGINNER[dominantEvidence.sign].behavior
+    : '';
+  var supportingBehavior = '';
+  (biasedEvidence || []).some(function (e) {
+    if (!e || e.canonicalKey === (dominantEvidence && dominantEvidence.canonicalKey)
+        || e.sign == null || typeof SIGN_BEGINNER === 'undefined' || !SIGN_BEGINNER[e.sign]) return false;
+    var candidate = SIGN_BEGINNER[e.sign].behavior;
+    if (!candidate || candidate === sourceBehavior) return false;
+    supportingBehavior = candidate;
+    return true;
+  });
+  var evidenceCount = natalDistinctEvidenceCount(biasedEvidence);
+  var softClaim = evidenceCount < 2;
+  base.semanticKey = question.questionFocus + ':' + profile.dominant.key
+    + (dominantEvidence ? '@' + dominantEvidence.canonicalKey : '')
+    + (profile.close && profile.secondary ? '+' + profile.secondary.key : '');
+  var moneyPlan = typeof ASTRO_WEALTH_BLINDSPOT_DIMENSIONS !== 'undefined'
+    ? ASTRO_WEALTH_BLINDSPOT_DIMENSIONS[profile.dominant.key]
+    : null;
+  if (!kind && question.questionFocus === 'spend_save_pattern' && moneyPlan) {
+    base.headline = '做消費決定時，你通常' + (sourceBehavior || d.behavior.replace(/^會/, '')) + '。'
+      + (supportingBehavior ? '遇到較複雜的選項時，你也會' + supportingBehavior + '。' : '')
+      + '要讓儲蓄穩定，你可以' + moneyPlan.saving + '。';
+    base.summary = '如果預算偏離原計畫，不必整份放棄，只調整下一個週期。';
     base.details = [
-      { label:question.title + '會在哪裡發揮', text:d.trigger + '，這項能力最容易被啟動。' },
-      { label:question.title + '用過頭的代價', text:d.overuse + '，結果是' + d.cost + '。' },
+      { label:'花錢前的判斷方式', text:'你通常' + (sourceBehavior || d.behavior.replace(/^會/, '')) + '。' },
+      { label:'預算偏離時怎麼拉回來', text:moneyPlan.action + '。' },
     ];
-    base.caution = '保留優勢的做法：' + d.action + '。';
-  } else if (kind === 'blindspot') {
-    base.headline = '當' + d.trigger + '，你容易' + d.overuse + '。';
-    base.summary = '這個反應原本想保住「' + d.label + '」，實際代價是' + d.cost + '。';
+    base.caution = '如果一筆支出無法說明用途、金額上限與付款後的影響，就先不要付款。';
+    base.headlineConceptKeys = [base.semanticKey + ':headline'];
+    base.summaryConceptKeys = [base.semanticKey + ':summary'];
+    base.detailConceptKeys = [base.semanticKey + ':detail'];
+    base.cautionConceptKeys = [base.semanticKey + ':caution'];
+    return base;
+  }
+  if (!kind && question.questionFocus === 'risk_attitude' && moneyPlan) {
+    base.headline = '遇到金額較大或結果不確定的選擇時，你通常'
+      + (sourceBehavior || d.behavior.replace(/^會/, '')) + '。真正要先確認的是：'
+      + moneyPlan.riskCheck.replace(/^(先)?確認/, '') + '。';
+    base.summary = '判斷風險時，不只看可能得到什麼，也要先確認最壞情況是否承受得起。';
     base.details = [
-      { label:question.title + '背後原本的能力', text:d.strength + '。' },
-      { label:question.title + '可換成的反應', text:d.action + '。' },
+      { label:'你會怎麼判斷風險', text:'你通常' + (sourceBehavior || d.behavior.replace(/^會/, '')) + '。' },
+      { label:'容易高估或低估的部分', text:moneyPlan.risk + '。' },
+    ];
+    base.caution = '重大財務決策仍需依現實資料與專業意見。';
+    base.headlineConceptKeys = [base.semanticKey + ':headline'];
+    base.summaryConceptKeys = [base.semanticKey + ':summary'];
+    base.detailConceptKeys = [base.semanticKey + ':detail'];
+    base.cautionConceptKeys = [base.semanticKey + ':caution'];
+    return base;
+  }
+  if (!kind && question.questionFocus === 'communication_style') {
+    base.headline = '溝通時，你' + (sourceBehavior || d.behavior.replace(/^會/, '')) + '。'
+      + natalTriggerReaction(d.trigger, '會' + d.behavior.replace(/^會/, '')) + '。這會讓' + d.impact + '。';
+    base.summary = '別人實際感受到的是：' + d.socialEffect.replace(/^別人容易覺得你/, '你') + '。';
+    base.headlineConceptKeys = [base.semanticKey + ':headline'];
+    base.summaryConceptKeys = [base.semanticKey + ':summary'];
+    return base;
+  }
+  if (!kind) return base;
+  var focusContext = /relationship/.test(question.questionFocus) ? '在感情裡，'
+    : /career|workplace/.test(question.questionFocus) ? '在工作上，'
+      : /body|health/.test(question.questionFocus) ? '面對身體與壓力時，'
+        : /financial|wealth/.test(question.questionFocus) ? '處理金錢時，'
+          : /study|learning/.test(question.questionFocus) ? '學習時，'
+            : /social/.test(question.questionFocus) ? '與人互動時，' : '';
+  if (kind === 'strength') {
+    base.headline = question.questionFocus === 'workplace_advantages'
+      ? '工作卡住時，你最能提供的價值是' + d.strength + '。你會' + d.behavior.replace(/^會/, '') + '。這會讓' + d.impact + '。'
+      : question.questionFocus === 'social_strengths'
+        ? '與人互動時，' + d.socialEffect + '。遇到' + d.trigger.replace(/時$/, '') + '時，你會' + d.behavior.replace(/^會/, '') + '。'
+      : question.questionFocus === 'core_strength'
+      ? '面對需要你主動處理的事情時，你' + (softClaim ? '比較容易' : '通常會') + d.behavior.replace(/^會/, '') + '。這會讓' + d.impact + '。'
+      : focusContext + natalTriggerReaction(d.trigger, (softClaim ? '比較容易' : '通常會') + d.behavior.replace(/^會/, '')) + '。這會讓' + d.impact + '。';
+    base.summary = profile.close && s
+      ? '你通常會先' + d.behavior + '。情況需要時，也會' + s.behavior + '。'
+      : '這項能力的核心是' + d.strength + '。';
+    base.details = [
+      { label:'最容易發揮的情境', text:'當' + d.trigger + '，這項能力最容易派上用場。' },
+      { label:'用過頭時的代價', text:'你可能' + d.overuse + '。結果是' + d.cost + '。' },
+    ];
+    base.caution = d.action + '。';
+  } else if (kind === 'blindspot') {
+    var domainBlindspot = question.questionFocus === 'body_boundary_blindspot'
+      && typeof ASTRO_HEALTH_BOUNDARY_DIMENSIONS !== 'undefined'
+      ? ASTRO_HEALTH_BOUNDARY_DIMENSIONS[profile.dominant.key]
+      : question.questionFocus === 'financial_blindspot'
+        && typeof ASTRO_WEALTH_BLINDSPOT_DIMENSIONS !== 'undefined'
+        ? ASTRO_WEALTH_BLINDSPOT_DIMENSIONS[profile.dominant.key]
+        : null;
+    var blindspotLead = /relationship/.test(question.questionFocus) ? '感情裡，'
+      : /career/.test(question.questionFocus) ? '工作中，'
+        : /body|health/.test(question.questionFocus) ? '壓力升高時，'
+          : /financial|wealth/.test(question.questionFocus) ? '處理金錢時，'
+            : /recurring_life_issue/.test(question.questionFocus) ? '最容易反覆出現的模式是：'
+              : focusContext;
+    base.headline = domainBlindspot
+      ? (question.questionFocus === 'financial_blindspot' ? '處理金錢時，' : '壓力升高時，')
+        + '你' + (softClaim ? '可能會' : '容易') + domainBlindspot.risk + '。結果是' + domainBlindspot.cost + '。'
+      : question.questionFocus === 'career_blindspot'
+      ? '工作中要留意：' + natalTriggerReaction(d.trigger, (softClaim ? '可能會' : '容易') + d.overuse) + '。最後可能' + d.cost + '。'
+      : question.questionFocus === 'study_strength_blindspot'
+        ? '學習上的優勢是' + d.strength + '。但' + natalTriggerReaction(d.trigger, (softClaim ? '可能會' : '容易') + d.overuse) + '，讓學習進度變得更難掌握。'
+        : blindspotLead + natalTriggerReaction(d.trigger, (softClaim ? '可能會' : '容易') + d.overuse) + '。結果是' + d.cost + '。';
+    if (question.questionFocus === 'recurring_life_issue' && sourceBehavior
+        && natalTextKey(base.headline).indexOf(natalTextKey(sourceBehavior)) === -1) {
+      base.headline += supportingBehavior
+        ? '你通常先' + sourceBehavior + '，情況更複雜時才' + supportingBehavior + '。'
+        : '日常裡，你也常' + sourceBehavior + '。';
+    }
+    base.summary = sourceContext
+      ? '這個反應在' + sourceContext + '特別容易出現。'
+      : '這個反應原本想降低風險，最後反而讓問題更難處理。';
+    base.details = domainBlindspot ? [
+      {
+        label:question.questionFocus === 'financial_blindspot' ? '做金錢決定時的慣性' : '壓力剛開始時的反應',
+        text:'你通常' + (sourceBehavior || d.behavior.replace(/^會/, '')) + '。',
+      },
+      { label:'更有效的替代做法', text:domainBlindspot.action + '。' },
+    ] : [
+      { label:'這樣做會付出什麼代價', text:d.cost + '。' },
+      { label:'更有效的替代做法', text:d.action + '。' },
     ];
     base.caution = profile.close && s
-      ? '次要反應來自「' + s.label + '」：壓力升高時，也可能' + s.overuse + '。'
+      ? '壓力再升高時，你也可能' + s.overuse + '。'
       : '';
+    if (domainBlindspot) {
+      base.caution = question.questionFocus === 'financial_blindspot'
+        ? '如果無法說明用途、金額上限與付款後的影響，就先不要付款。'
+        : '若同一個身體警訊持續出現或加重，停止自行判斷並尋求合格醫療協助。';
+    }
   } else {
-    base.headline = (question.questionFocus === 'family_role' ? '家人最常依賴你的是：你' : '別人最先看到的是：你') + d.behavior + '。' + (s ? '接著才會出現「' + s.label + '」的反應。' : '');
+    var roleLead = question.questionFocus === 'family_role' ? '家人最常依賴你處理事情的方式是：你'
+      : question.questionFocus === 'group_role' ? '進入團體後，別人最常看見你'
+        : '初次見面時，你通常';
+    base.headline = roleLead + d.behavior + '。'
+      + (sourceBehavior && natalTextKey(d.behavior).indexOf(natalTextKey(sourceBehavior)) === -1
+        ? '實際相處時，你' + sourceBehavior + '。'
+        : '')
+      + (question.questionFocus === 'first_impression'
+        ? d.socialEffect + '。'
+        : '這會讓' + d.impact + '。');
     base.summary = profile.close && s
-      ? '熟悉之後，才會再看到「' + s.label + '」的一面：你' + s.behavior + '。'
-      : '這不是抽象氣質，而是你在' + d.trigger + '常出現的實際反應。';
+      ? '熟悉之後，別人才會發現你也會' + s.behavior + '。'
+      : '當' + d.trigger + '，這個反應會特別明顯。';
+    var roleLabels = question.questionFocus === 'first_impression'
+      ? ['別人最先注意到什麼', '容易被誤解的地方']
+      : question.questionFocus === 'family_role'
+        ? ['家人最常依賴你的部分', '你容易多承擔什麼']
+        : ['你在團體裡會做什麼', '互動中容易忽略什麼'];
     base.details = [
-      { label:question.title + '帶來的作用', text:d.strength + '。' },
-      { label:question.title + '可能被誤解之處', text:d.overuse + '，因此' + d.cost + '。' },
+      { label:roleLabels[0], text:d.strength + '。' },
+      { label:roleLabels[1], text:'你可能' + d.overuse + '，因此' + d.cost + '。' },
     ];
     base.caution = d.action + '。';
   }
-  base.semanticKey = kind + ':' + profile.dominant.key + (profile.close && profile.secondary ? '+' + profile.secondary.key : '');
+  base.semanticKey = kind + ':' + profile.dominant.key
+    + (dominantEvidence ? '@' + dominantEvidence.canonicalKey : '')
+    + (profile.close && profile.secondary ? '+' + profile.secondary.key : '');
   base.headlineConceptKeys = [base.semanticKey + ':headline'];
   base.summaryConceptKeys = [base.semanticKey + ':summary'];
   base.detailConceptKeys = [base.semanticKey + ':detail'];
@@ -3060,8 +3223,28 @@ function natalKnowledgeEntryForEvidence(e, category) {
   if (!e || !e.planetKey || typeof PLANET_TOPIC_KNOWLEDGE === 'undefined') return null;
   var houseNum = natalEvidenceHouseNumber(e);
   var overrideKey = houseNum ? (e.planetKey.toLowerCase() + '-' + houseNum + '-' + category) : '';
-  if (overrideKey && typeof PLANET_HOUSE_TOPIC_KNOWLEDGE !== 'undefined' && PLANET_HOUSE_TOPIC_KNOWLEDGE[overrideKey]) return PLANET_HOUSE_TOPIC_KNOWLEDGE[overrideKey];
-  return PLANET_TOPIC_KNOWLEDGE[e.planetKey] && PLANET_TOPIC_KNOWLEDGE[e.planetKey][category];
+  var entry = overrideKey && typeof PLANET_HOUSE_TOPIC_KNOWLEDGE !== 'undefined' && PLANET_HOUSE_TOPIC_KNOWLEDGE[overrideKey]
+    ? PLANET_HOUSE_TOPIC_KNOWLEDGE[overrideKey]
+    : PLANET_TOPIC_KNOWLEDGE[e.planetKey] && PLANET_TOPIC_KNOWLEDGE[e.planetKey][category];
+  if (!entry || e.sign == null || typeof SIGN_BEGINNER === 'undefined' || !SIGN_BEGINNER[e.sign]) return entry;
+  /* 同一顆行星換了落座時，舊版仍直接回傳同一份 Planet Topic 文案。
+     保留行星提供的主結論，但把實際落座的可觀察行為放進第二句。 */
+  var signBehavior = SIGN_BEGINNER[e.sign].behavior;
+  var meanings = entry.meanings || {};
+  return {
+    meanings:{
+      headline:(meanings.headline || []).map(function (text) {
+        return natalStripTrailingPeriod(text) + '。實際表現是，你' + signBehavior + '。';
+      }),
+      summary:(meanings.summary || []).slice(),
+      details:(meanings.details || []).slice(),
+      caution:(meanings.caution || []).slice(),
+    },
+    keywords:(entry.keywords || []).slice(),
+    strengths:(entry.strengths || []).slice(),
+    risks:(entry.risks || []).slice(),
+    semantic:entry.semantic || null,
+  };
 }
 function natalPickKnowledgeText(entry, slot, seed) {
   if (!entry || !entry.meanings) return '';
@@ -3182,7 +3365,11 @@ function applyFocusedQuestionContentPlan(base, question, top, second, third, top
     var partnerSupportKey = partnerKeys[1] || partnerPrimaryKey;
     var partnerPrimary = ASTRO_PARTNER_PLAIN_DATASET[partnerPrimaryKey] || ASTRO_PARTNER_PLAIN_DATASET.Moon;
     var partnerSupport = ASTRO_PARTNER_PLAIN_DATASET[partnerSupportKey] || partnerPrimary;
-    base.headline = '你常遇到的對象，較可能是' + partnerPrimary.personality + '的人。';
+    var partnerEvidence = [top, second, third].filter(Boolean).filter(function (e) { return e.planetKey === partnerPrimaryKey; })[0];
+    var partnerSignBehavior = partnerEvidence && partnerEvidence.sign != null && SIGN_BEGINNER[partnerEvidence.sign]
+      ? SIGN_BEGINNER[partnerEvidence.sign].behavior : '';
+    base.headline = '你常遇到的對象，較可能是' + partnerPrimary.personality + '的人。'
+      + (partnerSignBehavior ? '剛認識時，對方多半會' + partnerSignBehavior + '。' : '');
     base.summary = '真正影響長期相處的，不只是第一印象，而是對方能否做到：' + partnerSupport.interaction + '。';
     base.details = [
       { label:'你會被什麼特質留住', text:partnerPrimary.staying },
@@ -3197,7 +3384,10 @@ function applyFocusedQuestionContentPlan(base, question, top, second, third, top
     var employmentKeys = natalPlanetKeysFromEvidenceList([top, second, third]);
     var employmentKey = employmentKeys[0] || 'Saturn';
     var employment = ASTRO_EMPLOYMENT_MODE_DATASET[employmentKey] || ASTRO_EMPLOYMENT_MODE_DATASET.Saturn;
-    base.headline = '在三種選項中，較值得優先評估的是：' + employment.mode + '。';
+    var employmentEvidence = [top, second, third].filter(Boolean).filter(function (e) { return e.planetKey === employmentKey; })[0];
+    var employmentSign = employmentEvidence && employmentEvidence.sign != null && SIGN_BEGINNER[employmentEvidence.sign];
+    base.headline = '在三種選項中，較值得優先評估的是：' + employment.mode + '。'
+      + (employmentSign ? '實際工作時，你通常' + employmentSign.behavior + '。' : '');
     base.summary = '判斷穩定就業、自由工作或創業哪個更合適，關鍵要看實際工作能否提供以下自主條件。';
     base.details = [
       { label:'你需要的自主程度', text:employment.autonomy },
@@ -3212,7 +3402,7 @@ function applyFocusedQuestionContentPlan(base, question, top, second, third, top
     var originKeys = natalPlanetKeysFromEvidenceList([top, second, third]);
     var originKey = originKeys[0] || 'Moon';
     var origin = ASTRO_FAMILY_ORIGIN_PLAIN_DATASET[originKey] || ASTRO_FAMILY_ORIGIN_PLAIN_DATASET.Moon;
-    base.headline = '你現在面對關係與責任的方式，可能延續了原生家庭中的一項習慣。';
+    base.headline = origin.habit + '。這個習慣可能延續到現在的關係與責任分配。';
     base.summary = '這種早期習慣延續到現在時，常會變成：' + origin.impact + '。';
     base.details = [
       { label:'原生家庭留下的慣性', text:origin.habit },
@@ -3257,6 +3447,14 @@ function applyFocusedQuestionContentPlan(base, question, top, second, third, top
     base.cautionConceptKeys = ['medicalBoundary'];
   } else if (focus === 'inner_tension_balance') {
     var tensionKeys = natalPlanetKeysFromEvidenceList([top, second, third]);
+    var tensionElem = top && (top.elemTag || top.dominantElement
+      || ((top.canonicalKey || '').match(/balance\|([火土風水])/) || [])[1]);
+    if (tensionElem) {
+      tensionKeys = tensionElem === '火' ? ['Sun', 'Mars']
+        : tensionElem === '土' ? ['Saturn', 'Venus']
+          : tensionElem === '風' ? ['Mercury', 'Uranus']
+            : tensionElem === '水' ? ['Moon', 'Neptune'] : [];
+    }
     var tensionFirstKey = tensionKeys[0] || 'Sun';
     var tensionSecondKey = tensionKeys[1] || (tensionFirstKey === 'Saturn' ? 'Uranus' : 'Saturn');
     var tensionFirst = ASTRO_TENSION_PLAIN_DATASET[tensionFirstKey] || ASTRO_TENSION_PLAIN_DATASET.Sun;
@@ -3328,6 +3526,21 @@ function applyFocusedQuestionContentPlan(base, question, top, second, third, top
     base.summaryConceptKeys = ['lifestyleFitTest'];
     base.detailConceptKeys = ['lifestyleRoutine:' + habit.routine, 'lifestyleSignal:' + habit.fit];
     base.cautionConceptKeys = ['medicalBoundary'];
+  } else if (focus === 'study_rhythm') {
+    var studyHabitKey = top && top.planetKey;
+    var studyHabit = (typeof ASTRO_LIFESTYLE_HABIT_DATASET !== 'undefined' && ASTRO_LIFESTYLE_HABIT_DATASET[studyHabitKey])
+      || ASTRO_LIFESTYLE_HABIT_DATASET.Mercury;
+    base.headline = '讀書時，你適合' + studyHabit.pace + '。';
+    base.summary = '有效的安排要能連續維持數週，不能只靠考前一次長時間硬撐。';
+    base.details = [
+      { label:'每次開始前怎麼安排', text:studyHabit.routine },
+      { label:'怎麼確認這個節奏有效', text:studyHabit.fit },
+    ];
+    base.caution = '';
+    base.headlineConceptKeys = ['studyPace:' + studyHabitKey];
+    base.summaryConceptKeys = ['studyConsistencyTest'];
+    base.detailConceptKeys = ['studyRoutine:' + studyHabitKey, 'studyFit:' + studyHabitKey];
+    base.cautionConceptKeys = [];
   } else {
     base = applySemanticKnowledgeContentPlan(base, question, top, second, third);
   }
@@ -3361,15 +3574,54 @@ function stripDetailLabelEcho(label, text) {
   var rest = text.slice(m[0].length);
   return rest.length >= 6 ? rest : text;
 }
+function splitNatalLongText(text) {
+  return String(text || '').replace(/([^。！？]+)([。！？]?)/g, function (_, sentence, end) {
+    if (sentence.length <= 44) return sentence + end;
+    var commas = [];
+    for (var i = 0; i < sentence.length; i++) if (sentence.charAt(i) === '，') commas.push(i);
+    var candidates = commas.filter(function (idx) {
+      if (idx < 20 || idx > 38) return false;
+      /* 「當情境發生時，你會……」是完整因果，不在情境與反應之間硬切句。 */
+      var beforeComma = sentence.slice(0, idx);
+      if (beforeComma.indexOf('當') !== -1 && /時$/.test(beforeComma)) return false;
+      return true;
+    });
+    if (!candidates.length) return sentence + end;
+    candidates.sort(function (a, b) { return Math.abs(a - 28) - Math.abs(b - 28); });
+    var cut = candidates[0];
+    var first = sentence.slice(0, cut);
+    var second = sentence.slice(cut + 1);
+    if (!/^(你|對方|別人|家人|這|那|事情|關係|工作|環境|真正|若|如果|當|因此|結果|壓力|實際)/.test(second)) second = '你' + second;
+    return first + '。' + second + end;
+  });
+}
 function polishNatalAnswer(base) {
   if (!base || !base.details || !base.details.length) return base;
+  base.headline = splitNatalLongText(base.headline);
+  base.summary = splitNatalLongText(base.summary);
+  base.caution = splitNatalLongText(base.caution);
   /* 就地改寫 text，不重建物件——details 上還掛著 sourceRoles 等欄位供摺疊區使用，
      重建物件容易在之後新增欄位時默默把它們弄丟。 */
-  base.details.forEach(function (d) {
+  var headKey = natalTextKey(base.headline);
+  base.details.forEach(function (d, index) {
     if (!d || !d.text) return;
     var t = stripDetailLabelEcho(d.label, String(d.text).replace(/\s+$/, ''));
+    var detailKey = natalTextKey(t);
+    var detailRepeated = detailKey.length >= 8 && headKey.indexOf(detailKey) !== -1;
+    if (!detailRepeated && detailKey.length >= 10) {
+      for (var cut = 2; cut <= 6 && !detailRepeated; cut += 2) {
+        if (detailKey.length - cut >= 5 && headKey.indexOf(detailKey.slice(cut)) !== -1) detailRepeated = true;
+      }
+    }
+    if (detailRepeated) {
+      var dominant = base.semanticProfile && natalSemanticDefinition(base.semanticProfile.dominant);
+      if (dominant) t = index === 0 ? dominant.behavior : dominant.action;
+      else if (base.primaryEvidence && base.primaryEvidence.sign != null && SIGN_BEGINNER[base.primaryEvidence.sign]) {
+        t = index === 0 ? SIGN_BEGINNER[base.primaryEvidence.sign].behavior : SIGN_BEGINNER[base.primaryEvidence.sign].watch;
+      }
+    }
     if (t && '。！？」）'.indexOf(t.charAt(t.length - 1)) === -1) t += '。';
-    d.text = t;
+    d.text = splitNatalLongText(t);
   });
   return base;
 }
@@ -3739,7 +3991,7 @@ function buildTopicOverview(topicId, answers) {
   return fillTpl(astroSeededPick(seed, pool), { tone: tone });
 }
 
-var NATAL_TOPIC_PROMPT_VERSION = 'topic-rules-v6';
+var NATAL_TOPIC_PROMPT_VERSION = 'topic-rules-v8';
 var NATAL_TOPIC_KNOWLEDGE_VERSION = typeof ASTRO_TOPIC_SEMANTIC_VERSION !== 'undefined' ? ASTRO_TOPIC_SEMANTIC_VERSION : 'unknown';
 function natalChartFingerprint(chart, unknownTime) {
   if (!chart) return '';
@@ -3796,6 +4048,12 @@ function analyzeNatalTopic(chartData, topicId, selectedQuestionIds, unknownTime)
     });
     content.debug = {
       topic:topicId,
+      rendererTemplate:'question-direct-answer-v1',
+      questionFocusApplied:q.questionFocus,
+      knowledgeProjection:(QUESTIONFOCUS_HOUSE_CATEGORY[q.questionFocus] || 'general'),
+      fieldOverrideApplied:q.fieldOverride ? Object.keys(q.fieldOverride) : [],
+      answerTargetsApplied:(q.answerTargets || []).slice(),
+      excludedTargetsApplied:(q.excludedTargets || []).slice(),
       selectedIndicators:effectiveRanked.map(function (e) { return e.canonicalKey; }),
       rawWeights:effectiveRanked.map(function (e) { return { key:e.canonicalKey, raw:e.rawWeight == null ? e.weight : e.rawWeight, bias:e.biasBonus || 0, effective:e.selectionScore == null ? e.weight : e.selectionScore }; }),
       semanticScores:(content.semanticProfile && content.semanticProfile.scores) || [],
@@ -3852,6 +4110,10 @@ function natalTopicToggleExpand(qId) {
   state.natalTopicExpanded[qId] = !state.natalTopicExpanded[qId];
   render();
 }
+function natalTopicSetExplanationMode(professional) {
+  state.natalTopicProfessional = !!professional;
+  render();
+}
 function natalTopicToggleShowAll(catKey) {
   state.natalTopicShowAll[catKey] = !state.natalTopicShowAll[catKey];
   render();
@@ -3892,6 +4154,31 @@ function visibleNatalDetails(answer) {
   return kept.length ? kept : all;
 }
 
+function natalEvidencePlainName(e) {
+  if (!e) return '主要星盤線索';
+  if (e.planetKey && typeof PLANET_DEFS !== 'undefined' && PLANET_DEFS[e.planetKey]) return PLANET_DEFS[e.planetKey].zh;
+  if (e.angleWhich && NATAL_ANGLE_ZH[e.angleWhich]) return NATAL_ANGLE_ZH[e.angleWhich];
+  if (e.factor) return e.factor.replace(/（.*?）/g, '');
+  return '主要星盤線索';
+}
+function natalSemanticSupportText(e) {
+  var text = String((e && (e.semanticSupport || e.reason)) || '');
+  return text.replace(/^支持「[^」]+」：/, '').replace(/^這項資料/, '這個線索');
+}
+function natalPlainEvidenceExplanation(a) {
+  var first = a.primaryEvidence || (a.ranked && a.ranked[0]);
+  var second = (a.supportingEvidence && a.supportingEvidence[0]) || (a.ranked && a.ranked[1]);
+  if (!first) return '目前可用資料不足，因此這題只保留低強度描述。';
+  var out = natalEvidencePlainName(first) + '是這題的主要來源，因此重點放在' + natalSemanticSupportText(first) + '。';
+  if (second) {
+    var firstScore = first.selectionScore == null ? first.weight : first.selectionScore;
+    var secondScore = second.selectionScore == null ? second.weight : second.selectionScore;
+    out += natalEvidencePlainName(second) + '提供次要補充，主要影響是' + natalSemanticSupportText(second) + '。';
+    if (firstScore - secondScore < 1.5) out += '兩項影響接近，所以不同情境下都可能出現。';
+  }
+  return out;
+}
+
 /* 結論句常常把題目的框架字再說一次：題目「適合什麼工作環境」，結論
    「適合資訊流通快、需要頻繁討論交流的環境。」——兩行疊在一起看就是重複。
    把開頭那個沒有實質內容的框架字去掉，結論就變成直接回答。
@@ -3919,11 +4206,10 @@ function natalHeadlineForTitle(title, headline) {
 }
 
 function renderNatalTopicQuestionCard(a) {
-  var expanded = !!state.natalTopicExpanded[a.questionId];
   var h = '<div style="margin-top:16px;border:1px solid rgba(201,169,110,.28);border-radius:14px;padding:16px 17px;background:rgba(255,255,255,.025);box-shadow:0 1px 0 rgba(255,255,255,.02) inset">';
   h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(201,169,110,.75);letter-spacing:.03em">' + esc(a.title) + '</div>';
   h += '<div style="font:600 15px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:6px;line-height:1.6">' + esc(natalHeadlineForTitle(a.title, a.headline)) + '</div>';
-  var shownDetails = visibleNatalDetails(a);
+  var shownDetails = visibleNatalDetails(a).slice(0, 2);
   if (shownDetails.length) {
     h += '<div style="margin-top:11px;display:flex;flex-direction:column;gap:7px">';
     shownDetails.forEach(function (d) {
@@ -3931,12 +4217,12 @@ function renderNatalTopicQuestionCard(a) {
     });
     h += '</div>';
   }
-  h += '<details style="margin-top:10px;border-top:1px solid rgba(201,169,110,.14);padding-top:8px"><summary style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(201,169,110,.8);cursor:pointer;min-height:36px;display:flex;align-items:center">為什麼會有這個傾向？</summary><div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.85;padding:2px 0 6px">' + esc(a.summary) + '</div></details>';
   if (a.caution) {
-    h += '<div style="margin-top:11px;display:flex;gap:7px;align-items:flex-start"><span style="flex:none;font:500 10px \'Noto Sans TC\',sans-serif;color:#d9a0a0;background:rgba(214,120,120,.12);border-radius:8px;padding:2px 7px;margin-top:1px">留意</span><div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.68);line-height:1.75">' + esc(a.caution) + '</div></div>';
+    h += '<div style="margin-top:11px;display:flex;gap:7px;align-items:flex-start"><span style="flex:none;font:500 10px \'Noto Sans TC\',sans-serif;color:#d9a0a0;background:rgba(214,120,120,.12);border-radius:8px;padding:2px 7px;margin-top:1px">實用提醒</span><div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.68);line-height:1.75">' + esc(a.caution) + '</div></div>';
   }
-  h += '<button type="button" aria-expanded="' + expanded + '" onclick="natalTopicToggleExpand(\'' + a.questionId + '\')" style="min-height:44px;margin-top:10px;background:none;border:none;color:#c9a96e;font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(201,169,110,.4);padding:4px 2px">' + (expanded ? '收起占星依據' : '查看占星判斷依據') + '</button>';
-  if (expanded) {
+  h += '<details style="margin-top:10px;border-top:1px solid rgba(201,169,110,.14);padding-top:8px"><summary style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(201,169,110,.8);cursor:pointer;min-height:36px;display:flex;align-items:center">為什麼這樣說？</summary>';
+  h += '<div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.68);line-height:1.8;padding:2px 0 6px">' + esc(natalPlainEvidenceExplanation(a)) + '</div>';
+  if (state.natalTopicProfessional) {
     h += '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed rgba(201,169,110,.2)">';
     h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e">主要占星指標</div>';
     if (a.ranked && a.ranked.length) {
@@ -3968,6 +4254,7 @@ function renderNatalTopicQuestionCard(a) {
     }
     h += '</div>';
   }
+  h += '</details>';
   h += '</div>';
   return h;
 }
@@ -3975,6 +4262,9 @@ function renderNatalTopicResult(result) {
   var h = '<div style="margin-top:22px;border-top:1px solid rgba(201,169,110,.2);padding-top:16px">';
   h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;letter-spacing:.05em">主題總覽</div>';
   h += '<div style="font:400 12.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.82);line-height:1.85;margin-top:6px">' + esc(result.topicOverview) + '</div>';
+  h += '<div style="display:flex;justify-content:flex-end;gap:6px;margin-top:10px"><span style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);padding:6px 2px">依據顯示</span>';
+  h += '<button type="button" aria-pressed="' + !state.natalTopicProfessional + '" onclick="natalTopicSetExplanationMode(false)" style="font:500 10.5px \'Noto Sans TC\',sans-serif;border:1px solid rgba(201,169,110,.3);border-radius:12px;padding:5px 9px;background:' + (!state.natalTopicProfessional ? 'rgba(201,169,110,.18)' : 'transparent') + ';color:#c9a96e;cursor:pointer">白話</button>';
+  h += '<button type="button" aria-pressed="' + !!state.natalTopicProfessional + '" onclick="natalTopicSetExplanationMode(true)" style="font:500 10.5px \'Noto Sans TC\',sans-serif;border:1px solid rgba(201,169,110,.3);border-radius:12px;padding:5px 9px;background:' + (state.natalTopicProfessional ? 'rgba(201,169,110,.18)' : 'transparent') + ';color:#c9a96e;cursor:pointer">專業</button></div>';
   result.answers.forEach(function (a) { h += renderNatalTopicQuestionCard(a); });
   h += '<div style="text-align:center;margin-top:18px;padding-bottom:8px"><button id="natal-topic-copy-btn" onclick="natalTopicCopyForAI()" style="min-height:44px;font:400 12px \'Noto Sans TC\',sans-serif;background:none;border:1px solid rgba(201,169,110,.4);color:#c9a96e;padding:10px 20px;border-radius:20px;cursor:pointer">複製給 AI 解讀 Copy for AI</button></div>';
   h += '</div>';

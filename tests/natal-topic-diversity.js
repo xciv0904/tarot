@@ -57,6 +57,9 @@ const cards = [
   ['career','career-core-skill','工作'],
   ['family','family-role','家庭'],
   ['social','social-first-impression','第一印象'],
+  ['social','social-comm-style','溝通'],
+  ['general','general-recurring-issue','人生課題'],
+  ['wealth','wealth-spend-save','消費模式'],
 ];
 const rows = [];
 cards.forEach(([topic,questionId,label]) => {
@@ -117,5 +120,5 @@ cards.forEach(([, ,label]) => {
 });
 fs.mkdirSync(path.dirname(REPORT),{recursive:true});
 fs.writeFileSync(REPORT,lines.join('\n')+'\n');
-console.log('Natal topic diversity: 6 charts × 5 cards passed');
+console.log('Natal topic diversity: 6 charts × ' + cards.length + ' cards passed');
 console.log('Report:',path.relative(ROOT,REPORT));
