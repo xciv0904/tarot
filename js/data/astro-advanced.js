@@ -3026,16 +3026,18 @@ function applySemanticQuestionPlan(base, question, biasedEvidence) {
   var moneyPlan = typeof ASTRO_WEALTH_BLINDSPOT_DIMENSIONS !== 'undefined'
     ? ASTRO_WEALTH_BLINDSPOT_DIMENSIONS[profile.dominant.key]
     : null;
+  var secondaryMoneyPlan = profile.secondary && typeof ASTRO_WEALTH_BLINDSPOT_DIMENSIONS !== 'undefined'
+    ? ASTRO_WEALTH_BLINDSPOT_DIMENSIONS[profile.secondary.key]
+    : null;
   if (!kind && question.questionFocus === 'spend_save_pattern' && moneyPlan) {
-    base.headline = '做消費決定時，你通常' + (sourceBehavior || d.behavior.replace(/^會/, '')) + '。'
-      + (supportingBehavior ? '遇到較複雜的選項時，你也會' + supportingBehavior + '。' : '')
-      + '要讓儲蓄穩定，你可以' + moneyPlan.saving + '。';
-    base.summary = '如果預算偏離原計畫，不必整份放棄，只調整下一個週期。';
+    base.headline = '做消費決定時，最需要留意的是' + moneyPlan.risk + '。儲蓄要先設定固定轉出或額度規則，不靠月底剩下多少。';
+    if (secondaryMoneyPlan && secondaryMoneyPlan !== moneyPlan) base.headline += '選項變複雜時，也要防止' + secondaryMoneyPlan.risk + '。';
+    base.summary = '這個習慣若沒有預算限制，結果會是' + moneyPlan.cost + '。';
     base.details = [
-      { label:'花錢前的判斷方式', text:'你通常' + (sourceBehavior || d.behavior.replace(/^會/, '')) + '。' },
-      { label:'預算偏離時怎麼拉回來', text:moneyPlan.action + '。' },
+      { label:'花錢前怎麼判斷', text:moneyPlan.action + '。' },
+      { label:'儲蓄怎麼固定下來', text:moneyPlan.saving + '。' },
     ];
-    base.caution = '如果一筆支出無法說明用途、金額上限與付款後的影響，就先不要付款。';
+    base.caution = moneyPlan.riskCheck + '。';
     base.headlineConceptKeys = [base.semanticKey + ':headline'];
     base.summaryConceptKeys = [base.semanticKey + ':summary'];
     base.detailConceptKeys = [base.semanticKey + ':detail'];
@@ -3043,13 +3045,11 @@ function applySemanticQuestionPlan(base, question, biasedEvidence) {
     return base;
   }
   if (!kind && question.questionFocus === 'risk_attitude' && moneyPlan) {
-    base.headline = '遇到金額較大或結果不確定的選擇時，你通常'
-      + (sourceBehavior || d.behavior.replace(/^會/, '')) + '。真正要先確認的是：'
-      + moneyPlan.riskCheck.replace(/^(先)?確認/, '') + '。';
-    base.summary = '判斷風險時，不只看可能得到什麼，也要先確認最壞情況是否承受得起。';
+    base.headline = '遇到金額較大或結果不確定的選擇時，你較容易' + moneyPlan.risk + '。';
+    base.summary = '這會讓' + moneyPlan.cost + '。判斷風險時，要先確認最壞情況是否承受得起。';
     base.details = [
-      { label:'你會怎麼判斷風險', text:'你通常' + (sourceBehavior || d.behavior.replace(/^會/, '')) + '。' },
-      { label:'容易高估或低估的部分', text:moneyPlan.risk + '。' },
+      { label:'下決定前要核對什麼', text:moneyPlan.riskCheck + '。' },
+      { label:'怎麼降低誤判', text:moneyPlan.action + '。' },
     ];
     base.caution = '重大財務決策仍需依現實資料與專業意見。';
     base.headlineConceptKeys = [base.semanticKey + ':headline'];
@@ -3359,7 +3359,27 @@ function applySemanticKnowledgeContentPlan(base, question, top, second, third) {
 }
 function applyFocusedQuestionContentPlan(base, question, top, second, third, topicId) {
   var focus = question.questionFocus;
-  if (focus === 'likely_partner_traits') {
+  if (focus === 'top_life_themes') {
+    var themeScores = (base.semanticProfile && base.semanticProfile.scores) || [];
+    var themeDefs = themeScores.slice(0, 3).map(natalSemanticDefinition).filter(Boolean);
+    var fallbackThemeKeys = natalPlanetKeysFromEvidenceList([top, second, third]);
+    fallbackThemeKeys.forEach(function (key) {
+      if (themeDefs.length >= 3) return;
+      var p = typeof ASTRO_PLANET_SEMANTIC_DATASET !== 'undefined' && ASTRO_PLANET_SEMANTIC_DATASET[key];
+      if (p) themeDefs.push({ label:p.need, behavior:p.drive, impact:p.gift });
+    });
+    while (themeDefs.length < 3) themeDefs.push({ label:'把重要選擇落實成可持續的日常做法', behavior:'先確認現實條件，再安排下一步', impact:'讓投入能逐步累積' });
+    base.headline = '命盤中最明顯的三個人生主題是：' + themeDefs.slice(0, 3).map(function (d) { return d.label; }).join('、') + '。';
+    base.summary = '三者的關聯是：你先用「' + themeDefs[0].label + '」決定方向，再用「' + themeDefs[1].label + '」處理過程，最後透過「' + themeDefs[2].label + '」讓結果能持續。';
+    base.details = themeDefs.slice(0, 3).map(function (d, index) {
+      return { label:'主題 ' + (index + 1), text:'當相關情境出現時，你通常會' + d.behavior.replace(/^會/, '') + '。這會' + (d.impact || '影響後續選擇') + '。' };
+    });
+    base.caution = '';
+    base.headlineConceptKeys = themeDefs.slice(0, 3).map(function (d) { return 'lifeTheme:' + d.label; });
+    base.summaryConceptKeys = ['lifeThemeSequence'];
+    base.detailConceptKeys = themeDefs.slice(0, 3).map(function (d, i) { return 'lifeThemeDetail:' + i + ':' + d.label; });
+    base.cautionConceptKeys = [];
+  } else if (focus === 'likely_partner_traits') {
     var partnerKeys = natalPlanetKeysFromEvidenceList([top, second, third]);
     var partnerPrimaryKey = partnerKeys[0] || 'Moon';
     var partnerSupportKey = partnerKeys[1] || partnerPrimaryKey;
@@ -3372,13 +3392,14 @@ function applyFocusedQuestionContentPlan(base, question, top, second, third, top
       + (partnerSignBehavior ? '剛認識時，對方多半會' + partnerSignBehavior + '。' : '');
     base.summary = '真正影響長期相處的，不只是第一印象，而是對方能否做到：' + partnerSupport.interaction + '。';
     base.details = [
+      { label:'對象的個性傾向', text:partnerPrimary.personality },
+      { label:'互動與相處風格', text:partnerSupport.interaction },
       { label:'你會被什麼特質留住', text:partnerPrimary.staying },
-      { label:'相處時要實際觀察', text:'對方是否能在意見不同時仍願意溝通，並持續做到答應的事' },
     ];
     base.caution = '這是較常出現的互動傾向；仍要觀察對方是否能長期把態度落實成行動。';
     base.headlineConceptKeys = ['partnerPersonality:' + partnerPrimaryKey];
     base.summaryConceptKeys = ['partnerInteraction:' + partnerSupportKey];
-    base.detailConceptKeys = ['partnerStaying:' + partnerPrimaryKey, 'partnerBehaviorCheck'];
+    base.detailConceptKeys = ['partnerPersonalityDetail:' + partnerPrimaryKey, 'partnerInteractionDetail:' + partnerSupportKey, 'partnerStaying:' + partnerPrimaryKey];
     base.cautionConceptKeys = ['partnerActionCheck'];
   } else if (focus === 'employment_mode') {
     var employmentKeys = natalPlanetKeysFromEvidenceList([top, second, third]);
@@ -3483,13 +3504,13 @@ function applyFocusedQuestionContentPlan(base, question, top, second, third, top
     base.headline = '較容易在' + venue1 + '認識重要對象。';
     base.summary = '關係通常不是憑空發生，而是在有共同活動、可以反覆接觸的情境裡，透過' + connection + '慢慢形成。';
     base.details = [
-      { label:'較可能出現的場合', text:venue1 },
+      { label:'通常怎麼開始接觸', text:'多半先因共同活動、課程或任務有固定往來，再從對話逐漸熟悉' },
       { label:'另一種可能情境', text:venue2 || ('先因共同任務或興趣互動，再從' + connection + '逐漸熟悉') },
     ];
     base.caution = '';
     base.headlineConceptKeys = ['meetingVenue:' + venue1];
     base.summaryConceptKeys = ['meetingConnection:' + connection];
-    base.detailConceptKeys = ['meetingVenuePrimary:' + venue1, 'meetingVenueSecondary:' + (venue2 || connection)];
+    base.detailConceptKeys = ['meetingContactPath:' + venue1, 'meetingVenueSecondary:' + (venue2 || connection)];
     base.cautionConceptKeys = [];
   } else if (focus === 'family_core_lesson') {
     var familyPrimary = natalPlanetSemantic(top);
@@ -3541,6 +3562,19 @@ function applyFocusedQuestionContentPlan(base, question, top, second, third, top
     base.summaryConceptKeys = ['studyConsistencyTest'];
     base.detailConceptKeys = ['studyRoutine:' + studyHabitKey, 'studyFit:' + studyHabitKey];
     base.cautionConceptKeys = [];
+  } else if (focus === 'communication_style') {
+    var communicationProfile = base.semanticProfile;
+    var communicationDef = communicationProfile && natalSemanticDefinition(communicationProfile.dominant);
+    if (communicationDef) {
+      base.details = [
+        { label:'怎麼確認彼此有聽懂', text:communicationDef.action },
+        { label:'哪種情況容易讓表達失真', text:'你可能' + communicationDef.overuse + '。結果是' + communicationDef.cost },
+      ];
+      base.detailConceptKeys = ['communicationAction:' + communicationProfile.dominant.key, 'communicationDistortion:' + communicationProfile.dominant.key];
+    }
+  } else if (focus === 'spend_save_pattern' || focus === 'risk_attitude' || focus === 'recurring_life_issue') {
+    /* 這三題已由 applySemanticQuestionPlan 產生可驗收的行為型內容。
+       不再讓後面的共用 knowledge phrase 把消費寫回抽象需求、把溝通寫回人格形容。 */
   } else {
     base = applySemanticKnowledgeContentPlan(base, question, top, second, third);
   }
@@ -3595,9 +3629,167 @@ function splitNatalLongText(text) {
     return first + '。' + second + end;
   });
 }
+var NATAL_HEADLINE_MAX_LENGTH = 30;
+function shortNatalThemeLabel(text) {
+  var pairs = [
+    [/自主決定與立即行動/g, '主動行動'], [/公平協調與相處品質/g, '公平協調'],
+    [/集中投入與突破阻力/g, '集中突破'], [/情緒回應與安全感/g, '情緒安全'],
+    [/深度信任與核心真相/g, '深度信任'], [/責任分工與可預期性/g, '責任分工'],
+    [/新鮮感與擴大選項/g, '探索變化'], [/被看見與主動表態/g, '被看見'],
+    [/資訊交換與說清楚/g, '清楚溝通'], [/自由調整與保有差異/g, '自主調整'],
+  ];
+  return pairs.reduce(function (out, pair) { return out.replace(pair[0], pair[1]); }, String(text || ''));
+}
+function shortNatalMoneyRisk(item) {
+  var labels = {
+    visibility:'為了體面而超支', emotionalResponse:'用消費安撫情緒', dialogue:'比較太久卻沒設上限',
+    harmony:'為了人情而超支', structure:'把預算訂得過緊', consistency:'不肯停止舊支出',
+    freedom:'臨時打破預算', novelty:'同時買太多新項目', depthTrust:'過度控制共同資源',
+    intensity:'一次投入過多', selfDirection:'沒比較就付款', practicalCare:'替別人承擔花費',
+  };
+  return item ? (labels[item.key] || shortNatalThemeLabel((natalSemanticDefinition(item) || {}).label || '衝動支出')) : '';
+}
+function shortNatalCommunicationAction(item) {
+  var labels = {
+    visibility:'表明立場', emotionalResponse:'確認對方感受', dialogue:'釐清資訊', harmony:'協調不同意見',
+    structure:'說清責任分工', consistency:'確認承諾是否一致', freedom:'保留調整空間', novelty:'提出新選項',
+    depthTrust:'追問核心問題', intensity:'集中處理關鍵', selfDirection:'直接說明決定', practicalCare:'確認實際需要',
+  };
+  return item ? (labels[item.key] || '說清重點') : '';
+}
+function shortNatalHealthWarning(item) {
+  var labels = {
+    visibility:'為了表現而忽略疲累', emotionalResponse:'延後吃飯、睡眠或休息', dialogue:'休息時腦袋仍停不下來',
+    harmony:'累了仍繼續配合安排', structure:'把休息也當成達標任務', consistency:'狀態變差仍照計畫硬撐',
+    freedom:'作息反覆中斷', novelty:'行程過多而無法恢復', depthTrust:'長期維持警戒與緊繃',
+    intensity:'每件事都用最高強度處理', selfDirection:'身體尚未恢復就立刻行動', practicalCare:'先照顧別人而延後休息',
+  };
+  return item ? (labels[item.key] || '疲累後仍繼續硬撐') : '疲累後仍繼續硬撐';
+}
+function compactNatalHeadline(text, questionFocus, answer) {
+  var raw = String(text || '');
+  var dominantDef = answer && answer.semanticProfile && natalSemanticDefinition(answer.semanticProfile.dominant);
+  var secondaryDef = answer && answer.semanticProfile && natalSemanticDefinition(answer.semanticProfile.secondary);
+  if (dominantDef && questionFocus === 'family_career_balance') raw = '平衡家庭與事業時，要兼顧' + dominantDef.label + '。';
+  if (dominantDef && questionFocus === 'family_role') raw = '家庭中常處理' + dominantDef.label + (secondaryDef ? '，也兼顧' + secondaryDef.label : '') + '。';
+  if (dominantDef && questionFocus === 'earning_style') raw = '收入適合建立在' + dominantDef.label + '。';
+  if (dominantDef && questionFocus === 'overseas_education_direction') raw = '跨域學習適合能拓展' + dominantDef.label + '的環境。';
+  if (dominantDef && questionFocus === 'major_decision_basis') raw = '重大選擇時，先確認是否符合' + dominantDef.label + '。';
+  if (dominantDef && questionFocus === 'recurring_life_issue') raw = '反覆卡在' + shortNatalThemeLabel(dominantDef.label)
+    + (secondaryDef ? '，也牽動' + shortNatalThemeLabel(secondaryDef.label) : '') + '。';
+  if (answer && answer.semanticProfile && questionFocus === 'spend_save_pattern') raw = '消費時先防' + shortNatalMoneyRisk(answer.semanticProfile.dominant)
+    + (answer.semanticProfile.secondary ? '，也留意' + shortNatalMoneyRisk(answer.semanticProfile.secondary) : '') + '。';
+  if (dominantDef && questionFocus === 'study_mode_fit') raw = '適合的學習模式是用實作探索' + shortNatalThemeLabel(dominantDef.label) + '。';
+  if (dominantDef && questionFocus === 'overseas_education_direction') raw = '海外進修適合拓展' + shortNatalThemeLabel(dominantDef.label) + '。';
+  if (dominantDef && questionFocus === 'knowledge_application') raw = '把知識中的' + shortNatalThemeLabel(dominantDef.label) + '轉成作品或實作。';
+  var practical = /實際表現是[，：]?([^。！？]+)/.exec(raw);
+  var practicalPrefix = {
+    first_impression:'第一印象是，', social_strengths:'人際優勢是，',
+    memory_mode:'理解資訊時，', procrastination_root:'學習卡住時，',
+  }[questionFocus];
+  if (practical && practicalPrefix) raw = practicalPrefix + practical[1] + '。';
+  if (dominantDef && questionFocus === 'first_impression') raw = '第一印象是' + dominantDef.socialEffect.replace(/^別人容易覺得/, '') + '。';
+  if (dominantDef && questionFocus === 'social_strengths') raw = '人際優勢是' + dominantDef.strength + '。';
+  if (dominantDef && questionFocus === 'memory_mode') raw = '理解資訊時，' + dominantDef.behavior.replace(/^會/, '') + '。';
+  if (dominantDef && questionFocus === 'procrastination_root') raw = '拖延通常發生在' + dominantDef.trigger + '。';
+  if (answer && answer.semanticProfile && questionFocus === 'communication_style') raw = '溝通時先' + shortNatalCommunicationAction(answer.semanticProfile.dominant)
+    + (answer.semanticProfile.secondary ? '，必要時再' + shortNatalCommunicationAction(answer.semanticProfile.secondary) : '') + '。';
+  if (answer && answer.semanticProfile && questionFocus === 'body_boundary_blindspot') raw = '身體警訊常是' + shortNatalHealthWarning(answer.semanticProfile.dominant) + '。';
+  if (dominantDef && questionFocus === 'mastery_evidence') raw = '用能展現' + shortNatalThemeLabel(dominantDef.label) + '的成果證明學會。';
+  if (questionFocus === 'top_three_life_themes') raw = shortNatalThemeLabel(raw);
+  var first = raw.split(/[。！？]/)[0]
+    .replace(/^你常遇到的對象，較可能是/, '你較常遇到')
+    .replace(/^做消費決定時，最需要留意的是/, '消費時要留意')
+    .replace(/^最容易反覆出現的模式是：常見情況是：/, '反覆卡住你的，是')
+    .replace(/^最容易反覆出現的模式是：/, '反覆卡住你的，是')
+    .replace(/^呈現(.+?)、並帶有「.+」印象的外在氣質$/, '外在氣質偏向$1')
+    .replace(/^當日常長期缺少/, '長期缺少')
+    .replace(/^溝通時，你/, '溝通時會')
+    .replace(/^讓自己安定下來時，最適合先做的是：/, '安定下來時，')
+    .replace(/^真正能幫你恢復精力的方式是：/, '恢復精力時，')
+    .replace(/^遇到金額較大或結果不確定的選擇時，你較容易/, '大額或不確定的選擇中，容易')
+    .replace(/^命盤中最明顯的三個人生主題是：/, '三個主要人生主題是：')
+    .replace(/^你的拉扯較可能發生在/, '主要拉扯在')
+    .replace(/^重大選擇時，最可靠的原則是/, '重大選擇時，先');
+  var clearBoundary = first.search(/，再|、並|，並/);
+  if (clearBoundary >= 9 && clearBoundary <= NATAL_HEADLINE_MAX_LENGTH - 2) first = first.slice(0, clearBoundary);
+  if (questionFocus === 'overseas_cross_domain_fit' && first.length > NATAL_HEADLINE_MAX_LENGTH) {
+    var finalAnd = first.lastIndexOf('與');
+    if (finalAnd >= 12) first = first.slice(0, finalAnd);
+  }
+  if (!first) return '';
+  if ([].concat(Array.from(first + '。')).length <= NATAL_HEADLINE_MAX_LENGTH) return first + '。';
+
+  /* 優先保留一個完整、可獨立理解的短句。不能直接切到第 30 字，否則會留下
+     「而且」「需要」「……的」這類半句。 */
+  var cuts = [];
+  for (var i = 0; i < first.length; i++) {
+    if ('，、；'.indexOf(first.charAt(i)) === -1 || i < 9 || i > NATAL_HEADLINE_MAX_LENGTH - 2) continue;
+    var candidate = first.slice(0, i);
+    if (/(且|與|並|或|的|是|在|為|需要|容易|可能|先)$/.test(candidate)) continue;
+    cuts.push(candidate);
+  }
+  if (cuts.length) return cuts[cuts.length - 1] + '。';
+
+  /* 沒有標點可切時，移除第二個並列條件；正文的 summary/details 仍保留完整資訊。 */
+  var joins = ['，也', '，並', '，而且', '，結果', '，實際', '與', '並', '而'];
+  for (var j = 0; j < joins.length; j++) {
+    var at = first.indexOf(joins[j], 10);
+    if (at > 0 && at <= NATAL_HEADLINE_MAX_LENGTH - 2) {
+      var shorter = first.slice(0, at);
+      if (!/(且|與|並|或|的|是|在|為|需要|容易|可能|先)$/.test(shorter)) return shorter + '。';
+    }
+  }
+
+  /* 最後退回題目所屬語義的首個完整片語。冒號前只有框架字時，取冒號後內容。 */
+  var colon = first.lastIndexOf('：', NATAL_HEADLINE_MAX_LENGTH - 2);
+  if (colon >= 0 && colon + 7 < first.length) {
+    var afterColon = first.slice(colon + 1);
+    var afterCut = afterColon.search(/[，、；]/);
+    if (afterCut >= 6) afterColon = afterColon.slice(0, afterCut);
+    if (afterColon.length + 1 <= NATAL_HEADLINE_MAX_LENGTH) return afterColon + '。';
+  }
+  return first.slice(0, NATAL_HEADLINE_MAX_LENGTH - 2).replace(/(且|與|並|或|的|是|在|為|需要|容易|可能|先)+$/, '') + '。';
+}
+function natalVisibleSimilarity(a, b) {
+  var left = natalTextKey(a), right = natalTextKey(b);
+  if (!left || !right) return 0;
+  var short = left.length <= right.length ? left : right;
+  var long = left.length <= right.length ? right : left;
+  if (short.length >= 6 && long.indexOf(short) !== -1) return 1;
+  var grams = {}, count = 0, same = 0;
+  for (var i = 0; i <= short.length - 3; i++) {
+    var gram = short.slice(i, i + 3);
+    if (!grams[gram]) { grams[gram] = 1; count++; }
+  }
+  for (var key in grams) if (long.indexOf(key) !== -1) same++;
+  return count ? same / count : 0;
+}
+function natalFocusedDistinctDetail(base, index, dominant) {
+  if (index !== 0) return null;
+  if (base.questionFocus === 'lifestyle_fit') return {
+    label:'先怎麼試行',
+    text:'先照這個節奏執行七天，記錄白天專注與晚上入睡是否變穩定',
+  };
+  if (base.questionFocus === 'family_boundary_setting' && dominant) return {
+    label:'底線被碰到時怎麼說',
+    text:dominant.action,
+  };
+  if (base.questionFocus === 'body_boundary_blindspot' && base.semanticProfile) {
+    var health = typeof ASTRO_HEALTH_BOUNDARY_DIMENSIONS !== 'undefined'
+      ? ASTRO_HEALTH_BOUNDARY_DIMENSIONS[base.semanticProfile.dominant.key]
+      : null;
+    if (health) return { label:'發現警訊後先做什麼', text:'先停止一項非必要安排，再' + health.action };
+  }
+  if (base.questionFocus === 'mastery_evidence') return {
+    label:'適合的成果形式',
+    text:'完成一份可被檢查的作品、報告或示範，讓別人能確認你會獨立運用',
+  };
+  return null;
+}
 function polishNatalAnswer(base) {
   if (!base || !base.details || !base.details.length) return base;
-  base.headline = refineTraditionalChineseCopy(splitNatalLongText(base.headline));
+  base.headline = refineTraditionalChineseCopy(compactNatalHeadline(base.headline, base.questionFocus, base));
   base.summary = refineTraditionalChineseCopy(splitNatalLongText(base.summary));
   base.caution = refineTraditionalChineseCopy(splitNatalLongText(base.caution));
   /* 就地改寫 text，不重建物件——details 上還掛著 sourceRoles 等欄位供摺疊區使用，
@@ -3606,6 +3798,9 @@ function polishNatalAnswer(base) {
   base.details.forEach(function (d, index) {
     if (!d || !d.text) return;
     var t = stripDetailLabelEcho(d.label, String(d.text).replace(/\s+$/, ''));
+    var dominant = base.semanticProfile && natalSemanticDefinition(base.semanticProfile.dominant);
+    var focusedDetail = natalFocusedDistinctDetail(base, index, dominant);
+    if (focusedDetail) { d.label = focusedDetail.label; t = focusedDetail.text; }
     var detailKey = natalTextKey(t);
     var detailRepeated = detailKey.length >= 8 && headKey.indexOf(detailKey) !== -1;
     if (!detailRepeated && detailKey.length >= 10) {
@@ -3613,9 +3808,10 @@ function polishNatalAnswer(base) {
         if (detailKey.length - cut >= 5 && headKey.indexOf(detailKey.slice(cut)) !== -1) detailRepeated = true;
       }
     }
-    if (detailRepeated) {
-      var dominant = base.semanticProfile && natalSemanticDefinition(base.semanticProfile.dominant);
-      if (dominant) t = index === 0 ? dominant.behavior : dominant.action;
+    if (detailRepeated || natalVisibleSimilarity(base.headline, t) >= 0.45) {
+      if (focusedDetail) {
+        t = focusedDetail.text;
+      } else if (dominant) t = index === 0 ? dominant.behavior : dominant.action;
       else if (base.primaryEvidence && base.primaryEvidence.sign != null && SIGN_BEGINNER[base.primaryEvidence.sign]) {
         t = index === 0 ? SIGN_BEGINNER[base.primaryEvidence.sign].behavior : SIGN_BEGINNER[base.primaryEvidence.sign].watch;
       }
@@ -3627,7 +3823,23 @@ function polishNatalAnswer(base) {
 }
 
 function buildQuestionContent(topicId, question, rankedEvidence, ctx) {
-  return polishNatalAnswer(buildQuestionContentRaw(topicId, question, rankedEvidence, ctx));
+  return attachNatalQuestionContract(polishNatalAnswer(buildQuestionContentRaw(topicId, question, rankedEvidence, ctx)), question);
+}
+function attachNatalQuestionContract(base, question) {
+  var contract = question.contract || (typeof NATAL_QUESTION_CONTRACTS !== 'undefined' && NATAL_QUESTION_CONTRACTS[question.id]);
+  base.contract = contract || null;
+  base.answerTarget = contract ? contract.answerTarget : question.questionFocus;
+  base.sectionsByType = {};
+  base.sectionOrder = [];
+  (base.details || []).forEach(function (detail, index) {
+    var semanticType = contract && contract.requiredAnswerElements[index]
+      ? contract.requiredAnswerElements[index]
+      : (question.questionFocus + '_' + (index + 1));
+    detail.semanticType = semanticType;
+    base.sectionsByType[semanticType] = detail;
+    base.sectionOrder.push(semanticType);
+  });
+  return base;
 }
 function buildQuestionContentRaw(topicId, question, rankedEvidence, ctx) {
   ctx = ctx || {};
@@ -3769,7 +3981,9 @@ function buildQuestionContentRaw(topicId, question, rankedEvidence, ctx) {
   base.cautionConceptKeys = cautionConceptKeys;
   base.primaryEvidence = top; base.supportingEvidence = others.slice(0, 2);
   base.selectionRanked = biased;
-  return applySemanticQuestionPlan(applyFocusedQuestionContentPlan(base, question, top, second, third, topicId), question, biased);
+  /* 共用語義維度先提供底稿，題目專屬／questionFocus knowledge plan 最後定稿。
+     舊順序相反，導致「相遇情境」等專屬答案最後又被人格規則覆蓋。 */
+  return applyFocusedQuestionContentPlan(applySemanticQuestionPlan(base, question, biased), question, top, second, third, topicId);
 }
 /* 摺疊區顯示：主要占星指標（含 sourceRoles）、配置如何支持結論、互相矛盾的訊號、解讀限制 */
 function buildAdvancedExplanation(question, rankedEvidence, skipped, tensions, mergedSignal) {
@@ -3804,6 +4018,52 @@ function buildAiCopyData(topicId, question, rankedEvidence, content, advanced) {
    通順）仍然留下 flag，誠實記錄在「尚未處理的限制」。 */
 var NATAL_BANNED_OPENERS = ['從某配置來看', '從這個配置來看'];
 var NATAL_APPEARANCE_BANNED_WORDS = ['情緒需求', '安定下來', '需要休息', '壓力大', '情緒管理'];
+function natalContractBodyText(answer) {
+  return [answer.headline, answer.summary].concat((answer.details || []).map(function (d) { return d.text; }), [answer.caution || '']).join('。');
+}
+function natalSentenceHasConcreteExtension(sentence, phrase) {
+  var rest = sentence.slice(sentence.indexOf(phrase) + phrase.length).replace(/^[，：；、\s]+/, '');
+  var concrete = /當|如果|先|再|每|日|週|月|分鐘|金額|期限|問|說|寫|記錄|停止|拒絕|確認|完成|提出|做法|避免|行程|底線|預算|工作|關係|學習|家人|身體|場合|活動|支出|儲蓄|額度/;
+  return (rest.length >= 8 && concrete.test(rest))
+    || (sentence.length >= phrase.length + 10 && concrete.test(sentence.replace(phrase, '')));
+}
+function validateNatalAnswerAgainstContract(answer, question) {
+  var contract = question.contract || (typeof NATAL_QUESTION_CONTRACTS !== 'undefined' && NATAL_QUESTION_CONTRACTS[question.id]);
+  var errors = [];
+  if (!contract) return { passed:false, errors:['missing_question_contract'] };
+  if (answer.questionId !== contract.questionId || answer.questionFocus !== contract.questionFocus || answer.answerTarget !== contract.answerTarget) {
+    errors.push('question_identity_mismatch');
+  }
+  var text = natalContractBodyText(answer);
+  if ((answer.details || []).length) {
+    (contract.requiredTermGroups || []).forEach(function (group, groupIndex) {
+      if (!group.some(function (term) { return text.indexOf(term) !== -1; })) errors.push('missing_required_term_group_' + groupIndex);
+    });
+    var actualTypes = Object.keys(answer.sectionsByType || {});
+    (contract.requiredAnswerElements || []).forEach(function (type) {
+      if (actualTypes.indexOf(type) === -1) errors.push('missing_section_' + type);
+    });
+  }
+  (contract.forbiddenPhrases || []).forEach(function (phrase) {
+    text.split(/[。！？]/).forEach(function (sentence) {
+      if (sentence.indexOf(phrase) !== -1 && !natalSentenceHasConcreteExtension(sentence, phrase)) errors.push('vague_phrase_' + phrase);
+    });
+  });
+  return { passed:errors.length === 0, errors:errors };
+}
+function natalInsufficientAnswerForContract(answer, validation) {
+  var contract = answer.contract;
+  answer.originalContractText = natalContractBodyText(answer);
+  answer.headline = '這題目前沒有足夠線索形成可靠答案。';
+  answer.summary = '現有星盤資料無法同時支持「' + ((contract && contract.allowedContentTypes) || []).join('」與「') + '」，因此不借用其他題目的結論補上。';
+  answer.details = [];
+  answer.sectionsByType = {};
+  answer.sectionOrder = [];
+  answer.caution = '';
+  answer.contractStatus = 'insufficient';
+  answer.contractErrors = validation.errors.slice();
+  return answer;
+}
 function validateNatalTopicContent(answers, topicId) {
   var flags = [];
   var headlines = answers.map(function (a) { return a.headline; });
@@ -3860,6 +4120,15 @@ function validateNatalTopicContent(answers, topicId) {
     }
     if (a.questionFocus === 'meeting_context' && !/場合|情境|聚會|認識|場景/.test(fullText)) {
       flags.push({ check: 'scene_must_describe_context', passed: false, note: a.questionId + ' 相遇場合題未包含場域／情境相關描述' });
+    }
+  });
+
+  answers.forEach(function (a) {
+    if (a.contractStatus === 'insufficient') {
+      flags.push({ check:'question_contract', passed:false, note:a.questionId + ' 未通過題目契約，已阻擋原答案：' + (a.contractErrors || []).join('、')
+        + (a.originalContractText ? '；原文：' + a.originalContractText.slice(0, 180) : '') });
+    } else if (!a.contract || a.answerTarget !== a.contract.answerTarget) {
+      flags.push({ check:'question_contract', passed:false, note:a.questionId + ' 沒有套用正確的 answerTarget contract' });
     }
   });
   if (topicId === 'wealth') {
@@ -3993,7 +4262,7 @@ function buildTopicOverview(topicId, answers) {
   return fillTpl(astroSeededPick(seed, pool), { tone: tone });
 }
 
-var NATAL_TOPIC_PROMPT_VERSION = 'topic-rules-v9-de-ai-tone';
+var NATAL_TOPIC_PROMPT_VERSION = 'topic-contract-v10';
 var NATAL_TOPIC_KNOWLEDGE_VERSION = typeof ASTRO_TOPIC_SEMANTIC_VERSION !== 'undefined' ? ASTRO_TOPIC_SEMANTIC_VERSION : 'unknown';
 function natalChartFingerprint(chart, unknownTime) {
   if (!chart) return '';
@@ -4036,6 +4305,9 @@ function analyzeNatalTopic(chartData, topicId, selectedQuestionIds, unknownTime)
     var merged = mergeSupportingSignals(ranked);
     var tensions = identifyTensions(ranked);
     var content = buildQuestionContent(topicId, q, ranked, { usedHeadlines: usedHeadlines, usedSummaries: usedSummaries, usedPrimaryKeys: usedPrimaryKeys, usedCautions: usedCautions });
+    var contractValidation = validateNatalAnswerAgainstContract(content, q);
+    if (!contractValidation.passed) content = natalInsufficientAnswerForContract(content, contractValidation);
+    else { content.contractStatus = 'pass'; content.contractErrors = []; }
     var effectiveRanked = content.selectionRanked || ranked;
     var advanced = buildAdvancedExplanation(q, effectiveRanked, extracted.skipped, tensions, merged);
     content.limitations = advanced.limitations.slice();
@@ -4051,6 +4323,10 @@ function analyzeNatalTopic(chartData, topicId, selectedQuestionIds, unknownTime)
     content.debug = {
       topic:topicId,
       rendererTemplate:'question-direct-answer-v1',
+      answerTarget:content.answerTarget,
+      contractStatus:content.contractStatus,
+      contractErrors:(content.contractErrors || []).slice(),
+      sectionKeys:(content.sectionOrder || []).slice(),
       questionFocusApplied:q.questionFocus,
       knowledgeProjection:(QUESTIONFOCUS_HOUSE_CATEGORY[q.questionFocus] || 'general'),
       fieldOverrideApplied:q.fieldOverride ? Object.keys(q.fieldOverride) : [],
@@ -4146,7 +4422,9 @@ function natalTopicGenerate() {
    實測 648 張卡片沒有任何一張會因此變成完全沒有分項，仍加上保險判斷。 */
 function natalTextKey(t) { return String(t == null ? '' : t).replace(/[。，、；：？！「」（）\s]/g, ''); }
 function visibleNatalDetails(answer) {
-  var all = (answer && answer.details) || [];
+  var all = answer && answer.sectionsByType && answer.sectionOrder
+    ? answer.sectionOrder.map(function (semanticType) { return answer.sectionsByType[semanticType]; }).filter(Boolean)
+    : ((answer && answer.details) || []);
   if (all.length < 2) return all;
   var headKey = natalTextKey(answer.headline);
   var kept = all.filter(function (d) {
@@ -4211,6 +4489,9 @@ function renderNatalTopicQuestionCard(a) {
   var h = '<div style="margin-top:16px;border:1px solid rgba(201,169,110,.28);border-radius:14px;padding:16px 17px;background:rgba(255,255,255,.025);box-shadow:0 1px 0 rgba(255,255,255,.02) inset">';
   h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(201,169,110,.75);letter-spacing:.03em">' + esc(a.title) + '</div>';
   h += '<div style="font:600 15px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:6px;line-height:1.6">' + esc(natalHeadlineForTitle(a.title, a.headline)) + '</div>';
+  if (a.contractStatus === 'insufficient') {
+    h += '<div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.58);line-height:1.75;margin-top:7px">' + esc(a.summary) + '</div>';
+  }
   var shownDetails = visibleNatalDetails(a).slice(0, 2);
   if (shownDetails.length) {
     h += '<div style="margin-top:11px;display:flex;flex-direction:column;gap:7px">';

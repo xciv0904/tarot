@@ -64,6 +64,7 @@ const forbidden = /角宮位置|角宮對分|canonicalKey|sourceRoles|evidenceBi
 const cases = [];
 let flags = 0, forbiddenLeaks = 0, emptyAnswers = 0, undefinedLeaks = 0;
 const flagBreakdown = {};
+const flagNotes = [];
 const focusedFailures = [];
 const visibleContentFailures = [];
 function normalizeVisibleText(text) {
@@ -77,11 +78,15 @@ c.GOLDEN_TEST_CHARTS.forEach(chart => {
       const batch = questions.slice(start, start + 3);
       const result = c.analyzeNatalTopic(chart, topicId, batch.map(q=>q.id), false);
       flags += result.qualityFlags.length;
-      result.qualityFlags.forEach(flag => { flagBreakdown[flag.check || 'unknown'] = (flagBreakdown[flag.check || 'unknown'] || 0) + 1; });
+      result.qualityFlags.forEach(flag => {
+        flagBreakdown[flag.check || 'unknown'] = (flagBreakdown[flag.check || 'unknown'] || 0) + 1;
+        flagNotes.push(chart.fixtureId + ' / ' + topicId + '：' + flag.note);
+      });
       result.answers.forEach(answer => {
       const text = [answer.headline,answer.summary].concat((answer.details||[]).map(d=>d.text),[answer.caution||'']).join(' ');
       if (forbidden.test(text)) forbiddenLeaks++;
       if (!answer.headline || !answer.summary) emptyAnswers++;
+      if ([...String(answer.headline || '')].length > 30) visibleContentFailures++;
       if (/undefined|NaN/.test(text)) undefinedLeaks++;
       const visibleSlots = [answer.headline,answer.summary].concat((answer.details||[]).map(d=>d.text)).filter(Boolean);
       const normalizedSlots = visibleSlots.map(normalizeVisibleText);
@@ -103,7 +108,7 @@ c.GOLDEN_TEST_CHARTS.forEach(chart => {
       if (answer.questionId === 'family-origin-impact' && !/習慣|家庭|很早|期待|互動/.test(text)) {
         focusedFailures.push(chart.fixtureId + ': family-origin-impact 沒有描述原生家庭留下的慣性');
       }
-      if (answer.questionId === 'family-inner-safety' && !/先做|每天|固定|寫|走路|運動|整理|說出|時間|作息/.test(text)) {
+      if (answer.questionId === 'family-inner-safety' && !/先做|每天|固定|寫|走路|運動|整理|說出|時間|作息|降低|音樂|休息/.test(text)) {
         focusedFailures.push(chart.fixtureId + ': family-inner-safety 沒有提供可執行的安定方法');
       }
       if (answer.questionId === 'general-inner-tension' && !/一方面|另一方面|先|接著/.test(text)) {
@@ -127,7 +132,7 @@ c.GOLDEN_TEST_CHARTS.forEach(chart => {
         if (!hasVenue) focusedFailures.push(chart.fixtureId + ': love-meet-scene 沒有具體場合');
       }
       if (answer.questionId === 'health-lifestyle-fit') {
-        if (!/生活步調/.test((answer.details||[]).map(d=>d.label).join('')) || !/判斷適不適合/.test((answer.details||[]).map(d=>d.label).join(''))) focusedFailures.push(chart.fixtureId + ': health-lifestyle-fit 缺少步調或適配判斷');
+        if (!/生活步調|先怎麼試行/.test((answer.details||[]).map(d=>d.label).join('')) || !/判斷適不適合/.test((answer.details||[]).map(d=>d.label).join(''))) focusedFailures.push(chart.fixtureId + ': health-lifestyle-fit 缺少步調或適配判斷');
         if (!/固定|規律|時間|節奏|作息|運動|休息|行程|專注/.test(text)) focusedFailures.push(chart.fixtureId + ': health-lifestyle-fit 缺少具體習慣');
       }
       if (answer.questionId === 'love-conflict-repair' && !/第一步|修復|溝通|信任|感受|責任|對話/.test(text)) {
@@ -152,7 +157,7 @@ c.GOLDEN_TEST_CHARTS.forEach(chart => {
 const snapshot = { schemaVersion:1, chartCount:c.GOLDEN_TEST_CHARTS.length, questionCount, caseCount:cases.length, cases };
 const report = {
   generatedAt:new Date().toISOString(), chartCount:c.GOLDEN_TEST_CHARTS.length, questionCount, caseCount:cases.length,
-  coverage, quality:{validatorFlags:flags, flagBreakdown, forbiddenLeaks, emptyAnswers, undefinedLeaks, focusedFailures, visibleContentFailures},
+  coverage, quality:{validatorFlags:flags, flagBreakdown, flagNotes, forbiddenLeaks, emptyAnswers, undefinedLeaks, focusedFailures, visibleContentFailures},
   baselineHash:hash(snapshot), charts:plain(c.GOLDEN_CHART_SPECS.map(x=>({id:x.id,label:x.label}))),
 };
 const markdown = [
@@ -165,6 +170,7 @@ const markdown = [
   `- General fallback questionFocus: ${coverage.generalFallback.length}`,
   `- Validator flags: ${flags}`,
   ...Object.keys(flagBreakdown).sort().map(key=>`  - ${key}: ${flagBreakdown[key]}`),
+  ...flagNotes.map(note=>`    - ${note}`),
   `- Forbidden technical-term leaks: ${forbiddenLeaks}`,
   `- Empty answers: ${emptyAnswers}`,
   `- undefined/NaN leaks: ${undefinedLeaks}`,

@@ -201,7 +201,7 @@ var NATAL_TOPIC_QUESTIONS = {
     { id: 'family-role', title: '我在家庭中習慣扮演的角色', intent: 'profile', questionFocus: 'family_role',
       answerTargets: ['你習慣扮演的角色', '家人容易依賴你的部分'],
       excludedTargets: ['原生家庭如何影響你（屬於下一題）'],
-      detailLabels: ['你習慣扮演的角色', '家人依賴你的部分'],
+      detailLabels: ['家人通常找你做什麼', '你實際承擔的部分'],
       cautionFocus: 'relational',
       evidenceBias: { preferPlanets: ['Moon', 'Saturn'], preferTypes: ['housePlanets', 'houseRuler'] },
       indicators: [
@@ -532,7 +532,7 @@ var NATAL_TOPIC_QUESTIONS = {
     { id: 'general-recurring-issue', title: '最容易反覆出現的課題', intent: 'challenge', questionFocus: 'recurring_life_issue',
       answerTargets: ['反覆出現的核心課題', '這個課題通常出現的情境'],
       excludedTargets: ['命盤核心優勢（屬於另一題）'],
-      detailLabels: ['反覆出現的課題', '通常出現的情境'],
+      detailLabels: ['最常在哪種情況發生', '接著通常怎麼反應'],
       cautionFocus: 'shadow',
       evidenceBias: { preferTypes: ['nodeAxis', 'tightAspectsAmongPersonal'] },
       indicators: [
@@ -615,6 +615,106 @@ var INTENT_CAUTION_MODE_DEFAULT = {
   challenge: 'required', tension: 'required', origin: 'required',
   appearance: 'hidden', impression: 'hidden', context: 'hidden',
 };
+
+/* ================= V6：Question Contract =================
+   題目不再只提供「生成時參考」的標籤，而是先解析成完整契約。內容規劃器、
+   驗證器與 renderer 都讀同一份 contract，避免 questionFocus 有設定、實際組句
+   卻仍落回共用 intent 文案。answerTarget 是機器使用的單一語義型別；原本的
+   answerTargets 保留給介面預覽與向下相容。 */
+var NATAL_VAGUE_PHRASES = [
+  '拉開距離觀察', '找到平衡', '比較不同選項', '保留彈性', '建立穩定基礎',
+  '維持適當界線', '整合不同資源', '重新審視方向', '尋找雙方都能接受的方式',
+  '留意公平與得體', '讓結果更加和諧', '建立自己的節奏', '在變化中找到定位',
+  '形成長期價值', '走出適合自己的道路',
+];
+var NATAL_ANSWER_TARGET_ALIAS = {
+  longterm_career_direction:'career_long_term_direction', suitable_roles:'suitable_roles',
+  suitable_environment:'suitable_environment', workplace_advantages:'workplace_advantages',
+  wealth_monetizable_skills:'monetizable_skills', career_fulfillment_area:'achievement_source',
+  meeting_context:'meeting_context', preferred_relationship_style:'interaction_style',
+  likely_partner_traits:'partner_personality', partner_visual_impression:'partner_appearance',
+  emotional_attraction:'attraction_trigger', relationship_blindspot:'relationship_obstacle',
+  spend_save_pattern:'spending_pattern', earning_style:'money_source', risk_attitude:'financial_risk_style',
+  stable_financial_structure:'financial_priority',
+};
+var NATAL_ANSWER_TARGET_REQUIRED_TERMS = {
+  likely_partner_traits:[['對象','對方','人'],['互動','相處','溝通','承諾']],
+  emotional_attraction:[['吸引','心動','打動'],['互動','瞬間','表現','特質']],
+  meeting_context:[['場合','情境','活動','工作','課程','社群','朋友','旅程','聚會'],['認識','接觸','熟悉','介紹','合作']],
+  partner_visual_impression:[['外型','氣質','氣場','穿著','打扮','姿態','談吐','第一眼'],['風格','印象','調性','俐落','柔和','醒目']],
+  preferred_relationship_style:[['相處','關係','互動'],['節奏','聯絡','空間','溝通','共同']],
+  relationship_strengths:[['優勢','擅長','能夠','會'],['對方','關係','相處','互動']],
+  relationship_blindspot:[['感情','關係','相處'],['盲點','壓力','容易','結果','代價']],
+  relationship_repair:[['衝突','爭執','不同意見'],['先','再','修復','溝通','確認']],
+  suitable_roles:[['工作','任務','角色','職能','負責'],['分析','管理','溝通','執行','研究','服務','創作','創意','想像','設計','技術','協調','規劃']],
+  suitable_environment:[['環境','場域','團隊','制度'],['節奏','步調','自主','流程','氛圍','規則','交流','累積']],
+  workplace_advantages:[['職場','工作'],['能力','擅長','拿手','價值','倚賴']],
+  employment_mode:[['受僱','就業','自由工作','接案','創業','合夥'],['自主','權責','合作','決策']],
+  career_blindspot:[['工作','職涯'],['風險','盲點','壓力','停滯','代價']],
+  longterm_career_direction:[['長期','職涯','專業'],['累積','階段','先','再','深耕','定位','口碑','資產','核心角色','教育','整合','方向']],
+  career_fulfillment_area:[['成就感','滿足','回饋'],['成果','價值','影響','完成']],
+  family_role:[['家人','家庭'],['角色','依賴','負責','處理']],
+  family_origin_impact:[['原生家庭','早期','過去','家裡'],['延續','習慣','影響','修正']],
+  family_boundary_setting:[['家人','家庭'],['底線','拒絕','責任','說清楚','停止']],
+  living_environment:[['住家','居住','房間','家庭','環境'],['安靜','空間','作息','氛圍','隱私']],
+  inner_safety_practice:[['安定','安全感','緊繃','情緒'],['先','每天','固定','寫下','休息','說出']],
+  family_career_balance:[['家庭','家人'],['工作','事業','時間','分工','優先']],
+  stress_reaction_pattern:[['壓力','忙','責任'],['反應','身體','睡眠','緊繃','急','撐']],
+  lifestyle_fit:[['生活','作息','日常'],['睡眠','吃飯','運動','休息','時間','維持']],
+  body_boundary_blindspot:[['身體','疲累','疼痛','失眠','不適','警訊'],['忽略','硬撐','停止','就醫']],
+  recovery_method:[['恢復','休息','精力','疲勞'],['活動','睡眠','散步','運動','安靜','節奏']],
+  energy_drain_contexts:[['消耗','耗能','疲累'],['情境','環境','工作','人際','資訊','行程']],
+  earning_style:[['收入','賺錢','市場','付費'],['提供','服務','產品','專業','合作','客戶']],
+  wealth_monetizable_skills:[['變現','收入','付費','市場'],['能力','技能','服務','成果','價值','提供','專業','管理','溝通','分析','創作']],
+  spend_save_pattern:[['消費','購買','花錢','支出'],['儲蓄','預算','金額','付款','帳戶']],
+  risk_attitude:[['風險','損失','最壞情況'],['金額','資料','承受','停損','負債']],
+  solo_or_shared_resource:[['個人','合作','共同','合夥'],['資源','收入','權責','分潤']],
+  financial_blindspot:[['財務','金錢','支出','收入'],['盲點','風險','預算','代價','損失']],
+  stable_financial_structure:[['財務','收入','儲蓄','現金流','預算'],['長期','固定','比例','預備金','每月','週期']],
+  first_impression:[['第一印象','初次','剛認識'],['別人','看起來','感覺','注意']],
+  communication_style:[['溝通','說話','表達','對話'],['別人','理解','回應','語氣','資訊']],
+  group_role:[['團體','群體','人群','團隊'],['角色','負責','找你','協調','帶領','功能','分工','影響']],
+  social_strengths:[['人際','互動','朋友'],['優勢','擅長','信任','依賴']],
+  boundary_conflict_pattern:[['衝突','不同意見','爭執'],['反應','底線','說清楚','退讓','爆發']],
+  social_circle_fit:[['朋友圈','社交圈','人際圈','群體','朋友','圈子'],['氛圍','互動','活動','自在','往來','自主','規則','貢獻']],
+  learning_style:[['學習','學會','教學'],['閱讀','練習','討論','示範','動手','筆記','節奏','表達','資訊']],
+  memory_mode:[['理解','記憶','資訊'],['整理','圖像','例子','複述','連結','經驗','感受','說明','細節','方式','步驟','節奏','觀察','行動','表達','規劃','交流','知識','條件']],
+  procrastination_root:[['拖延','分心','開始不了'],['觸發','原因','任務','期限','資訊']],
+  study_mode_fit:[['知識','內容','學科','題目','學習模式'],['實作','理論','研究','語言','技術','創作','探索','資訊']],
+  overseas_education_direction:[['海外','高等教育','進修','留學'],['條件','語言','資源','申請','長期']],
+  study_rhythm:[['讀書','學習','專注'],['分鐘','時段','休息','每次','固定','完成']],
+  study_strength_blindspot:[['學習','讀書','思考','能力'],['優勢','盲點','擅長','代價','留意']],
+  mastery_evidence:[['成果','作品','報告','考試','示範'],['標準','完成','能否','證明']],
+  knowledge_application:[['知識','學到'],['行動','作品','輸出','教人','實作','完成']],
+  top_life_themes:[['人生','主題'],['三個','第一','第二','第三','關聯']],
+  core_strength:[['優勢','能力','擅長'],['情境','事情','結果','價值','發揮','執行','反應','承擔']],
+  recurring_life_issue:[['反覆','常常','每次'],['情境','反應','結果','代價','失衡','模式','底線','成敗']],
+  priority_direction:[['優先','投入','發展'],['方向','行動','成果','成熟']],
+  inner_tension_balance:[['拉扯','矛盾','兩個'],['情境','先','再','條件']],
+  major_decision_basis:[['重大選擇','決定','判斷'],['條件','原則','資料','長期','底線']],
+};
+function buildNatalQuestionContract(topicKey, q) {
+  var requiredTerms = NATAL_ANSWER_TARGET_REQUIRED_TERMS[q.questionFocus] || [];
+  return {
+    questionId:q.id,
+    questionText:q.title,
+    intent:q.intent,
+    questionFocus:q.questionFocus,
+    answerTarget:NATAL_ANSWER_TARGET_ALIAS[q.questionFocus] || q.questionFocus,
+    requiredAnswerElements:(q.detailLabels || q.answerTargets || []).map(function (label, index) {
+      return (q.questionFocus + '_' + (index + 1)).replace(/[^a-z0-9_]/gi, '_');
+    }),
+    allowedContentTypes:(q.answerTargets || []).slice(),
+    excludedContentTypes:(q.excludedTargets || []).slice(),
+    requiredEvidenceTypes:(q.indicators || []).map(function (i) { return i.type; }).filter(function (type, index, list) { return list.indexOf(type) === index; }),
+    requiredTermGroups:requiredTerms.map(function (group) { return group.slice(); }),
+    forbiddenPhrases:NATAL_VAGUE_PHRASES.slice(),
+    goodAnswerExample:'直接回答「' + (q.answerTargets || []).join('」與「') + '」，並寫出可觀察的情境、行為或完成條件。',
+    badAnswerExamples:['只說需要找到平衡，沒有說明何時與怎麼做。', '只重述題目或人格形容詞，沒有回答「' + ((q.answerTargets || [])[0] || q.title) + '」。'],
+    topicId:topicKey,
+  };
+}
+var NATAL_QUESTION_CONTRACTS = {};
 (function fillNatalQuestionDefaults() {
   Object.keys(NATAL_TOPIC_QUESTIONS).forEach(function (topicKey) {
     NATAL_TOPIC_QUESTIONS[topicKey].forEach(function (q) {
@@ -634,6 +734,8 @@ var INTENT_CAUTION_MODE_DEFAULT = {
          扁平欄位（V2.0 的命名），這裡鏡射一份，新舊命名同時可用。 */
       q.preferredPlanets = q.evidenceBias.preferPlanets;
       q.excludedPlanets = q.evidenceBias.excludePlanets;
+      q.contract = buildNatalQuestionContract(topicKey, q);
+      NATAL_QUESTION_CONTRACTS[q.id] = q.contract;
     });
   });
 })();
@@ -879,7 +981,7 @@ var QUESTIONFOCUS_HOUSE_CATEGORY = {
   career_fulfillment_area: 'achievement_source',
   wealth_monetizable_skills: 'monetizable_skills',
   longterm_career_direction: 'long_term_direction',
-  stable_financial_structure: 'long_term_direction',
+  stable_financial_structure: 'financial_structure',
   earning_style: 'wealth_earning',
   spend_save_pattern: 'wealth_behavior',
   risk_attitude: 'wealth_risk',

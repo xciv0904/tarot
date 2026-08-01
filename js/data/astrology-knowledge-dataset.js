@@ -20,7 +20,7 @@ var ASTRO_PLANET_SEMANTIC_DATASET = {
 /* V6：主題分析先累積「可比較的語義維度」，再由分數組成正文。
    這些資料不是可直接輸出的完整解讀；planet 只提供它會推高哪些維度，
    dimension 則提供可觀察行為、觸發條件、過度使用與可執行修正。 */
-var ASTRO_TOPIC_SEMANTIC_VERSION = '6.1.0';
+var ASTRO_TOPIC_SEMANTIC_VERSION = '7.0.0';
 var ASTRO_PLANET_DIMENSION_WEIGHTS = {
   Sun:     { visibility:1.00, selfDirection:.85 },
   Moon:    { emotionalResponse:1.00, practicalCare:.70 },
@@ -326,7 +326,7 @@ var ASTRO_TOPIC_SEMANTIC_DATASET = {
   relationship_values: { family: 'love', phrase: '長期關係真正需要的是{need}', summary: '關係能支持你{drive}時，投入才容易持續', detail: '核心需求是{need}；長期價值在於{drive}', caution: '', keys: ['coreNeed', 'longTermValue'] },
   relationship_repair: { family: 'love', phrase: '衝突後先恢復{need}，再運用{gift}把問題說清楚', summary: '修復的重點不是立刻和好，而是讓彼此重新有條件{drive}', detail: '第一步是恢復{need}；修復方式是運用{gift}確認感受、責任與下一步', caution: '避免讓{risk}取代真正的對話', keys: ['repairFirstStep', 'trustRepair'] },
   employment_mode: { family: 'career', phrase: '工作模式需要保有{need}，並採取{pace}的推進方式', summary: '這能讓你持續發揮{gift}', detail: '自主程度需符合{need}；合作節奏偏向{pace}', caution: '把{risk}納入制度設計', keys: ['workMode', 'autonomyLevel'] },
-  career_challenge: { family: 'career', phrase: '職涯較容易因{risk}而停滯', summary: '原本想要{need}，壓力下卻可能限制了{drive}', detail: '卡點常是{risk}；需要重新運用{gift}', caution: '用可檢查的行動節點取代反覆自我懷疑', keys: ['careerBlock', 'correction'] },
+  career_challenge: { family: 'career', phrase: '職涯較容易因{risk}而停滯', summary: '原本想要{need}，壓力下卻可能限制了{drive}', detail: '卡點常是{risk}；可用{gift}把問題拆成下一個可交付步驟', caution: '寫下下一個交付物、負責人與期限，完成後再評估方向', keys: ['careerBlock', 'correction'] },
   career_strength: { family:'career', phrase:'核心職場競爭力是{gift}', summary:'別人會在需要{drive}時倚賴這項能力', detail:'最拿手的是{gift}；穩定表現需要{need}', caution:'留意{risk}', keys:['workplaceStrength','trustedContribution'] },
   family_role: { family:'family', phrase:'家庭中較常扮演{social}的角色', summary:'你會透過{gift}維持家庭運作', detail:'主要角色是{social}；實際貢獻是{gift}', caution:'', keys:['familyRole','familyContribution'] },
   family_origin: { family:'family', phrase:'原生家庭可能讓你特別在意{need}', summary:'過去經驗會影響你如何{drive}', detail:'留下的影響是重視{need}；可保留的資源是{gift}', caution:'留意不要讓{risk}成為唯一反應', keys:['originInfluence','retainedResource'] },
@@ -347,6 +347,7 @@ var ASTRO_TOPIC_SEMANTIC_DATASET = {
   wealth_risk: { family: 'wealth', phrase: '面對財務風險時，傾向以{pace}的方式判斷', summary: '是否感到{need}會影響承擔風險的意願', detail: '風險判斷重視{need}；優勢是{gift}', caution: '重大決策仍需依現實資料與專業意見', keys: ['riskStyle', 'decisionCondition'] },
   wealth_resources: { family: 'wealth', phrase: '資源運用適合以{gift}為核心，再建立支持{need}的合作方式', summary: '個人與合作的比例要能讓你持續{drive}', detail: '個人籌碼是{gift}；合作條件是{need}', caution: '合作前需用明確權責降低{risk}', keys: ['personalLeverage', 'sharedResource'] },
   wealth_challenge: { family: 'wealth', phrase: '財務上較容易因{risk}而偏離計畫', summary: '這通常發生在急著取得{need}時', detail: '常見盲點是{risk}；修正資源是{gift}', caution: '先寫清楚預算與退出條件', keys: ['financialBlindspot', 'guardrail'] },
+  financial_structure: { family:'wealth', phrase:'財務結構應先用{gift}建立可持續的收入，再固定保留儲蓄與預備金', summary:'長期穩定來自每月可重複的分配規則，不是單次省下一筆錢', detail:'收入基礎是{gift}；每月先固定儲蓄，再安排生活與彈性支出', caution:'若{risk}讓預算反覆失守，就縮小單筆支出上限並每週核對一次', keys:['incomeBase','savingRule','reviewCycle'] },
   social_impression: { family: 'social', phrase: '第一印象多半是{social}，整體節奏{pace}', summary: '別人會先感受到你在{drive}上的態度', detail: '外顯印象是{social}；互動速度偏向{pace}', caution: '', keys: ['firstImpression', 'socialPace'] },
   social_communication: { family: 'social', phrase: '溝通時擅長運用{gift}，表達節奏{pace}', summary: '你希望對話能支持{drive}', detail: '表達優勢是{gift}；交流條件是{need}', caution: '壓力下留意{risk}', keys: ['communicationGift', 'dialogueNeed'] },
   social_group: { family: 'social', phrase: '團隊裡容易以{gift}承擔關鍵功能', summary: '你會自然透過{drive}影響群體', detail: '團隊貢獻是{gift}；常呈現{social}', caution: '別讓{risk}破壞分工', keys: ['groupFunction', 'teamContribution'] },
@@ -365,7 +366,7 @@ var ASTRO_TOPIC_SEMANTIC_DATASET = {
   study_application: { family: 'study', phrase: '把知識用出來，需要把{gift}轉成能實際{drive}的行動或作品', summary: '適合的練習不是重複輸入，而是用{pace}的方式產出並接受回饋', detail: '應用方式是運用{gift}解決實際問題；輸出形式宜{pace}', caution: '避免因{risk}而一直準備、卻沒有實際產出', keys: ['applicationMethod', 'outputFormat'] },
   general_theme: { family: 'general', phrase: '你的人生經常要求你{drive}', summary: '遇到重要問題時，你多半會運用{gift}', detail: '反覆出現的行動是{drive}；最常派上用場的能力是{gift}', caution: '', keys: ['lifeTheme', 'coreDrive'] },
   general_strength: { family: 'general', phrase: '最值得持續發揮的核心能力是{gift}', summary: '它能協助你{drive}', detail: '優勢表現在{gift}；成熟方向是{drive}', caution: '', keys: ['coreStrength', 'matureUse'] },
-  general_challenge: { family: 'general', phrase: '反覆出現的課題常與{risk}有關', summary: '這通常是追求{need}時產生的失衡版本', detail: '觸發條件是缺少{need}；重複模式是{risk}', caution: '先辨認模式，再選擇不同回應', keys: ['recurringIssue', 'trigger'] },
+  general_challenge: { family: 'general', phrase: '反覆出現的課題常與{risk}有關', summary: '這通常是追求{need}時產生的失衡版本', detail: '觸發條件是缺少{need}；重複模式是{risk}', caution: '記下當時發生的事、自己的反應與結果，下次在同一觸發點改做一個可逆的小步驟', keys: ['recurringIssue', 'trigger'] },
   general_direction: { family: 'general', phrase: '現階段值得優先累積{gift}，用來支持你{drive}', summary: '方向是否合適，可看它能否穩定提供{need}', detail: '優先資產是{gift}；判斷條件是{need}', caution: '不要只因短期焦慮頻繁更換主軸', keys: ['priorityAsset', 'directionTest'] },
   general_energy: { family: 'general', phrase: '命盤中較突出的能量是{drive}，外在呈現為{social}', summary: '它會讓{gift}成為容易被看見的特點', detail: '突出動力是{drive}；外顯特徵是{social}', caution: '', keys: ['standoutDrive', 'visibleTrait'] },
   general_tension: { family: 'general', phrase: '內在拉扯常發生在{need}與{risk}之間', summary: '一邊想要{drive}，一邊又擔心失去平衡', detail: '需要整合{need}；失衡反應是{risk}', caution: '重點是建立可切換的使用情境', keys: ['innerNeed', 'tensionPattern'] },

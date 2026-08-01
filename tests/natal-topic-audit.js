@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /* 全題庫主題分析稽核。每次執行都從 NATAL_TOPIC_QUESTIONS 讀取實際題數，
    不維護另一份容易過期的手寫清單。報告涵蓋每題資料設定、三張結構不同命盤的
-   輸出差異、fallback、可讀性、去重與占星依據。 */
+   輸出差異、fallback、可讀性、去重與占星依據。正式驗收固定取五張
+   結構不同的 Golden Charts；目前直接覆蓋全部十二張，共 54 × 12 = 648 份答案。 */
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
@@ -53,7 +54,7 @@ function maxSentenceLength(text) { return Math.max(0,...sentences(text).map(x=>[
 function ratio(n,d) { return d ? Math.round(n/d*1000)/1000 : 0; }
 
 const c = loadRuntime();
-const chartSamples = c.GOLDEN_TEST_CHARTS.slice(0, 3);
+const chartSamples = c.GOLDEN_TEST_CHARTS.slice(0, 12);
 const questions = [];
 Object.entries(c.NATAL_TOPIC_QUESTIONS).forEach(([topicId, list]) => {
   list.forEach(q=>questions.push({topicId,q}));
@@ -78,14 +79,15 @@ questions.forEach(({topicId,q}) => {
 
 const records = questions.map(({topicId,q}) => {
   const answers=outputsByQuestion[q.id], errors=[], warnings=[];
+  const contract=q.contract || c.NATAL_QUESTION_CONTRACTS[q.id];
   const category=c.QUESTIONFOCUS_HOUSE_CATEGORY[q.questionFocus] || '';
   const semanticDef=category && c.ASTRO_TOPIC_SEMANTIC_DATASET[category];
   const allText=answers.map(a=>[a.headline,a.summary].concat((a.details||[]).map(d=>d.text),[a.caution||'']).join('')).join('');
-  const maxCrossChart=Math.max(
-    similarity(answers[0].headline,answers[1].headline),
-    similarity(answers[0].headline,answers[2].headline),
-    similarity(answers[1].headline,answers[2].headline)
-  );
+  let maxCrossChart=0;
+  for(let i=0;i<answers.length;i++) for(let j=i+1;j<answers.length;j++) {
+    if(answers[i].contractStatus==='insufficient'||answers[j].contractStatus==='insufficient') continue;
+    maxCrossChart=Math.max(maxCrossChart,similarity(answers[i].headline,answers[j].headline));
+  }
   const unsafeFallbacks=answers.filter(a=>a.primaryEvidence && a.primaryEvidence.fallbackUsed
     && a.primaryEvidence.fallbackSource !== 'houseRuler').length;
   const fallbacks=answers.filter(a=>a.primaryEvidence && a.primaryEvidence.fallbackUsed).length;
@@ -93,6 +95,7 @@ const records = questions.map(({topicId,q}) => {
   const abstractCount=abstractWords.reduce((sum,w)=>sum+(allText.split(w).length-1),0);
   const abstractDensity=ratio(abstractCount,Math.max(1,[...allText].length));
   const longSentence=Math.max(...answers.map(a=>maxSentenceLength([a.headline,a.summary].concat((a.details||[]).map(d=>d.text),[a.caution||'']).join('。'))));
+  const longestHeadline=Math.max(...answers.map(a=>[...String(a.headline||'')].length));
   const titleDetailRisk=Math.max(0,...answers.flatMap(a=>(a.details||[]).map(d=>similarity(q.title,d.label))));
   const headlineDetailRisk=Math.max(0,...answers.flatMap(a=>(a.details||[]).map(d=>similarity(a.headline,d.text))));
   const semanticKeys=[...new Set(answers.map(a=>a.semanticKey || (a.debug && a.debug.dominantDimension && a.debug.dominantDimension.key) || category).filter(Boolean))];
@@ -100,13 +103,22 @@ const records = questions.map(({topicId,q}) => {
   const uniqueHeadlines=[...new Set(answers.map(a=>textKey(a.headline)))];
 
   if (!q.intent || !q.questionFocus || !(q.answerTargets||[]).length || !(q.detailLabels||[]).length) errors.push('題目缺少 intent、questionFocus、answerTargets 或 detailLabels');
+  if (!contract || !contract.answerTarget || !(contract.requiredAnswerElements||[]).length
+      || !(contract.allowedContentTypes||[]).length || !(contract.requiredEvidenceTypes||[]).length
+      || !(contract.forbiddenPhrases||[]).length || !contract.goodAnswerExample || !(contract.badAnswerExamples||[]).length) errors.push('Question Contract 欄位不完整');
   if (!category || !semanticDef) errors.push('questionFocus 沒有專屬 knowledge projection');
   if (q.fieldOverride && !answers.every(a=>a.debug && a.debug.fieldOverrideApplied.length)) errors.push('fieldOverride 未進入內容規劃器');
   if (!answers.every(a=>a.debug && a.debug.answerTargetsApplied.length === q.answerTargets.length)) errors.push('answerTargets 未進入內容規劃器');
   if (!answers.every(a=>a.debug && a.debug.excludedTargetsApplied.length === q.excludedTargets.length)) errors.push('excludedTargets 未進入內容規劃器');
+  if (!answers.every(a=>a.answerTarget === contract.answerTarget)) errors.push('answerTarget 未實際控制答案');
+  if (!answers.every(a=>a.contractStatus === 'pass' || a.contractStatus === 'insufficient')) errors.push('答案未經 Question Contract 驗證');
+  if (!answers.filter(a=>a.contractStatus==='pass').every(a=>(a.sectionOrder||[]).every(key=>a.sectionsByType&&a.sectionsByType[key]))) errors.push('Renderer 仍依賴未命名的陣列位置');
   if (titleDetailRisk >= .62) errors.push('大標題與分項標籤語意重複');
-  if (headlineDetailRisk >= .82) errors.push('主句與補充句高度重複');
-  if (uniqueHeadlines.length === 1 && primaryKeys.length > 1) errors.push('三張命盤更換主導指標後，主結論仍相同');
+  if (longestHeadline > 30) errors.push('大標題超過 30 字');
+  if (headlineDetailRisk >= .45) errors.push('大標題與小標題回答高度重複');
+  const renderedAnswers=answers.filter(a=>a.contractStatus!=='insufficient');
+  const renderedHeadlines=[...new Set(renderedAnswers.map(a=>textKey(a.headline)))];
+  if (renderedAnswers.length > 1 && renderedHeadlines.length === 1 && primaryKeys.length > 1) errors.push('不同命盤更換主導指標後，主結論仍相同');
   else if (maxCrossChart >= .82) warnings.push('其中兩張測試盤的主結論較接近，原因是主導語義或落座相同');
   if (unsafeFallbacks >= 2) errors.push('多數測試盤落入無法追溯的通用 fallback');
   else if (fallbackRatio > 0) warnings.push('部分測試盤由空宮改採可追溯的宮主星資料');
@@ -116,7 +128,9 @@ const records = questions.map(({topicId,q}) => {
   if (abstractDensity > .028) warnings.push('抽象名詞密度偏高');
   if (!answers.every(a=>a.primaryEvidence && (a.primaryEvidence.semanticSupport || a.primaryEvidence.reason))) errors.push('占星依據沒有指出正文支持關係');
   if (semanticKeys.length < 2 && primaryKeys.length > 1) warnings.push('不同命盤的中間語義維度變化較少');
-  if (uniqueHeadlines.length < 2) errors.push('三張不同命盤產生相同主句');
+  if (renderedAnswers.length > 1 && renderedHeadlines.length < 2) errors.push('不同命盤產生相同主句');
+  const insufficientCount=answers.filter(a=>a.contractStatus==='insufficient').length;
+  if (insufficientCount) warnings.push(`${insufficientCount}/${answers.length} 份答案未通過契約，已阻擋原文並顯示資料不足`);
 
   return {
     category:topicId,
@@ -125,7 +139,15 @@ const records = questions.map(({topicId,q}) => {
     questionTitle:q.title,
     intent:q.intent,
     questionFocus:q.questionFocus,
+    answerTarget:contract.answerTarget,
     answerTargets:plain(q.answerTargets||[]),
+    requiredAnswerElements:plain(contract.requiredAnswerElements||[]),
+    allowedContentTypes:plain(contract.allowedContentTypes||[]),
+    excludedContentTypes:plain(contract.excludedContentTypes||[]),
+    requiredEvidenceTypes:plain(contract.requiredEvidenceTypes||[]),
+    forbiddenPhrases:plain(contract.forbiddenPhrases||[]),
+    goodAnswerExample:contract.goodAnswerExample,
+    badAnswerExamples:plain(contract.badAnswerExamples||[]),
     selectedKnowledgeSources:answers.map(a=>(a.ranked||[]).slice(0,3).map(e=>({
       key:e.canonicalKey, placement:e.placement, weight:e.weight,
       effectiveWeight:e.selectionScore == null ? e.weight : e.selectionScore,
@@ -137,7 +159,7 @@ const records = questions.map(({topicId,q}) => {
     fallbackPath:answers.map(a=>(a.debug&&a.debug.fallbackUsed)||[]),
     semanticKeys,
     duplicateRisk:{titleDetail:Math.round(titleDetailRisk*100)/100,headlineDetail:Math.round(headlineDetailRisk*100)/100,crossChart:Math.round(maxCrossChart*100)/100},
-    abstractionRisk:{density:abstractDensity,longestSentence:longSentence},
+    abstractionRisk:{density:abstractDensity,longestSentence:longSentence,longestHeadline},
     personalizationRisk:{distinctPrimarySources:primaryKeys.length,distinctHeadlines:uniqueHeadlines.length,fallbackRatio},
     outputSamples:answers.map((a,index)=>({
       chartId:chartSamples[index].fixtureId,
@@ -145,6 +167,10 @@ const records = questions.map(({topicId,q}) => {
       details:(a.details||[]).map(d=>({label:d.label,text:d.text})),
       caution:a.caution||'',
       primary:a.primaryEvidence&&a.primaryEvidence.canonicalKey,
+      answerTarget:a.answerTarget,
+      contractStatus:a.contractStatus,
+      contractErrors:plain(a.contractErrors||[]),
+      sectionKeys:plain(a.sectionOrder||[]),
     })),
     warnings,
     failures:errors,
@@ -155,6 +181,7 @@ const records = questions.map(({topicId,q}) => {
 /* 同一張盤不同題目仍不可只換標題。只把高度近似記到兩題的 audit record。 */
 Object.values(outputsByChart).forEach(answers => {
   for(let i=0;i<answers.length;i++) for(let j=i+1;j<answers.length;j++) {
+    if(answers[i].contractStatus==='insufficient'||answers[j].contractStatus==='insufficient') continue;
     const score=similarity(answers[i].headline,answers[j].headline);
     if(score<.94) continue;
     [answers[i].questionId,answers[j].questionId].forEach(id=>{
@@ -180,12 +207,25 @@ const sharedTemplates=Object.entries(templates).filter(([,keys])=>keys.length>=3
   usedBy:keys, risk:/\{(gift|need|risk|drive|pace|social)\}/.test(signature)?'句型共用，結論由語義欄位決定':'可能固定核心結論',
 }));
 const counts={PASS:0,WARNING:0,FAIL:0}; records.forEach(r=>counts[r.result]++);
+const acceptanceMatrix=records.map(r=>({
+  questionId:r.questionId,
+  question:r.questionTitle,
+  answerTarget:r.answerTarget,
+  mustAnswer:r.allowedContentTypes,
+  forbidden:r.excludedContentTypes.concat(r.forbiddenPhrases),
+  actualOutput:r.outputSamples.map(s=>`${s.chartId}：${s.headline}`),
+  direct:r.outputSamples.every(s=>s.contractStatus==='pass'||s.contractStatus==='insufficient'),
+  easy:r.abstractionRisk.longestSentence<=64&&!r.failures.some(x=>/術語|抽象/.test(x)),
+  duplicate:r.duplicateRisk.crossChart>=.82,
+  pass:r.result!=='FAIL',
+}));
 const report={
   questionCount:records.length,
   chartCount:chartSamples.length,
   chartIds:chartSamples.map(x=>x.fixtureId),
   counts,
   sharedTemplates,
+  acceptanceMatrix,
   records,
 };
 fs.mkdirSync(path.dirname(REPORT_JSON),{recursive:true});
@@ -197,6 +237,7 @@ const md=[
   `- PASS：${counts.PASS}`,
   `- WARNING：${counts.WARNING}`,
   `- FAIL：${counts.FAIL}`,'',
+  `- 實際輸出總數：${records.length*chartSamples.length}`,'',
   '## 被三題以上共用的模板','',
   ...(sharedTemplates.length?sharedTemplates.map(t=>`- ${t.slot}：${t.template}（${t.usedBy.join('、')}）— ${t.risk}`):['- 無']),
   '',
@@ -205,6 +246,7 @@ const md=[
     `### ${r.questionTitle}（${r.questionId}）— ${r.result}`,'',
     `- category / topicId：${r.category} / ${r.topicId}`,
     `- intent / questionFocus：${r.intent} / ${r.questionFocus}`,
+    `- answerTarget：${r.answerTarget}`,
     `- answerTargets：${r.answerTargets.join('、')}`,
     `- detailLabels：${r.detailLabels.join('、')}`,
     `- semanticKeys：${r.semanticKeys.join('、')||'無'}`,
