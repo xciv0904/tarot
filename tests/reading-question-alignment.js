@@ -4,6 +4,7 @@ const path = require('path');
 
 const root = path.resolve(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'js/data/reading-data.js'), 'utf8');
+const interpretationSource = fs.readFileSync(path.join(root, 'js/data/reading-interpretation.js'), 'utf8');
 const sandbox = {
   console,
   IMG: {},
@@ -11,7 +12,7 @@ const sandbox = {
   lenImg: () => ''
 };
 vm.createContext(sandbox);
-vm.runInContext(source + '\nthis.__presets = SPREAD_QUESTION_PRESETS; this.__concrete = CONCRETE_QUESTION_EXAMPLES; this.__subtopics = SUBTOPICS; this.__recs = RECOMMENDATIONS; this.__lenRecs = LEN_RECOMMENDATIONS; this.__topicCfg = topicQuestionConfig; this.__spreadFocus = SPREAD_FOCUS_GROUPS; this.__subtopicFocus = SUBTOPIC_FOCUS_GROUPS;', sandbox);
+vm.runInContext(source + '\n' + interpretationSource + '\nthis.__presets = SPREAD_QUESTION_PRESETS; this.__concrete = CONCRETE_QUESTION_EXAMPLES; this.__subtopics = SUBTOPICS; this.__recs = RECOMMENDATIONS; this.__lenRecs = LEN_RECOMMENDATIONS; this.__topicCfg = topicQuestionConfig; this.__spreadFocus = SPREAD_FOCUS_GROUPS; this.__subtopicFocus = SUBTOPIC_FOCUS_GROUPS;', sandbox);
 
 const presets = sandbox.__presets;
 const concreteExamples = sandbox.__concrete;

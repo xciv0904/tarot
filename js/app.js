@@ -2066,8 +2066,13 @@ function renderReading() {
     // summary panel
     h += '<div id="summary-panel" style="margin-top:28px;border-top:1px solid rgba(201,169,110,.2);padding-top:20px;display:' + (allFlipped() ? 'block' : 'none') + '">';
     h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;text-align:center">解讀摘要 Reading Summary</div>';
+    var activeSubDef = state.subtopic ? (SUBTOPICS[state.category] || []).filter(function (s) { return s.key === state.subtopic; })[0] : null;
+    var activeCardResult = activeSubDef ? cardSubtopicReading(state.category, state.subtopic, state.drawn) : null;
+    if (activeSubDef && activeCardResult && activeCardResult.available) {
+      h += renderSubtopicResultPanel(activeSubDef, activeCardResult, '直接回答這個問題');
+    }
     h += '<div style="border:1px solid rgba(201,169,110,.4);border-radius:10px;padding:15px 17px;background:rgba(201,169,110,.09);margin-top:16px">';
-    h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:#e6cd9a;text-transform:uppercase">✦ 綜合解讀 Overall Reading</div>';
+    h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:#e6cd9a;text-transform:uppercase">✦ 整副牌的走向 Overall Reading</div>';
     h += '<div style="font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:8px;line-height:1.9;text-align:justify">' + esc(overallReading()) + '</div>';
     h += '</div>';
     if (state.category === 'love' && state.subtopic) {
@@ -2077,14 +2082,13 @@ function renderReading() {
         if (state.readingMode === 'combined' && state.astroResult) {
           /* combined 模式：依序顯示 A 牌卡具體解讀、B 星盤補充解讀、C 牌卡＋星盤綜合觀察。
              星盤結果現算現用，不寫回 state，也絕不在沒有 state.astroResult 時臨時生成假星盤。 */
-          h += renderSubtopicResultPanel(loveSubDef, loveCardRes, '牌卡具體解讀');
           var loveAstroRes = astroCategoryReading('love', state.subtopic, state.astroResult, state.astroUnknownTime);
           h += renderAstroSubtopicPanel(loveSubDef, loveAstroRes);
           var loveCombRes = combinedReading(loveCardRes, loveAstroRes, 'love', state.subtopic);
           h += renderCombinedSummaryPanel(loveSubDef, loveCombRes);
         } else {
           /* cards 模式：與 Phase 1A 完全一致，不多出任何星盤區塊 */
-          h += renderSubtopicResultPanel(loveSubDef, loveCardRes);
+          /* 牌卡直接答案已先顯示在整副牌走向之前。 */
         }
       }
     } else if (state.category === 'career' && state.subtopic) {
@@ -2098,14 +2102,13 @@ function renderReading() {
              renderCombinedSummaryPanel() 在資料不可用／非 combined 模式時本來就回傳空字串，
              因此這裡不需要另外特判 career-talent，就能正確安全降級成只顯示星盤補充解讀，
              不會出現空的牌卡面板或假的綜合面板。星盤結果現算現用，不寫回 state。 */
-          h += renderSubtopicResultPanel(careerSubDef, careerCardRes, '牌卡具體解讀');
           var careerAstroRes = astroCategoryReading('career', state.subtopic, state.astroResult, state.astroUnknownTime);
           h += renderAstroSubtopicPanel(careerSubDef, careerAstroRes);
           var careerCombRes = combinedReading(careerCardRes, careerAstroRes, 'career', state.subtopic);
           h += renderCombinedSummaryPanel(careerSubDef, careerCombRes);
         } else {
           /* cards 模式：與 Phase 2A 完全一致，不多出任何星盤區塊 */
-          h += renderSubtopicResultPanel(careerSubDef, careerCardRes);
+          /* 牌卡直接答案已先顯示在整副牌走向之前。 */
         }
       }
     } else if (state.category === 'family' && state.subtopic) {
@@ -2113,13 +2116,12 @@ function renderReading() {
       if (familySubDef) {
         var familyCardRes = cardSubtopicReading('family', state.subtopic, state.drawn);
         if (state.readingMode === 'combined' && state.astroResult) {
-          h += renderSubtopicResultPanel(familySubDef, familyCardRes, '牌卡具體解讀');
           var familyAstroRes = astroCategoryReading('family', state.subtopic, state.astroResult, state.astroUnknownTime);
           h += renderAstroSubtopicPanel(familySubDef, familyAstroRes);
           var familyCombRes = combinedReading(familyCardRes, familyAstroRes, 'family', state.subtopic);
           h += renderCombinedSummaryPanel(familySubDef, familyCombRes);
         } else {
-          h += renderSubtopicResultPanel(familySubDef, familyCardRes);
+          /* 牌卡直接答案已先顯示在整副牌走向之前。 */
         }
       }
     } else if (state.category === 'wealth' && state.subtopic) {
@@ -2127,13 +2129,12 @@ function renderReading() {
       if (wealthSubDef) {
         var wealthCardRes = cardSubtopicReading('wealth', state.subtopic, state.drawn);
         if (state.readingMode === 'combined' && state.astroResult) {
-          h += renderSubtopicResultPanel(wealthSubDef, wealthCardRes, '牌卡具體解讀');
           var wealthAstroRes = astroCategoryReading('wealth', state.subtopic, state.astroResult, state.astroUnknownTime);
           h += renderAstroSubtopicPanel(wealthSubDef, wealthAstroRes);
           var wealthCombRes = combinedReading(wealthCardRes, wealthAstroRes, 'wealth', state.subtopic);
           h += renderCombinedSummaryPanel(wealthSubDef, wealthCombRes);
         } else {
-          h += renderSubtopicResultPanel(wealthSubDef, wealthCardRes);
+          /* 牌卡直接答案已先顯示在整副牌走向之前。 */
         }
       }
     } else if (['health', 'social', 'study', 'general'].indexOf(state.category) !== -1 && state.subtopic) {
@@ -2141,13 +2142,12 @@ function renderReading() {
       if (remainingSubDef) {
         var remainingCardRes = cardSubtopicReading(state.category, state.subtopic, state.drawn);
         if (state.readingMode === 'combined' && state.astroResult) {
-          h += renderSubtopicResultPanel(remainingSubDef, remainingCardRes, '牌卡具體解讀');
           var remainingAstroRes = astroCategoryReading(state.category, state.subtopic, state.astroResult, state.astroUnknownTime);
           h += renderAstroSubtopicPanel(remainingSubDef, remainingAstroRes);
           var remainingCombRes = combinedReading(remainingCardRes, remainingAstroRes, state.category, state.subtopic);
           h += renderCombinedSummaryPanel(remainingSubDef, remainingCombRes);
         } else {
-          h += renderSubtopicResultPanel(remainingSubDef, remainingCardRes);
+          /* 牌卡直接答案已先顯示在整副牌走向之前。 */
         }
       }
     }
@@ -2358,7 +2358,7 @@ var POS_TEMPLATES = {
   obstacle: { fu: '眼前的阻力在於如何處理「{kw}」——{meaning}', fr: '「{kw}」成為主要阻力，且以逆位呈現、更偏向內在的卡關——{meaning}' },
   advice:   { fu: '牌建議你採取「{kw}」的態度——{meaning}', fr: '牌提醒你留意「{kw}」的傾向——{meaning}' },
   past:     { fu: '過去「{kw}」的經驗鋪墊了現在的局面——{meaning}', fr: '過去殘留的「{kw}」仍在影響現在——{meaning}' },
-  future:   { fu: '發展正朝「{kw}」的方向前進——{meaning}', fr: '未來的走向暫時受「{kw}」牽制——{meaning}' },
+  future:   { fu: '發展正朝「{kw}」的方向前進——{meaning}', fr: '未來的走向暫時受「{kw}」影響——{meaning}' },
   root:     { fu: '「{kw}」是這件事的深層根源——{meaning}', fr: '潛藏的「{kw}」在暗中影響全局——{meaning}' },
   other:    { fu: '外在或對方帶來「{kw}」的影響——{meaning}', fr: '外在環境瀰漫著「{kw}」的氛圍——{meaning}' },
   self:     { fu: '你的內在呈現「{kw}」——{meaning}', fr: '你的內在正經歷「{kw}」——{meaning}' },
@@ -2426,18 +2426,18 @@ var ACTION_TEMPLATES = {
   generic: '把「{kw}」放在心上，作為接下來行動的重要參考',
 };
 var REMINDER_TEMPLATES = {
-  obstacle: '阻力是提醒，不是懲罰。',
-  advice: '知道了，就去做。',
-  past: '過去是養分，不是判決。',
-  future: '方向已經在那裡，剩下的是節奏。',
-  root: '看懂根源，問題就解了一半。',
-  other: '你能真正掌握的，只有自己的回應。',
-  self: '誠實面對自己，是最快的捷徑。',
-  hope: '不用同時解決期待和恐懼，先選一個面對就好。',
-  present: '此刻已經足夠，不用急著衝到下一步。',
-  bond: '關係是兩個人的事，但你先動也沒關係。',
-  strength: '優勢要用出來，才算數。',
-  generic: '把這張牌的訊息放在心上就好。',
+  obstacle: '先確認阻力是缺資訊、缺資源，還是有人不同意。',
+  advice: '把牌的建議改成今天能完成的一步。',
+  past: '分開列出舊經驗與現在條件，別把兩者混在一起。',
+  future: '先準備能因應變化的方案，再決定投入多少。',
+  root: '先處理反覆出現的原因，暫時不要只補表面漏洞。',
+  other: '先確認對方的實際行動，再判斷自己的下一步。',
+  self: '寫下你現在真正想要的結果，以及不能接受的代價。',
+  hope: '把期待與擔心各寫一條，再看哪一條有事實支持。',
+  present: '先完成眼前最必要的一步，再評估後續。',
+  bond: '選一件彼此理解不同的事，直接確認雙方的意思。',
+  strength: '決定在哪個具體任務上使用這項優勢。',
+  generic: '把牌義對照目前發生的事，只保留能驗證的部分。',
 };
 function cardCoreMeaning(d, isTarot) {
   var meaningZh = isTarot ? (d.reversed ? d.card.revZh : d.card.upZh) : d.card.mZh;
@@ -3036,7 +3036,7 @@ function cardSubtopicReadingGeneral(subtopicKey, drawnCards) {
    一行有句號、一行沒有。這裡在輸出的最後一關統一補上，資料本身不動，
    因為那些句子在組裝過程中還會被接到別的句子中間，直接改資料反而會出現「。，」。 */
 function polishSentence(t) {
-  var s2 = String(t == null ? '' : t).replace(/\s+$/, '');
+  var s2 = refineReadingCopy(String(t == null ? '' : t)).replace(/\s+$/, '');
   if (!s2) return '';
   return '。！？」）；'.indexOf(s2.charAt(s2.length - 1)) === -1 ? s2 + '。' : s2;
 }
@@ -3050,7 +3050,12 @@ function polishSubtopicResult(out) {
 }
 
 function cardSubtopicReading(catKey, subtopicKey, drawnCards) {
-  return polishSubtopicResult(cardSubtopicReadingRaw(catKey, subtopicKey, drawnCards));
+  var out = polishSubtopicResult(cardSubtopicReadingRaw(catKey, subtopicKey, drawnCards));
+  if (out && out.available) {
+    out.typed = buildTypedQuestionReading(catKey, subtopicKey, drawnCards, out);
+    if (out.typed && out.typed.primaryAnswer) out.conclusion = polishSentence(out.typed.primaryAnswer);
+  }
+  return out;
 }
 function cardSubtopicReadingRaw(catKey, subtopicKey, drawnCards) {
   if (catKey === 'career') return cardSubtopicReadingCareer(subtopicKey, drawnCards);
@@ -3130,6 +3135,123 @@ function cardSubtopicReadingLove(catKey, subtopicKey, drawnCards) {
   return out;
 }
 
+/* ---------- question-aware reading synthesis ----------
+ * The legacy result stays available for history and combined astrology. This
+ * layer adds named content types, so a missing meeting scene can no longer be
+ * filled by a personality sentence merely because both used `traits` before. */
+var READING_MEETING_MECHANISM_BY_GROUP = {
+  wands: ['你們較可能因同場活動、競賽或臨時任務開始說話。', '一方主動邀請或需要立即合作，會成為第一次接觸的理由。'],
+  cups: ['共同朋友介紹，或在聚會中聊到彼此在意的事，較容易讓你們開始接觸。', '你們可能先分享感受、作品或共同興趣，再慢慢延長聯絡。'],
+  swords: ['交換資訊、討論課程或處理工作問題，較可能成為開場。', '你們會先因問題需要確認而對話，之後才發現彼此聊得來。'],
+  pentacles: ['共同工作、固定課程或例行往來，會讓你們有多次碰面的機會。', '一方提供實際協助，或一起完成一項任務，較容易讓關係開始。'],
+  major: ['牌面沒有提供可靠的接觸方式，只能看出這次相遇會發生在人生安排改變時。'],
+  len_good: ['朋友介紹、公開活動或收到邀請，較可能促成第一次接觸。'],
+  len_neutral: ['你們較可能在固定生活圈多次碰面，熟悉後才開始交談。'],
+  len_bad: ['第一次接觸可能源自需要處理的麻煩或突發狀況，初期不一定輕鬆。']
+};
+var READING_RELATION_WORDS = {
+  support: ['接著','因此','也讓'], contrast: ['但','同時','問題在於'], sequence: ['先','之後','最後']
+};
+
+function readingSchemaFor(catKey, subtopicKey) {
+  return READING_QUESTION_SCHEMAS[catKey] && READING_QUESTION_SCHEMAS[catKey][subtopicKey];
+}
+
+function readingCardIdentity(d, isTarot) {
+  return d.pos.zh + '的「' + d.card.nameZh + '」' + (isTarot ? (d.reversed ? '逆位' : '正位') : '');
+}
+
+function readingEvidence(d, isTarot) {
+  var keywords = cardKws(d, isTarot).slice(0, 2).join('、');
+  return readingCardIdentity(d, isTarot) + '指向' + keywords + '。';
+}
+
+function readingFocusForSchema(catKey, subtopicKey, drawnCards) {
+  if (catKey === 'love') return loveFocusCard(drawnCards, subtopicKey);
+  if (catKey === 'career') return careerFocusCard(drawnCards, subtopicKey);
+  if (catKey === 'family') return familyFocusCard(drawnCards, subtopicKey);
+  if (catKey === 'wealth') return wealthFocusCard(drawnCards, subtopicKey);
+  return drawnCards[drawnCards.length - 1];
+}
+
+function addTypedSection(target, schema, contentType, text, evidence) {
+  if (!text || schema.allowedContentTypes.indexOf(contentType) === -1) return;
+  var cleaned = polishSentence(refineReadingCopy(text));
+  var check = validateReadingContent(contentType, cleaned);
+  if (!check.valid) {
+    target.omitted.push({ contentType: contentType, reason: check.reason });
+    return;
+  }
+  target.sections[contentType] = { contentType: contentType, label: READING_CONTENT_LABELS[contentType] || contentType, text: cleaned, evidence: evidence || [] };
+}
+
+function typedGroupText(contentType, group, seed) {
+  if (contentType === 'partner_appearance') return traitPoolPick('appearance', group, seed + '|appearance');
+  if (contentType === 'partner_traits') return traitPoolPick('personality', group, seed + '|personality');
+  if (contentType === 'meeting_context') return traitPoolPick('meetScene', group, seed + '|scene');
+  if (contentType === 'meeting_mechanism') {
+    var mechanisms = READING_MEETING_MECHANISM_BY_GROUP[group] || READING_MEETING_MECHANISM_BY_GROUP.len_neutral;
+    return mechanisms[hashStr(seed + '|mechanism') % mechanisms.length];
+  }
+  if (contentType === 'suitable_roles') return traitPoolPick('jobFunction', group, seed + '|roles');
+  if (contentType === 'suitable_environment') return traitPoolPick('workEnvironment', group, seed + '|environment');
+  if (contentType === 'employment_mode') return traitPoolPick('employmentType', group, seed + '|employment');
+  if (contentType === 'money_source') {
+    var source = WEALTH_SOURCE_BY_GROUP[group] || WEALTH_SOURCE_BY_GROUP.len_neutral;
+    return source[hashStr(seed + '|money-source') % source.length];
+  }
+  return '';
+}
+
+function buildCardRelationship(drawnCards, isTarot) {
+  if (!drawnCards || drawnCards.length < 2) return '';
+  var first = drawnCards[0];
+  var obstacle = drawnCards.filter(function (d) { return posRole(d.pos.zh) === 'obstacle'; })[0];
+  var outcome = drawnCards.filter(function (d) { return posRole(d.pos.zh) === 'future'; }).slice(-1)[0] || drawnCards[drawnCards.length - 1];
+  var middle = obstacle || drawnCards[Math.floor(drawnCards.length / 2)];
+  var firstKw = cardKws(first, isTarot)[0];
+  var middleKw = cardKws(middle, isTarot)[0];
+  var outcomeKw = cardKws(outcome, isTarot)[0];
+  if (middle !== outcome && (posRole(middle.pos.zh) === 'obstacle' || (isTarot && middle.reversed !== outcome.reversed))) {
+    return readingCardIdentity(first, isTarot) + '先帶出' + firstKw + '；' + readingCardIdentity(middle, isTarot) + '顯示' + middleKw + '會卡住進度。但' + readingCardIdentity(outcome, isTarot) + '把後續焦點放在' + outcomeKw + '。';
+  }
+  return readingCardIdentity(first, isTarot) + '先帶出' + firstKw + '；' + readingCardIdentity(outcome, isTarot) + '接著把事情推向' + outcomeKw + '。';
+}
+
+function buildTypedQuestionReading(catKey, subtopicKey, drawnCards, legacy) {
+  var schema = readingSchemaFor(catKey, subtopicKey);
+  var out = { available:false, schema:schema || null, primaryAnswer:'', sections:{}, cardRelationship:'', evidence:[], action:'', uncertainty:'', omitted:[] };
+  if (!schema || !drawnCards || !drawnCards.length) return out;
+  var isTarot = typeof drawnCards[0].card.arcana !== 'undefined';
+  var focus = readingFocusForSchema(catKey, subtopicKey, drawnCards);
+  var group = loveCardGroup(focus.card, isTarot);
+  var seed = schema.questionId + '|question=' + String(state.question || '') + '|' + drawnCards.map(function (d) { return (isTarot ? d.card.id : 'l' + d.card.n) + (d.reversed ? 'R' : 'U') + '@' + d.pos.zh; }).join('|');
+  var focusEvidence = [readingEvidence(focus, isTarot)];
+
+  schema.sectionOrder.forEach(function (contentType) {
+    var text = typedGroupText(contentType, group, seed);
+    if (!text && contentType === 'financial_advice') text = legacy.action || legacy.risk;
+    if (!text && contentType === 'relationship_development') text = legacy.trend || legacy.conclusion;
+    if (!text && contentType === 'interaction_style') text = legacy.traits || legacy.risk;
+    if (!text && contentType === 'counterpart_attitude') text = legacy.conclusion;
+    if (!text && contentType === 'reconciliation_conditions') text = (legacy.risk ? legacy.risk + ' ' : '') + (legacy.action || '');
+    if (!text && contentType === 'longterm_relationship') text = legacy.trend || legacy.conclusion;
+    if (!text && /^(family_|living_|relationship_repair|wellbeing_|social_|ally_|learning_|exam_|focus_|overall_|priority_|hidden_|next_)/.test(contentType)) {
+      text = contentType === 'action' ? legacy.action : (legacy.conclusion || legacy.traits || legacy.trend);
+    }
+    addTypedSection(out, schema, contentType, text, focusEvidence);
+  });
+
+  var firstType = schema.sectionOrder.filter(function (key) { return !!out.sections[key]; })[0];
+  out.primaryAnswer = firstType ? out.sections[firstType].text : polishSentence(refineReadingCopy(legacy.conclusion));
+  out.cardRelationship = polishSentence(refineReadingCopy(buildCardRelationship(drawnCards, isTarot)));
+  out.evidence = drawnCards.slice(0, Math.min(3, drawnCards.length)).map(function (d) { return readingEvidence(d, isTarot); });
+  out.action = polishSentence(refineReadingCopy(legacy.action || ''));
+  out.uncertainty = polishSentence(refineReadingCopy(legacy.caveat || '牌面呈現目前條件下的傾向，後續仍會受實際選擇影響。'));
+  out.available = !!out.primaryAnswer;
+  return out;
+}
+
 /* UI：把 cardSubtopicReading() 的結構化結果畫成「具體問題解讀」區塊，只在選了 subtopic 時呼叫；
    只顯示該子問題 fields 有列出、且實際有內容的欄位，不製造空標題。 */
 var SUBTOPIC_FIELD_LABELS = {
@@ -3160,6 +3282,36 @@ function renderSubtopicResultPanel(subtopicDef, result, titleText) {
     h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:2px;line-height:1.6">' + esc(subtopicDef.zh) + '</div>';
   } else {
     h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:#e6cd9a;text-transform:uppercase">✦ ' + esc(title) + ' · ' + esc(subtopicDef.zh) + '</div>';
+  }
+  if (result.typed && result.typed.available) {
+    var typed = result.typed;
+    h += '<div style="margin-top:10px;padding:11px 13px;border-left:2px solid #e6cd9a;background:rgba(201,169,110,.08)">';
+    h += '<div style="font:500 10px \'Noto Sans TC\',sans-serif;color:#c9a96e">直接回答</div>';
+    h += '<div style="font:500 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:3px;line-height:1.8">' + esc(typed.primaryAnswer) + '</div></div>';
+    h += '<div style="margin-top:10px;display:flex;flex-direction:column;gap:9px">';
+    (typed.schema.sectionOrder || []).forEach(function (contentType) {
+      var section = typed.sections[contentType];
+      if (!section || section.text === typed.primaryAnswer) return;
+      h += '<div><span style="font:500 10px \'Noto Sans TC\',sans-serif;letter-spacing:.04em;color:#c9a96e">' + esc(section.label) + '</span>';
+      h += '<div style="font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:3px;line-height:1.8">' + esc(section.text) + '</div></div>';
+    });
+    if (typed.cardRelationship) {
+      h += '<div><span style="font:500 10px \'Noto Sans TC\',sans-serif;letter-spacing:.04em;color:#c9a96e">牌與牌怎麼互相影響</span>';
+      h += '<div style="font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:3px;line-height:1.8">' + esc(typed.cardRelationship) + '</div></div>';
+    }
+    if (typed.action && !Object.keys(typed.sections).some(function (key) { return typed.sections[key].text === typed.action; })) {
+      h += '<div><span style="font:500 10px \'Noto Sans TC\',sans-serif;letter-spacing:.04em;color:#c9a96e">下一步可以做什麼</span>';
+      h += '<div style="font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:3px;line-height:1.8">' + esc(typed.action) + '</div></div>';
+    }
+    h += '</div>';
+    h += '<details style="margin-top:10px"><summary style="min-height:40px;display:flex;align-items:center;cursor:pointer;font:400 11px \'Noto Sans TC\',sans-serif;color:#c9a96e">為什麼這樣判斷</summary>';
+    h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.68);line-height:1.8">';
+    typed.evidence.forEach(function (line) { h += '· ' + esc(line) + '<br>'; });
+    if (typed.omitted.length) h += '· 有 ' + typed.omitted.length + ' 個欄位因牌面不足或語意不符而未顯示。<br>';
+    h += '</div></details>';
+    if (isCombinedDetail) h += '</details>';
+    h += '</div>';
+    return h;
   }
   h += '<div style="margin-top:9px;display:flex;flex-direction:column;gap:9px">';
   SUBTOPIC_FIELD_ORDER.forEach(function (f) {
@@ -3306,7 +3458,7 @@ function analyzeSpread(drawn, isTarot) {
   CLASSIC_COMBOS.forEach(function (combo) {
     if (combo.ids.every(function (id) { return ids[id]; })) out.push(combo.text);
   });
-  return out;
+  return out.map(function (text) { return refineTraditionalChineseCopy(text); });
 }
 
 /* ---- statistical layer over the whole draw ---- */
@@ -3330,6 +3482,32 @@ function drawInsights(drawn, isTarot) {
   var rev = drawn.filter(function (d) { return d.reversed; }).length;
   if (rev / n >= 0.5) out.push('逆位偏多，內在阻力較大、能量暫時卡住');
   return out.slice(0, 2);
+}
+
+/* Free-form questions do not have a predefined answerTarget.  They still need
+   a first sentence that answers the wording the visitor actually entered.
+   For A-or-B and yes/no questions we can safely express the current direction;
+   other questions get a concise status lead before the card evidence. */
+function directQuestionLead(question, toneIdx, toneTxt) {
+  var q = String(question || '').trim();
+  if (!q) return '';
+  if (q.indexOf('還是') !== -1) {
+    var choices = q.replace(/[？?]\s*$/, '').split('還是');
+    if (choices.length === 2) {
+      var leftParts = choices[0].split(/[，,]/);
+      var left = leftParts[leftParts.length - 1].replace(/^(?:這|目前|現在)?是/, '').trim();
+      var right = choices[1].trim();
+      if (left && right) {
+        if (toneIdx === 0) return '直接回答：這組牌目前較接近「' + left + '」。';
+        if (toneIdx === 2) return '直接回答：這組牌目前較接近「' + right + '」。';
+        return '直接回答：現在還無法只選「' + left + '」或「' + right + '」，關鍵要看後續行動。';
+      }
+    }
+  }
+  if (/是否|能不能|會不會|要不要/.test(q)) {
+    return '直接回答：' + (toneIdx === 0 ? '目前偏向「是」。' : toneIdx === 2 ? '目前偏向「否」。' : '目前條件不足，還不適合下定論。');
+  }
+  return '直接回答：這件事' + toneTxt + '。';
 }
 
 function overallReading() {
@@ -3381,13 +3559,15 @@ function overallReading() {
   var adviceSet = CAT_ADVICE[state.category][['positive', 'neutral', 'challenging'][toneIdx]];
   var adviceSeed = hashStr(drawn.map(function (d) { return (isTarot ? d.card.id : 'l' + d.card.n) + (d.reversed ? 'r' : 'u'); }).join('|'));
   var advice = adviceSet[adviceSeed % adviceSet.length];
+  var relationship = drawn.length > 1 ? buildCardRelationship(drawn, isTarot) : '';
+  var directLead = directQuestionLead(state.question, toneIdx, toneTxt);
 
   function assemble(ins, withTail, nCards) {
     var ps = parts.slice(0, nCards);
     if (withTail && tail) ps = ps.concat([tail]);
-    return CAT_OPENERS[state.category] + '，這組牌' + toneTxt +
+    return refineReadingCopy(directLead + CAT_OPENERS[state.category] + '，這組牌' + toneTxt +
       (ins.length ? '；' + ins.join('；') : '') + '。' +
-      ps.join('；') + '。整體而言，' + advice + '。';
+      ps.join('；') + '。' + (relationship ? relationship : '') + '下一步：' + advice + '。');
   }
   var cap = drawn.length >= 5 ? 320 : 200;
   var txt = assemble(insights, true, parts.length);
@@ -3684,6 +3864,33 @@ function renderPersonaPicker() {
   return h;
 }
 
+function appendTypedReadingCopy(lines, subtopicDef, result) {
+  if (!result || !result.available || !result.typed || !result.typed.available) return false;
+  var typed = result.typed;
+  lines.push('問題識別：' + typed.schema.questionId);
+  lines.push('回答目標：' + typed.schema.answerTarget + '（' + typed.schema.questionFocus + '）');
+  lines.push('直接回答：' + typed.primaryAnswer);
+  (typed.schema.sectionOrder || []).forEach(function (contentType) {
+    var section = typed.sections[contentType];
+    if (!section || section.text === typed.primaryAnswer) return;
+    lines.push(section.label + '：' + section.text);
+  });
+  if (typed.cardRelationship) lines.push('牌與牌的關係：' + typed.cardRelationship);
+  if (typed.action) lines.push('可執行行動：' + typed.action);
+  lines.push('牌面依據：');
+  typed.evidence.forEach(function (evidence) { lines.push('- ' + evidence); });
+  if (typed.omitted.length) lines.push('資料不足而省略的欄位：' + typed.omitted.map(function (x) { return x.contentType; }).join('、'));
+  return true;
+}
+
+function readingAiStyleInstruction() {
+  return traditionalChineseStyleInstruction() + '\n' + [
+    '6. 先整合牌與牌之間的支持、衝突、前因後果或轉折，再談單張牌。沒有牌面依據就明說資料不足。',
+    '7. 嚴格遵守回答目標與內容型別。場合只寫場所、活動、管道與接觸原因；外貌不改寫成個性；職位不改寫成工作環境；財運來源不改寫成理財建議。',
+    '8. 所有結論都以本次牌名、正逆位、牌位與原始問題為依據。不可新增未抽到的牌、日期或保證結果。'
+  ].join('\n');
+}
+
 function copyForAI() {
   var isTarot = state.deck === 'tarot';
   var spreads = currentSpreads();
@@ -3703,6 +3910,15 @@ function copyForAI() {
     wizFocus.forEach(function (f, fi) { lines.push((fi + 1) + '. ' + f); });
   }
   if (state.question) lines.push('使用者的具體問題：' + state.question);
+  var activeSchema = readingSchemaFor(state.category, state.subtopic);
+  if (activeSchema) {
+    lines.push('questionId：' + activeSchema.questionId);
+    lines.push('intent：' + activeSchema.intent);
+    lines.push('questionFocus：' + activeSchema.questionFocus);
+    lines.push('answerTarget：' + activeSchema.answerTarget);
+    lines.push('允許內容型別：' + activeSchema.allowedContentTypes.join('、'));
+    lines.push('排除內容型別：' + activeSchema.excludedContentTypes.join('、'));
+  }
   lines.push('牌陣：' + spreads[state.spread].zh + ' (' + spreads[state.spread].en + ')');
   /* 有具體問題或有選面向時，才附上給 AI 的解讀原則——避免每一次「未填寫、以通用方式解讀」
      的複製結果都多出一段用不到的指示。健康／財運分類另外一律附加免責聲明（riskNotice），
@@ -3745,10 +3961,7 @@ function copyForAI() {
     if (subRes && subRes.available) {
       lines.push('');
       lines.push('具體問題解讀（牌卡）：' + loveSubDef2.zh);
-      SUBTOPIC_FIELD_ORDER.forEach(function (f) {
-        if (loveSubDef2.fields.indexOf(f) === -1 || !subRes[f]) return;
-        lines.push('　' + SUBTOPIC_FIELD_LABELS[f][0] + '：' + subRes[f]);
-      });
+      appendTypedReadingCopy(lines, loveSubDef2, subRes);
       if (state.readingMode === 'combined' && state.astroResult) {
         var astroRes2 = astroCategoryReading('love', state.subtopic, state.astroResult, state.astroUnknownTime);
         if (astroRes2.available) {
@@ -3783,10 +3996,7 @@ function copyForAI() {
     if (careerRes2 && careerRes2.available) {
       lines.push('');
       lines.push('具體問題解讀（事業）：' + careerSubDef2.zh);
-      SUBTOPIC_FIELD_ORDER.forEach(function (f) {
-        if (careerSubDef2.fields.indexOf(f) === -1 || !careerRes2[f]) return;
-        lines.push('　' + SUBTOPIC_FIELD_LABELS[f][0] + '：' + careerRes2[f]);
-      });
+      appendTypedReadingCopy(lines, careerSubDef2, careerRes2);
     }
     /* Phase 2B：combined 模式（且有 state.astroResult）時，額外附加事業星盤完整解讀、
        實際星盤依據，以及牌卡＋星盤綜合觀察；career-talent 沒有牌卡結果時，清楚標示為
@@ -3821,9 +4031,7 @@ function copyForAI() {
     if (familyRes2 && familyRes2.available) {
       lines.push('');
       lines.push('具體問題解讀（家庭牌卡）：' + familySubDef2.zh);
-      SUBTOPIC_FIELD_ORDER.forEach(function (f) {
-        if (familySubDef2.fields.indexOf(f) !== -1 && familyRes2[f]) lines.push('　' + SUBTOPIC_FIELD_LABELS[f][0] + '：' + familyRes2[f]);
-      });
+      appendTypedReadingCopy(lines, familySubDef2, familyRes2);
     }
     if (familySubDef2 && state.readingMode === 'combined' && state.astroResult) {
       var familyAstroRes2 = astroCategoryReading('family', state.subtopic, state.astroResult, state.astroUnknownTime);
@@ -3853,9 +4061,7 @@ function copyForAI() {
     if (wealthRes2 && wealthRes2.available) {
       lines.push('');
       lines.push('具體問題解讀（財運牌卡）：' + wealthSubDef2.zh);
-      SUBTOPIC_FIELD_ORDER.forEach(function (f) {
-        if (wealthSubDef2.fields.indexOf(f) !== -1 && wealthRes2[f]) lines.push('　' + SUBTOPIC_FIELD_LABELS[f][0] + '：' + wealthRes2[f]);
-      });
+      appendTypedReadingCopy(lines, wealthSubDef2, wealthRes2);
     }
     if (wealthSubDef2 && state.readingMode === 'combined' && state.astroResult) {
       var wealthAstroRes2 = astroCategoryReading('wealth', state.subtopic, state.astroResult, state.astroUnknownTime);
@@ -3883,7 +4089,7 @@ function copyForAI() {
     var remCardRes2 = remSubDef2 ? cardSubtopicReading(remCat2,state.subtopic,state.drawn) : null;
     if (remCardRes2 && remCardRes2.available) {
       lines.push(''); lines.push('具體問題解讀（'+remNames2[remCat2]+'牌卡）：'+remSubDef2.zh);
-      SUBTOPIC_FIELD_ORDER.forEach(function(f){if(remSubDef2.fields.indexOf(f)!==-1&&remCardRes2[f])lines.push('　'+SUBTOPIC_FIELD_LABELS[f][0]+'：'+remCardRes2[f]);});
+      appendTypedReadingCopy(lines, remSubDef2, remCardRes2);
     }
     if (remSubDef2 && state.readingMode==='combined' && state.astroResult) {
       var remAstroRes2=astroCategoryReading(remCat2,state.subtopic,state.astroResult,state.astroUnknownTime);
@@ -3900,8 +4106,9 @@ function copyForAI() {
     }
   }
   lines.push('');
-  lines.push('請根據以上牌陣，幫我解讀這次占卜的整體意義。');
   lines.push(personaInstructionLine());
+  lines.push(readingAiStyleInstruction());
+  lines.push('請先用一句話直接回答原始問題，再依牌陣位置整合各牌。最後只保留一項能在現實中執行的下一步。');
   var text = lines.join('\n');
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(flashCopied).catch(function () { fallbackCopy(text); });
@@ -4124,6 +4331,10 @@ function appendHistorySubtopicCopy(lines, st) {
     var result = section[1];
     if (!result || !result.available) return;
     lines.push(section[0] + '：');
+    if (result.typed && result.typed.available) {
+      appendTypedReadingCopy(lines, { zh: st.zh || st.key || '' }, result);
+      return;
+    }
     SUBTOPIC_FIELD_ORDER.forEach(function (f) {
       if (result[f]) lines.push('　' + SUBTOPIC_FIELD_LABELS[f][0] + '：' + result[f]);
     });
@@ -4137,6 +4348,10 @@ function renderHistorySubtopic(st) {
   if (!st) return '';
   var result = historySubtopicResult(st);
   if (!result) return '';
+  var typedResult = (st.cardReading || st.reading);
+  if (typedResult && typedResult.typed && typedResult.typed.available) {
+    return renderSubtopicResultPanel({ zh: st.zh || st.key || '', fields: [] }, typedResult, '直接回答這個問題');
+  }
   var h = '<div style="border:1px solid rgba(201,169,110,.35);border-radius:10px;padding:15px 17px;background:rgba(201,169,110,.06);margin-top:12px">';
   h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.08em;color:#e6cd9a">✦ 具體問題解讀</div>';
   h += '<div style="font:500 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:5px;line-height:1.7">' + esc(st.zh || st.key || '') + '</div>';
@@ -4196,8 +4411,9 @@ function historyCopyForAI() {
     lines.push('摘要：' + e.summary);
     lines.push('');
   }
-  lines.push('請根據以上這次占卜紀錄，幫我重新解讀一次，並補充我當初可能沒注意到的細節或提醒。');
   lines.push(personaInstructionLine());
+  lines.push(readingAiStyleInstruction());
+  lines.push('請先直接回答原始問題，再說明牌位之間的關係。只補充能由這次抽牌追溯的內容。');
   var text = lines.join('\n');
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(historyFlashCopied).catch(function () { fallbackCopy(text, historyFlashCopied); });

@@ -43,7 +43,7 @@ function loadRuntime() {
     'js/data/astrology-placement-templates.js', 'js/data/astrology-aspect-data.js',
     'js/data/astrology-knowledge-layer.js', 'js/data/astrology-knowledge-dataset.js',
     'js/data/astrology-natal-topics-data.js', 'js/data/card-images.js',
-    'js/data/reading-data.js', 'js/data/reading-rich-data.js', 'js/app.js',
+    'js/data/reading-data.js', 'js/data/reading-interpretation.js', 'js/data/reading-rich-data.js', 'js/app.js',
   ].forEach(file => vm.runInContext(fs.readFileSync(path.join(ROOT, file), 'utf8'), c, { filename: file }));
   /* TAROT／LENORMAND 等是 const 宣告，不會掛到 context 物件上，要在 context 裡取出來。 */
   vm.runInContext(

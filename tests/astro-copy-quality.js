@@ -45,7 +45,7 @@ function loadRuntime() {
     'js/data/astrology-placement-templates.js', 'js/data/astrology-aspect-data.js',
     'js/data/astrology-knowledge-layer.js', 'js/data/astrology-knowledge-dataset.js',
     'js/data/astrology-natal-topics-data.js', 'js/data/card-images.js',
-    'js/data/reading-data.js', 'js/data/reading-rich-data.js',
+    'js/data/reading-data.js', 'js/data/reading-interpretation.js', 'js/data/reading-rich-data.js',
     'js/app.js', 'js/data/astro-charts.js', 'js/data/astro-advanced.js', 'tests/golden-charts.js',
   ].forEach(file => vm.runInContext(fs.readFileSync(path.join(ROOT, file), 'utf8'), c, { filename: file }));
   c.ensureAstrologyBodyKeys();
@@ -114,6 +114,15 @@ c.GOLDEN_TEST_CHARTS.forEach(entry => {
 if (answers.length < 50) fail(`人生主題答案樣本過少（${answers.length}），測試無法確認品質`);
 
 const allDetails = answers.reduce((n, a) => n + (a.details || []).length, 0);
+
+// 星盤主題分析與抽牌共用的臺灣繁體中文文風邊界。
+const natalStyleFailures = [];
+answers.forEach(a => {
+  const text = [a.headline, a.summary, a.caution].concat((a.details || []).map(d => d.text)).join('\n');
+  const styleFlags = c.traditionalChineseStyleFlags(text);
+  if (styleFlags.length) natalStyleFailures.push(`${a.questionId}:${styleFlags.join(',')}`);
+});
+if (natalStyleFailures.length) fail(`星盤主題分析仍有去 AI 文風問題：${natalStyleFailures.slice(0, 3).join(' / ')}`);
 
 // 1. 分項重述自己的標籤
 const ECHO_RE = /^(.{2,7}?)(是|宜|為|需要|在於)/;
@@ -354,6 +363,15 @@ let packRuns = 0;
   }
 });
 if (packRuns < 3) fail('純資料格式測試樣本不足');
+
+/* 主題分析的複製入口也必須帶同一套文風邊界，且不能丟掉占星依據。 */
+let natalTopicCopied = '';
+c.navigator.clipboard = { writeText(text) { natalTopicCopied = text; return Promise.resolve(); } };
+c.state.natalTopicResult = c.analyzeNatalTopic(chartA, 'career', c.NATAL_TOPIC_QUESTIONS.career.slice(0, 3).map(q => q.id), false);
+c.natalTopicCopyForAI();
+['【繁體中文與文風規則】', '使用臺灣繁體中文', '完全沒有占星或牌卡背景', '具體情境、行為或可觀察訊號', '不可重複同一結論', '占星依據'].forEach(marker => {
+  if (!natalTopicCopied.includes(marker)) fail(`主題分析複製文字缺少規則：${marker}`);
+});
 
 /* ---------- 結果 ---------- */
 if (failures.length) {

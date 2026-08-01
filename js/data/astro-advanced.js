@@ -3597,9 +3597,9 @@ function splitNatalLongText(text) {
 }
 function polishNatalAnswer(base) {
   if (!base || !base.details || !base.details.length) return base;
-  base.headline = splitNatalLongText(base.headline);
-  base.summary = splitNatalLongText(base.summary);
-  base.caution = splitNatalLongText(base.caution);
+  base.headline = refineTraditionalChineseCopy(splitNatalLongText(base.headline));
+  base.summary = refineTraditionalChineseCopy(splitNatalLongText(base.summary));
+  base.caution = refineTraditionalChineseCopy(splitNatalLongText(base.caution));
   /* 就地改寫 text，不重建物件——details 上還掛著 sourceRoles 等欄位供摺疊區使用，
      重建物件容易在之後新增欄位時默默把它們弄丟。 */
   var headKey = natalTextKey(base.headline);
@@ -3621,7 +3621,7 @@ function polishNatalAnswer(base) {
       }
     }
     if (t && '。！？」）'.indexOf(t.charAt(t.length - 1)) === -1) t += '。';
-    d.text = splitNatalLongText(t);
+    d.text = refineTraditionalChineseCopy(splitNatalLongText(t));
   });
   return base;
 }
@@ -3829,6 +3829,8 @@ function validateNatalTopicContent(answers, topicId) {
   }
   answers.forEach(function (a) {
     var fullText = a.headline + a.summary + (a.details || []).map(function (d) { return d.text; }).join('');
+    var styleProblems = traditionalChineseStyleFlags(fullText + (a.caution || ''));
+    if (styleProblems.length) flags.push({ check: 'traditional_chinese_style', passed: false, note: a.questionId + ' 仍有文風問題：' + styleProblems.join('、') });
     NATAL_BANNED_OPENERS.forEach(function (bad) {
       if (a.headline.indexOf(bad) === 0 || a.summary.indexOf(bad) === 0) flags.push({ check: 'banned_opener', passed: false, note: a.questionId + ' 使用了禁用開頭「' + bad + '」' });
     });
@@ -3991,7 +3993,7 @@ function buildTopicOverview(topicId, answers) {
   return fillTpl(astroSeededPick(seed, pool), { tone: tone });
 }
 
-var NATAL_TOPIC_PROMPT_VERSION = 'topic-rules-v8';
+var NATAL_TOPIC_PROMPT_VERSION = 'topic-rules-v9-de-ai-tone';
 var NATAL_TOPIC_KNOWLEDGE_VERSION = typeof ASTRO_TOPIC_SEMANTIC_VERSION !== 'undefined' ? ASTRO_TOPIC_SEMANTIC_VERSION : 'unknown';
 function natalChartFingerprint(chart, unknownTime) {
   if (!chart) return '';
@@ -4077,7 +4079,7 @@ function analyzeNatalTopic(chartData, topicId, selectedQuestionIds, unknownTime)
     });
   });
   var qualityFlags = validateNatalTopicContent(answers, topicId);
-  var overview = buildTopicOverview(topicId, answers);
+  var overview = refineTraditionalChineseCopy(buildTopicOverview(topicId, answers));
   var fingerprint = natalChartFingerprint(chartData, unknownTime);
   return {
     topicId: topicId,
@@ -4376,10 +4378,11 @@ function natalTopicCopyForAI() {
   if (result.topicId === 'wealth') lines.push(FINANCE_DISCLAIMER);
   lines.push('');
   lines.push('【給 AI 的解讀原則】');
-  lines.push('1. 請整合以上占星依據，針對每個問題形成一個有主軸的答案，不要把多項指標拆成互不相關的片段各自解讀。');
-  lines.push('2. 使用「較容易」「可能」「通常」「傾向」等非宿命語氣，不要做出確定性的預言。');
-  if (result.topicId === 'health') lines.push('3. 不得診斷疾病、判斷特定病症、預測死亡、建議停藥或取代就醫。');
-  if (result.topicId === 'wealth') lines.push('3. 不得承諾收益或提供特定投資標的建議。');
+  lines.push(traditionalChineseStyleInstruction());
+  lines.push('6. 請整合以上占星依據，針對每個問題形成一個有主軸的答案，不要把多項指標拆成互不相關的片段各自解讀。');
+  lines.push('7. 使用「較容易」「可能」「通常」「傾向」等非宿命語氣，不要做出確定性的預言。');
+  if (result.topicId === 'health') lines.push('8. 不得診斷疾病、判斷特定病症、預測死亡、建議停藥或取代就醫。');
+  if (result.topicId === 'wealth') lines.push('8. 不得承諾收益或提供特定投資標的建議。');
   var text = lines.join('\n');
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(natalTopicFlashCopied).catch(function () { fallbackCopy(text, natalTopicFlashCopied); });

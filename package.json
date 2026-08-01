@@ -2,13 +2,14 @@
   "name": "mystic-deck-regression",
   "private": true,
   "scripts": {
-    "check": "node --check js/app.js && node --check js/data/reading-data.js && node --check js/data/reading-rich-data.js && node --check js/data/astrology-knowledge-layer.js && node --check js/data/astrology-knowledge-dataset.js && node --check js/data/astrology-natal-topics-data.js && node --check js/data/astro-charts.js && node --check js/data/astro-advanced.js",
+    "check": "node --check js/app.js && node --check js/data/reading-data.js && node --check js/data/reading-interpretation.js && node --check js/data/reading-rich-data.js && node --check js/data/astrology-knowledge-layer.js && node --check js/data/astrology-knowledge-dataset.js && node --check js/data/astrology-natal-topics-data.js && node --check js/data/astro-charts.js && node --check js/data/astro-advanced.js",
     "test:reading": "node tests/reading-question-alignment.js",
+    "test:reading-semantic": "node tests/reading-semantic-regression.js",
     "test:copy": "node tests/reading-copy-quality.js && node tests/astro-copy-quality.js",
     "test:golden": "node tests/natal-golden-regression.js",
     "test:topic-diversity": "node tests/natal-topic-diversity.js",
     "test:topic-audit": "node tests/natal-topic-audit.js",
     "test:golden:update": "node tests/natal-golden-regression.js --update",
-    "test": "npm run check && npm run test:reading && npm run test:copy && npm run test:topic-diversity && npm run test:topic-audit && npm run test:golden"
+    "test": "npm run check && npm run test:reading && npm run test:reading-semantic && npm run test:copy && npm run test:topic-diversity && npm run test:topic-audit && npm run test:golden"
   }
 }

@@ -468,8 +468,8 @@
         "crossChart": 0.29
       },
       "abstractionRisk": {
-        "density": 0.003,
-        "longestSentence": 33
+        "density": 0.002,
+        "longestSentence": 36
       },
       "personalizationRisk": {
         "distinctPrimarySources": 3,
@@ -1260,8 +1260,8 @@
         "crossChart": 0.3
       },
       "abstractionRisk": {
-        "density": 0.008,
-        "longestSentence": 40
+        "density": 0.007,
+        "longestSentence": 42
       },
       "personalizationRisk": {
         "distinctPrimarySources": 3,
@@ -2851,7 +2851,7 @@
       },
       "abstractionRisk": {
         "density": 0.009,
-        "longestSentence": 32
+        "longestSentence": 38
       },
       "personalizationRisk": {
         "distinctPrimarySources": 3,
@@ -3643,7 +3643,7 @@
       },
       "abstractionRisk": {
         "density": 0,
-        "longestSentence": 36
+        "longestSentence": 38
       },
       "personalizationRisk": {
         "distinctPrimarySources": 3,
@@ -4133,7 +4133,7 @@
       },
       "abstractionRisk": {
         "density": 0.006,
-        "longestSentence": 42
+        "longestSentence": 44
       },
       "personalizationRisk": {
         "distinctPrimarySources": 3,
@@ -5347,7 +5347,7 @@
               "text": "長期扛起穩固團隊或制度的責任。"
             }
           ],
-          "caution": "留意別因為太理想化，而缺乏落地的執行計畫。",
+          "caution": "留意別因為太理想化，而缺乏實作的執行計畫。",
           "primary": "angle|mc|7||"
         }
       ],
@@ -8325,7 +8325,7 @@
         "crossChart": 0.29
       },
       "abstractionRisk": {
-        "density": 0.01,
+        "density": 0.009,
         "longestSentence": 44
       },
       "personalizationRisk": {
