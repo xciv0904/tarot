@@ -3385,11 +3385,12 @@ function applyFocusedQuestionContentPlan(base, question, top, second, third, top
     var partnerSupportKey = partnerKeys[1] || partnerPrimaryKey;
     var partnerPrimary = ASTRO_PARTNER_PLAIN_DATASET[partnerPrimaryKey] || ASTRO_PARTNER_PLAIN_DATASET.Moon;
     var partnerSupport = ASTRO_PARTNER_PLAIN_DATASET[partnerSupportKey] || partnerPrimary;
-    var partnerEvidence = [top, second, third].filter(Boolean).filter(function (e) { return e.planetKey === partnerPrimaryKey; })[0];
-    var partnerSignBehavior = partnerEvidence && partnerEvidence.sign != null && SIGN_BEGINNER[partnerEvidence.sign]
-      ? SIGN_BEGINNER[partnerEvidence.sign].behavior : '';
-    base.headline = '你常遇到的對象，較可能是' + partnerPrimary.personality + '的人。'
-      + (partnerSignBehavior ? '剛認識時，對方多半會' + partnerSignBehavior + '。' : '');
+    var partnerTypeLabels = {
+      Sun:'主動明確型', Moon:'溫暖照顧型', Mercury:'好奇健談型', Venus:'公平有品味型',
+      Mars:'行動直接型', Jupiter:'樂觀成長型', Saturn:'成熟可靠型', Uranus:'獨立自主型',
+      Neptune:'溫柔共感型', Pluto:'深度坦白型',
+    };
+    base.headline = '你較常遇到「' + (partnerTypeLabels[partnerPrimaryKey] || '重視關係品質型') + '」的對象。';
     base.summary = '真正影響長期相處的，不只是第一印象，而是對方能否做到：' + partnerSupport.interaction + '。';
     base.details = [
       { label:'對象的個性傾向', text:partnerPrimary.personality },
@@ -3401,6 +3402,68 @@ function applyFocusedQuestionContentPlan(base, question, top, second, third, top
     base.summaryConceptKeys = ['partnerInteraction:' + partnerSupportKey];
     base.detailConceptKeys = ['partnerPersonalityDetail:' + partnerPrimaryKey, 'partnerInteractionDetail:' + partnerSupportKey, 'partnerStaying:' + partnerPrimaryKey];
     base.cautionConceptKeys = ['partnerActionCheck'];
+  } else if (focus === 'emotional_attraction') {
+    var attractionEvidence = [top, second, third].filter(Boolean).filter(function (e) { return e.sign != null; })[0];
+    var attractionElem = attractionEvidence && ZODIAC_SIGNS[attractionEvidence.sign]
+      ? ZODIAC_SIGNS[attractionEvidence.sign].elem : '風';
+    var attraction = ASTRO_ATTRACTION_PLAIN_DATASET[attractionElem] || ASTRO_ATTRACTION_PLAIN_DATASET['風'];
+    base.headline = attraction.headline + '。';
+    base.summary = '這裡說的是容易啟動心動的特質，不等於只要具備這些特質，就一定適合長期相處。';
+    base.details = [
+      { label:'容易被什麼特質吸引', text:attraction.trait },
+      { label:'什麼樣的互動最讓你心動', text:attraction.interaction },
+    ];
+    base.caution = '吸引力只代表容易注意到對方；是否適合長期相處，仍要看承諾與行動是否一致。';
+    base.headlineConceptKeys = ['attractionHeadline:' + attractionElem];
+    base.summaryConceptKeys = ['attractionScope'];
+    base.detailConceptKeys = ['attractionTrait:' + attractionElem, 'attractionInteraction:' + attractionElem];
+    base.cautionConceptKeys = ['attractionNotCompatibility'];
+  } else if (focus === 'partner_visual_impression') {
+    var appearanceEvidence = [top, second, third].filter(Boolean).filter(function (e) { return e.sign != null; })[0];
+    var appearanceElem = appearanceEvidence && ZODIAC_SIGNS[appearanceEvidence.sign]
+      ? ZODIAC_SIGNS[appearanceEvidence.sign].elem : '風';
+    var appearance = ASTRO_APPEARANCE_PLAIN_DATASET[appearanceElem] || ASTRO_APPEARANCE_PLAIN_DATASET['風'];
+    base.headline = appearance.headline + '。';
+    base.summary = '這題只描述容易被注意到的穿著、姿態與第一印象，不把內在感受或相處習慣當成外型。';
+    base.details = [
+      { label:'外型風格傾向', text:appearance.visual },
+      { label:'氣場給人的感覺', text:appearance.vibe },
+    ];
+    base.caution = '外型與氣質只能描述風格傾向，不能據此推測五官、身高或其他固定生理特徵。';
+    base.headlineConceptKeys = ['appearanceHeadline:' + appearanceElem];
+    base.summaryConceptKeys = ['appearanceScope'];
+    base.detailConceptKeys = ['appearanceVisual:' + appearanceElem, 'appearanceVibe:' + appearanceElem];
+    base.cautionConceptKeys = ['appearanceBoundary'];
+  } else if (focus === 'preferred_relationship_style') {
+    var relationshipKeys = natalPlanetKeysFromEvidenceList([top, second, third]);
+    var relationshipKey = relationshipKeys[0] || 'Venus';
+    var relationshipStyle = ASTRO_RELATIONSHIP_STYLE_PLAIN_DATASET[relationshipKey] || ASTRO_RELATIONSHIP_STYLE_PLAIN_DATASET.Venus;
+    base.headline = relationshipStyle.headline + '。';
+    base.summary = '比起只看兩個人合不合拍，更重要的是日常聯絡、共同決定與各自空間能否長期維持。';
+    base.details = [
+      { label:'適合的相處模式', text:relationshipStyle.mode },
+      { label:'關係中的步調', text:relationshipStyle.rhythm },
+    ];
+    base.caution = '若只有一方持續配合，這種相處方式就不算真正適合。';
+    base.headlineConceptKeys = ['relationshipStyle:' + relationshipKey];
+    base.summaryConceptKeys = ['relationshipStyleTest'];
+    base.detailConceptKeys = ['relationshipMode:' + relationshipKey, 'relationshipRhythm:' + relationshipKey];
+    base.cautionConceptKeys = ['relationshipMutuality'];
+  } else if (focus === 'relationship_repair') {
+    var repairKeys = natalPlanetKeysFromEvidenceList([top, second, third]);
+    var repairKey = repairKeys[0] || 'Mercury';
+    var repair = ASTRO_RELATIONSHIP_REPAIR_PLAIN_DATASET[repairKey] || ASTRO_RELATIONSHIP_REPAIR_PLAIN_DATASET.Mercury;
+    base.headline = repair.headline + '。';
+    base.summary = '發生衝突後，修復不是恢復表面和平，而是確認發生了什麼、誰受到影響，以及下一次要改變哪個行動。';
+    base.details = [
+      { label:'衝突後的第一步', text:repair.first },
+      { label:'修復關係的方式', text:repair.repair },
+    ];
+    base.caution = '不要用暫時沉默或由一方退讓，代替真正的確認與改變。';
+    base.headlineConceptKeys = ['repairFirst:' + repairKey];
+    base.summaryConceptKeys = ['repairDefinition'];
+    base.detailConceptKeys = ['repairFirstDetail:' + repairKey, 'repairAction:' + repairKey];
+    base.cautionConceptKeys = ['repairNotAvoidance'];
   } else if (focus === 'employment_mode') {
     var employmentKeys = natalPlanetKeysFromEvidenceList([top, second, third]);
     var employmentKey = employmentKeys[0] || 'Saturn';
@@ -3787,6 +3850,12 @@ function natalFocusedDistinctDetail(base, index, dominant) {
   };
   return null;
 }
+function natalHasStrictFocusedDetails(questionFocus) {
+  return [
+    'likely_partner_traits', 'emotional_attraction', 'meeting_context',
+    'partner_visual_impression', 'preferred_relationship_style', 'relationship_repair',
+  ].indexOf(questionFocus) !== -1;
+}
 function polishNatalAnswer(base) {
   if (!base || !base.details || !base.details.length) return base;
   base.headline = refineTraditionalChineseCopy(compactNatalHeadline(base.headline, base.questionFocus, base));
@@ -3808,7 +3877,7 @@ function polishNatalAnswer(base) {
         if (detailKey.length - cut >= 5 && headKey.indexOf(detailKey.slice(cut)) !== -1) detailRepeated = true;
       }
     }
-    if (detailRepeated || natalVisibleSimilarity(base.headline, t) >= 0.45) {
+    if ((detailRepeated || natalVisibleSimilarity(base.headline, t) >= 0.45) && !natalHasStrictFocusedDetails(base.questionFocus)) {
       if (focusedDetail) {
         t = focusedDetail.text;
       } else if (dominant) t = index === 0 ? dominant.behavior : dominant.action;
@@ -4027,6 +4096,31 @@ function natalSentenceHasConcreteExtension(sentence, phrase) {
   return (rest.length >= 8 && concrete.test(rest))
     || (sentence.length >= phrase.length + 10 && concrete.test(sentence.replace(phrase, '')));
 }
+function validateNatalFocusedDetailSemantics(answer, questionFocus) {
+  var details = answer.details || [];
+  var first = details[0] ? details[0].text : '';
+  var second = details[1] ? details[1].text : '';
+  var errors = [];
+  if (questionFocus === 'emotional_attraction') {
+    if (!/自信|主見|可靠|穩定|好聊|想法|溫柔|有禮|公平|成熟|獨立|坦白|細膩|反應快|行動|說到做到/.test(first)) errors.push('attraction_trait_not_observable');
+    if (!/對方|聊天|邀約|表態|互動|回應|承諾|話題|陪伴|打動|靠近|注意/.test(second)) errors.push('attraction_interaction_missing');
+  }
+  if (questionFocus === 'partner_visual_impression') {
+    if (!/穿著|打扮|剪裁|線條|色彩|材質|款式|姿態/.test(first)) errors.push('appearance_visual_slot_mismatch');
+    if (!/眼神|表情|談吐|姿態|第一印象|給人|氣質|氣場/.test(second)) errors.push('appearance_vibe_slot_mismatch');
+    if (/情緒安全感|承擔結果|雙方都能接受|維持和諧/.test(first + second)) errors.push('appearance_contains_relationship_behavior');
+  }
+  if (questionFocus === 'preferred_relationship_style') {
+    if (!/彼此|一起|共同|陪伴|相處|分歧|問題|承諾|責任|生活方式|期待|議題/.test(first)) errors.push('relationship_mode_slot_mismatch');
+    if (!/聯絡|見面|頻率|步調|空間|時間|互動|親密|長期方向/.test(second)) errors.push('relationship_rhythm_slot_mismatch');
+  }
+  if (questionFocus === 'relationship_repair') {
+    if (!/先|暫停|停止|確認|核對|說出/.test(first)) errors.push('repair_first_step_missing');
+    if (!/確認|約定|重新|重建|恢復|改成|保留|說清|證明|修正/.test(second)) errors.push('repair_process_missing');
+    if (/會先表明立場，也願意在眾人面前承擔結果/.test(first + second)) errors.push('repair_contains_generic_behavior');
+  }
+  return errors;
+}
 function validateNatalAnswerAgainstContract(answer, question) {
   var contract = question.contract || (typeof NATAL_QUESTION_CONTRACTS !== 'undefined' && NATAL_QUESTION_CONTRACTS[question.id]);
   var errors = [];
@@ -4049,6 +4143,7 @@ function validateNatalAnswerAgainstContract(answer, question) {
       if (sentence.indexOf(phrase) !== -1 && !natalSentenceHasConcreteExtension(sentence, phrase)) errors.push('vague_phrase_' + phrase);
     });
   });
+  errors = errors.concat(validateNatalFocusedDetailSemantics(answer, question.questionFocus));
   return { passed:errors.length === 0, errors:errors };
 }
 function natalInsufficientAnswerForContract(answer, validation) {

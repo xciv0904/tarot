@@ -178,6 +178,33 @@ const records = questions.map(({topicId,q}) => {
   };
 });
 
+/* 使用者實際會一次勾選多題；批次中的 usedPrimaryKeys／去重上下文，曾把
+   「外型」「相處」「修復」重新替換成同一個通用行為。除了逐題測試，再把
+   感情題整批產生一次，確保最後潤飾不會破壞題型語義。 */
+const loveQuestionIds=(c.NATAL_TOPIC_QUESTIONS.love||[]).map(q=>q.id);
+const strictLoveIds=['love-attract-type','love-appearance-vibe','love-relationship-style','love-conflict-repair'];
+chartSamples.forEach(chart=>{
+  const batch=c.analyzeNatalTopic(chart,'love',loveQuestionIds,false).answers||[];
+  strictLoveIds.forEach(id=>{
+    const answer=batch.find(a=>a.questionId===id);
+    const record=records.find(r=>r.questionId===id);
+    if(!answer||answer.contractStatus!=='pass') {
+      const message='整批產生感情題時，答案未通過題型語義契約';
+      if(record&&!record.failures.includes(message)) record.failures.push(message);
+      if(record) record.result='FAIL';
+    }
+  });
+  const wrong='會先表明立場，也願意在眾人面前承擔結果';
+  batch.filter(a=>strictLoveIds.includes(a.questionId)).forEach(answer=>{
+    const body=[answer.headline,answer.summary].concat((answer.details||[]).map(d=>d.text)).join('');
+    if(!body.includes(wrong)) return;
+    const record=records.find(r=>r.questionId===answer.questionId);
+    const message='題型答案退回跨題共用行為句';
+    if(record&&!record.failures.includes(message)) record.failures.push(message);
+    if(record) record.result='FAIL';
+  });
+});
+
 /* 同一張盤不同題目仍不可只換標題。只把高度近似記到兩題的 audit record。 */
 Object.values(outputsByChart).forEach(answers => {
   for(let i=0;i<answers.length;i++) for(let j=i+1;j<answers.length;j++) {

@@ -23,7 +23,7 @@
 - detailLabels：對象的個性傾向、互動與相處風格、你會被什麼特質留住
 - semanticKeys：likely_partner_traits:harmony@planet|Venus|6|4|+selfDirection、likely_partner_traits:emotionalResponse@angle|dsc|3||、likely_partner_traits:visibility@angle|dsc|4||+freedom、likely_partner_traits:depthTrust@planet|Venus|7|7|+structure、likely_partner_traits:selfDirection@planet|Mars|0|10|、likely_partner_traits:freedom@planet|Mercury|10|12|+practicalCare、likely_partner_traits:visibility@planet|Moon|4|7|+harmony、likely_partner_traits:depthTrust@angle|dsc|7||、likely_partner_traits:harmony@planet|Moon|6|7|、likely_partner_traits:emotionalResponse@angle|dsc|11||+structure、likely_partner_traits:dialogue@angle|dsc|2||、likely_partner_traits:consistency@planet|Venus|1|4|+freedom
 - fallback：17%
-- 重複風險：title/detail 0；headline/detail 0.06；跨命盤 1
+- 重複風險：title/detail 0；headline/detail 0.18；跨命盤 1
 - WARNING：其中兩張測試盤的主結論較接近，原因是主導語義或落座相同；部分測試盤由空宮改採可追溯的宮主星資料
 
 ### 什麼特質最容易讓我心動？（love-attract-type）— WARNING
@@ -35,7 +35,7 @@
 - detailLabels：容易被什麼特質吸引、什麼樣的互動最讓你心動
 - semanticKeys：emotional_attraction:selfDirection@planet|Mars|0|10|、emotional_attraction:consistency@planet|Venus|1|6|+harmony、emotional_attraction:freedom@planet|Mars|10|11|+novelty、emotional_attraction:depthTrust@planet|Venus|7|7|+harmony、emotional_attraction:selfDirection@planet|Mars|0|10|+harmony、emotional_attraction:depthTrust@planet|Mars|7|9|+selfDirection、emotional_attraction:harmony@planet|Venus|6|7|、emotional_attraction:consistency@planet|Venus|1|2|、emotional_attraction:harmony@planet|Venus|6|5|、emotional_attraction:structure@planet|Mars|9|6|+harmony、emotional_attraction:dialogue@planet|Venus|2|2|+selfDirection、emotional_attraction:consistency@planet|Venus|1|4|+freedom
 - fallback：8%
-- 重複風險：title/detail 0.29；headline/detail 0；跨命盤 1
+- 重複風險：title/detail 0.29；headline/detail 0.08；跨命盤 1
 - WARNING：其中兩張測試盤的主結論較接近，原因是主導語義或落座相同；部分測試盤由空宮改採可追溯的宮主星資料
 
 ### 可能在什麼情境認識（love-meet-scene）— WARNING
@@ -107,7 +107,7 @@
 - detailLabels：衝突後的第一步、修復關係的方式
 - semanticKeys：relationship_repair:harmony@planet|Venus|6|4|、relationship_repair:emotionalResponse@planet|Moon|11|5|、relationship_repair:freedom@planet|Sun|10|11|+novelty、relationship_repair:emotionalResponse@planet|Saturn|3|4|、relationship_repair:selfDirection@planet|Mars|0|10|、relationship_repair:freedom@planet|Mercury|10|12|+novelty、relationship_repair:visibility@planet|Moon|4|7|+emotionalResponse、relationship_repair:depthTrust@planet|Pluto|7|8|+intensity、relationship_repair:harmony@planet|Uranus|6|1|、relationship_repair:structure@planet|Neptune|9|5|、relationship_repair:dialogue@planet|Mercury|2|9|、relationship_repair:consistency@planet|Venus|1|4|+harmony
 - fallback：0%
-- 重複風險：title/detail 0.2；headline/detail 0；跨命盤 1
+- 重複風險：title/detail 0.2；headline/detail 0.27；跨命盤 1
 - WARNING：其中兩張測試盤的主結論較接近，原因是主導語義或落座相同
 
 ### 我適合負責哪些工作內容？（career-work-type）— WARNING
