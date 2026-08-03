@@ -396,10 +396,39 @@ function houseOfLongitude(chart, lon) {
   return 12;
 }
 
-function renderRhythmCell(iconHtml, value, label) {
-  return '<div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px">' + iconHtml
-    + '<div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;text-align:center;line-height:1.35">' + esc(value) + '</div>'
-    + '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62)">' + esc(label) + '</div></div>';
+/* 每一格原本是一個獨立的 flex column（圖示／數值／標籤直向排列）。問題是各格
+   之間沒有任何高度關聯：圖示有的是 19px 字符、有的是 22px 圓點、有的是 17px 的
+   「#」，數值有的一行、有的兩三行——結果每一格的標籤都落在不同高度，手機上看
+   起來就是整排沒對齊。
+
+   改成把整排交給同一個 grid：先輸出所有格子的圖示，再輸出所有數值，最後輸出所有
+   標籤。CSS grid 是 row-major 自動排版，所以這三批各自落在第 1／2／3 列，同一列
+   的高度由該列最高的內容決定，所有格子自然對齊。不依賴 subgrid，舊瀏覽器也適用。 */
+function renderRhythmCell(iconHtml, value, label, valueHtml) {
+  return {
+    icon: iconHtml,
+    value: valueHtml || ('<div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;text-align:center;line-height:1.35">' + esc(value) + '</div>'),
+    label: label,
+  };
+}
+function renderRhythmGrid(cells, containerStyle) {
+  if (!cells || !cells.length) return '';
+  /* minmax(0,1fr) 而非 1fr：1fr 的最小值是 auto，內容一長格子就會撐開，
+     四欄在 320px 上會整排溢出畫面。 */
+  var h = '<div style="display:grid;grid-template-columns:repeat(' + cells.length + ',minmax(0,1fr));padding:12px 0;' + (containerStyle || '') + '">';
+  /* 第 1 列：圖示。固定高度並置中，讓大小不一的符號落在同一條基線上。 */
+  cells.forEach(function (c) {
+    h += '<div style="min-width:0;height:24px;display:flex;align-items:center;justify-content:center" aria-hidden="true">' + c.icon + '</div>';
+  });
+  /* 第 2 列：數值。靠上對齊，多行的格子往下長，不會把自己的標籤推歪。 */
+  cells.forEach(function (c) {
+    h += '<div style="min-width:0;display:flex;align-items:flex-start;justify-content:center;padding:7px 3px 0">' + c.value + '</div>';
+  });
+  /* 第 3 列：標籤。因為和上面兩列同屬一個 grid，整排一定切齊。 */
+  cells.forEach(function (c) {
+    h += '<div style="min-width:0;text-align:center;padding:5px 2px 0;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);line-height:1.4">' + esc(c.label) + '</div>';
+  });
+  return h + '</div>';
 }
 
 function renderDailyRhythm(chart, transitPlanets, scores, unknownTime, selectedDate) {
@@ -432,9 +461,7 @@ function renderDailyRhythm(chart, transitPlanets, scores, unknownTime, selectedD
 
   var h = '<div style="margin-top:22px">';
   h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-align:center">今天的節奏</div>';
-  h += '<div style="display:grid;grid-template-columns:repeat(' + cells.length + ',1fr);border-top:1px solid rgba(201,169,110,.15);margin-top:8px">';
-  cells.forEach(function (cellHtml) { h += cellHtml; });
-  h += '</div>';
+  h += renderRhythmGrid(cells, 'border-top:1px solid rgba(201,169,110,.15);margin-top:8px');
   h += '<div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.8;margin-top:8px;padding:0 2px">'
     + esc(MOON_ELEMENT_RHYTHM[elem] || '') + esc(stage.hint) + '。</div>';
   /* 每一項都說得出是怎麼算的——這一區以前是亂數挑的，現在要讓人可以驗證 */
@@ -492,9 +519,7 @@ function renderPeriodTone(overall, scores, periodLabel) {
   ];
   var h = '<div style="margin-top:22px">';
   h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-align:center">' + esc(periodLabel || '這段期間的節奏') + '</div>';
-  h += '<div style="display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid rgba(201,169,110,.15);margin-top:8px">';
-  cells.forEach(function (cellHtml) { h += cellHtml; });
-  h += '</div>';
+  h += renderRhythmGrid(cells, 'border-top:1px solid rgba(201,169,110,.15);margin-top:8px');
   h += '<div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.8;margin-top:8px;padding:0 2px">' + esc(band.hint) + '。</div>';
   h += '</div>';
   return h;
@@ -573,16 +598,23 @@ function renderPlanetaryDayRow(date, city) {
   ];
   /* 極區的永晝永夜算不出日出日落，這一格就不顯示，不用「全天」之類的話矇混 */
   if (hours.length) {
-    cells.push(renderRhythmCell('<div style="font-size:17px">◷</div>', hours.join('　'), '幸運時段'));
+    /* 原本是 hours.join('　')，兩個時段用全形空白串成一個字串丟給格子——
+       瀏覽器會把它當成一段可換行的文字，在窄螢幕上斷成「05:22–06:2 / 8
+       13:06– / 14:12」這種亂七八糟的三行。改成每個時段各自一行、各自
+       nowrap，時間本身永遠不會被拆開。 */
+    var hoursHtml = '<div style="display:flex;flex-direction:column;align-items:center;gap:2px">'
+      + hours.map(function (range) {
+          return '<span style="white-space:nowrap;font:600 11.5px \'Noto Sans TC\',sans-serif;font-size:clamp(10px,2.8vw,11.5px);color:#f0e9d8;line-height:1.35;letter-spacing:-.02em">' + esc(range) + '</span>';
+        }).join('')
+      + '</div>';
+    cells.push(renderRhythmCell('<div style="font-size:17px">◷</div>', hours.join('、'), '幸運時段', hoursHtml));
   }
 
   var h = '<div style="margin-top:18px">';
-  h += '<div style="display:grid;grid-template-columns:repeat(' + cells.length + ',1fr);border-top:1px solid rgba(201,169,110,.15)">';
-  cells.forEach(function (cellHtml) { h += cellHtml; });
-  h += '</div>';
+  h += renderRhythmGrid(cells, 'border-top:1px solid rgba(201,169,110,.15)');
   h += '<div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.8;margin-top:8px;padding:0 2px">'
     + '今天是' + esc(info.zh) + '日，' + esc(info.tone) + '。</div>';
-  h += '<details style="margin-top:6px"><summary style="font:500 10.5px \'Noto Sans TC\',sans-serif;color:#c9a96e;cursor:pointer">這三項是怎麼算出來的？</summary>'
+  h += '<details style="margin-top:6px"><summary style="font:500 10.5px \'Noto Sans TC\',sans-serif;color:#c9a96e;cursor:pointer">' + (hours.length ? '這四項' : '這三項') + '是怎麼算出來的？</summary>'
     + '<div style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.85;margin-top:6px">'
     + '星期天到星期六依序由日、月、火、水、木、金、土主管，這也是英文星期名稱的由來；今天是'
     + esc(info.zh) + '日，顏色與數字沿用這顆行星的傳統對應。'

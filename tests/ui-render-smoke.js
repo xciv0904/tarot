@@ -252,6 +252,49 @@ if (c.renderAngleAndHouseBeginner(c.GOLDEN_TEST_CHARTS[0]) !== '') {
 }
 c.state.astroUnknownTime = false;
 
+/* ---------- 節奏資訊列的欄位對齊（2026-08 手機回報） ---------- */
+/* 回報：手機上「今日主星／幸運色／幸運數字／幸運時段」四格沒有對齊，
+   幸運時段還會斷成三行。原因是每格各自是獨立的 flex column，格與格之間
+   沒有高度關聯；而幸運時段是用全形空白把兩個時段串成一個可換行字串。
+   現在整排改由 renderRhythmGrid() 以「三列共用高度」的方式輸出。 */
+(function checkRhythmGrid() {
+  /* 幸運時段那一格需要日出日落，得先把天文引擎載進同一個 context。 */
+  try { vm.runInContext(read('assets/vendor/astronomy-engine-2.1.19.min.js'), c, { filename: 'astronomy' }); }
+  catch (e) { fail('節奏資訊列', '無法載入天文引擎進行驗證：' + e.message); return; }
+
+  const city = c.CITY_LIST.find(x => x.zh === '台北') || c.CITY_LIST[0];
+  const html = c.renderPlanetaryDayRow(new Date('2026-08-03T09:00:00Z'), city);
+  if (!html) { fail('節奏資訊列', 'renderPlanetaryDayRow 沒有輸出'); return; }
+
+  const colMatch = html.match(/grid-template-columns:repeat\((\d+),minmax\(0,1fr\)\)/);
+  if (!colMatch) { fail('節奏資訊列', '沒有使用 minmax(0,1fr) 的 grid，窄螢幕會被內容撐開而溢出'); return; }
+  const n = Number(colMatch[1]);
+
+  const icons  = (html.match(/height:24px;display:flex;align-items:center;justify-content:center/g) || []).length;
+  const values = (html.match(/align-items:flex-start;justify-content:center/g) || []).length;
+  const labels = [...html.matchAll(/font:400 10px[^>]*>([^<]+)</g)].map(m => m[1]);
+  if (icons !== n || values !== n || labels.length !== n) {
+    fail('節奏資訊列', `三列格數不一致（欄=${n} 圖示=${icons} 數值=${values} 標籤=${labels.length}），欄位會對不齊`);
+  }
+  /* 每個時段必須各自 nowrap，時間字串不得被拆開。 */
+  const times = [...html.matchAll(/white-space:nowrap[^>]*>([^<]+)</g)].map(m => m[1]);
+  if (!times.length) fail('節奏資訊列', '幸運時段沒有以 nowrap 逐段輸出');
+  times.forEach(t => {
+    if (!/^\d{2}:\d{2}–\d{2}:\d{2}$/.test(t)) fail('節奏資訊列', '幸運時段格式異常：' + t);
+  });
+  if (times.length > 1 && html.includes(times.join('　'))) {
+    fail('節奏資訊列', '幸運時段又被全形空白串成單一可換行字串');
+  }
+  /* 字級必須隨視窗縮放，否則 320px 上四欄放不下 11 個字的時間字串。 */
+  if (!/font-size:clamp\(/.test(html)) fail('節奏資訊列', '幸運時段字級沒有使用 clamp()，320px 會溢出欄寬');
+  /* 摺疊標題的項數要跟實際格數一致。 */
+  const foldTitle = (html.match(/>(這[三四]項)是怎麼算出來的？</) || [])[1];
+  const expected = n === 4 ? '這四項' : '這三項';
+  if (foldTitle !== expected) fail('節奏資訊列', `摺疊標題寫「${foldTitle}」但實際有 ${n} 格`);
+  /* renderRhythmCell 現在回傳物件，任何漏改的呼叫端都會把 [object Object] 印到畫面上。 */
+  if (html.includes('[object Object]')) fail('節奏資訊列', '有呼叫端仍把 renderRhythmCell() 當字串串接');
+})();
+
 /* ---------- 輸出 ---------- */
 console.log('# 畫面渲染煙霧測試');
 console.log('');
