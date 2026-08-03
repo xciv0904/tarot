@@ -602,7 +602,7 @@ function aspectBeginnerDataUnique(asp, usedLeadTpls) {
 }
 function renderAspectBeginnerCard(asp) {
   var d=aspectBeginnerData(asp);
-  return '<article style="border-top:1px solid rgba(201,169,110,.15);padding:12px 0"><div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">'+esc(d.title)+'</div><div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.75;margin-top:5px">'+esc(d.lead)+'</div><div style="margin-top:7px;font:400 11px \'Noto Sans TC\',sans-serif;color:#9bc5a3;line-height:1.65">優勢：'+esc(d.strength)+'</div><div style="margin-top:3px;font:400 11px \'Noto Sans TC\',sans-serif;color:#d9a0a0;line-height:1.65">容易卡住：'+esc(d.watch)+'</div><div style="margin-top:3px;font:400 11px \'Noto Sans TC\',sans-serif;color:#e6cd9a;line-height:1.65">可以怎麼練習：'+esc(d.practice)+'</div><details style="margin-top:8px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);cursor:pointer">查看相位名稱、容許度與專業解讀</summary><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.7;margin-top:6px">'+esc(aspectPlacementText(asp))+'</div></details></article>';
+  return '<article style="border-top:1px solid rgba(201,169,110,.15);padding:12px 0"><div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">'+esc(d.title)+'</div><div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.75;margin-top:5px">'+esc(d.lead)+'</div><div style="margin-top:7px;font:400 11px \'Noto Sans TC\',sans-serif;color:#9bc5a3;line-height:1.65">優勢：'+esc(d.strength)+'</div><div style="margin-top:3px;font:400 11px \'Noto Sans TC\',sans-serif;color:#d9a0a0;line-height:1.65">容易卡住：'+esc(d.watch)+'</div><div style="margin-top:3px;font:400 11px \'Noto Sans TC\',sans-serif;color:#e6cd9a;line-height:1.65">可以怎麼練習：'+esc(d.practice)+'</div><details style="margin-top:8px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);cursor:pointer">查看相位名稱、容許度與專業解讀</summary><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.7;margin-top:6px">'+esc(aspectPlacementText(asp))+'</div></details></article>';
 }
 
 /* 本命盤相位專用解讀。舊 ASPECT_BEGINNER 保留給合盤與推運使用。 */
@@ -787,7 +787,7 @@ function renderNatalAspectCard(asp, chart, unknownTime, usedSet) {
     h+='<div style="margin-top:7px;font:400 11px \'Noto Sans TC\',sans-serif;color:#9bc5a3;line-height:1.65">'+esc(d.strength)+'</div>';
     h+='<div style="margin-top:3px;font:400 11px \'Noto Sans TC\',sans-serif;color:#d9a0a0;line-height:1.65">'+esc(d.challenge)+'</div>';
   }
-  h+='<details style="margin-top:7px"><summary style="min-height:44px;display:flex;align-items:center;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);cursor:pointer">查看相位原理與整合方式</summary><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.6);line-height:1.8;margin-top:2px"><div>'+esc(d.advanced.functions)+'</div><div style="margin-top:5px">'+esc(d.advanced.principle)+'</div><div style="margin-top:5px">'+esc(d.advanced.context)+'</div><div style="margin-top:5px">'+esc(d.advanced.expression)+'</div><div style="margin-top:5px;color:#e6cd9a">整合方式：'+esc(d.advanced.integration)+'</div><div style="margin-top:5px;color:rgba(240,233,216,.45)">'+esc(d.technical)+'</div></div></details>';
+  h+='<details style="margin-top:7px"><summary style="min-height:44px;display:flex;align-items:center;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);cursor:pointer">查看相位原理與整合方式</summary><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.6);line-height:1.8;margin-top:2px"><div>'+esc(d.advanced.functions)+'</div><div style="margin-top:5px">'+esc(d.advanced.principle)+'</div><div style="margin-top:5px">'+esc(d.advanced.context)+'</div><div style="margin-top:5px">'+esc(d.advanced.expression)+'</div><div style="margin-top:5px;color:#e6cd9a">整合方式：'+esc(d.advanced.integration)+'</div><div style="margin-top:5px;color:rgba(240,233,216,.62)">'+esc(d.technical)+'</div></div></details>';
   return h+'</article>';
 }
 
@@ -843,7 +843,7 @@ function renderElementQualitySummary(chart) {
     h += '<div style="text-align:center"><div style="font:700 16px \'Noto Serif TC\',serif;color:#e6cd9a">' + eq.qual[k] + '</div><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">' + k + '</div></div>';
   });
   h += '</div>';
-  h += '<div style="margin-top:9px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.48);line-height:1.7">本位＝先開始；固定＝持續做；變動＝彈性調整。數字是十大行星落入各類星座的數量，不代表分數高低。</div></details>';
+  h += '<div style="margin-top:9px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);line-height:1.7">本位＝先開始；固定＝持續做；變動＝彈性調整。數字是十大行星落入各類星座的數量，不代表分數高低。</div></details>';
   h += '</div>';
   return h;
 }
@@ -857,7 +857,7 @@ function renderAngleAndHouseBeginner(chart) {
   h+='<div style="margin-top:8px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.8"><strong style="color:#f0e9d8">第一印象：</strong>別人剛認識你時，容易感受到你'+esc(SIGN_BEGINNER[chart.ascSign].behavior)+'。</div>';
   h+='<div style="margin-top:5px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.8"><strong style="color:#f0e9d8">工作與公共形象：</strong>你傾向用「'+esc(SIGN_BEGINNER[Math.floor(chart.mc/30)].mode)+'」的方式建立專業形象。</div>';
   if(top.length) h+='<div style="margin-top:10px;font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e">能量最常出現的生活領域</div>'+top.map(function(k){var hb=HOUSE_BEGINNER[parseInt(k,10)-1];return '<div style="margin-top:5px;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.7);line-height:1.7">第 '+k+' 宮：'+esc(hb.area)+'（'+counts[k]+' 顆行星）</div>';}).join('');
-  h+='<details style="margin-top:10px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);cursor:pointer">查看 ASC、MC 與宮位分布</summary><div style="margin-top:6px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.75">ASC '+asc.zh+' '+(chart.asc%30).toFixed(1)+'°；MC '+mc.zh+' '+(chart.mc%30).toFixed(1)+'°。'+top.map(function(k){return '第'+k+'宮：'+names[k].join('、');}).join('；')+'。宮位數量代表關注集中處，不代表吉凶。</div></details></section>';
+  h+='<details style="margin-top:10px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);cursor:pointer">查看 ASC、MC 與宮位分布</summary><div style="margin-top:6px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.75">ASC '+asc.zh+' '+(chart.asc%30).toFixed(1)+'°；MC '+mc.zh+' '+(chart.mc%30).toFixed(1)+'°。'+top.map(function(k){return '第'+k+'宮：'+names[k].join('、');}).join('；')+'。宮位數量代表關注集中處，不代表吉凶。</div></details></section>';
   return h;
 }
 
@@ -1009,14 +1009,14 @@ function renderCityLiveBlock(prefix, genFnName) {
   });
   h += '</div>';
   if (matches.length === 0 && query && query.trim()) {
-    h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);margin-top:8px">查無此城市，試試看用中文城市名或英文拼音（例如 Tokyo、New York）搜尋</div>';
+    h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:8px">查無此城市，試試看用中文城市名或英文拼音（例如 Tokyo、New York）搜尋</div>';
   }
   if (state[prefix + 'CityIdx'] != null) {
     h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:8px">已選擇：' + CITY_LIST[state[prefix + 'CityIdx']].zh + '</div>';
   } else if (state[prefix + 'Y'] && state[prefix + 'M'] && state[prefix + 'D']) {
-    h += '<div role="status" style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-top:8px">請從上方選擇或搜尋你的出生地，才能生成星盤</div>';
+    h += '<div role="status" style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:8px">請從上方選擇或搜尋你的出生地，才能生成星盤</div>';
   }
-  if (prefix !== 'astro') h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.3);margin-top:16px;line-height:1.7">🔒 出生資料只會儲存在你自己的裝置（瀏覽器）中，不會上傳到任何伺服器。</div>';
+  if (prefix !== 'astro') h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:16px;line-height:1.7">🔒 出生資料只會儲存在你自己的裝置（瀏覽器）中，不會上傳到任何伺服器。</div>';
   var birthErr = validateBirthDate(state[prefix + 'Y'], state[prefix + 'M'], state[prefix + 'D'], state[prefix + 'H'], state[prefix + 'Min'], state[prefix + 'UnknownTime']);
   /* 整體完成度提示要分開算「日期」跟「時間」兩項，不能直接用 birthErr——
      birthErr 是驗證函式回傳的單一訊息，日期沒填完跟時間沒填完都會讓它有值，
@@ -1037,9 +1037,22 @@ function renderCityLiveBlock(prefix, genFnName) {
   /* 整體完成度提示——延伸自上面「未選出生地」這類逐欄提示，一次看到還差幾項，
      不用逐欄自己數；按鈕能不能按仍然照舊用 birthErr／cityDone 判斷，不受這裡影響 */
   if (!ready) {
-    h += '<div role="status" style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);margin-top:10px;text-align:center">已完成 ' + doneCount + ' / 3 項（出生日期・出生時間・出生地）</div>';
+    h += '<div role="status" style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.6);margin-top:10px;text-align:center">已完成 ' + doneCount + ' / 3 項（出生日期・出生時間・出生地）</div>';
+  } else {
+    /* 送出前的資料確認摘要：把三個分開的輸入框重新組成一句人看得懂的話，
+       並且明講時區與「未知時間」造成的影響，避免打錯一位數字卻整盤算錯還不自知。 */
+    var cfCity = CITY_LIST[state[prefix + 'CityIdx']];
+    h += '<div role="status" style="margin-top:12px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface);padding:10px 13px">';
+    h += '<div style="font:500 11px var(--font-sans);color:var(--brand)">請確認以下資料</div>';
+    h += '<div style="font:500 12.5px var(--font-sans);color:var(--text);margin-top:4px;line-height:1.7">'
+      + esc(state[prefix + 'Y'] + ' 年 ' + parseInt(state[prefix + 'M'], 10) + ' 月 ' + parseInt(state[prefix + 'D'], 10) + ' 日')
+      + '　' + (state[prefix + 'UnknownTime'] ? '時間未知' : esc(pad2(state[prefix + 'H']) + ':' + pad2(state[prefix + 'Min'])))
+      + '　' + esc(cfCity ? cfCity.zh : '') + '</div>';
+    h += '<div style="font:400 10.5px var(--font-sans);color:var(--text-muted);margin-top:3px">時區 ' + esc(cfCity ? cfCity.tz : '') + '（含當地歷史日光節約時間，已自動換算）</div>';
+    if (state[prefix + 'UnknownTime']) h += '<div style="font:400 10.5px/1.7 var(--font-sans);color:var(--warning);margin-top:4px">△ 未提供出生時間：上升、天頂、宮位與月亮相關結論會被省略，不會給出看似精確卻沒有依據的答案。</div>';
+    h += '</div>';
   }
-  h += '<button onclick="' + genFnName + '()" ' + (ready && !generating ? '' : 'disabled') + ' style="width:100%;margin-top:8px;padding:13px;border-radius:12px;border:1px solid ' + (ready ? '#c9a96e' : 'rgba(201,169,110,.2)') + ';background:' + (ready ? 'linear-gradient(135deg,#c9a96e,#a9835a)' : 'rgba(255,255,255,.03)') + ';color:' + (ready ? '#1a1622' : 'rgba(240,233,216,.3)') + ';font:600 14px \'Noto Sans TC\',sans-serif;cursor:pointer">' + btnLabel + '</button>';
+  h += '<button onclick="' + genFnName + '()" aria-busy="' + generating + '" ' + (ready && !generating ? '' : 'disabled') + ' style="width:100%;min-height:var(--control-h);margin-top:8px;padding:13px;border-radius:12px;border:1px solid ' + (ready ? '#c9a96e' : 'rgba(201,169,110,.2)') + ';background:' + (ready ? 'linear-gradient(135deg,#c9a96e,#a9835a)' : 'rgba(255,255,255,.03)') + ';color:' + (ready ? '#1a1622' : 'rgba(240,233,216,.3)') + ';font:600 14px \'Noto Sans TC\',sans-serif;cursor:pointer">' + btnLabel + '</button>';
   return h;
 }
 function updateCityLiveBlock(prefix, genFnName) {
@@ -1135,7 +1148,7 @@ function astroExportProfile() {
     a.href = url; a.download = '我的星盤資料.json';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-  } catch (e) { alert('匯出失敗，你的瀏覽器可能不支援檔案下載'); }
+  } catch (e) { astroSetNotice('error', '匯出失敗，你的瀏覽器可能不支援檔案下載。已輸入的出生資料沒有變動，可以改用截圖或手動記下資料。'); render(); }
 }
 /* 匯入的是使用者自己挑的任意檔案，所以在丟給 JSON.parse 之前先擋掉明顯不合理的輸入：
    正常的星盤備份檔只有幾百個位元組，這裡放寬到 64KB；沒有上限的話，使用者不小心選到
@@ -1146,18 +1159,19 @@ function astroImportProfileFile(fileInput) {
   var file = fileInput.files && fileInput.files[0];
   if (!file) return;
   if (file.size > IMPORT_MAX_BYTES) {
-    alert('這個檔案太大（超過 64KB），不像是本站匯出的星盤資料檔案');
+    astroSetNotice('error', '這個檔案太大（超過 64KB），不像是本站匯出的星盤資料檔案。請改選本站「匯出星盤資料備份」產生的 .json 檔。');
     fileInput.value = '';
+    render();
     return;
   }
   var reader = new FileReader();
-  reader.onerror = function () { alert('檔案讀取失敗，請再試一次'); };
+  reader.onerror = function () { astroSetNotice('error', '檔案讀取失敗，你目前的星盤與出生資料都沒有變動，可以直接再試一次。'); render(); };
   reader.onload = function (e) {
     var data;
-    try { data = JSON.parse(e.target.result); } catch (e2) { alert('匯入失敗，檔案格式不正確'); return; }
-    if (!data || typeof data !== 'object' || data.type !== 'mystic-deck-natal-profile') { alert('這不是本站匯出的星盤資料檔案'); return; }
+    try { data = JSON.parse(e.target.result); } catch (e2) { astroSetNotice('error', '匯入失敗：檔案內容不是有效的 JSON。目前的星盤與已輸入資料保持不變。'); render(); return; }
+    if (!data || typeof data !== 'object' || data.type !== 'mystic-deck-natal-profile') { astroSetNotice('error', '這不是本站匯出的星盤資料檔案。請選擇檔名通常為「我的星盤資料.json」的備份檔。'); render(); return; }
     var err = validateBirthDate(data.y, data.m, data.d, data.h, data.min, !!data.unknownTime);
-    if (err) { alert('匯入的資料有問題：' + err); return; }
+    if (err) { astroSetNotice('error', '匯入的資料有問題：' + err + '　目前畫面上的星盤沒有被覆蓋。'); render(); return; }
     var cityIdx = null;
     if (data.cityZh) {
       var found = CITY_LIST.findIndex(function (c) { return c.zh === data.cityZh; });
@@ -1171,7 +1185,7 @@ function astroImportProfileFile(fileInput) {
     if (cityIdx != null) {
       astroGenerate();
     } else {
-      alert('匯入成功，但找不到對應的城市，請重新選擇出生地後按「生成星盤」');
+      astroSetNotice('info', '出生日期與時間已匯入，但備份檔裡的城市不在城市清單中。請重新選擇出生地後再按「生成星盤」。');
       render();
     }
   };
@@ -1184,12 +1198,18 @@ function astroForget() {
   state.astroCityQuery = ''; state.astroCityIdx = null; state.astroCityUsed = null;
   state.astroUnknownTime = false; state.astroHouseSystem = 'placidus'; state.astroResult = null;
   resetNatalTopicAnalysisForChartChange();
+  astroSetNotice('success', '已清除這台裝置上儲存的出生資料與星盤結果。');
   render(); window.scrollTo(0, 0);
 }
 async function astroGenerate() {
+  /* 重複點擊防護：按鈕在 generating 期間雖然是 disabled，但快速連點、或匯入流程
+     直接呼叫本函式時仍可能重入，導致同一份資料被算兩次、後一次覆蓋前一次。
+     擋在函式最前面才是可靠的位置。 */
+  if (state.astroGenerating) return;
   var city = CITY_LIST[state.astroCityIdx];
   if (!city || !state.astroY || !state.astroM || !state.astroD) return;
   if (validateBirthDate(state.astroY, state.astroM, state.astroD, state.astroH, state.astroMin, state.astroUnknownTime)) { render(); return; }
+  astroSetNotice(null, '');
   /* 星盤運算（10大行星＋凱龍星軌道解算＋宮位）在舊手機上可能會有感卡頓，
      先顯示「計算中」讓畫面更新一次，下一個 tick 才真正跑運算，避免按下去畫面
      整個凍住、使用者以為沒反應而重複點擊。 */
@@ -1199,8 +1219,9 @@ async function astroGenerate() {
     await ensureAstronomyLoaded();
   } catch (e) {
     state.astroGenerating = false;
+    /* 保留使用者已輸入的年月日時分與城市，只回報失敗；恢復連線後直接再按一次即可。 */
+    astroSetNotice('error', '星盤計算元件載入失敗，可能是網路不穩。你剛剛輸入的出生資料都還在，恢復連線後再按一次「生成星盤」就好。');
     render();
-    try { alert('星盤計算元件載入失敗，請確認網路後重新整理頁面再試一次。'); } catch (e2) {}
     return;
   }
   setTimeout(function () {
@@ -1211,6 +1232,7 @@ async function astroGenerate() {
     resetNatalTopicAnalysisForChartChange();
     state.astroCityUsed = city;
     state.astroGenerating = false;
+    astroSetNotice('success', '星盤已依照上方「目前命盤」的出生資料重新計算完成。');
     astroSaveProfile();
     if (state.returnToReadingAfterAstro) {
       state.returnToReadingAfterAstro = false;
@@ -1256,17 +1278,17 @@ function renderBirthInputForm(prefix, promptText, genFnName) {
 
   h += '<div style="margin-top:16px;display:flex;justify-content:space-between;align-items:center">';
   h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">出生時間</div>';
-  h += '<label style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" ' + (state[prefix + 'UnknownTime'] ? 'checked' : '') + ' onchange="' + prefix + 'ToggleUnknownTime()">不確定時間（以正午 12:00 估算）</label>';
+  h += '<label style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" ' + (state[prefix + 'UnknownTime'] ? 'checked' : '') + ' onchange="' + prefix + 'ToggleUnknownTime()">不確定時間（以正午 12:00 估算）</label>';
   h += '</div>';
   if (state[prefix + 'UnknownTime']) {
-    h += '<div style="margin-top:6px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);line-height:1.7">勾選後：這個人的上升／宮位與月亮相關的比對會被省略，其餘行星星座的比對仍然準確——如果對方不確定自己的出生時間，一樣可以照這樣繼續。</div>';
+    h += '<div style="margin-top:6px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);line-height:1.7">勾選後：這個人的上升／宮位與月亮相關的比對會被省略，其餘行星星座的比對仍然準確——如果對方不確定自己的出生時間，一樣可以照這樣繼續。</div>';
   }
   if (!state[prefix + 'UnknownTime']) {
     h += '<div style="display:flex;gap:8px;margin-top:6px">';
     h += '<input id="'+prefix+'-h" aria-label="出生小時" inputmode="numeric" min="0" max="23" type="number" placeholder="時 HH (0-23)" value="' + esc(state[prefix + 'H']) + '" oninput="state.' + prefix + 'H=this.value;birthAutoNext(this,\''+prefix+'-min\',2)" onblur="render()" style="width:50%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
     h += '<input id="'+prefix+'-min" aria-label="出生分鐘" inputmode="numeric" min="0" max="59" type="number" placeholder="分 MM" value="' + esc(state[prefix + 'Min']) + '" oninput="state.' + prefix + 'Min=this.value;birthAutoNext(this,\''+prefix+'-city\',2)" onblur="render()" style="width:50%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
     h += '</div>';
-    h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:5px">時間會影響上升星座與宮位，請盡量提供準確的出生時間</div>';
+    h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:5px">時間會影響上升星座與宮位，請盡量提供準確的出生時間</div>';
   }
 
   h += '<div style="margin-top:16px;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">出生地</div>';
@@ -4483,9 +4505,21 @@ function natalTopicToggleExpand(qId) {
   state.natalTopicExpanded[qId] = !state.natalTopicExpanded[qId];
   render();
 }
+/* 由 <details ontoggle> 呼叫：只把瀏覽器已經完成的展開／收合狀態同步進 state，
+   刻意不呼叫 render()——這裡如果重畫，使用者點開的那一瞬間畫面會重建，
+   反而造成捲動位置跳動。 */
+function natalTopicSetExpanded(qId, open) {
+  state.natalTopicExpanded[qId] = !!open;
+}
 function natalTopicSetExplanationMode(professional) {
+  if (!!state.natalTopicProfessional === !!professional) return;
   state.natalTopicProfessional = !!professional;
+  /* 切換閱讀深度只是換一層顯示，不重新排盤、不重新分析（state.natalTopicResult
+     完全沒有被動到），也不該把使用者彈回頁首——記下捲動位置，重畫後還原。
+     已展開的「為什麼這樣說？」由 state.natalTopicExpanded 保留。 */
+  var y = (window.pageYOffset || document.documentElement.scrollTop || 0);
   render();
+  window.scrollTo(0, y);
 }
 function natalTopicToggleShowAll(catKey) {
   state.natalTopicShowAll[catKey] = !state.natalTopicShowAll[catKey];
@@ -4580,9 +4614,111 @@ function natalHeadlineForTitle(title, headline) {
   return h;
 }
 
+/* ================= 目前命盤身分列 =================
+   使用者可以在同一台裝置上反覆改出生資料重算，先前畫面上只有「宮位制」一行
+   小字，看不出眼前這一整頁的落點、相位與主題分析到底是哪一組出生資料算出來的。
+   這條身分列固定顯示在星盤頁所有子分頁的最上方，內容全部來自 state.astroCityUsed
+   與 state.astroResult（也就是「真正被拿去算盤的那一份」，不是輸入框現值），
+   所以只要它顯示的是 A，畫面下方就不可能混到 B 的結果。 */
+function astroActiveChartIdentity() {
+  var chart = state.astroResult;
+  if (!chart) return null;
+  var city = state.astroCityUsed;
+  var unknown = !!state.astroUnknownTime;
+  var y = parseInt(state.astroY, 10), m = parseInt(state.astroM, 10), d = parseInt(state.astroD, 10);
+  var dateText = (isFinite(y) && isFinite(m) && isFinite(d)) ? (y + ' 年 ' + m + ' 月 ' + d + ' 日') : '—';
+  var timeText = unknown ? '未提供（以當日 12:00 估算）' : (pad2(state.astroH) + ':' + pad2(state.astroMin));
+  return {
+    date: dateText,
+    time: timeText,
+    unknownTime: unknown,
+    city: city ? city.zh : '—',
+    tz: city ? city.tz : '—',
+    houseSystem: state.astroHouseSystem === 'whole' ? '整宮制 Whole Sign' : '普拉西德制 Placidus',
+    zodiac: '回歸黃道 Tropical',
+    fingerprint: natalChartFingerprint(chart, unknown),
+  };
+}
+function renderChartIdentityBar() {
+  var id = astroActiveChartIdentity();
+  if (!id) return '';
+  var h = '<div class="md-chartbar" aria-label="目前使用的命盤資料">';
+  h += '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap">';
+  h += '<span style="font:500 11px var(--font-sans);color:var(--brand)">目前命盤</span>';
+  h += '<span class="md-kind md-kind--fact">排盤資料</span>';
+  h += '</div>';
+  h += '<div style="font:500 12.5px var(--font-sans);color:var(--text);margin-top:4px">' + esc(id.date) + '　' + esc(id.time) + '　' + esc(id.city) + '</div>';
+  h += '<div class="md-chartbar__row">';
+  h += '<span class="md-chartbar__item">時區 <b>' + esc(id.tz) + '</b></span>';
+  h += '<span class="md-chartbar__item">宮位制 <b>' + esc(id.houseSystem) + '</b></span>';
+  h += '<span class="md-chartbar__item">黃道 <b>' + esc(id.zodiac) + '</b></span>';
+  h += '</div>';
+  if (id.unknownTime) {
+    h += '<div style="margin-top:6px;font:400 10.5px/1.7 var(--font-sans);color:var(--warning)">△ 出生時間未提供：上升、天頂、宮位、福點與宿命點不列入計算與解讀。</div>';
+  }
+  if (natalTopicDevelopmentMode()) {
+    h += '<div style="margin-top:6px;font:400 9px/1.6 monospace;color:var(--text-faint)">dev · chartFingerprint=' + esc(id.fingerprint)
+      + ' · view=' + esc(String(state.astroView || 'chart'))
+      + ' · topicId=' + esc(String(state.natalTopicCat || '-'))
+      + ' · promptVersion=' + esc(String(NATAL_TOPIC_PROMPT_VERSION))
+      + ' · knowledgeVersion=' + esc(String(NATAL_TOPIC_KNOWLEDGE_VERSION)) + '</div>';
+  }
+  return h + '</div>';
+}
+
+/* ================= 星盤頁的即時狀態訊息 =================
+   原本失敗路徑一律走 alert()：會擋住整個畫面、無法被輔助技術以「頁面內容」讀取、
+   在 iOS PWA 有時甚至不會出現，而且訊息消失後使用者不知道剛剛發生什麼事。
+   改成寫進 state 由畫面渲染，錯誤訊息會留在原地，而且已輸入的資料完全不動。 */
+function astroSetNotice(kind, text) {
+  state.astroNotice = text ? { kind: kind, text: text } : null;
+}
+function astroClearNotice() { state.astroNotice = null; render(); }
+function renderAstroNotice() {
+  var n = state.astroNotice;
+  if (!n) return '';
+  var cls = n.kind === 'error' ? 'md-status--error' : (n.kind === 'success' ? 'md-status--success' : 'md-status--info');
+  var icon = n.kind === 'error' ? '✕' : (n.kind === 'success' ? '✓' : 'ⓘ');
+  var prefix = n.kind === 'error' ? '錯誤：' : (n.kind === 'success' ? '完成：' : '提示：');
+  return '<div class="md-status ' + cls + '" role="' + (n.kind === 'error' ? 'alert' : 'status') + '">'
+    + '<span class="md-status__icon" aria-hidden="true">' + icon + '</span>'
+    + '<span><b style="font-weight:500">' + prefix + '</b>' + esc(n.text) + '</span>'
+    + '<button type="button" onclick="astroClearNotice()" aria-label="關閉這則訊息" style="margin-left:auto;flex:none;background:none;border:none;color:var(--text-faint);font-size:14px;cursor:pointer;min-width:32px;min-height:32px">×</button>'
+    + '</div>';
+}
+
+/* ================= 命盤總覽 → 主題分析的橋接入口 =================
+   資訊架構上，「看懂自己的盤」之後最自然的下一步是「那我想問什麼」，
+   但這兩件事先前分屬兩個平行分頁，使用者看完總覽只會看到一長串行星落點，
+   沒有任何提示告訴他還能往哪走。這個區塊放在快速總覽正下方，
+   點任何一個主題都會直接切到人生主題分頁並選好該主題。 */
+function astroGoToTopic(catKey) {
+  state.astroView = 'natalTopic';
+  if (state.natalTopicCat !== catKey) {
+    state.natalTopicCat = catKey;
+    /* 換主題等於換問題集合，先前那份結果不再對應，直接清掉不留殘影。 */
+    state.natalTopicResult = null;
+    state.natalTopicLimitHit = '';
+  }
+  render();
+  window.scrollTo(0, 0);
+}
+function renderTopicEntryBlock() {
+  if (typeof NATAL_TOPIC_CATEGORIES === 'undefined') return '';
+  var h = '<section style="margin-top:16px;border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 15px;background:var(--surface)">';
+  h += '<h3 class="md-h3" style="font-size:14px">接下來，你想先了解什麼？</h3>';
+  h += '<p class="md-note md-prose" style="margin:5px 0 0">選一個主題，會用上面這張盤的資料回答你挑的具體問題。</p>';
+  h += '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:10px">';
+  NATAL_TOPIC_CATEGORIES.forEach(function (cat) {
+    h += '<button type="button" onclick="astroGoToTopic(\'' + cat.key + '\')" style="min-height:var(--control-h);font:500 12px var(--font-sans);background:rgba(201,169,110,.06);border:1px solid var(--border);color:var(--text-secondary);padding:8px 14px;border-radius:20px;cursor:pointer">' + cat.icon + ' ' + esc(cat.zh) + '</button>';
+  });
+  h += '</div></section>';
+  return h;
+}
+
 function renderNatalTopicQuestionCard(a) {
   var h = '<div style="margin-top:16px;border:1px solid rgba(201,169,110,.28);border-radius:14px;padding:16px 17px;background:rgba(255,255,255,.025);box-shadow:0 1px 0 rgba(255,255,255,.02) inset">';
-  h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(201,169,110,.75);letter-spacing:.03em">' + esc(a.title) + '</div>';
+  h += '<h4 style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(201,169,110,.85);letter-spacing:.03em;margin:0">' + esc(a.title) + '</h4>';
   h += '<div style="font:600 15px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:6px;line-height:1.6">' + esc(natalHeadlineForTitle(a.title, a.headline)) + '</div>';
   if (a.contractStatus === 'insufficient') {
     h += '<div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.58);line-height:1.75;margin-top:7px">' + esc(a.summary) + '</div>';
@@ -4598,7 +4734,11 @@ function renderNatalTopicQuestionCard(a) {
   if (a.caution) {
     h += '<div style="margin-top:11px;display:flex;gap:7px;align-items:flex-start"><span style="flex:none;font:500 10px \'Noto Sans TC\',sans-serif;color:#d9a0a0;background:rgba(214,120,120,.12);border-radius:8px;padding:2px 7px;margin-top:1px">實用提醒</span><div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.68);line-height:1.75">' + esc(a.caution) + '</div></div>';
   }
-  h += '<details style="margin-top:10px;border-top:1px solid rgba(201,169,110,.14);padding-top:8px"><summary style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(201,169,110,.8);cursor:pointer;min-height:36px;display:flex;align-items:center">為什麼這樣說？</summary>';
+  /* 展開狀態必須綁到 state：每次切換白話／專業、換題目或任何 render() 都會整段
+     重畫 innerHTML，未受控的 <details> 會全部塌回收合，使用者剛讀到一半的依據
+     就不見了。state.natalTopicExpanded 原本就宣告了卻沒有任何地方讀取，這裡把它接上。 */
+  var evOpen = !!state.natalTopicExpanded[a.questionId];
+  h += '<details' + (evOpen ? ' open' : '') + ' ontoggle="natalTopicSetExpanded(\'' + esc(a.questionId) + '\',this.open)" style="margin-top:10px;border-top:1px solid rgba(201,169,110,.14);padding-top:8px"><summary style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(201,169,110,.9);cursor:pointer;min-height:36px;display:flex;align-items:center;gap:6px"><span>為什麼這樣說？</span><span class="md-kind md-kind--rule">綜合判斷</span></summary>';
   h += '<div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.68);line-height:1.8;padding:2px 0 6px">' + esc(natalPlainEvidenceExplanation(a)) + '</div>';
   if (state.natalTopicProfessional) {
     h += '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed rgba(201,169,110,.2)">';
@@ -4608,7 +4748,7 @@ function renderNatalTopicQuestionCard(a) {
         var roles = (e.sourceRoles && e.sourceRoles.length > 1) ? ('<span style="font:400 9.5px \'Noto Sans TC\',sans-serif;color:rgba(201,169,110,.6)">［' + e.sourceRoles.length + ' 個指標角色同時指向這筆配置：' + esc(e.sourceRoles.join('、')) + '］</span>') : '';
         var effective = e.selectionScore == null ? e.weight : e.selectionScore;
         var scoreText = effective === e.weight ? ('權重 ' + e.weight) : ('原始 ' + e.weight + '＋題目調整 ' + (e.biasBonus >= 0 ? '+' : '') + e.biasBonus + '＝有效 ' + effective);
-        h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.7;margin-top:6px">・' + esc(e.placement) + '（' + scoreText + '）<br><span style="color:#9bc5a3">支持：</span>' + esc(e.semanticSupport || e.reason) + '<br><span style="color:#d9a0a0">限制：</span>' + esc(e.semanticLimitation || '不能單獨決定整體結論') + (e.fallbackUsed ? '<br><span style="color:rgba(240,233,216,.45)">替代資料：' + esc(e.fallbackSource + '；' + e.fallbackReason) + '</span>' : '') + (roles ? '<br>' + roles : '') + '</div>';
+        h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.7;margin-top:6px">・' + esc(e.placement) + '（' + scoreText + '）<br><span style="color:#9bc5a3">支持：</span>' + esc(e.semanticSupport || e.reason) + '<br><span style="color:#d9a0a0">限制：</span>' + esc(e.semanticLimitation || '不能單獨決定整體結論') + (e.fallbackUsed ? '<br><span style="color:rgba(240,233,216,.62)">替代資料：' + esc(e.fallbackSource + '；' + e.fallbackReason) + '</span>' : '') + (roles ? '<br>' + roles : '') + '</div>';
       });
     } else {
       h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:4px">目前沒有可用的指標。</div>';
@@ -4637,12 +4777,30 @@ function renderNatalTopicQuestionCard(a) {
   return h;
 }
 function renderNatalTopicResult(result) {
+  var pro = !!state.natalTopicProfessional;
   var h = '<div style="margin-top:22px;border-top:1px solid rgba(201,169,110,.2);padding-top:16px">';
-  h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;letter-spacing:.05em">主題總覽</div>';
-  h += '<div style="font:400 12.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.82);line-height:1.85;margin-top:6px">' + esc(result.topicOverview) + '</div>';
-  h += '<div style="display:flex;justify-content:flex-end;gap:6px;margin-top:10px"><span style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);padding:6px 2px">依據顯示</span>';
-  h += '<button type="button" aria-pressed="' + !state.natalTopicProfessional + '" onclick="natalTopicSetExplanationMode(false)" style="font:500 10.5px \'Noto Sans TC\',sans-serif;border:1px solid rgba(201,169,110,.3);border-radius:12px;padding:5px 9px;background:' + (!state.natalTopicProfessional ? 'rgba(201,169,110,.18)' : 'transparent') + ';color:#c9a96e;cursor:pointer">白話</button>';
-  h += '<button type="button" aria-pressed="' + !!state.natalTopicProfessional + '" onclick="natalTopicSetExplanationMode(true)" style="font:500 10.5px \'Noto Sans TC\',sans-serif;border:1px solid rgba(201,169,110,.3);border-radius:12px;padding:5px 9px;background:' + (state.natalTopicProfessional ? 'rgba(201,169,110,.18)' : 'transparent') + ';color:#c9a96e;cursor:pointer">專業</button></div>';
+
+  /* 全頁只講一次的可信度說明——原本沒有任何地方告訴使用者「下面這些句子是規則
+     推導出來的解讀，不是排盤計算結果」。放在主題結果最上方講一次就好，
+     不在每張卡片重複長篇免責聲明。 */
+  h += '<div style="display:flex;flex-wrap:wrap;gap:6px">';
+  h += '<span class="md-kind md-kind--fact">排盤資料</span>';
+  h += '<span class="md-kind md-kind--rule">綜合判斷</span>';
+  h += '<span class="md-kind md-kind--reading">解讀文字</span>';
+  h += '</div>';
+  h += '<p class="md-note md-prose" style="margin:6px 0 0">下方每張卡片的答案屬於<strong style="color:var(--success);font-weight:500">解讀文字</strong>——它由本站的規則整合你的排盤資料而成，描述的是本命傾向，不是計算出來的事件或近期預測。展開「為什麼這樣說？」可以往回追到<strong style="color:var(--brand);font-weight:500">綜合判斷</strong>與原始<strong style="color:var(--info);font-weight:500">排盤資料</strong>。</p>';
+
+  h += '<h4 style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;letter-spacing:.05em;margin:14px 0 0">主題總覽</h4>';
+  h += '<div class="md-prose" style="font:400 12.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.82);line-height:1.85;margin-top:6px">' + esc(result.topicOverview) + '</div>';
+
+  /* 閱讀深度切換：加上群組名稱與目前狀態文字，避免只靠底色深淺表示選中。 */
+  h += '<div role="group" aria-label="閱讀深度" style="display:flex;justify-content:flex-end;align-items:center;gap:6px;margin-top:10px;flex-wrap:wrap">';
+  h += '<span style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.6);padding:6px 2px">閱讀深度</span>';
+  h += '<button type="button" aria-pressed="' + (!pro) + '" onclick="natalTopicSetExplanationMode(false)" style="min-height:36px;font:500 10.5px \'Noto Sans TC\',sans-serif;border:1px solid ' + (!pro ? '#e6cd9a' : 'rgba(201,169,110,.3)') + ';border-radius:12px;padding:5px 9px;background:' + (!pro ? 'rgba(201,169,110,.18)' : 'transparent') + ';color:' + (!pro ? '#f0e9d8' : '#c9a96e') + ';cursor:pointer">' + (!pro ? '✓ ' : '') + '一般</button>';
+  h += '<button type="button" aria-pressed="' + pro + '" onclick="natalTopicSetExplanationMode(true)" style="min-height:36px;font:500 10.5px \'Noto Sans TC\',sans-serif;border:1px solid ' + (pro ? '#e6cd9a' : 'rgba(201,169,110,.3)') + ';border-radius:12px;padding:5px 9px;background:' + (pro ? 'rgba(201,169,110,.18)' : 'transparent') + ';color:' + (pro ? '#f0e9d8' : '#c9a96e') + ';cursor:pointer">' + (pro ? '✓ ' : '') + '專業</button>';
+  h += '</div>';
+  h += '<div role="status" style="text-align:right;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.6);margin-top:3px">目前：' + (pro ? '專業模式（在一般內容之上，額外列出行星／星座／宮位／相位、權重、替代資料與解讀限制）' : '一般模式（只顯示白話結論、生活表現與做法）') + '　結論本身不會因模式而改變。</div>';
+
   result.answers.forEach(function (a) { h += renderNatalTopicQuestionCard(a); });
   h += '<div style="text-align:center;margin-top:18px;padding-bottom:8px"><button id="natal-topic-copy-btn" onclick="natalTopicCopyForAI()" style="min-height:44px;font:400 12px \'Noto Sans TC\',sans-serif;background:none;border:1px solid rgba(201,169,110,.4);color:#c9a96e;padding:10px 20px;border-radius:20px;cursor:pointer">複製給 AI 解讀 Copy for AI</button></div>';
   h += '</div>';
@@ -4650,7 +4808,7 @@ function renderNatalTopicResult(result) {
 }
 function renderNatalTopicSection(chart) {
   var h = '<div style="margin-top:8px">';
-  h += '<div style="font:600 15px \'Noto Serif TC\',serif;color:#f0e9d8">人生主題分析</div>';
+  h += '<h3 style="font:600 15px \'Noto Serif TC\',serif;color:#f0e9d8;margin:0">人生主題分析</h3>';
   h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:5px;line-height:1.6">直接整合你目前的本命盤資料解讀，不會重新排盤，也不會把你的問題直接丟給外部 AI。</div>';
 
   h += '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:14px">';
@@ -4661,7 +4819,7 @@ function renderNatalTopicSection(chart) {
   h += '</div>';
 
   if (!state.natalTopicCat) {
-    h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-top:10px">先選一個主題，才能挑選想了解的具體問題。</div>';
+    h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:10px">先選一個主題，才能挑選想了解的具體問題。</div>';
     return h + '</div>';
   }
 
@@ -4673,17 +4831,17 @@ function renderNatalTopicSection(chart) {
   if (catKey === 'wealth') h += '<div style="margin-top:12px;border:1px solid rgba(214,120,120,.35);border-radius:10px;padding:10px 13px;background:rgba(214,120,120,.06);font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.7">⚠ ' + esc(FINANCE_DISCLAIMER) + '</div>';
 
   h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">';
-  h += '<div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">想了解的具體問題</div>';
+  h += '<h4 style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin:0">想了解的具體問題</h4>';
   h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:' + (sel.length >= 3 ? '#e6cd9a' : 'rgba(240,233,216,.4)') + '">已選 ' + sel.length + '／3</div>';
   h += '</div>';
-  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);margin-top:4px">先從推薦問題開始，最多可選 3 題。</div>';
+  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:4px">先從推薦問題開始，最多可選 3 題。</div>';
   var showAllQuestions = !!state.natalTopicShowAll[catKey];
   var visibleQuestions = questions.filter(function (q, i) { return showAllQuestions || i < 3 || sel.indexOf(q.id) !== -1; });
   h += '<div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">';
   visibleQuestions.forEach(function (q, qi) {
     var active = sel.indexOf(q.id) !== -1;
     var preview = (q.answerTargets || []).slice(0, 2).join('、');
-    h += '<button type="button" aria-pressed="' + active + '" onclick="natalTopicToggleQ(\'' + catKey + '\',\'' + q.id + '\')" style="min-height:54px;text-align:left;font:400 11.5px \'Noto Sans TC\',sans-serif;background:' + (active ? 'rgba(201,169,110,.22)' : 'rgba(201,169,110,.06)') + ';border:1px solid ' + (active ? '#e6cd9a' : 'rgba(201,169,110,.28)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.78)') + ';padding:10px 12px;border-radius:10px;cursor:pointer"><span style="font-weight:500">' + (active ? '✓ ' : (qi < 3 ? '推薦　' : '')) + esc(q.title) + '</span>' + (preview ? '<span style="display:block;font-size:10px;color:rgba(240,233,216,.4);margin-top:4px;line-height:1.5">會分析：' + esc(preview) + '</span>' : '') + '</button>';
+    h += '<button type="button" aria-pressed="' + active + '" onclick="natalTopicToggleQ(\'' + catKey + '\',\'' + q.id + '\')" style="min-height:54px;text-align:left;font:400 11.5px \'Noto Sans TC\',sans-serif;background:' + (active ? 'rgba(201,169,110,.22)' : 'rgba(201,169,110,.06)') + ';border:1px solid ' + (active ? '#e6cd9a' : 'rgba(201,169,110,.28)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.78)') + ';padding:10px 12px;border-radius:10px;cursor:pointer"><span style="font-weight:500">' + (active ? '✓ ' : (qi < 3 ? '推薦　' : '')) + esc(q.title) + '</span>' + (preview ? '<span style="display:block;font-size:10px;color:rgba(240,233,216,.62);margin-top:4px;line-height:1.5">會分析：' + esc(preview) + '</span>' : '') + '</button>';
   });
   h += '</div>';
   if (questions.length > 3) {
@@ -4698,8 +4856,24 @@ function renderNatalTopicSection(chart) {
   h += '</div>';
 
   h += '<div id="natal-topic-result">';
-  if (state.natalTopicResult && state.natalTopicResult.topicId === catKey && state.natalTopicResult.chartFingerprint === natalChartFingerprint(chart, !!state.astroUnknownTime) && state.natalTopicResult.promptVersion === NATAL_TOPIC_PROMPT_VERSION && state.natalTopicResult.knowledgeVersion === NATAL_TOPIC_KNOWLEDGE_VERSION) {
+  /* 這四個條件缺一不可：主題相符、指紋相符（同一張盤）、以及產生當下的
+     prompt／knowledge 版本相符。任何一項不符都代表畫面上這份結果已經不是
+     「目前這張盤、這個主題」的答案，寧可要求重新產生，也不顯示殘留內容。 */
+  var natalTopicFresh = !!(state.natalTopicResult
+    && state.natalTopicResult.topicId === catKey
+    && state.natalTopicResult.chartFingerprint === natalChartFingerprint(chart, !!state.astroUnknownTime)
+    && state.natalTopicResult.promptVersion === NATAL_TOPIC_PROMPT_VERSION
+    && state.natalTopicResult.knowledgeVersion === NATAL_TOPIC_KNOWLEDGE_VERSION);
+  if (natalTopicFresh) {
     h += renderNatalTopicResult(state.natalTopicResult);
+  } else if (state.natalTopicResult) {
+    /* 出生資料、宮位制或「不確定時間」被改過之後回到這一頁。先前是直接什麼都不畫，
+       使用者只會看到結果憑空消失，不知道發生什麼事，也不知道下一步要做什麼。 */
+    h += '<div class="md-status md-status--info" role="status"><span class="md-status__icon" aria-hidden="true">ⓘ</span>'
+      + '<span>星盤資料已經改變（出生資料、宮位制或出生時間設定有更動），先前的分析結果不再對應目前這張盤，已經停止顯示以免混淆。你選的題目都還在，按一次「產生專題分析」就會用新的盤重新計算。</span></div>';
+  } else {
+    h += '<div class="md-status md-status--info" role="status"><span class="md-status__icon" aria-hidden="true">ⓘ</span>'
+      + '<span>還沒有分析結果。選好題目後按「產生專題分析」，結果會直接顯示在這裡。</span></div>';
   }
   h += '</div>';
 
@@ -4778,14 +4952,17 @@ function renderAstro() {
     return '<div style="padding:70px 20px;text-align:center;color:rgba(240,233,216,.5);font:400 13px \'Noto Sans TC\',sans-serif">星盤功能載入中…</div>';
   }
   var h = '<div style="padding:8px 20px 20px">';
-  h += '<div style="font:400 11px \'EB Garamond\',serif;letter-spacing:.3em;color:#c9a96e;text-transform:uppercase;text-align:center">Natal Chart</div>';
-  h += '<div style="font:600 20px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:4px;text-align:center">個人星盤</div>';
+  h += '<div style="font:400 11px \'EB Garamond\',serif;letter-spacing:.3em;color:#c9a96e;text-transform:uppercase;text-align:center" aria-hidden="true">Natal Chart</div>';
+  /* 頁面主標題改用真正的 h2：整個 app 的內容都由 JS 字串產生，先前完全沒有標題階層，
+     螢幕閱讀器只能一路線性讀下去，無法用標題快速跳段。 */
+  h += '<h2 style="font:600 20px \'Noto Serif TC\',serif;color:#f0e9d8;margin:4px 0 0;text-align:center">個人星盤</h2>';
+  h += renderAstroNotice();
 
   if (!state.astroResult) {
     h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.58);margin-top:14px;line-height:1.7;text-align:center">填寫三項出生資料，了解你的性格、關係模式與人生主題。</div>';
     h += '<div style="margin-top:12px;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px 13px;background:rgba(255,255,255,.02);font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);line-height:1.75">🔒 資料只保存在這台裝置。不知道出生時間也可以建立星盤，但部分結果會省略。</div>';
     h += '<div style="text-align:center;margin-top:10px">';
-    h += '<label style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">換新裝置了嗎？點此匯入之前備份的星盤資料<input type="file" accept="application/json,.json" onchange="astroImportProfileFile(this)" style="display:none"></label>';
+    h += '<label style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">換新裝置了嗎？點此匯入之前備份的星盤資料<input type="file" accept="application/json,.json" onchange="astroImportProfileFile(this)" style="display:none"></label>';
     h += '</div>';
 
     h += '<div style="margin-top:22px;font:600 12px \'Noto Sans TC\',sans-serif;color:#c9a96e">1　出生日期</div>';
@@ -4802,14 +4979,14 @@ function renderAstro() {
     h += '<label style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" ' + (state.astroUnknownTime ? 'checked' : '') + ' onchange="astroToggleUnknownTime()">我不知道確切時間</label>';
     h += '</div>';
     if (state.astroUnknownTime) {
-      h += '<div style="margin-top:6px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);line-height:1.7">勾選後：不會顯示上升／天頂／宮位，也會省略跟月亮相關的相位；十大行星本身的星座位置仍然準確。</div>';
+      h += '<div style="margin-top:6px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);line-height:1.7">勾選後：不會顯示上升／天頂／宮位，也會省略跟月亮相關的相位；十大行星本身的星座位置仍然準確。</div>';
     }
     if (!state.astroUnknownTime) {
       h += '<div style="display:flex;gap:8px;margin-top:6px">';
       h += '<input id="astro-h" aria-label="出生小時" inputmode="numeric" min="0" max="23" type="number" placeholder="時 HH (0-23)" value="' + esc(state.astroH) + '" oninput="state.astroH=this.value;birthAutoNext(this,\'astro-min\',2)" onblur="render()" style="width:50%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
       h += '<input id="astro-min" aria-label="出生分鐘" inputmode="numeric" min="0" max="59" type="number" placeholder="分 MM" value="' + esc(state.astroMin) + '" oninput="state.astroMin=this.value;birthAutoNext(this,\'astro-city\',2)" onblur="render()" style="width:50%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
       h += '</div>';
-      h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:5px">時間會影響上升星座與宮位，請盡量提供準確的出生時間</div>';
+      h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:5px">時間會影響上升星座與宮位，請盡量提供準確的出生時間</div>';
     }
     h += '<div style="margin-top:18px;font:600 12px \'Noto Sans TC\',sans-serif;color:#c9a96e">3　出生城市</div>';
     h += '<input id="astro-city" aria-label="搜尋出生城市" type="text" placeholder="搜尋城市，例如：台北、Tokyo" value="' + esc(state.astroCityQuery) + '" oninput="astroCityInput(this.value)" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
@@ -4844,8 +5021,11 @@ function renderAstro() {
       MORE_ASTRO_TABS.forEach(function (vt) { h += astroTabBtn(vt); });
       h += '</div>';
     }
-    h += '<div style="text-align:center;margin-top:8px"><button onclick="astroShowTour()" style="background:none;border:none;color:rgba(240,233,216,.35);font:400 10px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">不知道從哪開始？查看功能說明</button></div>';
+    h += '<div style="text-align:center;margin-top:8px"><button onclick="astroShowTour()" style="min-height:36px;background:none;border:none;color:rgba(240,233,216,.6);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.4);padding:0 0 1px">不知道從哪開始？查看功能說明</button></div>';
     if (!state.astroTourDismissed) h += renderAstroTourCard();
+    /* 命盤身分列放在分頁列下方、所有子分頁內容之上——不論使用者現在看的是
+       本命盤、人生主題、運勢還是合盤，都能立刻確認「這是哪一張盤」。 */
+    h += renderChartIdentityBar();
 
     if (state.astroView === 'natalTopic') {
       h += renderNatalTopicSection(chart);
@@ -4884,27 +5064,32 @@ function renderAstro() {
     else h += '<div style="margin-top:16px;padding:13px 15px;border:1px solid rgba(201,169,110,.3);border-radius:10px;background:rgba(201,169,110,.06);font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.8">這是無出生時間星盤：不顯示可能誤導的星盤輪盤、上升、天頂、宮位、福點與宿命點。月亮當日可能範圍：<strong style="color:#e6cd9a">' + esc(astroMoonRangeText()) + '</strong></div>';
 
     if (state.astroUnknownTime) {
-      h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-top:10px;text-align:center">＊出生時間未知：行星度數以當日中點呈現，月亮請以上方範圍為準。</div>';
+      h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:10px;text-align:center">＊出生時間未知：行星度數以當日中點呈現，月亮請以上方範圍為準。</div>';
     }
 
     /* 白話摘要排在星盤輪圖正下方、上升／天頂與宮位制這些專有名詞卡片之前，
        讓第一次使用、不懂占星的人先看得懂的內容，再往下看細節與技術選項 */
     h += renderAstroQuickSummary(chart);
+    /* 資訊架構：命盤身分 → 快速總覽 → 「你想先了解什麼」→（主題分頁）→ 詳細命盤資料。
+       主要行動放在使用者剛看懂總覽、最有動機往下問的位置。 */
+    h += renderTopicEntryBlock();
 
     if (!state.astroUnknownTime) {
     h += '<div style="display:flex;gap:10px;margin-top:16px;justify-content:center;text-align:center">';
-    h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">上升星座 ASC</div><div style="font:600 15px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + ascSignDef.sym + ' ' + ascSignDef.zh + '</div><div style="font:400 10px \'EB Garamond\',serif;color:rgba(240,233,216,.4)">' + (chart.asc % 30).toFixed(1) + '°</div></div>';
-    h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">天頂 MC</div><div style="font:600 15px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + mcSignDef.sym + ' ' + mcSignDef.zh + '</div><div style="font:400 10px \'EB Garamond\',serif;color:rgba(240,233,216,.4)">' + (chart.mc % 30).toFixed(1) + '°</div></div>';
+    h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62)">上升星座 ASC</div><div style="font:600 15px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + ascSignDef.sym + ' ' + ascSignDef.zh + '</div><div style="font:400 10px \'EB Garamond\',serif;color:rgba(240,233,216,.62)">' + (chart.asc % 30).toFixed(1) + '°</div></div>';
+    h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62)">天頂 MC</div><div style="font:600 15px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + mcSignDef.sym + ' ' + mcSignDef.zh + '</div><div style="font:400 10px \'EB Garamond\',serif;color:rgba(240,233,216,.62)">' + (chart.mc % 30).toFixed(1) + '°</div></div>';
     h += '</div>';
-    h += '<div style="text-align:center;margin-top:6px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.3)">宮位制：' + (state.astroHouseSystem === 'whole' ? '整宮制 Whole Sign' : '普拉西德制 Placidus') + '</div>';
+    h += '<div style="text-align:center;margin-top:6px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62)">宮位制：' + (state.astroHouseSystem === 'whole' ? '整宮制 Whole Sign' : '普拉西德制 Placidus') + '</div>';
     h += '<div style="display:flex;justify-content:center;gap:7px;margin-top:8px"><button aria-pressed="' + (state.astroHouseSystem==='placidus') + '" onclick="astroSetHouseSystem(\'placidus\')" style="background:none;border:1px solid rgba(201,169,110,.3);color:#c9a96e;padding:5px 9px;border-radius:12px;cursor:pointer">普拉西德</button><button aria-pressed="' + (state.astroHouseSystem==='whole') + '" onclick="astroSetHouseSystem(\'whole\')" style="background:none;border:1px solid rgba(201,169,110,.3);color:#c9a96e;padding:5px 9px;border-radius:12px;cursor:pointer">整宮制</button></div>';
-    h += '<div style="text-align:center;margin-top:4px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.32)">不確定選哪個？多數人用預設的「普拉西德制」就好，這裡切換只會改變宮位分法，行星星座不會變。</div>';
+    h += '<div style="text-align:center;margin-top:4px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62)">不確定選哪個？多數人用預設的「普拉西德制」就好，這裡切換只會改變宮位分法，行星星座不會變。</div>';
     }
 
     h += renderAngleAndHouseBeginner(chart);
     h += renderElementQualitySummary(chart);
 
-    h += '<details' + (state.astroOpenPlacements ? ' open' : '') + ' style="margin-top:22px" ontoggle="state.astroOpenPlacements=this.open;var c=this.querySelector(\'.astro-caret\');if(c)c.textContent=this.open?\'▾\':\'▸\'"><summary style="min-height:44px;display:flex;align-items:center;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;cursor:pointer;list-style:none"><span class="astro-caret" style="display:inline-block;width:12px">' + (state.astroOpenPlacements ? '▾' : '▸') + '</span>行星落點 Placements</summary>';
+    h += '<h3 class="md-h3" style="margin-top:24px;display:flex;align-items:center;gap:8px">詳細命盤資料 <span class="md-kind md-kind--fact">排盤資料</span></h3>';
+    h += '<p class="md-note md-prose" style="margin:5px 0 0">以下是直接由天文計算得到的位置與角度，不含解讀。三個區塊預設收合，需要時再展開。</p>';
+    h += '<details' + (state.astroOpenPlacements ? ' open' : '') + ' style="margin-top:12px" ontoggle="state.astroOpenPlacements=this.open;var c=this.querySelector(\'.astro-caret\');if(c)c.textContent=this.open?\'▾\':\'▸\'"><summary style="min-height:44px;display:flex;align-items:center;font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;cursor:pointer;list-style:none"><span class="astro-caret" style="display:inline-block;width:12px">' + (state.astroOpenPlacements ? '▾' : '▸') + '</span>行星落點 Placements</summary>';
     h += '<div style="margin-top:2px">';
     PLANET_DEFS.forEach(function (def) {
       var p = chart.planets[def.key];
@@ -4925,7 +5110,7 @@ function renderAstro() {
         + '<div style="margin-top:5px">'+esc(d.advanced.synthesis)+'</div>'
         + '<div style="margin-top:5px">'+esc(d.advanced.growth)+'</div>'
         + (p.retro ? '<div style="margin-top:5px;color:#b7a4d8">逆行：這股能量的展現較為內化，需要多一層自我覺察才會顯現在外，不代表不好或比較弱。</div>' : '')
-        + '<div style="margin-top:5px;color:rgba(240,233,216,.45)">'+esc(d.technical)+'</div>'
+        + '<div style="margin-top:5px;color:rgba(240,233,216,.62)">'+esc(d.technical)+'</div>'
         + '</div></details>';
       h += '</div>';
     });
@@ -4955,11 +5140,11 @@ function renderAstro() {
         + (r.advanced.axisContext ? '<div style="margin-top:5px">' + esc(r.advanced.axisContext) + '</div>' : '')
         + '<div style="margin-top:5px">' + esc(r.advanced.synthesis) + '</div>'
         + '<div style="margin-top:5px">' + esc(r.advanced.growth) + '</div>'
-        + '<div style="margin-top:5px;color:rgba(240,233,216,.45)">' + esc(r.technical) + '</div>'
+        + '<div style="margin-top:5px;color:rgba(240,233,216,.62)">' + esc(r.technical) + '</div>'
         + '</div></details>';
       h += '</div>';
     });
-    h += '<details style="margin-top:9px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.38);cursor:pointer">查看額外本命點的算法與精度</summary><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);line-height:1.7;margin-top:5px">凱龍星座標為簡化軌道模型估算，精度約在 0.2° 以內；莉莉絲／福點／交點採用平均點（mean）算法，屬主流占星軟體常見標準之一；出生地與時間的時區換算已自動套用當地歷史上的日光節約時間規則，不需要自行手動校正。</div></details>';
+    h += '<details style="margin-top:9px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);cursor:pointer">查看額外本命點的算法與精度</summary><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);line-height:1.7;margin-top:5px">凱龍星座標為簡化軌道模型估算，精度約在 0.2° 以內；莉莉絲／福點／交點採用平均點（mean）算法，屬主流占星軟體常見標準之一；出生地與時間的時區換算已自動套用當地歷史上的日光節約時間規則，不需要自行手動校正。</div></details>';
     h += '</div></details>';
 
     var usableAspects = astroUsableAspects(chart);
@@ -4982,8 +5167,8 @@ function renderAstro() {
     h += '<button id="astro-copy-btn" onclick="astroCopyForAI()" style="width:100%;margin-top:24px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製給 AI 解讀 Copy for AI</button>';
     h += '<button onclick="astroReset()" style="width:100%;margin-top:10px;padding:12px;border-radius:12px;border:1px solid rgba(201,169,110,.3);background:rgba(255,255,255,.02);color:rgba(240,233,216,.6);font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">重新輸入 ↺</button>';
     h += '<div style="text-align:center;margin-top:10px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap">';
-    h += '<button onclick="astroExportProfile()" style="background:none;border:none;color:rgba(240,233,216,.3);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">匯出星盤資料備份</button>';
-    h += '<button onclick="astroForget()" style="background:none;border:none;color:rgba(240,233,216,.3);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">清除已儲存的星盤資料</button>';
+    h += '<button onclick="astroExportProfile()" style="background:none;border:none;color:rgba(240,233,216,.62);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">匯出星盤資料備份</button>';
+    h += '<button onclick="astroForget()" style="background:none;border:none;color:rgba(240,233,216,.62);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">清除已儲存的星盤資料</button>';
     h += '</div>';
     h += renderAstroDetailModal(chart);
   }
@@ -5155,8 +5340,8 @@ async function synGenerate() {
     await ensureAstronomyLoaded();
   } catch (e) {
     state.synGenerating = false;
+    astroSetNotice('error', '星盤計算元件載入失敗，可能是網路不穩。對方的出生資料都還在，恢復連線後再按一次即可。');
     render();
-    try { alert('星盤計算元件載入失敗，請確認網路後重新整理頁面再試一次。'); } catch (e2) {}
     return;
   }
   setTimeout(function () {
@@ -5281,7 +5466,7 @@ function renderCrossAspectBeginnerCard(asp, usedSet) {
   var d = crossAspectEveryday(asp);
   var title = crossPointEveryday(asp.aKey, '你') + ' × ' + crossPointEveryday(asp.bKey, '對方');
   var lead = d.lead, strength = d.strength, watch = d.watch, practice = d.practice;
-  return '<article style="border-top:1px solid rgba(201,169,110,.15);padding:12px 0"><div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + esc(title) + '</div><div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.75;margin-top:5px">' + esc(lead) + '</div><div style="margin-top:7px;font:400 11px \'Noto Sans TC\',sans-serif;color:#9bc5a3;line-height:1.65">優勢：' + esc(strength) + '</div><div style="margin-top:3px;font:400 11px \'Noto Sans TC\',sans-serif;color:#d9a0a0;line-height:1.65">容易卡住：' + esc(watch) + '</div><div style="margin-top:3px;font:400 11px \'Noto Sans TC\',sans-serif;color:#e6cd9a;line-height:1.65">可以怎麼練習：' + esc(practice) + '</div><details style="margin-top:8px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);cursor:pointer">查看相位名稱、容許度與專業解讀</summary><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.7;margin-top:6px">' + esc(crossAspectText(asp, '本人', '對方')) + '</div></details></article>';
+  return '<article style="border-top:1px solid rgba(201,169,110,.15);padding:12px 0"><div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + esc(title) + '</div><div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.75;margin-top:5px">' + esc(lead) + '</div><div style="margin-top:7px;font:400 11px \'Noto Sans TC\',sans-serif;color:#9bc5a3;line-height:1.65">優勢：' + esc(strength) + '</div><div style="margin-top:3px;font:400 11px \'Noto Sans TC\',sans-serif;color:#d9a0a0;line-height:1.65">容易卡住：' + esc(watch) + '</div><div style="margin-top:3px;font:400 11px \'Noto Sans TC\',sans-serif;color:#e6cd9a;line-height:1.65">可以怎麼練習：' + esc(practice) + '</div><details style="margin-top:8px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);cursor:pointer">查看相位名稱、容許度與專業解讀</summary><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.7;margin-top:6px">' + esc(crossAspectText(asp, '本人', '對方')) + '</div></details></article>';
 }
 function synastryFlashCopied() {
   var btn = document.getElementById('syn-copy-btn');
@@ -5334,8 +5519,8 @@ function renderSynastry() {
   var score = computeSynastryScore(aspects);
   h += renderOverallScoreBlock(score, synRelationshipLabel() + '相性指數');
   h += '<div style="display:flex;gap:10px;margin-top:14px;text-align:center">';
-  h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">本人</div><div style="font:600 13px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + (state.astroUnknownTime ? '出生時間未知' : ZODIAC_SIGNS[chartA.ascSign].sym + ' ' + ZODIAC_SIGNS[chartA.ascSign].zh + '上升') + '</div><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:2px">' + ZODIAC_SIGNS[chartA.planets.Sun.sign].zh + '太陽　' + ZODIAC_SIGNS[chartA.planets.Moon.sign].zh + '月亮</div></div>';
-  h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">對方</div><div style="font:600 13px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + (state.synUnknownTime ? '出生時間未知' : ZODIAC_SIGNS[chartB.ascSign].sym + ' ' + ZODIAC_SIGNS[chartB.ascSign].zh + '上升') + '</div><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:2px">' + ZODIAC_SIGNS[chartB.planets.Sun.sign].zh + '太陽　' + ZODIAC_SIGNS[chartB.planets.Moon.sign].zh + '月亮</div></div>';
+  h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62)">本人</div><div style="font:600 13px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + (state.astroUnknownTime ? '出生時間未知' : ZODIAC_SIGNS[chartA.ascSign].sym + ' ' + ZODIAC_SIGNS[chartA.ascSign].zh + '上升') + '</div><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:2px">' + ZODIAC_SIGNS[chartA.planets.Sun.sign].zh + '太陽　' + ZODIAC_SIGNS[chartA.planets.Moon.sign].zh + '月亮</div></div>';
+  h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62)">對方</div><div style="font:600 13px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + (state.synUnknownTime ? '出生時間未知' : ZODIAC_SIGNS[chartB.ascSign].sym + ' ' + ZODIAC_SIGNS[chartB.ascSign].zh + '上升') + '</div><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:2px">' + ZODIAC_SIGNS[chartB.planets.Sun.sign].zh + '太陽　' + ZODIAC_SIGNS[chartB.planets.Moon.sign].zh + '月亮</div></div>';
   h += '</div>';
 
   var harmonious = aspects.filter(function (a) { return a.type === 'trine' || a.type === 'sextile'; }).length;
@@ -5549,7 +5734,7 @@ function renderProgressionYearCard(row, natal, usedSet) {
   var open = state.progExpandedYear === row.index;
   var h = '<article style="margin-top:10px;border:1px solid ' + (row.isTransition ? 'rgba(230,205,154,.55)' : 'rgba(201,169,110,.22)') + ';border-radius:12px;background:rgba(255,255,255,.02);overflow:hidden">';
   h += '<button aria-expanded="' + open + '" onclick="progToggleYear(' + row.index + ')" style="display:block;width:100%;text-align:left;background:none;border:0;color:inherit;padding:13px 14px;cursor:pointer">';
-  h += '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div style="font:600 17px \'Noto Serif TC\',serif;color:#e6cd9a">' + row.year + '</div><div style="display:flex;gap:6px;align-items:center">' + (row.isTransition ? '<span style="font:600 10px \'Noto Sans TC\',sans-serif;color:#211b15;background:#e6cd9a;border-radius:10px;padding:3px 7px">轉折年</span>' : '') + '<span style="font:400 15px sans-serif;color:rgba(240,233,216,.45)">' + (open ? '−' : '＋') + '</span></div></div>';
+  h += '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div style="font:600 17px \'Noto Serif TC\',serif;color:#e6cd9a">' + row.year + '</div><div style="display:flex;gap:6px;align-items:center">' + (row.isTransition ? '<span style="font:600 10px \'Noto Sans TC\',sans-serif;color:#211b15;background:#e6cd9a;border-radius:10px;padding:3px 7px">轉折年</span>' : '') + '<span style="font:400 15px sans-serif;color:rgba(240,233,216,.62)">' + (open ? '−' : '＋') + '</span></div></div>';
   h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.82);margin-top:5px;line-height:1.65">' + esc(row.theme) + '</div>';
   h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"><span style="font:400 10px \'Noto Sans TC\',sans-serif;color:#c9a96e">☽ ' + moon.zh + '</span><span style="font:400 10px \'Noto Sans TC\',sans-serif;color:#c9a96e">☉ ' + sun.zh + '</span>' + row.focuses.map(function(f){return '<span style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);border:1px solid rgba(201,169,110,.2);border-radius:10px;padding:2px 6px">'+f+'</span>';}).join('') + '</div>';
   /* 這一句取的就是第一組相位的內文，展開後那段會再完整出現一次。
@@ -5564,8 +5749,8 @@ function renderProgressionYearCard(row, natal, usedSet) {
        把全貌講完，再細講最緊密的三組。 */
     if (typeof renderProgressionYearAspects === 'function') h += renderProgressionYearAspects(row);
     var expandedUsedSet = {};
-    row.aspects.slice(0, 3).forEach(function (a) { var d=progressionAspectPlain(a, expandedUsedSet); h += '<div style="border-top:1px solid rgba(201,169,110,.12);padding:9px 0"><div style="font:600 11px \'Noto Sans TC\',sans-serif;color:#f0e9d8">'+esc(d.title)+'</div><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.7;margin-top:4px">'+esc(d.text)+'</div><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:#e6cd9a;line-height:1.65;margin-top:4px">建議：'+esc(d.practice)+'</div><details style="margin-top:6px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);cursor:pointer">查看推運相位、容許度與專業解讀</summary><div style="margin-top:5px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.52);line-height:1.65">'+esc(crossAspectText(a,'本命','推運'))+'</div></details></div>'; });
-    h += '<details style="margin-top:8px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);cursor:pointer">查看推運太陽、月亮精確位置</summary><div style="margin-top:5px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.7">推運月亮：'+moon.zh+' '+p.planets.Moon.deg.toFixed(1)+'°；推運太陽：'+sun.zh+' '+p.planets.Sun.deg.toFixed(1)+'°。</div></details>';
+    row.aspects.slice(0, 3).forEach(function (a) { var d=progressionAspectPlain(a, expandedUsedSet); h += '<div style="border-top:1px solid rgba(201,169,110,.12);padding:9px 0"><div style="font:600 11px \'Noto Sans TC\',sans-serif;color:#f0e9d8">'+esc(d.title)+'</div><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.7;margin-top:4px">'+esc(d.text)+'</div><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:#e6cd9a;line-height:1.65;margin-top:4px">建議：'+esc(d.practice)+'</div><details style="margin-top:6px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);cursor:pointer">查看推運相位、容許度與專業解讀</summary><div style="margin-top:5px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.52);line-height:1.65">'+esc(crossAspectText(a,'本命','推運'))+'</div></details></div>'; });
+    h += '<details style="margin-top:8px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);cursor:pointer">查看推運太陽、月亮精確位置</summary><div style="margin-top:5px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.7">推運月亮：'+moon.zh+' '+p.planets.Moon.deg.toFixed(1)+'°；推運太陽：'+sun.zh+' '+p.planets.Sun.deg.toFixed(1)+'°。</div></details>';
     if (!row.aspects.length) h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);line-height:1.7">這一年沒有容許度內特別緊密的主要相位，適合延續既有節奏。</div>';
     h += '</div>';
   }
@@ -5577,7 +5762,7 @@ function renderProgression() {
   var years = buildProgressionYears(chart, city, state.progYears || 1);
 
   var h = '<div style="font:600 16px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:6px;text-align:center">二次推運 Secondary Progression</div>';
-  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);text-align:center;margin-top:6px;line-height:1.6">從現在開始，看見未來不同年份的內在發展節奏</div>';
+  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);text-align:center;margin-top:6px;line-height:1.6">從現在開始，看見未來不同年份的內在發展節奏</div>';
 
   h += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:14px">';
   [1,3,5,10].forEach(function(n){var on=state.progYears===n;h+='<button aria-pressed="'+on+'" onclick="progSetYears('+n+')" style="padding:8px 4px;border-radius:10px;border:1px solid '+(on?'#c9a96e':'rgba(201,169,110,.28)')+';background:'+(on?'rgba(201,169,110,.18)':'rgba(255,255,255,.02)')+';color:'+(on?'#f0e9d8':'rgba(240,233,216,.55)')+';font:500 11px \'Noto Sans TC\',sans-serif;cursor:pointer">'+n+' 年</button>';});
@@ -5604,7 +5789,7 @@ function renderProgression() {
   var yearCardUsedSet = {};
   visible.forEach(function(row){h += renderProgressionYearCard(row, chart, yearCardUsedSet);});
   if (state.progYears === 1) h += renderProgressionMonths(chart, city);
-  if (state.astroUnknownTime) h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.38);line-height:1.7;margin-top:10px">＊出生時間未知：不採用上升、天頂、宮位及月亮相關相位；推運月亮位置僅作概略階段參考。</div>';
+  if (state.astroUnknownTime) h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);line-height:1.7;margin-top:10px">＊出生時間未知：不採用上升、天頂、宮位及月亮相關相位；推運月亮位置僅作概略階段參考。</div>';
 
   h += renderPersonaPicker();
   h += '<button id="prog-copy-btn" onclick="progressionCopyForAI()" style="width:100%;margin-top:22px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製未來 ' + state.progYears + ' 年給 AI 解讀</button>';
@@ -5702,11 +5887,11 @@ function xiuDeleteSavedPartner(idx, ev) {
 }
 function renderXiuSavedPartnerPicker() {
   if (!state.xiuSavedPartners.length) return '';
-  var h = '<div style="margin-top:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-bottom:5px">常用對象，點一下快速帶入</div><div style="display:flex;flex-wrap:wrap;gap:6px">';
+  var h = '<div style="margin-top:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-bottom:5px">常用對象，點一下快速帶入</div><div style="display:flex;flex-wrap:wrap;gap:6px">';
   state.xiuSavedPartners.forEach(function (p, idx) {
     h += '<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.03);border:1px solid rgba(201,169,110,.3);border-radius:14px;padding:4px 5px 4px 11px">';
     h += '<button onclick="xiuSelectSavedPartner(' + idx + ')" style="background:none;border:none;color:rgba(240,233,216,.75);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;padding:0">' + esc(p.name) + '</button>';
-    h += '<button onclick="xiuDeleteSavedPartner(' + idx + ',event)" aria-label="刪除存檔" style="background:none;border:none;color:rgba(240,233,216,.3);font:400 13px sans-serif;cursor:pointer;padding:0 4px;line-height:1">×</button>';
+    h += '<button onclick="xiuDeleteSavedPartner(' + idx + ',event)" aria-label="刪除存檔" style="background:none;border:none;color:rgba(240,233,216,.62);font:400 13px sans-serif;cursor:pointer;padding:0 4px;line-height:1">×</button>';
     h += '</span>';
   });
   h += '</div></div>';
@@ -5754,7 +5939,7 @@ function renderXiuModeNav() {
 function renderXiu28() {
   xiuPrefillFromAstro();
   var h = '<div style="font:600 16px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:6px;text-align:center">二十八星宿 28 Lunar Mansions</div>';
-  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);text-align:center;margin-top:6px;line-height:1.6">中國古代天文將黃道分成 28 個區域，自古用於擇日與命理參考</div>';
+  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);text-align:center;margin-top:6px;line-height:1.6">中國古代天文將黃道分成 28 個區域，自古用於擇日與命理參考</div>';
   h += renderXiuModeNav();
 
   if (state.xiuMode === 'personal') {
@@ -5766,9 +5951,9 @@ function renderXiu28() {
       h += '<button id="xiu-copy-btn" onclick="xiuCopyForAI()" style="width:100%;margin-top:16px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製給 AI 解讀 Copy for AI</button>';
       h += '<button onclick="xiuSetMode(\'compat\')" style="width:100%;margin-top:10px;padding:11px;border-radius:12px;border:1px solid rgba(201,169,110,.3);background:rgba(255,255,255,.02);color:rgba(240,233,216,.6);font:500 12px \'Noto Sans TC\',sans-serif;cursor:pointer">想知道你跟另一半／朋友的星宿關係嗎？點這裡試試合盤比較 →</button>';
     } else {
-      h += '<div style="margin-top:14px;text-align:center;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4)">請輸入完整的出生年月日</div>';
+      h += '<div style="margin-top:14px;text-align:center;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62)">請輸入完整的出生年月日</div>';
     }
-    h += '<div style="margin-top:16px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);line-height:1.8">＊本命星宿採用「連續 28 日循環」直接對照你的陽曆生日計算，跟每日／擇日用的是同一套邏輯；這跟少數命理流派另外使用的農曆演禽本命宿表是不同的系統，兩者可能對不上，這裡選擇邏輯一致、可驗證的版本。</div>';
+    h += '<div style="margin-top:16px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);line-height:1.8">＊本命星宿採用「連續 28 日循環」直接對照你的陽曆生日計算，跟每日／擇日用的是同一套邏輯；這跟少數命理流派另外使用的農曆演禽本命宿表是不同的系統，兩者可能對不上，這裡選擇邏輯一致、可驗證的版本。</div>';
 
   } else if (state.xiuMode === 'compat') {
     h += xiuBirthInputBlock('xiu', '你的生日（陽曆）', 'xiuPartner-y');
@@ -5792,15 +5977,15 @@ function renderXiu28() {
       h += '<div style="font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:6px;line-height:1.85">' + esc(lrel.meaning.gist) + '</div>';
       h += '<div style="margin-top:8px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.8">' + esc(lrel.meaning.detail) + '</div>';
       h += '<div style="margin-top:8px;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);line-height:1.7">對方是你的「' + esc(lrel.otherIsYour) + '星」，你是對方的「' + esc(lrel.youAreOthers) + '星」。</div>';
-      h += '<details style="margin-top:8px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);cursor:pointer">六戀關係是怎麼換算出來的？</summary><div style="margin-top:6px;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.75">傳統「六戀」命名法用的是「演禽廿七宿」系統：把牛宿和女宿併成同一個位置，共 27 個位置排成一圈，再看兩人的位置相差幾格決定屬於哪一種六戀關係。這裡日常用的本命星宿則是 28 個位置（牛、女分開，每天換一格，可回推日期驗證），所以會先把兩人的 28 宿位置換算成這套 27 宿系統的位置，再套用六戀表——這也是上面同時看得到「關係類型」（28 宿邏輯）與「傳統六戀關係」（27 宿邏輯）兩種分類的原因。</div></details>';
+      h += '<details style="margin-top:8px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);cursor:pointer">六戀關係是怎麼換算出來的？</summary><div style="margin-top:6px;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.75">傳統「六戀」命名法用的是「演禽廿七宿」系統：把牛宿和女宿併成同一個位置，共 27 個位置排成一圈，再看兩人的位置相差幾格決定屬於哪一種六戀關係。這裡日常用的本命星宿則是 28 個位置（牛、女分開，每天換一格，可回推日期驗證），所以會先把兩人的 28 宿位置換算成這套 27 宿系統的位置，再套用六戀表——這也是上面同時看得到「關係類型」（28 宿邏輯）與「傳統六戀關係」（27 宿邏輯）兩種分類的原因。</div></details>';
       h += '</div>';
       h += '<button onclick="xiuSavePartner()" style="width:100%;margin-top:10px;padding:11px;border-radius:12px;border:1px solid rgba(201,169,110,.3);background:rgba(255,255,255,.02);color:rgba(240,233,216,.6);font:500 12px \'Noto Sans TC\',sans-serif;cursor:pointer">💾 存下對方資料，下次快速選取</button>';
       h += renderPersonaPicker();
       h += '<button id="xiu-copy-btn" onclick="xiuCopyForAI()" style="width:100%;margin-top:16px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製給 AI 解讀 Copy for AI</button>';
     } else {
-      h += '<div style="margin-top:14px;text-align:center;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4)">請輸入兩人完整的出生年月日</div>';
+      h += '<div style="margin-top:14px;text-align:center;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62)">請輸入兩人完整的出生年月日</div>';
     }
-    h += '<div style="margin-top:16px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);line-height:1.8">＊「關係類型」是根據星宿在四象／七曜上的結構性關係（同宿、同曜、同象、對象、鄰象）設計的簡化版本；「傳統六戀關係」則是換算成演禽廿七宿系統（牛、女併同一格）後套用的古典命名法（榮親／友衰／危成／安壞／業胎／命之星），兩套系統算法不同，可以互相參考。</div>';
+    h += '<div style="margin-top:16px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);line-height:1.8">＊「關係類型」是根據星宿在四象／七曜上的結構性關係（同宿、同曜、同象、對象、鄰象）設計的簡化版本；「傳統六戀關係」則是換算成演禽廿七宿系統（牛、女併同一格）後套用的古典命名法（榮親／友衰／危成／安壞／業胎／命之星），兩套系統算法不同，可以互相參考。</div>';
 
   } else if (state.xiuMode === 'daily') {
     var now = new Date();
@@ -5840,7 +6025,7 @@ function xiuSetDayAnchor(v) { state.xiuDayAnchor = v; render(); }
 function renderXiuWeekStrip(ay, am, ad) {
   var base = new Date(ay, am - 1, ad);
   var wdNames = ['日', '一', '二', '三', '四', '五', '六'];
-  var h = '<div style="margin-top:16px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-bottom:6px;text-align:center">未來 7 天一覽 · 點一下可切換查詢日</div><div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px">';
+  var h = '<div style="margin-top:16px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-bottom:6px;text-align:center">未來 7 天一覽 · 點一下可切換查詢日</div><div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px">';
   for (var i = 0; i < 7; i++) {
     var d = new Date(base.getTime());
     d.setDate(base.getDate() + i);
@@ -5849,9 +6034,9 @@ function renderXiuWeekStrip(ay, am, ad) {
     var x = XIU_DEFS[idx];
     var isFirst = i === 0;
     h += '<button onclick="xiuSetDayAnchor(\'' + yy + '-' + pad2(mm) + '-' + pad2(dd) + '\')" style="flex:0 0 auto;min-width:62px;text-align:center;border:1px solid ' + (isFirst ? '#c9a96e' : XIU_DIR_COLOR[x.dir]) + ';border-radius:10px;padding:8px 5px;background:' + (isFirst ? 'rgba(201,169,110,.14)' : 'rgba(255,255,255,.02)') + ';cursor:pointer">';
-    h += '<div style="font:400 9px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">週' + wdNames[d.getDay()] + ' ' + mm + '/' + dd + '</div>';
+    h += '<div style="font:400 9px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62)">週' + wdNames[d.getDay()] + ' ' + mm + '/' + dd + '</div>';
     h += '<div style="font:600 13px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + esc(x.zh) + '宿</div>';
-    h += '<div style="font:400 9px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-top:1px">' + esc(x.elem) + '曜</div>';
+    h += '<div style="font:400 9px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:1px">' + esc(x.elem) + '曜</div>';
     h += '</button>';
   }
   h += '</div></div>';
@@ -6703,7 +6888,7 @@ function renderAstroTourCard() {
   var h = '<div style="margin-top:16px;border:1px solid rgba(201,169,110,.3);border-radius:12px;padding:14px 16px;background:rgba(201,169,110,.05)">';
   h += '<div style="display:flex;justify-content:space-between;align-items:center">';
   h += '<div style="font:600 12px \'Noto Sans TC\',sans-serif;color:#e6cd9a">星盤功能小導覽 <span style="opacity:.5;font-weight:400">' + (idx + 1) + '/' + ASTRO_TOUR_ITEMS.length + '</span></div>';
-  h += '<button onclick="astroDismissTour()" style="background:none;border:none;color:rgba(240,233,216,.4);font:400 18px sans-serif;cursor:pointer;line-height:1;padding:0">×</button>';
+  h += '<button onclick="astroDismissTour()" style="background:none;border:none;color:rgba(240,233,216,.62);font:400 18px sans-serif;cursor:pointer;line-height:1;padding:0">×</button>';
   h += '</div>';
   h += '<div style="margin-top:10px;min-height:40px;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.7"><span style="color:#c9a96e;font-weight:600">' + it[0] + '</span><br>' + it[1] + '</div>';
   h += '<div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-top:12px">';
@@ -6715,7 +6900,7 @@ function renderAstroTourCard() {
   h += '</div>';
   h += '<button onclick="astroTourGo(' + (idx + 1) + ')" aria-label="下一則" ' + (atEnd ? 'disabled' : '') + ' style="background:none;border:none;color:' + (atEnd ? 'rgba(240,233,216,.15)' : 'rgba(240,233,216,.6)') + ';font-size:16px;line-height:1;cursor:' + (atEnd ? 'default' : 'pointer') + ';padding:4px 4px">›</button>';
   h += '</div>';
-  h += '<div style="text-align:center;margin-top:10px"><button onclick="astroDismissTour()" style="background:none;border:none;color:rgba(240,233,216,.4);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">我知道了，不用再顯示</button></div>';
+  h += '<div style="text-align:center;margin-top:10px"><button onclick="astroDismissTour()" style="background:none;border:none;color:rgba(240,233,216,.62);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">我知道了，不用再顯示</button></div>';
   h += '</div>';
   return h;
 }
@@ -6730,7 +6915,7 @@ function renderOverallScoreBlock(overall, label) {
   var h = '<div style="text-align:center;margin-top:18px">';
   h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">' + label + '</div>';
   h += '<div style="font:700 44px \'Noto Serif TC\',serif;color:#e6cd9a;line-height:1.2">' + overall + '<span style="font:400 16px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">分</span></div>';
-  h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-top:4px">指標可信度：' + scoreConfidenceLabel() + '</div>';
+  h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:4px">指標可信度：' + scoreConfidenceLabel() + '</div>';
   h += '</div>';
   return h;
 }
@@ -7004,7 +7189,7 @@ function renderReturnHighlight(returnChart, kindLabel, dateLabel, topCatKey) {
   var ascDef = ZODIAC_SIGNS[returnChart.ascSign], mcDef = ZODIAC_SIGNS[returnChart.mcSign];
   var h = '<div style="margin-top:14px;border:1px solid rgba(201,169,110,.25);border-radius:12px;padding:12px 14px;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.65);line-height:1.8">';
   h += '這段時間反覆被強化的生活領域：<span style="color:#e6cd9a;font-weight:600">' + RETURN_HIGHLIGHT_LABEL[topCatKey] + '</span>。適合把注意力先放在這裡，不代表其他領域一定不好。';
-  h += '<details style="margin-top:8px"><summary style="color:rgba(240,233,216,.45);cursor:pointer">查看回歸盤日期、上升與天頂</summary><div style="margin-top:5px"><span style="color:#e6cd9a;font-weight:600">' + kindLabel + '</span>　' + dateLabel + '　上升 ' + ascDef.sym + ascDef.zh + '　天頂 ' + mcDef.sym + mcDef.zh + '</div></details>';
+  h += '<details style="margin-top:8px"><summary style="color:rgba(240,233,216,.62);cursor:pointer">查看回歸盤日期、上升與天頂</summary><div style="margin-top:5px"><span style="color:#e6cd9a;font-weight:600">' + kindLabel + '</span>　' + dateLabel + '　上升 ' + ascDef.sym + ascDef.zh + '　天頂 ' + mcDef.sym + mcDef.zh + '</div></details>';
   h += '</div>';
   return h;
 }
@@ -7060,7 +7245,7 @@ function renderPeriodDashboard(chart, transitPlanets, periodKey, periodCfg, now,
   h += renderOverallScoreBlock(overall, overallLabel);
   h += renderCategoryScoreBars(scores);
   h += '<div style="margin-top:18px;border-top:1px solid rgba(201,169,110,.15);border-bottom:1px solid rgba(201,169,110,.15);padding:16px 0;font:400 13px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.8);line-height:1.9">' + esc(summaryText) + '</div>';
-  if (state.astroUnknownTime && periodKey !== 'weekly') h += '<div style="margin-top:10px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);line-height:1.7">無出生時間模式不使用回歸盤宮位，分數僅依行運與本命行星相位估算。</div>';
+  if (state.astroUnknownTime && periodKey !== 'weekly') h += '<div style="margin-top:10px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);line-height:1.7">無出生時間模式不使用回歸盤宮位，分數僅依行運與本命行星相位估算。</div>';
   if (returnChart) h += renderReturnHighlight(returnChart, kindLabel, returnDateLabel, topCatKey);
   /* 週／月／年原本也是幸運色／花／石／數字四格亂數挑；改成用這段期間已經算好的
      分數推導，見 astro-charts.js 的 renderPeriodTone()。 */
@@ -7097,7 +7282,7 @@ function renderPeriodDashboard(chart, transitPlanets, periodKey, periodCfg, now,
   }
 
   h += '<details style="margin-top:8px;border:1px solid rgba(201,169,110,.18);border-radius:10px;padding:10px 12px"><summary style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;cursor:pointer">為什麼會得到這些分數？</summary><div style="margin-top:8px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.75">分數從基準值出發，再依行運或回歸盤和你的本命盤互動調整；它是整理趨勢的指標，不是事件發生機率。</div>';
-  HOROSCOPE_SCORE_CATS.forEach(function(cat){var basis=periodScoreBasis[cat.key]||[];h+='<div style="margin-top:8px;font:600 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72)">'+cat.zh+' '+scores[cat.key]+' 分</div><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.48);line-height:1.65">'+esc(basis.length?basis.slice(0,5).join('；'):'這段期間沒有明顯相位被觸發，因此接近基準分數。')+'</div>';});
+  HOROSCOPE_SCORE_CATS.forEach(function(cat){var basis=periodScoreBasis[cat.key]||[];h+='<div style="margin-top:8px;font:600 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72)">'+cat.zh+' '+scores[cat.key]+' 分</div><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);line-height:1.65">'+esc(basis.length?basis.slice(0,5).join('；'):'這段期間沒有明顯相位被觸發，因此接近基準分數。')+'</div>';});
   h += '</details>';
 
   var periodLabelZh = periodKey === 'weekly' ? '本週運勢' : periodKey === 'monthly' ? '本月運勢' : '年度運勢報告';
@@ -7174,10 +7359,10 @@ function buildYearOverviewRows(chart, city, count) {
 function renderYearOverviewCard(row) {
   var selected = state.horoYearOffset === row.offset;
   var h = '<button aria-pressed="'+selected+'" onclick="astroSelectHoroYear('+row.offset+')" style="display:block;width:100%;text-align:left;margin-top:9px;border:1px solid '+(selected?'#c9a96e':'rgba(201,169,110,.22)')+';border-radius:12px;padding:12px 13px;background:'+(selected?'rgba(201,169,110,.1)':'rgba(255,255,255,.02)')+';color:inherit;cursor:pointer">';
-  h += '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div style="font:600 17px \'Noto Serif TC\',serif;color:#e6cd9a">'+row.year+'</div><div style="font:700 22px \'Noto Serif TC\',serif;color:#f0e9d8">'+row.overall+'<span style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)"> 分</span></div></div>';
+  h += '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div style="font:600 17px \'Noto Serif TC\',serif;color:#e6cd9a">'+row.year+'</div><div style="font:700 22px \'Noto Serif TC\',serif;color:#f0e9d8">'+row.overall+'<span style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62)"> 分</span></div></div>';
   h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:5px">較強：<span style="color:#e6cd9a">'+row.topZh+' '+row.scores[row.topKey]+'</span>　留意：'+row.weakZh+' '+row.scores[row.weakKey]+'</div>';
   h += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-top:9px">';
-  HOROSCOPE_SCORE_CATS.forEach(function(cat){var col=CATEGORY_COLOR[cat.key];h+='<div title="'+cat.zh+' '+row.scores[cat.key]+'分" aria-label="'+cat.zh+' '+row.scores[cat.key]+'分" style="text-align:center"><div style="height:4px;border-radius:3px;background:linear-gradient(90deg,'+col[0]+' '+row.scores[cat.key]+'%,'+'rgba(255,255,255,.08) '+row.scores[cat.key]+'%)"></div><div style="font:400 8px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-top:3px">'+cat.zh.slice(0,1)+'</div></div>';});
+  HOROSCOPE_SCORE_CATS.forEach(function(cat){var col=CATEGORY_COLOR[cat.key];h+='<div title="'+cat.zh+' '+row.scores[cat.key]+'分" aria-label="'+cat.zh+' '+row.scores[cat.key]+'分" style="text-align:center"><div style="height:4px;border-radius:3px;background:linear-gradient(90deg,'+col[0]+' '+row.scores[cat.key]+'%,'+'rgba(255,255,255,.08) '+row.scores[cat.key]+'%)"></div><div style="font:400 8px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:3px">'+cat.zh.slice(0,1)+'</div></div>';});
   h += '</div><div style="font:400 9px \'Noto Sans TC\',sans-serif;color:'+(selected?'#c9a96e':'rgba(240,233,216,.35)')+';margin-top:7px;text-align:right">'+(selected?'下方正在顯示此年完整解讀':'點擊查看完整解讀')+'</div></button>';
   return h;
 }
@@ -7201,7 +7386,7 @@ function renderDailyDateStrip(selected) {
 }
 function renderOffsetNav(labelPrev, labelCenter, labelNext, offset, setterName, rangeLabel) {
   var h = '<div style="text-align:center;margin-top:12px">';
-  h += '<div style="font:400 11px \'EB Garamond\',serif;color:rgba(240,233,216,.4)">' + rangeLabel + '</div>';
+  h += '<div style="font:400 11px \'EB Garamond\',serif;color:rgba(240,233,216,.62)">' + rangeLabel + '</div>';
   h += '<div style="display:flex;justify-content:center;gap:8px;margin-top:6px">';
   h += '<button onclick="' + setterName + '(' + (offset - 1) + ')" style="font:500 12px \'Noto Sans TC\',sans-serif;background:rgba(255,255,255,.03);border:1px solid rgba(201,169,110,.25);color:rgba(240,233,216,.6);padding:6px 12px;border-radius:14px;cursor:pointer">‹ ' + labelPrev + '</button>';
   h += '<button onclick="' + setterName + '(0)" style="font:500 12px \'Noto Sans TC\',sans-serif;background:' + (offset === 0 ? 'rgba(201,169,110,.2)' : 'rgba(255,255,255,.03)') + ';border:1px solid ' + (offset === 0 ? '#c9a96e' : 'rgba(201,169,110,.25)') + ';color:' + (offset === 0 ? '#f0e9d8' : 'rgba(240,233,216,.6)') + ';padding:6px 14px;border-radius:14px;cursor:pointer">' + labelCenter + '</button>';
@@ -7289,8 +7474,8 @@ function renderHoroscope(periodKey) {
   var rangeLabel = periodRangeLabel(periodKey, now);
   var h = '';
   h += '<div style="font:600 16px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:14px;text-align:center">' + periodCfg.zh + '</div>';
-  h += '<div style="font:400 11px \'EB Garamond\',serif;color:rgba(240,233,216,.4);text-align:center;margin-top:2px">' + rangeLabel + '</div>';
-  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);text-align:center;margin-top:8px;line-height:1.6">根據目前的行運與你的本命星盤比對而成，僅供參考</div>';
+  h += '<div style="font:400 11px \'EB Garamond\',serif;color:rgba(240,233,216,.62);text-align:center;margin-top:2px">' + rangeLabel + '</div>';
+  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);text-align:center;margin-top:8px;line-height:1.6">根據目前的行運與你的本命星盤比對而成，僅供參考</div>';
   if (periodKey === 'yearly') {
     h += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:14px">';
     [1,3,5,10].forEach(function(n){var on=state.horoYearRange===n;h+='<button aria-pressed="'+on+'" onclick="astroSetHoroYearRange('+n+')" style="padding:8px 4px;border-radius:10px;border:1px solid '+(on?'#c9a96e':'rgba(201,169,110,.28)')+';background:'+(on?'rgba(201,169,110,.18)':'rgba(255,255,255,.02)')+';color:'+(on?'#f0e9d8':'rgba(240,233,216,.55)')+';font:500 11px \'Noto Sans TC\',sans-serif;cursor:pointer">'+n+' 年</button>';});
@@ -7300,7 +7485,7 @@ function renderHoroscope(periodKey) {
     h += '<label style="display:block;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);margin-top:13px">回歸盤所在地<select aria-label="回歸盤所在地" onchange="astroSetReturnCity(this.value)" style="width:100%;margin-top:6px;background:#1a1622;border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;color:#f0e9d8">';
     h += '<option value="">使用出生地（' + esc((state.astroCityUsed || {}).zh || '') + '）</option>';
     CITY_LIST.forEach(function(c,i){h += '<option value="' + i + '"' + (state.astroReturnCityIdx===i?' selected':'') + '>' + esc(c.zh) + ' / ' + esc(c.en) + '</option>';});
-    h += '</select></label><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35);margin-top:5px">若生日當天人在外地，可改選當時所在地；這會影響回歸盤的上升與宮位。</div>';
+    h += '</select></label><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:5px">若生日當天人在外地，可改選當時所在地；這會影響回歸盤的上升與宮位。</div>';
   }
 
   if (periodKey === 'daily') {
@@ -7344,9 +7529,17 @@ function astroSelectDetail(k) { state.astroDetail = state.astroDetail === k ? nu
 function astroMoonRangeText() {
   if (!state.astroUnknownTime || !state.astroCityUsed) return '';
   var c = state.astroCityUsed;
-  var a = computeNatalChart(+state.astroY,+state.astroM,+state.astroD,0,0,c.lat,c.lon,c.tz,state.astroHouseSystem).planets.Moon;
-  var b = computeNatalChart(+state.astroY,+state.astroM,+state.astroD,23,59,c.lat,c.lon,c.tz,state.astroHouseSystem).planets.Moon;
-  return ZODIAC_SIGNS[a.sign].zh + ' ' + a.deg.toFixed(1) + '° ～ ' + ZODIAC_SIGNS[b.sign].zh + ' ' + b.deg.toFixed(1) + '°';
+  /* 這裡會即時再算兩次盤，需要 Astronomy Engine。正常流程一定已經載入
+     （astroGenerate/astroLoadProfile 都先 await ensureAstronomyLoaded），
+     但如果引擎在之後才被快取失效或載入失敗，這一行丟出例外會讓整個 renderAstro()
+     中斷、畫面變成空白——寧可省略這一段補充資訊，也不能整頁掛掉。 */
+  try {
+    var a = computeNatalChart(+state.astroY,+state.astroM,+state.astroD,0,0,c.lat,c.lon,c.tz,state.astroHouseSystem).planets.Moon;
+    var b = computeNatalChart(+state.astroY,+state.astroM,+state.astroD,23,59,c.lat,c.lon,c.tz,state.astroHouseSystem).planets.Moon;
+    return ZODIAC_SIGNS[a.sign].zh + ' ' + a.deg.toFixed(1) + '° ～ ' + ZODIAC_SIGNS[b.sign].zh + ' ' + b.deg.toFixed(1) + '°';
+  } catch (e) {
+    return '（暫時無法計算，星盤計算元件尚未就緒）';
+  }
 }
 /* V2：命盤總覽建構一個「假 evidence」餵給跟人生主題分析同一套 contextualizeEvidence()，
    讓命盤總覽／人生主題分析共用同一份判斷與情境化引擎，只是輸出的目的不同
@@ -7398,7 +7591,7 @@ function renderAstroQuickSummary(chart) {
   var h = '<section style="margin-top:16px;border:1px solid rgba(201,169,110,.38);border-radius:12px;padding:16px 17px;background:rgba(201,169,110,.07)"><h3 style="font:600 14px \'Noto Serif TC\',serif;color:#e6cd9a;margin:0">三分鐘看懂你的星盤</h3>';
   if (coreImpression) h += '<div style="font:500 12.5px \'Noto Sans TC\',sans-serif;color:#f0e9d8;line-height:1.8;margin-top:9px">' + esc(coreImpression) + '</div>';
   h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:9px">' + keywords.map(function (k) { return '<span style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;background:rgba(201,169,110,.12);border:1px solid rgba(201,169,110,.3);border-radius:20px;padding:3px 11px">' + esc(k) + '</span>'; }).join('') + '</div>';
-  if (state.astroUnknownTime) h += '<div style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-top:8px">出生時間未知，因此本摘要不採用上升與宮位。</div>';
+  if (state.astroUnknownTime) h += '<div style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:8px">出生時間未知，因此本摘要不採用上升與宮位。</div>';
 
   if (dims.length) {
     h += '<div style="margin-top:13px;display:grid;grid-template-columns:1fr 1fr;gap:9px">';
@@ -7417,7 +7610,7 @@ function renderAstroQuickSummary(chart) {
   }
   if (major.length) {
     var usedLeads = [];
-    h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:12px">最明顯的三組性格互動</div>' + major.map(function (a) { var d = aspectBeginnerDataUnique(a, usedLeads); return '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.68);line-height:1.7;margin-top:4px">• <strong>' + esc(d.title) + '</strong>：' + esc(d.lead) + '</div>'; }).join('') + '<details style="margin-top:7px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);cursor:pointer">查看三組相位的專業名稱與容許度</summary><div style="margin-top:5px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);line-height:1.7">' + major.map(function (a) { return esc(aspectPlacementText(a)); }).join('<br>') + '</div></details>';
+    h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:12px">最明顯的三組性格互動</div>' + major.map(function (a) { var d = aspectBeginnerDataUnique(a, usedLeads); return '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.68);line-height:1.7;margin-top:4px">• <strong>' + esc(d.title) + '</strong>：' + esc(d.lead) + '</div>'; }).join('') + '<details style="margin-top:7px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);cursor:pointer">查看三組相位的專業名稱與容許度</summary><div style="margin-top:5px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);line-height:1.7">' + major.map(function (a) { return esc(aspectPlacementText(a)); }).join('<br>') + '</div></details>';
   }
   return h + '</section>';
 }

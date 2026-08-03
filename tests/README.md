@@ -32,6 +32,34 @@ outside a `<details>` fold, and half-width commas.
 Terminology inside `<details>` folds and the "進階解讀" sections is deliberate and
 is not counted.
 
+## UX structure regression
+
+`ux-structure-regression.js` asserts the structural fixes from the 2026-08 site-wide
+UX pass so they cannot be silently reverted: `<main>`/`<nav>`/skip-link landmarks,
+an `h2` on every screen, zero `alert()` calls in the astrology flow, the chart
+identity bar and its fields, the four-part freshness key for topic results
+(`topicId` + `chartFingerprint` + `promptVersion` + `knowledgeVersion`), scroll
+preservation and expanded-state persistence when switching reading depth, the
+design-token block, and the absence of body text below the AA contrast threshold.
+
+It also boots the runtime in a VM to check that `renderChartIdentityBar()` and
+`renderAstroNotice()` degrade to empty strings, that development diagnostics stay
+out of production output, and that `chartFingerprint` actually differs across
+charts and across the unknown-birth-time flag.
+
+## UI render smoke
+
+`ui-render-smoke.js` renders 13 screens and states (including empty, error and
+"chart was changed" states) and checks structural invariants the string-built UI
+has no other guard for: HTML tag balance, `<details>`/`<summary>` pairing, heading
+order without skipped levels, buttons with an accessible name, and hard-coded
+widths above 320px.
+
+It additionally asserts that professional mode *adds to* rather than replaces the
+general-mode conclusions, that weights never leak into general mode, and that the
+copy-for-AI payload is byte-identical in both modes — simplifying the screen must
+never simplify the export.
+
 ## Protected files
 
 - `golden-charts.js`: synthetic chart structures

@@ -101,4 +101,9 @@ user initiated. Do not add automatic transmission or commit exported user data.
 | 2026-07-28 | Strip label-echoing prefixes from natal detail text; suppress details already contained in the headline at render time | 60% of answers repeated themselves; validator forbids dropping details from the data |
 | 2026-07-28 | Add `tests/astro-copy-quality.js` as a required check | Golden checks whether answers changed, not whether they read well |
 | 2026-07-29 | Natal copy-to-AI defaults to a data-only pack (`buildAstroDataPackText`); the prose version is opt-in | Measured on one chart: only 7.8% of the 31,024-character export was actual chart data. Given nine parts pre-written interpretation, an external model rewrites our text instead of reading the chart itself, which is the one thing it does better than our templates |
-
+| 2026-08-03 | 建立 `:root` 設計 token 並要求新程式碼一律使用 `var(--…)` | `#c9a96e` 硬寫 184 次、`#f0e9d8` 134 次；先收斂成同值的變數，視覺零變動，之後可逐步替換 |
+| 2026-08-03 | 全站正文灰字最低透明度提高到 `.62`（原本有 131 處低於 `.5`） | `.45` 在 `#14111a` 上約 4.0:1，未達 WCAG AA 的 4.5:1 |
+| 2026-08-03 | 星盤流程移除所有 `alert()`，改用 `state.astroNotice` 頁內訊息 | `alert()` 阻塞畫面、無法被輔助技術當作頁面內容讀取、訊息關閉後不留痕跡；改版後錯誤訊息會說明「發生什麼／哪些資料還在／下一步」 |
+| 2026-08-03 | 結果頁固定顯示「目前命盤」身分列（日期・時間・地點・時區・宮位制・黃道） | 使用者可以反覆改資料重算，先前畫面上完全沒有辦法確認眼前結果來自哪一組出生資料 |
+| 2026-08-03 | 主題卡片的「為什麼這樣說？」展開狀態綁進 `state.natalTopicExpanded` | `state.natalTopicExpanded` 原本宣告後從未被讀取；未受控的 `<details>` 在每次 `render()` 都會塌回收合 |
+| 2026-08-03 | 新增 `tests/ux-structure-regression.js` 與 `tests/ui-render-smoke.js` 為必跑檢查 | 既有測試只驗證文字內容，完全不碰渲染函式；標籤不平衡、標題階層、無名稱按鈕、快取鍵、AI 複製完整性都沒有守門 |

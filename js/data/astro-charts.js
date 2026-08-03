@@ -71,7 +71,7 @@ function renderSynastryFacetBars(aspects, activeFacet) {
 
   var h = '<div style="margin-top:18px">';
   h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.08em;color:rgba(240,233,216,.55);text-align:center">五個面向各自的默契程度</div>';
-  h += '<div style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);text-align:center;margin-top:4px;line-height:1.6">點任何一條，下方只顯示跟它有關的解讀</div>';
+  h += '<div style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);text-align:center;margin-top:4px;line-height:1.6">點任何一條，下方只顯示跟它有關的解讀</div>';
   h += '<div style="margin-top:12px;display:flex;flex-direction:column;gap:9px">';
 
   rows.forEach(function (r) {
@@ -79,8 +79,8 @@ function renderSynastryFacetBars(aspects, activeFacet) {
     if (r.score === null) {
       h += '<div style="opacity:.45"><div style="display:flex;justify-content:space-between;align-items:baseline">'
         + '<span style="font:500 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.7)">' + esc(r.zh) + '</span>'
-        + '<span style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">沒有明顯訊號</span></div>'
-        + '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.4);margin-top:2px">' + esc(r.hint) + '</div></div>';
+        + '<span style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62)">沒有明顯訊號</span></div>'
+        + '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:2px">' + esc(r.hint) + '</div></div>';
       return;
     }
     var color = synastryBandColor(r.score);
@@ -96,7 +96,7 @@ function renderSynastryFacetBars(aspects, activeFacet) {
     h += '<div aria-hidden="true" style="margin-top:6px;height:7px;border-radius:4px;background:rgba(255,255,255,.06);overflow:hidden">';
     h += '<div style="width:' + r.score + '%;height:100%;border-radius:4px;background:' + color + ';opacity:.85"></div>';
     h += '</div>';
-    h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.42);margin-top:4px">' + esc(r.hint) + '</div>';
+    h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:4px">' + esc(r.hint) + '</div>';
     h += '</button>';
   });
   h += '</div></div>';
@@ -186,7 +186,7 @@ function renderSynastryLinkChart(chartA, chartB, aspects, activeFacet) {
       + '<span aria-hidden="true" style="width:14px;height:2px;background:' + item[0] + ';display:inline-block"></span>' + item[1] + '</span>';
   });
   h += '</div>';
-  h += '<div style="display:flex;gap:14px;justify-content:center;margin-top:6px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">'
+  h += '<div style="display:flex;gap:14px;justify-content:center;margin-top:6px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62)">'
     + '<span>外圈＝你</span><span>內圈＝對方</span></div>';
   h += '</div>';
   return h;
@@ -217,7 +217,7 @@ function renderBalanceBars(title, data, keys, colors, hints, total) {
     h += '<span style="display:block;width:' + pct + '%;height:100%;border-radius:5px;background:' + colors[k] + ';opacity:.85"></span></span>';
     h += '<span style="flex:none;width:52px;text-align:right;font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.6)">' + n + ' 顆</span>';
     h += '</div>';
-    h += '<div style="margin-left:42px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.35)">' + esc(hints[k]) + '</div>';
+    h += '<div style="margin-left:42px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62)">' + esc(hints[k]) + '</div>';
   });
   return h + '</div>';
 }
@@ -399,7 +399,7 @@ function houseOfLongitude(chart, lon) {
 function renderRhythmCell(iconHtml, value, label) {
   return '<div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px">' + iconHtml
     + '<div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;text-align:center;line-height:1.35">' + esc(value) + '</div>'
-    + '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45)">' + esc(label) + '</div></div>';
+    + '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62)">' + esc(label) + '</div></div>';
 }
 
 function renderDailyRhythm(chart, transitPlanets, scores, unknownTime, selectedDate) {
@@ -631,7 +631,7 @@ function renderProgressionYearAspects(row) {
       }).join('、') + '。';
 
   var h = '<div role="img" aria-label="' + esc(desc) + '" style="margin-top:10px">';
-  h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.45);margin-bottom:5px">這一年的 ' + aspects.length + ' 組相位怎麼組成</div>';
+  h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-bottom:5px">這一年的 ' + aspects.length + ' 組相位怎麼組成</div>';
   h += '<div aria-hidden="true" style="display:flex;height:9px;border-radius:5px;overflow:hidden;background:rgba(255,255,255,.05)">';
   PROG_ASPECT_GROUPS.forEach(function (g) {
     if (!counts[g.key]) return;

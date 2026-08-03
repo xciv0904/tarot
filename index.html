@@ -46,18 +46,141 @@
 <link rel="stylesheet" media="print" onload="this.media='all';this.onload=null" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600&family=EB+Garamond:ital@0;1&display=swap">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600&family=EB+Garamond:ital@0;1&display=swap"></noscript>
 <style>
+  /* ================================================================
+     設計 Token（單一事實來源）
+     ----------------------------------------------------------------
+     這份專案的畫面是用 JS 字串組出來的 inline style，歷史上同一個顏色
+     在不同檔案被硬寫了幾百次（#c9a96e 出現 184 次、#f0e9d8 134 次）。
+     這裡先把「已經在用的值」原封不動收斂成 CSS variables，數值完全不變，
+     所以不會造成任何視覺回歸；之後新增或修改的區塊一律改用 var(--…)，
+     舊的 inline 值可以逐步替換而不需要一次性大改。
+     ================================================================ */
+  :root{
+    /* 色票 —— 底層 */
+    --bg:#14111a;
+    --bg-raised:#1a1622;
+    --bg-sunken:#241f2e;
+    --surface:rgba(255,255,255,.025);
+    --surface-strong:rgba(255,255,255,.04);
+    /* 色票 —— 文字 */
+    --text:#f0e9d8;
+    --text-secondary:rgba(240,233,216,.78);
+    --text-muted:rgba(240,233,216,.6);
+    /* .35–.4 的灰在深色底上低於 4.5:1，正文一律不使用，只允許用在
+       純裝飾或已經有其他非顏色標示的補充字。 */
+    --text-faint:rgba(240,233,216,.5);
+    /* 色票 —— 品牌與狀態 */
+    --brand:#c9a96e;
+    --brand-bright:#e6cd9a;
+    --brand-dim:rgba(201,169,110,.25);
+    --brand-line:rgba(201,169,110,.3);
+    --brand-wash:rgba(201,169,110,.08);
+    --success:#9bc5a3;
+    --warning:#d9a0a0;
+    --danger:#d67878;
+    --info:#8fc7f4;
+    /* 邊框 */
+    --border:rgba(201,169,110,.25);
+    --border-strong:rgba(201,169,110,.4);
+    --border-hair:rgba(201,169,110,.15);
+    /* 字級層級 */
+    --fs-display:20px;
+    --fs-h2:16px;
+    --fs-h3:14px;
+    --fs-body:13px;
+    --fs-sm:12px;
+    --fs-xs:11px;
+    --lh-tight:1.5;
+    --lh-body:1.8;
+    --fw-regular:400;
+    --fw-medium:500;
+    --fw-bold:600;
+    --font-sans:'Noto Sans TC',sans-serif;
+    --font-serif:'Noto Serif TC',serif;
+    --font-latin:'EB Garamond',serif;
+    /* 間距 */
+    --sp-1:4px; --sp-2:6px; --sp-3:8px; --sp-4:12px; --sp-5:16px; --sp-6:22px; --sp-7:28px;
+    /* 形狀 */
+    --radius-sm:8px; --radius-md:10px; --radius-lg:14px; --radius-pill:22px;
+    --shadow-card:0 1px 0 rgba(255,255,255,.02) inset;
+    /* 控制項 */
+    --control-h:44px;        /* 觸控目標下限，WCAG 2.2 AA 目標大小 */
+    --control-h-sm:36px;
+    --field-h:40px;
+    /* 動態 */
+    --motion-fast:120ms;
+    --motion-base:220ms;
+    /* 長文可讀行寬 */
+    --measure:38em;
+  }
+
   @keyframes cardIn { from { opacity:0; transform:translateY(10px) scale(.97);} to { opacity:1; transform:translateY(0) scale(1);} }
-  body{margin:0;background:#14111a;font-family:'Noto Sans TC',sans-serif;-webkit-tap-highlight-color:transparent}
-  a{color:#c9a96e}
-  a:hover{color:#e6cd9a}
-  button{font-family:'Noto Sans TC',sans-serif}
-  button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid #e6cd9a;outline-offset:3px}
+  body{margin:0;background:var(--bg);font-family:var(--font-sans);-webkit-tap-highlight-color:transparent}
+  a{color:var(--brand)}
+  a:hover{color:var(--brand-bright)}
+  /* 連結不能只靠顏色辨識（WCAG 1.4.1）：內文連結一律帶底線。 */
+  #view a{text-decoration:underline;text-underline-offset:2px}
+  button{font-family:var(--font-sans)}
+  button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,
+  summary:focus-visible,a:focus-visible,[tabindex]:focus-visible{
+    outline:2px solid var(--brand-bright);outline-offset:3px;border-radius:2px
+  }
+  /* details/summary 預設的 focus 樣式在部分瀏覽器不明顯，統一補上。 */
+  summary{cursor:pointer}
   .sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+  /* 鍵盤使用者的跳至主要內容連結：平常隱藏，聚焦時出現。 */
+  .skip-link{position:absolute;left:-9999px;top:0;z-index:99;background:var(--bg-raised);color:var(--brand-bright);
+    border:1px solid var(--brand);border-radius:var(--radius-sm);padding:10px 16px;font:var(--fw-medium) var(--fs-sm)/1 var(--font-sans)}
+  .skip-link:focus{left:12px;top:12px}
   .home-ambient-video{display:none;position:fixed;top:0;left:0;width:100%;height:170vh;object-fit:cover;object-position:50% 0;filter:grayscale(.86) saturate(.3) brightness(.4) contrast(1.12);opacity:.44;pointer-events:none;z-index:0}
   .is-home .home-ambient-video{display:block}
   ::-webkit-scrollbar{width:6px}
   ::-webkit-scrollbar-thumb{background:rgba(201,169,110,.3);border-radius:3px}
   input::placeholder{color:rgba(240,233,216,.35)}
+
+  /* ---- 手機水平溢出防線 ----------------------------------------
+     長英文字串、寬表格與 SVG 是這個專案最容易撐破 320px 的三個來源。
+     這裡只約束「會溢出的元素」，不用 overflow-x:hidden 遮蓋問題，
+     避免把真正的版面錯誤藏起來。 */
+  #view{overflow-wrap:anywhere}
+  #view table{max-width:100%;display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  #view pre{max-width:100%;overflow-x:auto;white-space:pre-wrap;word-break:break-word}
+  #view img,#view svg,#view video{max-width:100%}
+  #view input,#view textarea,#view select{max-width:100%;box-sizing:border-box}
+  /* iOS 在 font-size < 16px 的欄位聚焦時會自動放大整頁，造成水平捲動。 */
+  @supports (-webkit-touch-callout:none){
+    #view input,#view textarea,#view select{font-size:16px}
+  }
+
+  /* ---- 共用元件類別（新程式碼使用，舊 inline style 不受影響） ---- */
+  .md-h2{font:var(--fw-bold) var(--fs-h2)/1.5 var(--font-serif);color:var(--text);margin:0}
+  .md-h3{font:var(--fw-bold) var(--fs-h3)/1.5 var(--font-serif);color:var(--brand-bright);margin:0}
+  .md-note{font:var(--fw-regular) var(--fs-xs)/var(--lh-body) var(--font-sans);color:var(--text-muted)}
+  .md-prose{max-width:var(--measure)}
+  /* 內容類型徽章：把「排盤事實 / 綜合判斷 / 解讀文字」在視覺上分開，
+     不只用顏色區分，每一種都帶自己的文字標籤與外框樣式。 */
+  .md-kind{display:inline-flex;align-items:center;gap:4px;font:var(--fw-medium) 10px/1 var(--font-sans);
+    border-radius:var(--radius-sm);padding:4px 8px;border:1px solid currentColor;white-space:nowrap}
+  .md-kind--fact{color:var(--info)}
+  .md-kind--rule{color:var(--brand)}
+  .md-kind--reading{color:var(--success)}
+  .md-kind--limit{color:var(--warning)}
+  /* 狀態訊息：loading / error / empty / success 共用同一個外觀語言，
+     每一種都同時具備圖示、文字前綴與顏色，不單靠顏色傳達狀態。 */
+  .md-status{display:flex;gap:8px;align-items:flex-start;border-radius:var(--radius-md);
+    padding:10px 13px;margin-top:var(--sp-4);
+    font:var(--fw-regular) var(--fs-xs)/1.75 var(--font-sans);border:1px solid var(--border)}
+  .md-status--error{border-color:rgba(214,120,120,.45);background:rgba(214,120,120,.08);color:var(--text-secondary)}
+  .md-status--success{border-color:rgba(155,197,163,.45);background:rgba(155,197,163,.08);color:var(--text-secondary)}
+  .md-status--info{border-color:var(--border);background:var(--surface);color:var(--text-muted)}
+  .md-status__icon{flex:none;font-size:13px;line-height:1.4}
+  /* 目前命盤身分列：使用者隨時知道畫面上這些結果是「哪一張盤」算出來的。 */
+  .md-chartbar{border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface);
+    padding:10px 13px;margin-top:var(--sp-4)}
+  .md-chartbar__row{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:5px}
+  .md-chartbar__item{font:var(--fw-regular) 10.5px/1.6 var(--font-sans);color:var(--text-muted);white-space:nowrap}
+  .md-chartbar__item b{color:var(--text-secondary);font-weight:var(--fw-medium)}
+
   @media (prefers-reduced-motion: reduce) {
     *,*::before,*::after{
       animation-duration:.01ms!important;
@@ -65,10 +188,12 @@
       scroll-behavior:auto!important;
       transition-duration:.01ms!important
     }
+    .home-ambient-video{display:none!important}
   }
 </style>
 </head>
 <body>
+<a class="skip-link" href="#view">跳至主要內容</a>
 
 <div style="min-height:100vh;background:#14111a;background-image:radial-gradient(circle at 15% 10%, rgba(201,169,110,.10), transparent 40%),radial-gradient(circle at 85% 80%, rgba(124,92,255,.08), transparent 45%),radial-gradient(1px 1px at 10% 8%, rgba(240,233,216,.4), transparent 60%),radial-gradient(1px 1px at 32% 22%, rgba(201,169,110,.35), transparent 60%),radial-gradient(1px 1px at 6% 40%, rgba(240,233,216,.3), transparent 60%),radial-gradient(1px 1px at 22% 62%, rgba(201,169,110,.3), transparent 60%),radial-gradient(1px 1px at 12% 80%, rgba(240,233,216,.3), transparent 60%),radial-gradient(1px 1px at 88% 12%, rgba(201,169,110,.3), transparent 60%),radial-gradient(1px 1px at 94% 30%, rgba(240,233,216,.35), transparent 60%),radial-gradient(1px 1px at 78% 55%, rgba(201,169,110,.3), transparent 60%),radial-gradient(1px 1px at 92% 72%, rgba(240,233,216,.3), transparent 60%),radial-gradient(1px 1px at 82% 90%, rgba(201,169,110,.3), transparent 60%);background-attachment:scroll;display:flex;justify-content:center">
 <video class="home-ambient-video" autoplay loop muted playsinline preload="metadata" aria-hidden="true"><source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260314_131748_f2ca2a28-fed7-44c8-b9a9-bd9acdd5ec31.mp4" type="video/mp4"></video>
@@ -81,11 +206,11 @@
     <div aria-hidden="true" style="font:600 24px 'Noto Serif TC',serif;color:#f0e9d8;margin-top:4px;letter-spacing:.03em">塔羅 · 占星</div>
   </div>
 
-  <div id="view"></div>
+  <main id="view" tabindex="-1"></main>
 
   <!-- Bottom nav -->
   <div style="position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:center;background:linear-gradient(0deg,#14111a 60%,rgba(20,17,26,0));padding-top:24px">
-    <div id="nav" style="width:100%;max-width:560px;display:flex;border-top:1px solid rgba(201,169,110,.2);background:#1a1622;padding-bottom:env(safe-area-inset-bottom)"></div>
+    <nav id="nav" aria-label="主要功能導覽" style="width:100%;max-width:560px;display:flex;border-top:1px solid rgba(201,169,110,.2);background:#1a1622;padding-bottom:env(safe-area-inset-bottom)"></nav>
   </div>
 
 </div>
