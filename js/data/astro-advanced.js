@@ -849,16 +849,55 @@ function renderElementQualitySummary(chart) {
 }
 function renderAngleAndHouseBeginner(chart) {
   if (state.astroUnknownTime) return '';
-  var asc=ZODIAC_SIGNS[chart.ascSign], mc=ZODIAC_SIGNS[Math.floor(chart.mc/30)];
-  var counts={}, names={}; for(var i=1;i<=12;i++){counts[i]=0;names[i]=[];}
-  PLANET_DEFS.forEach(function(d){var p=chart.planets[d.key];counts[p.house]++;names[p.house].push(d.zh);});
-  var top=Object.keys(counts).filter(function(k){return counts[k]>0;}).sort(function(a,b){return counts[b]-counts[a];}).slice(0,3);
-  var h='<section style="margin-top:14px;border:1px solid rgba(201,169,110,.2);border-radius:12px;padding:14px"><div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#e6cd9a">別人怎麼認識你，以及人生重心</div>';
-  h+='<div style="margin-top:8px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.8"><strong style="color:#f0e9d8">第一印象：</strong>別人剛認識你時，容易感受到你'+esc(SIGN_BEGINNER[chart.ascSign].behavior)+'。</div>';
-  h+='<div style="margin-top:5px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.8"><strong style="color:#f0e9d8">工作與公共形象：</strong>你傾向用「'+esc(SIGN_BEGINNER[Math.floor(chart.mc/30)].mode)+'」的方式建立專業形象。</div>';
-  if(top.length) h+='<div style="margin-top:10px;font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e">能量最常出現的生活領域</div>'+top.map(function(k){var hb=HOUSE_BEGINNER[parseInt(k,10)-1];return '<div style="margin-top:5px;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.7);line-height:1.7">第 '+k+' 宮：'+esc(hb.area)+'（'+counts[k]+' 顆行星）</div>';}).join('');
-  h+='<details style="margin-top:10px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);cursor:pointer">查看 ASC、MC 與宮位分布</summary><div style="margin-top:6px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.75">ASC '+asc.zh+' '+(chart.asc%30).toFixed(1)+'°；MC '+mc.zh+' '+(chart.mc%30).toFixed(1)+'°。'+top.map(function(k){return '第'+k+'宮：'+names[k].join('、');}).join('；')+'。宮位數量代表關注集中處，不代表吉凶。</div></details></section>';
-  return h;
+  var ascIdx = chart.ascSign, mcIdx = Math.floor(chart.mc / 30);
+  var asc = ZODIAC_SIGNS[ascIdx], mc = ZODIAC_SIGNS[mcIdx];
+  var ascSb = SIGN_BEGINNER[ascIdx], mcSb = SIGN_BEGINNER[mcIdx];
+  var counts = {}, names = {};
+  for (var i = 1; i <= 12; i++) { counts[i] = 0; names[i] = []; }
+  PLANET_DEFS.forEach(function (d) { var p = chart.planets[d.key]; counts[p.house]++; names[p.house].push(d.zh); });
+  var top = Object.keys(counts).filter(function (k) { return counts[k] > 0; })
+    .sort(function (a, b) { return counts[b] - counts[a]; }).slice(0, 3);
+
+  /* 這一段先前被回報「答非所問」，原因有三個，都在下面一併處理：
+     1. 「第一印象」直接把 SIGN_BEGINNER.behavior 貼上去，但那個欄位描述的是
+        「這個星座怎麼做決定」——是內在歷程，不是別人看到的樣子。句子因此在講
+        「你先判斷責任與效益」，讀者卻期待看到「別人覺得你是什麼樣的人」。
+     2. 沒有講出這段在讀盤上的哪個點（上升／天頂），使用者無從判斷可信度，
+        也不知道為什麼描述會偏向行為而不是外表。
+     3. 「你傾向用『先考慮彼此立場，再尋找公平好看的做法』的方式建立專業形象」
+        把一個長子句塞進引號再包一層「的方式」，中文讀起來要回頭讀第二次。
+     修法是不換資料來源（維持可追溯），改成先點名讀的是哪個點、再說明那個點
+     代表什麼、最後才給描述，並補上「上升不等於私下的你」這個關鍵前提。 */
+  var h = '<section style="margin-top:14px;border:1px solid rgba(201,169,110,.2);border-radius:12px;padding:14px">';
+  h += '<h3 class="md-h3" style="font-size:13px">別人眼中的你，和你花最多力氣的地方</h3>';
+  h += '<p class="md-note md-prose" style="margin:5px 0 0">這一段讀的是星盤上的三個結構：上升點、天頂，以及行星集中在哪幾個宮位。</p>';
+
+  h += '<div style="margin-top:10px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.8">';
+  h += '<strong style="color:#f0e9d8">第一印象（上升' + esc(asc.zh) + '）：</strong>';
+  h += '別人剛認識你時，最先接觸到的是你' + esc(ascSb.behavior) + '的那一面。';
+  h += '<span style="display:block;color:rgba(240,233,216,.62);font-size:11px;margin-top:3px">上升描述的是你面對陌生環境時最先啟動的反應方式，不一定等於你私下相處的樣子——所以它讀起來會像「行為」，而不是外表。</span>';
+  h += '</div>';
+
+  h += '<div style="margin-top:9px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.8">';
+  h += '<strong style="color:#f0e9d8">工作與公開場合（天頂' + esc(mc.zh) + '）：</strong>';
+  h += '在職場上，你多半靠' + esc(mcSb.mode) + '，來建立別人對你的專業印象。';
+  h += '<span style="display:block;color:rgba(240,233,216,.62);font-size:11px;margin-top:3px">天頂代表你希望在公開領域被看見的方式，也常是你選擇職涯方向的隱形標準。</span>';
+  h += '</div>';
+
+  if (top.length) {
+    h += '<div style="margin-top:12px;font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e">你花最多力氣的三個生活領域</div>';
+    h += '<div style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);line-height:1.6;margin-top:3px">十二宮各自對應一塊生活領域。某一宮聚集的行星越多，代表你越常把注意力與精力投在那裡——這是關注度，不是好壞。</div>';
+    h += top.map(function (k) {
+      var hb = HOUSE_BEGINNER[parseInt(k, 10) - 1];
+      return '<div style="margin-top:6px;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.7);line-height:1.7">'
+        + '<strong style="color:#e6cd9a">' + esc(hb.area) + '</strong>'
+        + '<span style="color:rgba(240,233,216,.62)">（第 ' + k + ' 宮，' + counts[k] + ' 顆行星：' + esc(names[k].join('、')) + '）</span></div>';
+    }).join('');
+  }
+
+  h += '<details style="margin-top:10px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);cursor:pointer">查看 ASC、MC 的實際度數</summary>';
+  h += '<div style="margin-top:6px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);line-height:1.75">ASC ' + asc.zh + ' ' + (chart.asc % 30).toFixed(1) + '°；MC ' + mc.zh + ' ' + (chart.mc % 30).toFixed(1) + '°。這兩個點完全依賴出生時間與地點，時間差 4 分鐘上升就可能差 1 度。</div></details>';
+  return h + '</section>';
 }
 
 /* ---- 相位總表 ---- */
@@ -7609,8 +7648,42 @@ function renderAstroQuickSummary(chart) {
     challenges.forEach(function (c) { h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.65);line-height:1.7;margin-top:3px">・' + esc(c) + '</div>'; });
   }
   if (major.length) {
-    var usedLeads = [];
-    h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:12px">最明顯的三組性格互動</div>' + major.map(function (a) { var d = aspectBeginnerDataUnique(a, usedLeads); return '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.68);line-height:1.7;margin-top:4px">• <strong>' + esc(d.title) + '</strong>：' + esc(d.lead) + '</div>'; }).join('') + '<details style="margin-top:7px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);cursor:pointer">查看三組相位的專業名稱與容許度</summary><div style="margin-top:5px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);line-height:1.7">' + major.map(function (a) { return esc(aspectPlacementText(a)); }).join('<br>') + '</div></details>';
+    /* 這裡原本用 aspectBeginnerData()／ASPECT_BEGINNER——那是給合盤與推運寫的通用
+       文案，只有「兩個關鍵字 + 合不合得來」兩層資訊，而且每種相位只有 2 句 lead。
+       實際後果是三分相一多，畫面上就連續出現「天生合拍，兩者之間幾乎沒有阻力」
+       「搭配得很自然，幾乎不用刻意練習」這種同義句，讀者看完不知道自己會做出
+       什麼行為。
+
+       改法不是換一組形容詞，而是換掉句子的組成方式：
+       ・關係本身（合相／六分／三分／四分／對分）壓縮成一個短標籤，只講機制，
+         同一種相位出現三次也只是同一個標籤，不會變成三句換句話說的廢話；
+       ・句子主體改用 natalAspectProfile().gift，那是「你實際上會做的事」
+         （例如「把資訊整理成清楚語言」），跟下方「主要相位」區同一份資料來源。
+       落點（哪一宮、哪個星座）刻意留在下方詳細區與摺疊區，不塞進摘要——
+       實測把 {Aplace} 帶進來會讓每句變成 60 字、連續兩個引號，反而更難讀。 */
+    var QUICK_ASPECT_TAG = {
+      conjunction: '幾乎同時發生',
+      sextile: '主動用才會啟動',
+      trine: '自動接力',
+      square: '互相卡住',
+      opposition: '兩端拉扯',
+    };
+    var quickAspectRows = major.map(function (qa) {
+      var qpa = natalAspectProfile(qa.a), qpb = natalAspectProfile(qa.b);
+      var qda = findAnyPointDef(qa.a), qdb = findAnyPointDef(qa.b);
+      var qtag = QUICK_ASPECT_TAG[qa.type];
+      if (!qpa || !qpb || !qda || !qdb || !qtag) return '';
+      return '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.75;margin-top:6px">'
+        + '<strong style="color:#f0e9d8">' + esc(qda.zh + ' × ' + qdb.zh) + '</strong>'
+        + '<span style="font-size:10px;color:#c9a96e;border:1px solid rgba(201,169,110,.35);border-radius:8px;padding:1px 6px;margin-left:6px;white-space:nowrap">' + esc(qtag) + '</span>'
+        + '<br>你會' + esc(qpa.gift) + '，也會' + esc(qpb.gift) + '。</div>';
+    }).filter(Boolean).join('');
+    if (quickAspectRows) {
+      h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:12px">最明顯的三組性格互動</div>';
+      h += '<div style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);line-height:1.6;margin-top:3px">兩顆行星角度接近時，它們代表的兩種能力會連動。標籤說的是連動方式：自動接力最省力，互相卡住與兩端拉扯比較耗神，但也最容易練出本事。</div>';
+      h += quickAspectRows;
+      h += '<details style="margin-top:8px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);cursor:pointer">查看三組相位的專業名稱與容許度</summary><div style="margin-top:5px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);line-height:1.7">' + major.map(function (qa) { return esc(aspectPlacementText(qa)); }).join('<br>') + '</div><div style="margin-top:5px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);line-height:1.7">想看這幾組落在哪一宮、哪個星座，以及可以怎麼練習，請往下展開「主要相位 Aspects」。</div></details>';
+    }
   }
   return h + '</section>';
 }

@@ -195,6 +195,63 @@ if (generalCopy.indexOf('權重 ') === -1) fail('AI 複製', '複製內容缺少
 if (afterSwitchHtml.indexOf('主題總覽') !== -1) fail('換盤', '換成另一張命盤後仍顯示上一張盤的分析結果');
 if (afterSwitchHtml.indexOf('星盤資料已經改變') === -1) fail('換盤', '擋下殘留結果時沒有告訴使用者發生什麼事');
 
+/* ---------- 命盤總覽的可讀性（2026-08 使用者回報） ---------- */
+/* 回報一：「最明顯的三組性格互動」三行讀起來像同一句話講三次，而且看不出
+   自己實際上會做什麼。原因是它用的是通用相位文案（每種相位只有 2 句 lead，
+   而且只講「合不合得來」）。這裡檢查兩件事：句子必須互不重複，而且不能
+   只是形容詞。 */
+const overviewCharts = c.GOLDEN_TEST_CHARTS.map((chart, i) => ({ chart, label: c.GOLDEN_CHART_SPECS[i].label }));
+const stripTags = (h) => h.replace(/<br\s*\/?>/g, '\n').replace(/<[^>]*>/g, '');
+/* 這幾句是舊版通用文案的招牌句型：只宣告兩股能量處得來，沒有任何行為描述。 */
+const EMPTY_AFFIRMATIONS = ['天生合拍', '幾乎沒有阻力', '幾乎不用刻意練習', '搭配得很自然'];
+
+c.state.astroUnknownTime = false;
+overviewCharts.forEach(({ chart, label }) => {
+  const quick = c.renderAstroQuickSummary(chart);
+  const block = (quick.match(/最明顯的三組性格互動[\s\S]*?<details/) || [''])[0];
+  if (!block) return;
+  const body = stripTags(block);
+
+  EMPTY_AFFIRMATIONS.forEach(phrase => {
+    if (body.includes(phrase)) {
+      fail('命盤總覽・' + label, '三組性格互動又出現只講「合不合得來」的空泛句「' + phrase + '」，缺少實際行為描述');
+    }
+  });
+
+  /* 每一行的句子主體（「你會…」那句）必須互不相同。相同代表又退化成換句話說。 */
+  const sentences = body.split('\n').map(x => x.trim()).filter(x => x.startsWith('你會'));
+  if (sentences.length) {
+    const dup = sentences.filter((x, i) => sentences.indexOf(x) !== i);
+    if (dup.length) fail('命盤總覽・' + label, '三組性格互動出現一字不差的重複句：' + dup[0].slice(0, 30));
+    /* 上限抓 50：目前最長 45 字。這條守的是「別再把落點（哪一宮、哪個星座）
+       塞回摘要」——那樣做會讓每句回到 60 字以上、連續兩組引號。 */
+    const tooLong = sentences.filter(x => x.length > 50);
+    if (tooLong.length) fail('命盤總覽・' + label, '摘要句過長（' + tooLong[0].length + ' 字），摘要區應該保持精簡：' + tooLong[0].slice(0, 30));
+  }
+});
+
+/* 回報二：「別人怎麼認識你」讀起來答非所問——描述的是內在決策歷程，
+   但標題承諾的是別人怎麼看你，而且沒有講出這段讀的是星盤上的哪個點。 */
+const angleBlock = c.renderAngleAndHouseBeginner(c.GOLDEN_TEST_CHARTS[0]);
+if (!/第一印象（上升/.test(angleBlock)) {
+  fail('別人眼中的你', '「第一印象」沒有點名上升星座，使用者無從判斷這段的依據');
+}
+if (!/工作與公開場合（天頂/.test(angleBlock)) {
+  fail('別人眼中的你', '「工作與公開場合」沒有點名天頂星座');
+}
+if (angleBlock.indexOf('不一定等於你私下相處的樣子') === -1) {
+  fail('別人眼中的你', '沒有說明上升描述的是對外反應方式而非私下的自己——這是這段被讀成「答非所問」的主因');
+}
+if (!/十二宮各自對應一塊生活領域/.test(angleBlock)) {
+  fail('別人眼中的你', '宮位分布沒有向新手解釋「宮」是什麼，也沒說明顆數代表關注度而非好壞');
+}
+/* 出生時間未知時整段不得出現，否則等於給出假精確的上升與宮位結論。 */
+c.state.astroUnknownTime = true;
+if (c.renderAngleAndHouseBeginner(c.GOLDEN_TEST_CHARTS[0]) !== '') {
+  fail('別人眼中的你', '出生時間未知時仍輸出上升／天頂／宮位內容');
+}
+c.state.astroUnknownTime = false;
+
 /* ---------- 輸出 ---------- */
 console.log('# 畫面渲染煙霧測試');
 console.log('');
