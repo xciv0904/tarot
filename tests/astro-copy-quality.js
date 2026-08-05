@@ -269,6 +269,41 @@ allAnswers.forEach(a => {
   });
 });
 
+/* ---------- 3.6 「內在矛盾」的兩極必須真的對立 ----------
+   這一題的兩極原本是依主導元素挑「同一元素的兩顆行星」，而同元素本來就同調性：
+   風象挑出 Mercury（保留思考、交流與變動空間）與 Uranus（保有自由並嘗試不同做法），
+   讀起來是同一件事講兩次，四組元素配對裡有三組都是這個問題。
+   現在改為優先採用本命盤實際的張力相位，並禁止同調性配對。 */
+const TENSION_FLAVOUR = {
+  Sun:'推進', Mars:'推進', Moon:'感受', Neptune:'感受', Saturn:'秩序',
+  Uranus:'求變', Venus:'關係', Mercury:'思辨', Jupiter:'擴張', Pluto:'深掘',
+};
+const sideToPlanet = {};
+Object.keys(c.ASTRO_TENSION_PLAIN_DATASET || {}).forEach(k => {
+  sideToPlanet[c.ASTRO_TENSION_PLAIN_DATASET[k].side] = k;
+});
+let sameFlavourPairs = 0;
+const tensionPairs = new Set();
+c.GOLDEN_TEST_CHARTS.forEach((entry, i) => {
+  const chart = entry.chart || entry;
+  let res;
+  try { res = c.analyzeNatalTopic(chart, 'general', ['general-inner-tension']); } catch (e) { return; }
+  const headline = (res.answers[0] || {}).headline || '';
+  const m = headline.match(/「([^」]+)」和「([^」]+)」/);
+  if (!m) { fail(`general-inner-tension 的大標題沒有列出兩極：「${headline}」`); return; }
+  const [a, b] = [sideToPlanet[m[1]], sideToPlanet[m[2]]];
+  if (!a || !b) { fail(`general-inner-tension 的兩極不在 ASTRO_TENSION_PLAIN_DATASET 中：${m[1]} / ${m[2]}`); return; }
+  tensionPairs.add([a, b].sort().join('-'));
+  if (TENSION_FLAVOUR[a] && TENSION_FLAVOUR[a] === TENSION_FLAVOUR[b]) {
+    sameFlavourPairs++;
+    if (sameFlavourPairs <= 2) {
+      fail(`第 ${i + 1} 張盤的拉扯兩極同屬「${TENSION_FLAVOUR[a]}」調性，讀不出對立：${m[1]} / ${m[2]}`);
+    }
+  }
+});
+/* 兩極若每張盤都一樣，等於沒有用到個人的盤——這一題就退化成固定文案。 */
+if (tensionPairs.size < 3) fail(`12 張結構差異明顯的盤只產生 ${tensionPairs.size} 種拉扯組合，個人化不足`);
+
 /* ---------- 4. 畫面上未摺疊區的專業術語 ---------- */
 function visibleText(html) {
   const s0 = String(html).replace(/<style[\s\S]*?<\/style>/g, '').replace(/<svg[\s\S]*?<\/svg>/g, ' ');
@@ -438,5 +473,5 @@ if (failures.length) {
 }
 console.log(`Astro copy quality passed: ${answers.length} 筆人生主題答案／${allDetails} 條分項，` +
   `重述標籤 ${echo}/${ECHO_BUDGET}、缺句尾標點 0、半形逗號 0、結論與分項矛盾 ${contradictions}/${CONTRA_BUDGET}、` +
-  `顯示時修剪掉題目框架字 ${echoTitle} 筆、完整樣本 ${allAnswers.length} 份中引號不成對 ${unbalanced}、條件句誤斷 ${midSentencePeriod}、未摺疊術語 ${surfaced.length}/${TERM_BUDGET}、` +
+  `顯示時修剪掉題目框架字 ${echoTitle} 筆、完整樣本 ${allAnswers.length} 份中引號不成對 ${unbalanced}、條件句誤斷 ${midSentencePeriod}、拉扯組合 ${tensionPairs.size} 種且同調性 ${sameFlavourPairs}、未摺疊術語 ${surfaced.length}/${TERM_BUDGET}、` +
   `純資料複製格式 ${packRuns} 組全數通過。`);

@@ -84,6 +84,7 @@ both times with explicit approval and a verified diff:
 | `9b2247a368651a61` | `cbddeea76e602c91` | 「界線」 rewritten as 「底線」／「分寸」 | All 220 changed lines contained 「界線」; 0 changed lines did not |
 | `cbddeea76e602c91` | `8cf6ecf29baa0c51` | Detail text: strip label echo, add sentence-ending punctuation | Only the `details` field changed; all 1308 new values matched `old.endsWith(new_without_period)` |
 | `65fc2e7938526355` | `924d9e3d6bc28e41` | `general-inner-tension`: repair quote-broken headlines, stop the detail restating the headline | 20 of 7204 snapshot leaves changed, all on that one question (12 cases, fields `headline` and `details/0/text`); the other 53 questions are byte-identical. Unbalanced 「」 in the snapshot went 8 → 0 |
+| `924d9e3d6bc28e41` | `e477f4c642430fa5` | `general-inner-tension`: pick the two poles from the chart's actual hard aspects instead of two planets of the same element | 24 of 7204 snapshot leaves changed, all on that one question, fields `headline` and `details/1/text`; same-flavour pole pairs went 12/12 → 0/12, and the 12 charts now produce 4 distinct pairings instead of 4 fixed element presets |
 
 ## Privacy and safety
 
@@ -111,3 +112,4 @@ user initiated. Do not add automatic transmission or commit exported user data.
 | 2026-08-03 | `inner_tension_balance` 的大標題上限從 30 字放寬到 42 字 | 這一題的結論本體是「拉扯在 A 和 B 之間」，兩個需求名稱各約 15 字，30 字內放不下兩極；只留一極的話「拉扯」語意不成立。上限同時放寬於 `compactNatalHeadline()`、`tests/natal-topic-audit.js`、`tests/natal-golden-regression.js` 三處，新增例外必須說明為什麼該題答案無法壓進 30 字 |
 | 2026-08-03 | 標題裁切一律不得切斷「」配對 | `compactNatalHeadline()` 只認 `，、；` 當切點，會切在引號內的頓號上，產生「主要拉扯在「保留思考。」這種未閉合殘句（648 份答案中 8 份） |
 | 2026-08-03 | `tests/astro-copy-quality.js` 的引號成對與條件句誤斷檢查掃全部 648 份，不沿用 288 份取樣 | 該檔其他檢查只取每主題前 3 題；出問題的 `general-inner-tension` 不在取樣內，沿用同一份樣本會讓測試對已知會壞的輸入也「通過」 |
+| 2026-08-03 | `inner_tension_balance` 的兩極改由本命盤實際的四分／對分相位決定，並禁止同調性配對 | 原本依主導元素挑「同一元素的兩顆行星」，而同元素本來就同調性：風象挑出 Mercury（保留思考、交流與變動空間）與 Uranus（保有自由並嘗試不同做法），使用者回報「兩個東西看起來是一樣意思」。四組元素預設裡有三組（火／風／水）根本不構成對立。張力相位才是占星學上「拉扯」的字面來源，而且每張盤不同，答案會真的因人而異 |

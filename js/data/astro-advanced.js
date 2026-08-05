@@ -3591,16 +3591,52 @@ function applyFocusedQuestionContentPlan(base, question, top, second, third, top
     base.detailConceptKeys = ['recoveryPace:' + recoveryKey, 'recoverySignal:' + recoveryKey];
     base.cautionConceptKeys = ['medicalBoundary'];
   } else if (focus === 'inner_tension_balance') {
-    var tensionKeys = natalPlanetKeysFromEvidenceList([top, second, third]);
-    var tensionElem = top && (top.elemTag || top.dominantElement
-      || ((top.canonicalKey || '').match(/balance\|([火土風水])/) || [])[1]);
-    if (tensionElem) {
-      tensionKeys = tensionElem === '火' ? ['Sun', 'Mars']
-        : tensionElem === '土' ? ['Saturn', 'Venus']
-          : tensionElem === '風' ? ['Mercury', 'Uranus']
-            : tensionElem === '水' ? ['Moon', 'Neptune'] : [];
+    /* 「拉扯」必須是兩股方向相反的需求。先前是依主導元素挑「同一元素的兩顆行星」，
+       但同元素本來就同調性，四組配對裡有三組根本不構成對立：
+         火 Sun（被肯定並掌握方向）＋ Mars（立刻行動並突破阻礙）——都是自我推進
+         風 Mercury（保留思考、交流與變動空間）＋ Uranus（保有自由並嘗試不同做法）——都是求變
+         水 Moon（被理解並維持情感安全）＋ Neptune（跟隨直覺、理想與情感共鳴）——都是感受
+       使用者讀到的是同一件事講兩次，難怪看不懂在拉扯什麼。
+
+       改成兩段式：
+       1. 優先採用這張盤實際存在的四分／對分相位。張力相位就是占星學上「拉扯」
+          的字面來源，而且每張盤不同，答案會真的因人而異。
+       2. 沒有硬相位時才退回預先定義的對立軸——每一組都是刻意挑方向相反的需求，
+          不再從同一元素裡取兩顆。 */
+    var TENSION_AXIS_BY_ELEMENT = {
+      '火': ['Mars', 'Saturn'],    // 立刻行動突破 ↔ 確保責任、秩序與結果可控制
+      '土': ['Saturn', 'Uranus'],  // 秩序與可控 ↔ 自由並嘗試不同做法
+      '風': ['Mercury', 'Neptune'],// 保留思考與交流 ↔ 跟隨直覺與情感共鳴
+      '水': ['Moon', 'Saturn'],    // 情感安全需求 ↔ 責任與現實條件
+    };
+    /* 就算是真實的張力相位，兩顆行星的「需求描述」仍可能落在同一種調性上——
+       例如 Sun（被肯定並掌握方向）與 Mars（立刻行動並突破阻礙）都是自我推進，
+       Moon 與 Neptune 都是感受面。這種配對在畫面上一樣讀不出對立感，所以先把
+       ASTRO_TENSION_PLAIN_DATASET 的十個 side 依語意分組，同組不得互相配對。 */
+    var TENSION_FLAVOUR = {
+      Sun:'推進', Mars:'推進',
+      Moon:'感受', Neptune:'感受',
+      Saturn:'秩序', Uranus:'求變', Venus:'關係',
+      Mercury:'思辨', Jupiter:'擴張', Pluto:'深掘',
+    };
+    var tensionKeys = null;
+    /* 依排序逐一檢視張力相位，取第一組兩極分屬不同調性的。 */
+    (base.selectionRanked || []).forEach(function (e) {
+      if (tensionKeys || e.natureTag !== 'tense') return;
+      /* aspect 證據的 canonicalKey 形如 aspect|Mars-Moon:opposition|||（行星依字母排序） */
+      var tenseMatch = String(e.canonicalKey || '').match(/^aspect\|([A-Za-z]+)-([A-Za-z]+):/);
+      if (!tenseMatch) return;
+      var ka = tenseMatch[1], kb = tenseMatch[2];
+      if (!ASTRO_TENSION_PLAIN_DATASET[ka] || !ASTRO_TENSION_PLAIN_DATASET[kb]) return;
+      if (TENSION_FLAVOUR[ka] && TENSION_FLAVOUR[ka] === TENSION_FLAVOUR[kb]) return;
+      tensionKeys = [ka, kb];
+    });
+    if (!tensionKeys) {
+      var tensionElem = top && (top.elemTag || top.dominantElement
+        || ((top.canonicalKey || '').match(/balance\|([火土風水])/) || [])[1]);
+      tensionKeys = TENSION_AXIS_BY_ELEMENT[tensionElem] || ['Saturn', 'Uranus'];
     }
-    var tensionFirstKey = tensionKeys[0] || 'Sun';
+    var tensionFirstKey = tensionKeys[0] || 'Saturn';
     var tensionSecondKey = tensionKeys[1] || (tensionFirstKey === 'Saturn' ? 'Uranus' : 'Saturn');
     var tensionFirst = ASTRO_TENSION_PLAIN_DATASET[tensionFirstKey] || ASTRO_TENSION_PLAIN_DATASET.Sun;
     var tensionSecond = ASTRO_TENSION_PLAIN_DATASET[tensionSecondKey] || ASTRO_TENSION_PLAIN_DATASET.Saturn;
