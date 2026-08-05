@@ -83,6 +83,7 @@ both times with explicit approval and a verified diff:
 |---|---|---|---|
 | `9b2247a368651a61` | `cbddeea76e602c91` | 「界線」 rewritten as 「底線」／「分寸」 | All 220 changed lines contained 「界線」; 0 changed lines did not |
 | `cbddeea76e602c91` | `8cf6ecf29baa0c51` | Detail text: strip label echo, add sentence-ending punctuation | Only the `details` field changed; all 1308 new values matched `old.endsWith(new_without_period)` |
+| `65fc2e7938526355` | `924d9e3d6bc28e41` | `general-inner-tension`: repair quote-broken headlines, stop the detail restating the headline | 20 of 7204 snapshot leaves changed, all on that one question (12 cases, fields `headline` and `details/0/text`); the other 53 questions are byte-identical. Unbalanced 「」 in the snapshot went 8 → 0 |
 
 ## Privacy and safety
 
@@ -107,3 +108,6 @@ user initiated. Do not add automatic transmission or commit exported user data.
 | 2026-08-03 | 結果頁固定顯示「目前命盤」身分列（日期・時間・地點・時區・宮位制・黃道） | 使用者可以反覆改資料重算，先前畫面上完全沒有辦法確認眼前結果來自哪一組出生資料 |
 | 2026-08-03 | 主題卡片的「為什麼這樣說？」展開狀態綁進 `state.natalTopicExpanded` | `state.natalTopicExpanded` 原本宣告後從未被讀取；未受控的 `<details>` 在每次 `render()` 都會塌回收合 |
 | 2026-08-03 | 新增 `tests/ux-structure-regression.js` 與 `tests/ui-render-smoke.js` 為必跑檢查 | 既有測試只驗證文字內容，完全不碰渲染函式；標籤不平衡、標題階層、無名稱按鈕、快取鍵、AI 複製完整性都沒有守門 |
+| 2026-08-03 | `inner_tension_balance` 的大標題上限從 30 字放寬到 42 字 | 這一題的結論本體是「拉扯在 A 和 B 之間」，兩個需求名稱各約 15 字，30 字內放不下兩極；只留一極的話「拉扯」語意不成立。上限同時放寬於 `compactNatalHeadline()`、`tests/natal-topic-audit.js`、`tests/natal-golden-regression.js` 三處，新增例外必須說明為什麼該題答案無法壓進 30 字 |
+| 2026-08-03 | 標題裁切一律不得切斷「」配對 | `compactNatalHeadline()` 只認 `，、；` 當切點，會切在引號內的頓號上，產生「主要拉扯在「保留思考。」這種未閉合殘句（648 份答案中 8 份） |
+| 2026-08-03 | `tests/astro-copy-quality.js` 的引號成對與條件句誤斷檢查掃全部 648 份，不沿用 288 份取樣 | 該檔其他檢查只取每主題前 3 題；出問題的 `general-inner-tension` 不在取樣內，沿用同一份樣本會讓測試對已知會壞的輸入也「通過」 |

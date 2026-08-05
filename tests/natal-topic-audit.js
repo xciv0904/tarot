@@ -114,7 +114,13 @@ const records = questions.map(({topicId,q}) => {
   if (!answers.every(a=>a.contractStatus === 'pass' || a.contractStatus === 'insufficient')) errors.push('答案未經 Question Contract 驗證');
   if (!answers.filter(a=>a.contractStatus==='pass').every(a=>(a.sectionOrder||[]).every(key=>a.sectionsByType&&a.sectionsByType[key]))) errors.push('Renderer 仍依賴未命名的陣列位置');
   if (titleDetailRisk >= .62) errors.push('大標題與分項標籤語意重複');
-  if (longestHeadline > 30) errors.push('大標題超過 30 字');
+  /* 大標題長度上限預設 30 字。inner_tension_balance（如何平衡目前的內在矛盾）
+     是唯一的例外：這一題的結論本體是「拉扯在 A 和 B 之間」，兩個需求名稱各約
+     15 字，30 字內放不下兩極；只留一極的話「拉扯」在語意上不成立（拉扯需要兩邊）。
+     42 字在手機上約兩到三行，仍在可讀範圍，因此為這一題單獨放寬。
+     新增例外必須同時說明「為什麼這一題的答案無法壓進 30 字」。 */
+  const headlineLimit = q.questionFocus === 'inner_tension_balance' ? 42 : 30;
+  if (longestHeadline > headlineLimit) errors.push(`大標題超過 ${headlineLimit} 字`);
   if (headlineDetailRisk >= .45) errors.push('大標題與小標題回答高度重複');
   const renderedAnswers=answers.filter(a=>a.contractStatus!=='insufficient');
   const renderedHeadlines=[...new Set(renderedAnswers.map(a=>textKey(a.headline)))];

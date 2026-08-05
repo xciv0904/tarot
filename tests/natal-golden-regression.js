@@ -86,7 +86,15 @@ c.GOLDEN_TEST_CHARTS.forEach(chart => {
       const text = [answer.headline,answer.summary].concat((answer.details||[]).map(d=>d.text),[answer.caution||'']).join(' ');
       if (forbidden.test(text)) forbiddenLeaks++;
       if (!answer.headline || !answer.summary) emptyAnswers++;
-      if ([...String(answer.headline || '')].length > 30) visibleContentFailures++;
+      /* 大標題長度上限：預設 30 字，inner_tension_balance 放寬到 42 字
+         （理由見 tests/natal-topic-audit.js 同名例外的註解）。
+         註：這一行原本寫成 `visibleContentFailures++`，但它是一個 const 陣列，
+         真的執行到會直接丟 TypeError。因為在此之前沒有任何標題超過 30 字，
+         這個分支從未被走到，錯誤也就一直沒被發現。 */
+      const headlineLimit = answer.questionFocus === 'inner_tension_balance' ? 42 : 30;
+      if ([...String(answer.headline || '')].length > headlineLimit) {
+        visibleContentFailures.push(chart.fixtureId + ': ' + answer.questionId + ' 大標題超過 ' + headlineLimit + ' 字');
+      }
       if (/undefined|NaN/.test(text)) undefinedLeaks++;
       const visibleSlots = [answer.headline,answer.summary].concat((answer.details||[]).map(d=>d.text)).filter(Boolean);
       const normalizedSlots = visibleSlots.map(normalizeVisibleText);

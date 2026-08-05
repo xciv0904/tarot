@@ -3607,7 +3607,11 @@ function applyFocusedQuestionContentPlan(base, question, top, second, third, top
     base.headline = '你的拉扯較可能發生在「' + tensionFirst.side + '」和「' + tensionSecond.side + '」之間。';
     base.summary = '平衡不是選邊站，而是先分清楚現在需要解決的是目標、情緒、關係、自由還是風險。';
     base.details = [
-      { label:'容易卡住的時刻', text:'當你同時想要' + tensionFirst.side + '和' + tensionSecond.side + '，卻無法決定先處理哪一個時，最容易反覆猶豫或一下子用力過猛' },
+      /* 這一條刻意不重述兩極的名稱。三個欄位分工：headline 講「拉扯在哪兩件事之間」，
+         這裡講「卡住時的症狀」，下一條講「各自該怎麼做」。先前是把兩極再列一次，
+         等於把 headline 換句話說，也會被「分項不得重述大標」的通則判定為重複、
+         整條被換成一句泛用行為描述，反而把內容弄丟。 */
+      { label:'容易卡住的時刻', text:'兩邊都想顧好、卻必須先挑一邊處理時，最容易反覆猶豫或一下子用力過猛' },
       { label:'練習整合的方向', text:tensionFirst.action + '，接著' + tensionSecond.action },
     ];
     base.caution = '';
@@ -3790,6 +3794,27 @@ function shortNatalHealthWarning(item) {
   };
   return item ? (labels[item.key] || '疲累後仍繼續硬撐') : '疲累後仍繼續硬撐';
 }
+/* 標題裁切一律不得切在「」中間。引號在這裡是語義單位——「保留思考、交流與
+   變動空間」是一個完整的需求名稱，從裡面的頓號切開會同時造成兩個問題：引號
+   沒有結尾（畫面上出現「主要拉扯在「保留思考。」這種殘句），而且剩下的半個
+   詞讀起來變成另一個意思。 */
+function natalQuotesBalanced(text) {
+  var open = 0;
+  for (var i = 0; i < text.length; i++) {
+    var ch = text.charAt(i);
+    if (ch === '「') open++;
+    else if (ch === '」') { open--; if (open < 0) return false; }
+  }
+  return open === 0;
+}
+/* 所有切點都失敗、只能硬切時的補救：連同那個開引號一起丟掉。
+   標題短一點沒關係，留一個開著的引號一定是壞的。 */
+function natalDropDanglingQuote(text) {
+  if (natalQuotesBalanced(text)) return text;
+  var at = text.lastIndexOf('「');
+  if (at <= 0) return text.replace(/[「」]/g, '');
+  return text.slice(0, at).replace(/[，、；和與及]+$/, '');
+}
 function compactNatalHeadline(text, questionFocus, answer) {
   var raw = String(text || '');
   var dominantDef = answer && answer.semanticProfile && natalSemanticDefinition(answer.semanticProfile.dominant);
@@ -3842,17 +3867,30 @@ function compactNatalHeadline(text, questionFocus, answer) {
     if (finalAnd >= 12) first = first.slice(0, finalAnd);
   }
   if (!first) return '';
-  if ([].concat(Array.from(first + '。')).length <= NATAL_HEADLINE_MAX_LENGTH) return first + '。';
+  /* 「拉扯」這一題的結論本體就是「在 A 和 B 之間」——只留一極的話，句子在語意上
+     不成立（拉扯需要兩邊）。兩個需求名稱各約 15 字，加上框架字必定超過 30 字上限，
+     所以這一題單獨放寬到 42 字（畫面上約兩行），其餘題目維持原本的 30 字。 */
+  var maxLength = questionFocus === 'inner_tension_balance' ? 42 : NATAL_HEADLINE_MAX_LENGTH;
+  if ([].concat(Array.from(first + '。')).length <= maxLength) return first + '。';
 
   /* 優先保留一個完整、可獨立理解的短句。不能直接切到第 30 字，否則會留下
      「而且」「需要」「……的」這類半句。 */
   var cuts = [];
   for (var i = 0; i < first.length; i++) {
-    if ('，、；'.indexOf(first.charAt(i)) === -1 || i < 9 || i > NATAL_HEADLINE_MAX_LENGTH - 2) continue;
-    var candidate = first.slice(0, i);
+    var chAt = first.charAt(i);
+    var isPunct = '，、；'.indexOf(chAt) !== -1;
+    /* 收尾引號本身也是一個合法切點：切在「」之後可以保住一個完整的名稱。
+       這是上面那個 bug 唯一能給出「既完整又夠短」的落點。 */
+    var isCloseQuote = chAt === '」';
+    if ((!isPunct && !isCloseQuote) || i < 9 || i > NATAL_HEADLINE_MAX_LENGTH - 2) continue;
+    var candidate = first.slice(0, isCloseQuote ? i + 1 : i);
     if (/(且|與|並|或|的|是|在|為|需要|容易|可能|先)$/.test(candidate)) continue;
+    if (!natalQuotesBalanced(candidate)) continue;
     cuts.push(candidate);
   }
+  /* 取最後一個（也就是在長度上限內最長的那個）候選；先前只有標點切點時，
+     這裡的行為不變——新增的引號切點一定比同一段裡的標點切點短，
+     不會把既有答案改成更短的版本。 */
   if (cuts.length) return cuts[cuts.length - 1] + '。';
 
   /* 沒有標點可切時，移除第二個並列條件；正文的 summary/details 仍保留完整資訊。 */
@@ -3861,7 +3899,7 @@ function compactNatalHeadline(text, questionFocus, answer) {
     var at = first.indexOf(joins[j], 10);
     if (at > 0 && at <= NATAL_HEADLINE_MAX_LENGTH - 2) {
       var shorter = first.slice(0, at);
-      if (!/(且|與|並|或|的|是|在|為|需要|容易|可能|先)$/.test(shorter)) return shorter + '。';
+      if (!/(且|與|並|或|的|是|在|為|需要|容易|可能|先)$/.test(shorter) && natalQuotesBalanced(shorter)) return shorter + '。';
     }
   }
 
@@ -3871,9 +3909,10 @@ function compactNatalHeadline(text, questionFocus, answer) {
     var afterColon = first.slice(colon + 1);
     var afterCut = afterColon.search(/[，、；]/);
     if (afterCut >= 6) afterColon = afterColon.slice(0, afterCut);
-    if (afterColon.length + 1 <= NATAL_HEADLINE_MAX_LENGTH) return afterColon + '。';
+    if (afterColon.length + 1 <= NATAL_HEADLINE_MAX_LENGTH && natalQuotesBalanced(afterColon)) return afterColon + '。';
   }
-  return first.slice(0, NATAL_HEADLINE_MAX_LENGTH - 2).replace(/(且|與|並|或|的|是|在|為|需要|容易|可能|先)+$/, '') + '。';
+  var hardCut = first.slice(0, NATAL_HEADLINE_MAX_LENGTH - 2).replace(/(且|與|並|或|的|是|在|為|需要|容易|可能|先)+$/, '');
+  return natalDropDanglingQuote(hardCut) + '。';
 }
 function natalVisibleSimilarity(a, b) {
   var left = natalTextKey(a), right = natalTextKey(b);

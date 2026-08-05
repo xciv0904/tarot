@@ -646,7 +646,7 @@
 - detailLabels：內在拉扯的兩股力量、練習整合的方向
 - semanticKeys：inner_tension_balance:selfDirection@aspect|Mars-Sun:conjunction|||+visibility、inner_tension_balance:selfDirection@aspect|Mars-Sun:trine|||+visibility、inner_tension_balance:selfDirection@aspect|Mars-Sun:square|||+visibility、inner_tension_balance:visibility@aspect|Sun-Venus:sextile|||+harmony
 - fallback：0%
-- 重複風險：title/detail 0；headline/detail 0.29；跨命盤 1
+- 重複風險：title/detail 0；headline/detail 0；跨命盤 1
 - WARNING：其中兩張測試盤的主結論較接近，原因是主導語義或落座相同
 
 ### 面對重大選擇時，我最可靠的判斷依據是什麼？（general-decision-basis）— WARNING

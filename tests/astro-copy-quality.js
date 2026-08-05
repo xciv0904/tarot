@@ -212,6 +212,63 @@ answers.forEach(a => {
   if (natalHeadlineForTitleAvailable && c.natalHeadlineForTitle(a.title, a.headline) !== a.headline) echoTitle++;
 });
 
+/* ---------- 3.5 引號必須成對 ----------
+   compactNatalHeadline() 會把過長的標題截到 30 字內，但它原本只認 ，、； 當切點，
+   完全不知道「」是成對的。實際後果：「你的拉扯較可能發生在「保留思考、交流與
+   變動空間」和…」被切在引號裡面第一個頓號上，畫面上出現「主要拉扯在「保留思考。」
+   ——引號沒關、句子沒講完。任何裁切邏輯之後都不得再產生這種輸出。 */
+function quotesBalanced(text) {
+  let open = 0;
+  for (const ch of String(text || '')) {
+    if (ch === '「') open++;
+    else if (ch === '」') { open--; if (open < 0) return false; }
+  }
+  return open === 0;
+}
+/* 上面的 answers 只取每個主題的前 3 題（288 份），出問題的 general-inner-tension
+   正好不在取樣內——這條檢查若沿用同一份樣本，對已知會壞的輸入也會「通過」。
+   引號成對是硬性結構條件，成本也低，這裡改成掃完整的 12 盤 × 54 題。 */
+const allAnswers = [];
+c.GOLDEN_TEST_CHARTS.forEach(entry => {
+  const chart = entry.chart || entry;
+  Object.keys(c.NATAL_TOPIC_QUESTIONS).forEach(topicId => {
+    c.NATAL_TOPIC_QUESTIONS[topicId].forEach(q => {
+      let res;
+      try { res = c.analyzeNatalTopic(chart, topicId, [q.id]); } catch (e) { return; }
+      (res && res.answers || []).forEach(a => allAnswers.push(a));
+    });
+  });
+});
+if (allAnswers.length < 600) fail(`完整樣本過少（${allAnswers.length}），預期 12 盤 × 54 題 = 648`);
+
+let unbalanced = 0;
+allAnswers.forEach(a => {
+  const parts = [['headline', a.headline], ['summary', a.summary], ['caution', a.caution]]
+    .concat((a.details || []).map((d, i) => ['detail' + i, d.text]));
+  parts.forEach(([field, text]) => {
+    if (!text) return;
+    if (!quotesBalanced(text)) {
+      unbalanced++;
+      if (unbalanced <= 3) fail(`${a.questionId} 的 ${field} 引號不成對：「${String(text).slice(0, 40)}」`);
+    }
+  });
+});
+if (unbalanced > 3) fail(`引號不成對共 ${unbalanced} 處（只列出前 3 筆）`);
+
+/* 句子中間不得出現句號——splitNatalLongText() 會把過長的句子從逗號切開並補上
+   句號，遇到「當…、…時，…」這種長條件句時曾切出「…同時出現。你無法決定…」。 */
+let midSentencePeriod = 0;
+allAnswers.forEach(a => {
+  (a.details || []).forEach(d => {
+    const t = String(d.text || '');
+    /* 結尾的句號不算；出現在「當…」條件子句尚未收完時就補句號才算。 */
+    if (/當[^。]*。[^。]*時，/.test(t)) {
+      midSentencePeriod++;
+      if (midSentencePeriod <= 2) fail(`${a.questionId} 的分項條件句被句號攔腰切開：「${t.slice(0, 45)}」`);
+    }
+  });
+});
+
 /* ---------- 4. 畫面上未摺疊區的專業術語 ---------- */
 function visibleText(html) {
   const s0 = String(html).replace(/<style[\s\S]*?<\/style>/g, '').replace(/<svg[\s\S]*?<\/svg>/g, ' ');
@@ -381,5 +438,5 @@ if (failures.length) {
 }
 console.log(`Astro copy quality passed: ${answers.length} 筆人生主題答案／${allDetails} 條分項，` +
   `重述標籤 ${echo}/${ECHO_BUDGET}、缺句尾標點 0、半形逗號 0、結論與分項矛盾 ${contradictions}/${CONTRA_BUDGET}、` +
-  `顯示時修剪掉題目框架字 ${echoTitle} 筆、未摺疊術語 ${surfaced.length}/${TERM_BUDGET}、` +
+  `顯示時修剪掉題目框架字 ${echoTitle} 筆、完整樣本 ${allAnswers.length} 份中引號不成對 ${unbalanced}、條件句誤斷 ${midSentencePeriod}、未摺疊術語 ${surfaced.length}/${TERM_BUDGET}、` +
   `純資料複製格式 ${packRuns} 組全數通過。`);
