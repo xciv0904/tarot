@@ -477,7 +477,7 @@ function renderDailyRhythm(chart, transitPlanets, scores, unknownTime, selectedD
   if (typeof renderPlanetaryDayRow === 'function') {
     var rhythmDate = selectedDate instanceof Date && !isNaN(selectedDate.getTime())
       ? selectedDate : new Date();
-    h += renderPlanetaryDayRow(rhythmDate, (typeof state !== 'undefined') ? (state.astroCityUsed || null) : null);
+    h += renderPlanetaryDayRow(rhythmDate, (typeof state !== 'undefined') ? (state.astroCityUsed || null) : null, chart, unknownTime);
   }
   return h;
 }
@@ -557,7 +557,31 @@ var PLANET_RULER_INFO = {
 /* 回傳當日該主星主管的白天時段（可能一到兩段）。
    算不出日出日落（極區永晝永夜、或引擎不可用）時回傳空陣列，呼叫端就不顯示，
    不用假資料填充。 */
-function planetaryHoursForRuler(date, lat, lon, tz, rulerKey) {
+/* 傳統守護星（七顆古典行星）。這裡刻意不用 SIGN_RULER_MODERN——
+   現代守護星會給出天王／海王／冥王，但行星時的迦勒底次序與行星日只有七顆古典
+   行星，也只有這七顆有既有的顏色與數字對應。行星時本來就是傳統技法，
+   配傳統守護星才是一致的做法。
+   牡羊→火、金牛→金、雙子→水、巨蟹→月、獅子→日、處女→水、
+   天秤→金、天蠍→火、射手→木、摩羯→土、水瓶→土、雙魚→木 */
+var SIGN_RULER_TRADITIONAL = ['Mars', 'Venus', 'Mercury', 'Moon', 'Sun', 'Mercury',
+                              'Venus', 'Mars', 'Jupiter', 'Saturn', 'Saturn', 'Jupiter'];
+/* 命主星＝上升星座的守護星，傳統上代表「你這個人」的行星。
+   出生時間未知時沒有上升，退回太陽星座的守護星，並在畫面上據實說明。 */
+function natalChartRulerKey(chart, unknownTime) {
+  if (!chart) return null;
+  if (!unknownTime && chart.ascSign != null) return SIGN_RULER_TRADITIONAL[chart.ascSign];
+  var sun = chart.planets && chart.planets.Sun;
+  return sun ? SIGN_RULER_TRADITIONAL[sun.sign] : null;
+}
+
+/* 行星時：日出到日落等分十二段，「第一段由當日主星主管」，之後依迦勒底次序輪流。
+   序列的錨點永遠是當日主星（dayRulerKey），要挑出來的是另一顆行星（wantedKey）。
+
+   先前這兩件事被寫成同一個參數，序列直接從 wantedKey 起算——等於假設「想查的
+   那顆行星剛好就是今天的主星」。結果是不管查誰，命中的永遠是 i=0 與 i=7，
+   也就是日出後第 1 與第 8 小時，時間只隨日出漂移。使用者回報「幸運時段永遠是
+   早上五點多和下午一點多」就是這個原因。 */
+function planetaryHoursFor(date, lat, lon, tz, dayRulerKey, wantedKey) {
   if (typeof Astronomy === 'undefined' || !Astronomy.SearchRiseSet) return [];
   try {
     var observer = new Astronomy.Observer(lat, lon, 0);
@@ -571,12 +595,13 @@ function planetaryHoursForRuler(date, lat, lon, tz, rulerKey) {
     var span = set.date.getTime() - rise.date.getTime();
     if (span <= 0) return [];
     var hourMs = span / 12;
-    var startIdx = CHALDEAN_ORDER.indexOf(rulerKey);
-    if (startIdx < 0) return [];
+    /* 錨點是當日主星，不是要查的那顆 */
+    var startIdx = CHALDEAN_ORDER.indexOf(dayRulerKey);
+    if (startIdx < 0 || CHALDEAN_ORDER.indexOf(wantedKey) < 0) return [];
     var fmt = new Intl.DateTimeFormat('zh-TW', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false });
     var out = [];
     for (var i = 0; i < 12; i++) {
-      if (CHALDEAN_ORDER[(startIdx + i) % 7] !== rulerKey) continue;
+      if (CHALDEAN_ORDER[(startIdx + i) % 7] !== wantedKey) continue;
       out.push(fmt.format(new Date(rise.date.getTime() + i * hourMs))
         + '–' + fmt.format(new Date(rise.date.getTime() + (i + 1) * hourMs)));
     }
@@ -584,44 +609,64 @@ function planetaryHoursForRuler(date, lat, lon, tz, rulerKey) {
   } catch (e) { return []; }
 }
 
-function renderPlanetaryDayRow(date, city) {
-  var rulerKey = PLANETARY_DAY_RULERS[date.getDay()];
-  var info = PLANET_RULER_INFO[rulerKey];
+function renderPlanetaryDayRow(date, city, chart, unknownTime) {
+  var dayRulerKey = PLANETARY_DAY_RULERS[date.getDay()];
+  var dayInfo = PLANET_RULER_INFO[dayRulerKey];
+  if (!dayInfo) return '';
+
+  /* 幸運色／數字／時段先前全部掛在「今天由哪顆行星主管」上，而行星日只看星期幾——
+     同一天全世界所有人拿到的完全一樣，換一張命盤也不會變。使用者回報「不管哪張
+     星盤都一模一樣」，說的就是這件事。
+     現在這三項改由命主星（上升星座的守護星）決定：命主星在傳統占星裡就是代表
+     你本人的那顆行星，不同上升就不同行星，個人化這件事才站得住腳。
+     行星日本身是全球共通的事實，不假裝成個人資訊，改放到下面的敘述句裡當背景。 */
+  var rulerKey = natalChartRulerKey(chart, unknownTime);
+  var info = rulerKey ? PLANET_RULER_INFO[rulerKey] : null;
   if (!info) return '';
-  var hours = city ? planetaryHoursForRuler(date, city.lat, city.lon, city.tz, rulerKey) : [];
+  var rulerBasis = (!unknownTime && chart && chart.ascSign != null)
+    ? ('上升' + ZODIAC_SIGNS[chart.ascSign].zh)
+    : ('太陽' + ZODIAC_SIGNS[chart.planets.Sun.sign].zh);
+
+  var hours = city ? planetaryHoursFor(date, city.lat, city.lon, city.tz, dayRulerKey, rulerKey) : [];
 
   var cells = [
-    renderRhythmCell('<div style="font-size:19px;color:#c9a96e">' + esc(info.sym) + '</div>', info.zh, '今日主星'),
+    renderRhythmCell('<div style="font-size:19px;color:#c9a96e">' + esc(info.sym) + '</div>', info.zh, '你的命主星'),
     renderRhythmCell('<div style="width:22px;height:22px;border-radius:50%;background:' + info.color.hex
       + ';border:1px solid rgba(255,255,255,.3)"></div>', info.color.zh, '幸運色'),
-    renderRhythmCell('<div style="font-size:17px;color:rgba(240,233,216,.5)">#</div>', String(info.num), '幸運數字'),
+    renderRhythmCell('<div style="font-size:17px;color:rgba(240,233,216,.62)">#</div>', String(info.num), '幸運數字'),
   ];
   /* 極區的永晝永夜算不出日出日落，這一格就不顯示，不用「全天」之類的話矇混 */
   if (hours.length) {
-    /* 原本是 hours.join('　')，兩個時段用全形空白串成一個字串丟給格子——
-       瀏覽器會把它當成一段可換行的文字，在窄螢幕上斷成「05:22–06:2 / 8
-       13:06– / 14:12」這種亂七八糟的三行。改成每個時段各自一行、各自
-       nowrap，時間本身永遠不會被拆開。 */
     var hoursHtml = '<div style="display:flex;flex-direction:column;align-items:center;gap:2px">'
       + hours.map(function (range) {
           return '<span style="white-space:nowrap;font:600 11.5px \'Noto Sans TC\',sans-serif;font-size:clamp(10px,2.8vw,11.5px);color:#f0e9d8;line-height:1.35;letter-spacing:-.02em">' + esc(range) + '</span>';
         }).join('')
       + '</div>';
-    cells.push(renderRhythmCell('<div style="font-size:17px">◷</div>', hours.join('、'), '幸運時段', hoursHtml));
+    cells.push(renderRhythmCell('<div style="font-size:17px">◷</div>', hours.join('、'), '你的幸運時段', hoursHtml));
   }
 
   var h = '<div style="margin-top:18px">';
   h += renderRhythmGrid(cells, 'border-top:1px solid rgba(201,169,110,.15)');
   h += '<div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.8;margin-top:8px;padding:0 2px">'
-    + '今天是' + esc(info.zh) + '日，' + esc(info.tone) + '。</div>';
-  h += '<details style="margin-top:6px"><summary style="font:500 10.5px \'Noto Sans TC\',sans-serif;color:#c9a96e;cursor:pointer">' + (hours.length ? '這四項' : '這三項') + '是怎麼算出來的？</summary>'
-    + '<div style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.85;margin-top:6px">'
-    + '星期天到星期六依序由日、月、火、水、木、金、土主管，這也是英文星期名稱的由來；今天是'
-    + esc(info.zh) + '日，顏色與數字沿用這顆行星的傳統對應。'
+    + '你的命主星是' + esc(info.zh) + '（' + esc(rulerBasis) + '），' + esc(info.tone) + '。'
+    + '今天整體則是' + esc(dayInfo.zh) + '日'
+    + (rulerKey === dayRulerKey ? '——剛好跟你的命主星同一顆，這種日子一年約有五十多天，你會比平常更容易進入狀況。' : '。')
+    + '</div>';
+  h += '<details style="margin-top:6px"><summary style="font:500 10.5px \'Noto Sans TC\',sans-serif;color:#c9a96e;cursor:pointer">'
+    + (hours.length ? '這四項' : '這三項') + '是怎麼算出來的？</summary>'
+    + '<div style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);line-height:1.85;margin-top:6px">'
+    + '<strong style="color:#c9a96e">命主星</strong>：傳統占星以上升星座的守護星代表本人。你的'
+    + esc(rulerBasis) + '，守護星是' + esc(info.zh) + '；顏色與數字沿用這顆行星的傳統對應，不是隨機挑的。'
+    + (unknownTime || !chart || chart.ascSign == null
+        ? '（因為沒有出生時間，無法定出上升，這裡改用太陽星座的守護星——這是替代做法，準確度低於有出生時間的情況。）'
+        : '')
     + (hours.length
-        ? '幸運時段是「行星時」：把日出到日落等分成十二段，從當日主星起依迦勒底次序輪流，'
-          + esc(info.zh) + '主管的就是上面那幾段——日出日落是用你出生地的經緯度實際算出來的，換城市會不一樣。'
-        : '你所在的緯度今天算不出日出或日落，所以不顯示時段。')
+        ? '<br><strong style="color:#c9a96e">幸運時段</strong>：把日出到日落等分十二段，第一段由當日主星（今天是'
+          + esc(dayInfo.zh) + '）主管，之後依迦勒底次序輪流；上面列出的是輪到你的命主星'
+          + esc(info.zh) + '的那幾段。日出日落用你出生地的經緯度實際計算，換城市、換日期都會不同。'
+        : '<br><strong style="color:#c9a96e">幸運時段</strong>：你所在的緯度今天算不出日出或日落（永晝或永夜），因此不顯示時段。')
+    + '<br><strong style="color:#c9a96e">今天是什麼日</strong>：星期天到星期六依序由日、月、火、水、木、金、土主管，'
+    + '這也是英文星期名稱的由來。這一項是全球共通的曆法事實，不隨個人星盤改變，所以只放在敘述句裡當背景。'
     + '</div></details>';
   h += '</div>';
   return h;

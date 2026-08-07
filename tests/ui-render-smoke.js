@@ -262,8 +262,8 @@ c.state.astroUnknownTime = false;
   try { vm.runInContext(read('assets/vendor/astronomy-engine-2.1.19.min.js'), c, { filename: 'astronomy' }); }
   catch (e) { fail('節奏資訊列', '無法載入天文引擎進行驗證：' + e.message); return; }
 
-  const city = c.CITY_LIST.find(x => x.zh === '台北') || c.CITY_LIST[0];
-  const html = c.renderPlanetaryDayRow(new Date('2026-08-03T09:00:00Z'), city);
+  const city = c.CITY_LIST.find(x => /台北|臺北|Taipei/.test(x.zh + x.en)) || c.CITY_LIST[0];
+  const html = c.renderPlanetaryDayRow(new Date('2026-08-03T09:00:00Z'), city, c.GOLDEN_TEST_CHARTS[0], false);
   if (!html) { fail('節奏資訊列', 'renderPlanetaryDayRow 沒有輸出'); return; }
 
   const colMatch = html.match(/grid-template-columns:repeat\((\d+),minmax\(0,1fr\)\)/);
@@ -293,6 +293,84 @@ c.state.astroUnknownTime = false;
   if (foldTitle !== expected) fail('節奏資訊列', `摺疊標題寫「${foldTitle}」但實際有 ${n} 格`);
   /* renderRhythmCell 現在回傳物件，任何漏改的呼叫端都會把 [object Object] 印到畫面上。 */
   if (html.includes('[object Object]')) fail('節奏資訊列', '有呼叫端仍把 renderRhythmCell() 當字串串接');
+})();
+
+/* ---------- 每日幸運資訊必須因盤而異（2026-08 使用者回報） ---------- */
+/* 回報：「不管是哪張星盤，今日主星、幸運色、幸運時辰都一模一樣」，而且
+   「幸運時段永遠是早上五點到六點、下午一點到兩點」。
+   原因有兩層：
+   (1) 這幾項全部掛在「行星日」（星期幾）上，那是全球共通的曆法事實，
+       換命盤當然不會變；
+   (2) planetaryHoursForRuler() 把「要查誰的時段」與「錨定序列的當日主星」
+       寫成同一個參數，序列直接從要查的行星起算，於是命中的永遠是 i=0 與 i=7
+       ——日出後第 1 與第 8 小時。
+   現在三項都由命主星（上升星座的傳統守護星）決定，行星時序列改以當日主星錨定。 */
+(function checkPersonalLuckySet() {
+  const city = c.CITY_LIST.find(x => /台北|臺北|Taipei/.test(x.zh + x.en)) || c.CITY_LIST[0];
+  const day = new Date('2026-08-03T09:00:00Z'); // 週一，當日主星＝月亮
+  const dayRuler = c.PLANETARY_DAY_RULERS[day.getDay()];
+
+  const readCells = (html) => ({
+    values: [...html.matchAll(/line-height:1\.35[^>]*>([^<]+)</g)].map(m => m[1]),
+    hours: [...html.matchAll(/white-space:nowrap[^>]*>([^<]+)</g)].map(m => m[1]),
+  });
+
+  const signatures = new Set();
+  const hourStarts = new Set();
+  c.GOLDEN_TEST_CHARTS.forEach(chart => {
+    const html = c.renderPlanetaryDayRow(day, city, chart, false);
+    if (!html) { fail('每日幸運資訊', 'renderPlanetaryDayRow 對有效命盤沒有輸出'); return; }
+    const { values, hours } = readCells(html);
+    signatures.add(values.join('|'));
+    hours.forEach(h => hourStarts.add(h.split('–')[0]));
+  });
+  /* 命主星只有七顆古典行星，12 張盤最多七種結果；低於 5 種代表又退回固定內容。 */
+  if (signatures.size < 5) {
+    fail('每日幸運資訊', `12 張不同上升的盤只產生 ${signatures.size} 種幸運組合，等於沒有跟著命盤走`);
+  }
+  /* 舊實作下所有盤的時段起點都相同（日出後第 1、8 小時）。 */
+  if (hourStarts.size < 4) {
+    fail('每日幸運資訊', `所有命盤的幸運時段起點只有 ${hourStarts.size} 種，行星時序列可能又錨定錯了`);
+  }
+
+  /* 行星時序列必須以當日主星錨定：只有當命主星＝當日主星時，第一段才會落在日出。 */
+  if (typeof c.planetaryHoursFor !== 'function') {
+    fail('每日幸運資訊', 'planetaryHoursFor() 不存在——行星時可能仍以「要查的行星」起算');
+    return;
+  }
+  const sunriseRun = c.planetaryHoursFor(day, city.lat, city.lon, city.tz, dayRuler, dayRuler);
+  const otherRun = c.planetaryHoursFor(day, city.lat, city.lon, city.tz, dayRuler, 'Saturn');
+  if (!sunriseRun.length || !otherRun.length) {
+    fail('每日幸運資訊', '行星時計算沒有回傳結果');
+  } else if (sunriseRun[0] === otherRun[0]) {
+    fail('每日幸運資訊', '不同行星算出相同的第一段時間，序列仍以「要查的行星」而非當日主星起算');
+  }
+  /* 同一張盤在一週內的時段也必須移動（當日主星每天換，錨點跟著換）。 */
+  const weekStarts = new Set();
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(Date.UTC(2026, 7, 2 + i, 9));
+    const dr = c.PLANETARY_DAY_RULERS[d.getDay()];
+    const hrs = c.planetaryHoursFor(d, city.lat, city.lon, city.tz, dr, 'Venus');
+    if (hrs.length) weekStarts.add(hrs[0]);
+  }
+  if (weekStarts.size < 5) {
+    fail('每日幸運資訊', `同一張盤一週內的幸運時段只有 ${weekStarts.size} 種起點，應該每天隨當日主星移動`);
+  }
+
+  /* 出生時間未知時退回太陽星座守護星，而且必須據實說明，不能假裝有上升。 */
+  const unknownHtml = c.renderPlanetaryDayRow(day, city, c.GOLDEN_TEST_CHARTS[0], true);
+  if (!/太陽/.test(unknownHtml) || !/沒有出生時間/.test(unknownHtml)) {
+    fail('每日幸運資訊', '出生時間未知時沒有說明命主星改用太陽星座守護星');
+  }
+  if (/上升/.test(readCells(unknownHtml).values.join(''))) {
+    fail('每日幸運資訊', '出生時間未知時仍宣稱使用上升星座');
+  }
+
+  /* 行星日是全球共通的曆法事實，不得被包裝成個人資訊。 */
+  const one = c.renderPlanetaryDayRow(day, city, c.GOLDEN_TEST_CHARTS[0], false);
+  if (!/全球共通/.test(one)) {
+    fail('每日幸運資訊', '沒有說明「今天是什麼日」屬於全球共通、不隨個人星盤改變');
+  }
 })();
 
 /* ---------- 輸出 ---------- */

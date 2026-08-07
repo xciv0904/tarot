@@ -81,18 +81,32 @@ if (!planetaryRowDate || planetaryRowDate.getTime() !== selectedDailyDate.getTim
 }
 c.renderPlanetaryDayRow = originalPlanetaryDayRow;
 
-/* 相鄰兩天的主星、顏色、數字、時段都應重新推導。 */
+/* 幸運色／數字／時段的來源已從「當日主星」改為「命主星」（見 astro-charts.js
+   的說明）：當日主星只看星期幾，全球共通，換命盤不會變，使用者因此回報這一區
+   不準確。這裡改為驗證兩件事——
+   1. 命主星那幾格跟著命盤走（上升獅子→太陽／金黃／1）；
+   2. 當日主星仍出現在敘述句裡當背景，而且相鄰兩天必須不同。 */
 const taipei = { lat: 25.033, lon: 121.5654, tz: 'Asia/Taipei' };
-const fridayRow = c.renderPlanetaryDayRow(new Date(2026, 6, 31, 12, 0, 0), taipei);
-const saturdayRow = c.renderPlanetaryDayRow(selectedDailyDate, taipei);
-[['金星', '青綠', '>6<'], ['土星', '深褐', '>8<']].forEach((expected, index) => {
-  const row = index ? saturdayRow : fridayRow;
-  expected.forEach(value => {
-    if (!row.includes(value)) throw new Error(`日運日期切換後缺少預期值：${value}`);
+const leoChart = c.GOLDEN_TEST_CHARTS.find(ch => (ch.chart || ch).ascSign === 4) || c.GOLDEN_TEST_CHARTS[0];
+const fridayRow = c.renderPlanetaryDayRow(new Date(2026, 6, 31, 12, 0, 0), taipei, leoChart.chart || leoChart, false);
+const saturdayRow = c.renderPlanetaryDayRow(selectedDailyDate, taipei, leoChart.chart || leoChart, false);
+[fridayRow, saturdayRow].forEach(row => {
+  ['太陽', '金黃', '>1<'].forEach(value => {
+    if (!row.includes(value)) throw new Error(`命主星欄位缺少預期值：${value}`);
   });
-  if (!row.includes('幸運時段')) throw new Error('日運日期切換後沒有重新產生幸運時段。');
+  if (!row.includes('幸運時段')) throw new Error('沒有產生幸運時段。');
 });
-if (fridayRow === saturdayRow) throw new Error('相鄰兩天的主星、顏色、數字與時段完全相同。');
+/* 當日主星只出現在敘述句，且兩天不同 */
+if (!fridayRow.includes('今天整體則是金星日') || !saturdayRow.includes('今天整體則是土星日')) {
+  throw new Error('敘述句沒有正確帶出當日的行星日。');
+}
+if (fridayRow === saturdayRow) throw new Error('相鄰兩天的幸運時段完全相同。');
+/* 同一天、不同命盤必須產生不同結果——這正是使用者回報的問題。 */
+const otherChart = c.GOLDEN_TEST_CHARTS.find(ch => (ch.chart || ch).ascSign !== 4);
+if (otherChart) {
+  const otherRow = c.renderPlanetaryDayRow(selectedDailyDate, taipei, otherChart.chart || otherChart, false);
+  if (otherRow === saturdayRow) throw new Error('同一天不同命盤的幸運資訊完全相同，等於沒有個人化。');
+}
 
 const natalHeadlineForTitleAvailable = typeof c.natalHeadlineForTitle === 'function';
 const failures = [];

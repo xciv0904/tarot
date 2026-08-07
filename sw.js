@@ -1,5 +1,5 @@
 /* Mystic Deck service worker — 卡牌圖片快取優先,頁面網路優先 */
-const CACHE = 'mystic-v45';
+const CACHE = 'mystic-v46';
 /* astrology-*.js 現在改成使用者切到「星盤」分頁時才動態載入（見 index.html 的
    ensureAstrologyDataLoaded），但還是放進 CORE 一起預先快取——這樣使用者第一次
    點進星盤分頁時，資料是從快取秒讀，不需要額外等網路。 */
