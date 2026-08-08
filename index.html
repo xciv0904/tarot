@@ -196,7 +196,7 @@
 <a class="skip-link" href="#view">跳至主要內容</a>
 
 <div style="min-height:100vh;background:#14111a;background-image:radial-gradient(circle at 15% 10%, rgba(201,169,110,.10), transparent 40%),radial-gradient(circle at 85% 80%, rgba(124,92,255,.08), transparent 45%),radial-gradient(1px 1px at 10% 8%, rgba(240,233,216,.4), transparent 60%),radial-gradient(1px 1px at 32% 22%, rgba(201,169,110,.35), transparent 60%),radial-gradient(1px 1px at 6% 40%, rgba(240,233,216,.3), transparent 60%),radial-gradient(1px 1px at 22% 62%, rgba(201,169,110,.3), transparent 60%),radial-gradient(1px 1px at 12% 80%, rgba(240,233,216,.3), transparent 60%),radial-gradient(1px 1px at 88% 12%, rgba(201,169,110,.3), transparent 60%),radial-gradient(1px 1px at 94% 30%, rgba(240,233,216,.35), transparent 60%),radial-gradient(1px 1px at 78% 55%, rgba(201,169,110,.3), transparent 60%),radial-gradient(1px 1px at 92% 72%, rgba(240,233,216,.3), transparent 60%),radial-gradient(1px 1px at 82% 90%, rgba(201,169,110,.3), transparent 60%);background-attachment:scroll;display:flex;justify-content:center">
-<video class="home-ambient-video" autoplay loop muted playsinline preload="metadata" aria-hidden="true"><source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260314_131748_f2ca2a28-fed7-44c8-b9a9-bd9acdd5ec31.mp4" type="video/mp4"></video>
+<div id="home-ambient-slot" aria-hidden="true"></div>
 <div style="width:100%;max-width:560px;min-height:100vh;position:relative;z-index:1;padding-bottom:calc(90px + env(safe-area-inset-bottom));box-sizing:border-box">
 
   <!-- Header -->
@@ -304,12 +304,57 @@ function ensureReadingRichLoaded() {
   return readingRichLoadPromise;
 }
 
+/* 首頁背景影片：13.5MB，而且原本是寫死在 HTML 裡的 <video autoplay>。
+   非首頁時雖然有 display:none，但 display:none 完全不會阻止瀏覽器下載——
+   等於任何人一進站、不管停在哪一個分頁，都在背景吃掉 13.5MB 流量。
+   這支影片是純裝飾（灰階、透明度 .44、指標事件關閉），為它付這個代價不合理。
+
+   改成在首屏繪製完成、瀏覽器有空檔時才注入，而且下列任一條件成立就完全不載入：
+     · 使用者開了「減少動態效果」
+     · 瀏覽器回報省流量模式（Save-Data）
+     · 連線是 2G／3G 或 downlink 過低
+     · 目前不在首頁
+   不載入時畫面完全正常——底下本來就有 CSS 星空漸層背景。 */
+var HOME_AMBIENT_SRC = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260314_131748_f2ca2a28-fed7-44c8-b9a9-bd9acdd5ec31.mp4';
+var homeAmbientInjected = false;
+function shouldLoadHomeAmbient() {
+  try {
+    if (!document.body.classList.contains('is-home')) return false;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+    var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    if (conn) {
+      if (conn.saveData) return false;
+      if (/(^|-)2g$/.test(conn.effectiveType || '')) return false;
+      if (typeof conn.downlink === 'number' && conn.downlink > 0 && conn.downlink < 2) return false;
+    }
+    return true;
+  } catch (e) { return false; }
+}
+function maybeInjectHomeAmbient() {
+  if (homeAmbientInjected || !shouldLoadHomeAmbient()) return;
+  var slot = document.getElementById('home-ambient-slot');
+  if (!slot) return;
+  homeAmbientInjected = true;
+  var v = document.createElement('video');
+  v.className = 'home-ambient-video';
+  v.autoplay = true; v.loop = true; v.muted = true; v.playsInline = true;
+  v.setAttribute('muted', ''); v.setAttribute('playsinline', ''); v.setAttribute('aria-hidden', 'true');
+  v.preload = 'auto';
+  v.src = HOME_AMBIENT_SRC;
+  slot.appendChild(v);
+  v.play().catch(function () {});
+}
+
 /* 首次繪製完成後，趁瀏覽器空檔就把牌義補載進來——使用者通常還在看首頁的今日一牌，
    等他點進占卜或牌典時資料早就到了，實際上不會感覺到任何等待。 */
 window.addEventListener('load', function () {
   var kick = function () { ensureReadingRichLoaded().catch(function () {}); };
   if (window.requestIdleCallback) window.requestIdleCallback(kick, { timeout: 2000 });
   else setTimeout(kick, 200);
+  /* 背景影片排在牌義之後——它純裝飾，優先權比實際內容低。 */
+  var kickAmbient = function () { maybeInjectHomeAmbient(); };
+  if (window.requestIdleCallback) window.requestIdleCallback(kickAmbient, { timeout: 4000 });
+  else setTimeout(kickAmbient, 1200);
 });
 </script>
 <!-- defer：三支檔案合計約 950KB，維持原本的執行順序（defer 保證依序執行、且都在

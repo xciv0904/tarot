@@ -60,7 +60,7 @@ var state = {
      主題不會互相污染，回到同一主題會保留原本已選）／分析結果／摺疊卡展開狀態 */
   natalTopicCat: null,
   natalTopicQSel: {},
-  natalTopicResult: null,
+  natalTopicResult: null, natalTopicGenerating: false,
   natalTopicExpanded: {},
   natalTopicShowAll: {},
   natalTopicLimitHit: '',
@@ -4633,6 +4633,8 @@ function render() {
   var view = document.getElementById('view');
   if (state.tab === 'home') document.body.classList.add('is-home');
   else document.body.classList.remove('is-home');
+  /* 使用者可能是先逛別的分頁才回到首頁；影片只在真的看到首頁時才注入一次。 */
+  if (state.tab === 'home' && typeof maybeInjectHomeAmbient === 'function') maybeInjectHomeAmbient();
   if (state.tab === 'home') view.innerHTML = renderHome();
   else if (state.tab === 'reading') view.innerHTML = renderReading();
   /* renderAstro() 現在住在延後載入的 astro-advanced.js 裡。go('astro') 會先觸發載入、

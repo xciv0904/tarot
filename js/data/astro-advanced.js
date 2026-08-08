@@ -1331,7 +1331,7 @@ function renderBirthInputForm(prefix, promptText, genFnName) {
   }
 
   h += '<div style="margin-top:16px;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5)">出生地</div>';
-  h += '<input id="'+prefix+'-city" aria-label="搜尋出生城市" type="text" placeholder="搜尋城市，例如：台北、Tokyo" value="' + esc(state[prefix + 'CityQuery']) + '" oninput="' + prefix + 'CityInput(this.value)" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+  h += '<input id="'+prefix+'-city" aria-label="搜尋出生城市" type="text" maxlength="40" placeholder="搜尋城市，例如：台北、Tokyo" value="' + esc(state[prefix + 'CityQuery']) + '" oninput="' + prefix + 'CityInput(this.value)" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
   h += '<div id="' + prefix + '-city-live">' + renderCityLiveBlock(prefix, genFnName) + '</div>';
   return h;
 }
@@ -4643,7 +4643,14 @@ function natalTopicGenerate() {
   var catKey = state.natalTopicCat;
   var sel = state.natalTopicQSel[catKey] || [];
   if (!catKey || !sel.length || !state.astroResult) return;
-  state.natalTopicResult = analyzeNatalTopic(state.astroResult, catKey, sel, !!state.astroUnknownTime);
+  /* 三題一次的分析在舊手機上要跑幾百毫秒，期間畫面沒有回應；連點會重複運算。 */
+  if (state.natalTopicGenerating) return;
+  state.natalTopicGenerating = true;
+  try {
+    state.natalTopicResult = analyzeNatalTopic(state.astroResult, catKey, sel, !!state.astroUnknownTime);
+  } finally {
+    state.natalTopicGenerating = false;
+  }
   render();
   var anchor = document.getElementById('natal-topic-result');
   if (anchor && anchor.scrollIntoView) anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -5103,7 +5110,7 @@ function renderAstro() {
       h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:5px">時間會影響上升星座與宮位，請盡量提供準確的出生時間</div>';
     }
     h += '<div style="margin-top:18px;font:600 12px \'Noto Sans TC\',sans-serif;color:#c9a96e">3　出生城市</div>';
-    h += '<input id="astro-city" aria-label="搜尋出生城市" type="text" placeholder="搜尋城市，例如：台北、Tokyo" value="' + esc(state.astroCityQuery) + '" oninput="astroCityInput(this.value)" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+    h += '<input id="astro-city" aria-label="搜尋出生城市" type="text" maxlength="40" placeholder="搜尋城市，例如：台北、Tokyo" value="' + esc(state.astroCityQuery) + '" oninput="astroCityInput(this.value)" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 10px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
     h += '<div id="astro-city-live">' + renderCityLiveBlock('astro', 'astroGenerate') + '</div>';
 
   } else {
@@ -5445,6 +5452,9 @@ function synCityInput(v) {
 }
 function synToggleUnknownTime() { state.synUnknownTime = !state.synUnknownTime; render(); }
 async function synGenerate() {
+  /* 與 astroGenerate 一致的重入防護。先前只有本命盤那邊加了，合盤這支漏掉——
+     快速連點會同時跑兩次盤運算，後一次覆蓋前一次，中間多觸發一輪 render。 */
+  if (state.synGenerating) return;
   var city = CITY_LIST[state.synCityIdx];
   if (!city || !state.synY || !state.synM || !state.synD) return;
   if (validateBirthDate(state.synY, state.synM, state.synD, state.synH, state.synMin, state.synUnknownTime)) { render(); return; }

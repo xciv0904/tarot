@@ -114,6 +114,29 @@ check('固定底部導覽有 safe-area 內距，且內容區保留對應底部�
   /padding-bottom:calc\(90px \+ env\(safe-area-inset-bottom\)\)/.test(html));
 check('生成星盤主要按鈕達到 44px 觸控目標', /min-height:var\(--control-h\)/.test(astro));
 
+/* ---------- 9.5 首頁背景影片不得寫死在 HTML ---------- */
+/* 那支影片 13.5MB，原本是靜態的 <video autoplay>。非首頁時雖然有 display:none，
+   但 display:none 不會阻止下載——等於任何人一進站、不論停在哪個分頁，都在背景
+   吃掉 13.5MB。它是純裝飾（灰階、透明度 .44、pointer-events:none）。 */
+check('首頁背景影片沒有寫死在靜態 HTML 裡', !/<video[^>]*home-ambient-video/.test(html));
+check('保留給影片的插槽存在', /id="home-ambient-slot"/.test(html));
+check('影片改為條件式注入', /function maybeInjectHomeAmbient/.test(html) && /function shouldLoadHomeAmbient/.test(html));
+check('省流量模式、2G／低頻寬、減少動態效果時完全不載入影片',
+  /conn\.saveData/.test(html) && /effectiveType/.test(html) && /downlink/.test(html)
+  && html.indexOf("matchMedia('(prefers-reduced-motion: reduce)').matches) return false") !== -1);
+check('影片優先權低於實際內容（排在牌義之後的 idle callback）',
+  /kickAmbient/.test(html) && /timeout: 4000/.test(html));
+check('回到首頁時才注入，且只注入一次',
+  /maybeInjectHomeAmbient\(\);/.test(app) && /homeAmbientInjected/.test(html));
+
+/* ---------- 9.6 所有耗時運算都要有重複點擊防護 ---------- */
+['astroGenerate', 'synGenerate'].forEach(function (fn) {
+  var body = (astro.split('function ' + fn)[1] || '').slice(0, 700);
+  check(fn + '() 有重入防護', /if \(state\.(astro|syn)Generating\) return;/.test(body));
+});
+check('natalTopicGenerate() 有重入防護', /if \(state\.natalTopicGenerating\) return;/.test(astro));
+check('城市搜尋輸入有長度上限', /aria-label="搜尋出生城市" type="text" maxlength="40"/.test(astro));
+
 /* ---------- 10. 動態偏好 ---------- */
 check('尊重 prefers-reduced-motion，並停用首頁背景影片',
   /prefers-reduced-motion/.test(html) && /\.home-ambient-video\{display:none!important\}/.test(html));
