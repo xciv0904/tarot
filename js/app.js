@@ -3708,8 +3708,10 @@ function buildDrawn() {
       })() : null,
     },
   };
-  state.history = [entry].concat(state.history).slice(0, 30);
-  try { localStorage.setItem('tl_history', JSON.stringify(state.history)); } catch (e) {}
+  entry.kind = 'reading';
+  entry.outcome = '';
+  state.history = [entry].concat(state.history).slice(0, HISTORY_MAX);
+  historySave();
   render();
 }
 
@@ -4295,6 +4297,57 @@ function renderLibrary() {
 
 /* ---------- history ---------- */
 
+/* ================= 歷史紀錄：型別與「後來呢？」 =================
+   歷史原本只收占卜。星盤的人生主題分析要花力氣選主題、挑題目、等運算，
+   關掉分頁卻什麼都不留——使用者沒辦法回頭確認「當時它說了什麼」。
+
+   向後相容規則（舊使用者本機已有最多 30 筆舊紀錄）：
+     · 舊紀錄沒有 kind 欄位，一律視為 'reading'
+     · 舊紀錄沒有 outcome 欄位，一律視為空字串
+     · 兩種型別共用同一個 tl_history 與同一個上限，不另開 storage key
+   任何讀取端都必須走下面這兩個 helper，不得直接讀 entry.kind／entry.outcome。 */
+function historyEntryKind(entry) { return (entry && entry.kind === 'natal') ? 'natal' : 'reading'; }
+function historyEntryOutcome(entry) { return (entry && typeof entry.outcome === 'string') ? entry.outcome : ''; }
+
+var HISTORY_MAX = 30;
+var HISTORY_OUTCOME_MAX = 500;
+function historySave() {
+  try { localStorage.setItem('tl_history', JSON.stringify(state.history)); } catch (e) {}
+}
+/* 使用者事後回填實際發生的事。占卜工具能不能被信任，取決於使用者回得去比對；
+   這個欄位是唯一能讓「上次它說對了」變成可見證據的地方。 */
+function historySetOutcome(idx, text) {
+  var entry = state.history[idx];
+  if (!entry) return;
+  entry.outcome = String(text || '').slice(0, HISTORY_OUTCOME_MAX);
+  entry.outcomeAt = entry.outcome ? new Date().toISOString() : '';
+  historySave();
+  render();
+}
+function historyOutcomeInputId(idx) { return 'history-outcome-' + idx; }
+function historySaveOutcomeFromInput(idx) {
+  var el = document.getElementById(historyOutcomeInputId(idx));
+  if (el) historySetOutcome(idx, el.value);
+}
+/* 回填區塊。刻意用 onchange（失焦才存）而不是 oninput——oninput 每打一個字就
+   render() 會把 textarea 整個重建，游標會跳掉。 */
+function renderHistoryOutcome(idx, entry) {
+  var outcome = historyEntryOutcome(entry);
+  var h = '<div style="margin-top:12px;border-top:1px solid rgba(201,169,110,.15);padding-top:10px">';
+  h += '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap">';
+  h += '<span style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e">後來呢？</span>';
+  if (outcome && entry.outcomeAt) h += '<span style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62)">' + fmtDate(entry.outcomeAt) + ' 記錄</span>';
+  h += '</div>';
+  h += '<div style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);line-height:1.6;margin-top:3px">寫下後來實際發生的事。下次回頭看，你才知道當時的解讀對上了哪些、沒對上哪些。只存在這台裝置。</div>';
+  h += '<textarea id="' + historyOutcomeInputId(idx) + '" maxlength="' + HISTORY_OUTCOME_MAX + '" aria-label="記錄後來實際發生的事"'
+    + ' onchange="historySetOutcome(' + idx + ',this.value)"'
+    + ' placeholder="例如：兩週後對方主動聯絡了，跟牌面說的差不多"'
+    + ' style="width:100%;box-sizing:border-box;margin-top:7px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:10px 12px;font:400 12px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none;min-height:64px;resize:vertical">'
+    + esc(outcome) + '</textarea>';
+  h += '<div style="display:flex;justify-content:flex-end;margin-top:6px"><button type="button" onclick="historySaveOutcomeFromInput(' + idx + ')" style="min-height:36px;font:500 11px \'Noto Sans TC\',sans-serif;background:none;border:1px solid rgba(201,169,110,.4);color:#c9a96e;padding:7px 16px;border-radius:16px;cursor:pointer">儲存</button></div>';
+  return h + '</div>';
+}
+
 function fmtDate(iso) {
   var d = new Date(iso);
   return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
@@ -4424,15 +4477,69 @@ function historyCopyForAI() {
   }
 }
 
+/* 星盤主題分析的歷史詳細頁。刻意跟占卜的詳細頁分開：那一頁是為牌陣寫的
+   （牌卡、組牌、牌陣分析），星盤紀錄套上去會留下一整排空區塊。 */
+function renderHistoryNatalDetail(e, idx) {
+  var dt = e.detail || {};
+  var h = '<div style="margin-top:20px">';
+  h += '<button onclick="histClose()" style="min-height:36px;background:none;border:1px solid rgba(201,169,110,.4);color:#c9a96e;font:400 12px \'Noto Sans TC\',sans-serif;padding:7px 16px;border-radius:16px;cursor:pointer">‹ 返回列表 Back</button>';
+  h += '<div style="text-align:center;margin-top:16px">';
+  h += '<div style="font:500 13px \'Noto Sans TC\',sans-serif;color:#c9a96e">人生主題分析 · ' + esc(e.spreadLabel || '') + '</div>';
+  h += '<div style="font:400 11px \'EB Garamond\',serif;color:rgba(240,233,216,.62);margin-top:3px">' + fmtDate(e.date) + '</div>';
+  h += '</div>';
+
+  /* 當時用的是哪一組出生資料。使用者可能已經改過盤，沒有這一段就無從判斷
+     這份舊解讀還算不算數。 */
+  if (dt.birth) {
+    h += '<div class="md-chartbar" style="margin-top:14px">';
+    h += '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap">';
+    h += '<span style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e">當時使用的命盤</span>';
+    h += '<span class="md-kind md-kind--fact">排盤資料</span></div>';
+    h += '<div style="font:500 12.5px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:4px">' + esc(dt.birth.date || '') + '　' + esc(dt.birth.time || '') + '　' + esc(dt.birth.city || '') + '</div>';
+    h += '<div class="md-chartbar__row"><span class="md-chartbar__item">時區 <b>' + esc(dt.birth.tz || '') + '</b></span>'
+      + '<span class="md-chartbar__item">宮位制 <b>' + esc(dt.birth.houseSystem || '') + '</b></span></div>';
+    if (dt.birth.unknownTime) h += '<div style="margin-top:6px;font:400 10.5px \'Noto Sans TC\',sans-serif;color:#d9a0a0;line-height:1.7">△ 當時未提供出生時間，上升、天頂與宮位未納入。</div>';
+    h += '</div>';
+  }
+
+  if (dt.overview) {
+    h += '<div style="border:1px solid rgba(201,169,110,.4);border-radius:10px;padding:15px 17px;background:rgba(201,169,110,.09);margin-top:14px">';
+    h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:#e6cd9a">✦ 主題總覽</div>';
+    h += '<div style="font:400 12.5px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:8px;line-height:1.85">' + esc(dt.overview) + '</div>';
+    h += '</div>';
+  }
+
+  (dt.answers || []).forEach(function (a) {
+    h += '<div style="margin-top:12px;border:1px solid rgba(201,169,110,.28);border-radius:14px;padding:15px 16px;background:rgba(255,255,255,.025)">';
+    h += '<h4 style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(201,169,110,.85);margin:0">' + esc(a.title) + '</h4>';
+    h += '<div style="font:600 14.5px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:6px;line-height:1.6">' + esc(a.headline) + '</div>';
+    if (a.summary) h += '<div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);line-height:1.75;margin-top:6px">' + esc(a.summary) + '</div>';
+    (a.details || []).forEach(function (d) {
+      h += '<div style="border-left:2px solid rgba(201,169,110,.35);padding-left:9px;margin-top:9px">'
+        + '<span style="font:500 10.5px \'Noto Sans TC\',sans-serif;color:#c9a96e">' + esc(d.label) + '</span>'
+        + '<div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.75;margin-top:2px">' + esc(d.text) + '</div></div>';
+    });
+    if (a.caution) h += '<div style="margin-top:10px;display:flex;gap:7px;align-items:flex-start"><span style="flex:none;font:500 10px \'Noto Sans TC\',sans-serif;color:#d9a0a0;background:rgba(214,120,120,.12);border-radius:8px;padding:2px 7px;margin-top:1px">實用提醒</span><div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.68);line-height:1.75">' + esc(a.caution) + '</div></div>';
+    h += '</div>';
+  });
+
+  h += renderHistoryOutcome(idx, e);
+  h += '</div>';
+  return h;
+}
+
 function renderHistory() {
   var h = '';
   h += '<div style="padding:0 20px">';
-  h += '<h2 style="font:600 18px \'Noto Serif TC\',serif;color:#f0e9d8;text-align:center;margin:0">抽牌歷史</h2>';
-  h += '<div style="font:italic 11px \'EB Garamond\',serif;color:rgba(240,233,216,.62);text-align:center;margin-top:2px">Reading History</div>';
+  h += '<h2 style="font:600 18px \'Noto Serif TC\',serif;color:#f0e9d8;text-align:center;margin:0">我的紀錄</h2>';
+  h += '<div style="font:italic 11px \'EB Garamond\',serif;color:rgba(240,233,216,.62);text-align:center;margin-top:2px">Reading &amp; Chart History</div>';
 
   // ---- detail view: full replay of a past reading ----
   if (state.histSelected !== null && state.history[state.histSelected]) {
     var e = state.history[state.histSelected];
+    /* 星盤主題分析走另一套版面：它沒有牌、沒有牌陣、沒有組牌，
+       硬套占卜的詳細頁會出現一整排空區塊。 */
+    if (historyEntryKind(e) === 'natal') return h + renderHistoryNatalDetail(e, state.histSelected) + '</div>';
     var dt = e.detail;
     h += '<div style="margin-top:20px">';
     h += '<button onclick="histClose()" style="background:none;border:1px solid rgba(201,169,110,.4);color:#c9a96e;font:400 12px \'Noto Sans TC\',sans-serif;padding:7px 16px;border-radius:16px;cursor:pointer">‹ 返回列表 Back</button>';
@@ -4490,6 +4597,7 @@ function renderHistory() {
     } else {
       h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.6);margin-top:18px;line-height:1.8;text-align:center">' + esc(e.summary) + '<br><span style="color:rgba(240,233,216,.62);font-size:11px">（此為舊格式紀錄，僅保留摘要）</span></div>';
     }
+    h += renderHistoryOutcome(state.histSelected, e);
     h += renderPersonaPicker();
     h += '<button id="hist-copy-btn" onclick="historyCopyForAI()" style="width:100%;margin-top:22px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製給 AI 解讀 Copy for AI</button>';
     h += '</div></div>';
@@ -4498,24 +4606,33 @@ function renderHistory() {
 
   // ---- list view ----
   if (state.history.length) {
-    h += '<div style="text-align:center;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:10px">點擊紀錄可回看完整解讀</div>';
+    h += '<div style="text-align:center;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:10px">占卜與星盤主題分析都會存在這裡。點開任一筆可以回看完整解讀，並記錄後來實際發生的事。</div>';
     h += '<div style="display:flex;flex-direction:column;gap:12px;margin-top:14px">';
     state.history.forEach(function (e, idx) {
       /* 整張紀錄卡原本是 <div onclick>：滑鼠可以點，但鍵盤與螢幕閱讀器完全用不到。
          改成 role=button + tabindex + Enter/空白鍵處理，維持原本的外觀與排版。 */
-      h += '<div role="button" tabindex="0" aria-label="查看這筆占卜紀錄的完整解讀" onclick="histOpen(' + idx + ')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();histOpen(' + idx + ')}" style="border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:14px 16px;background:rgba(255,255,255,.02);cursor:pointer">';
+      var isNatal = historyEntryKind(e) === 'natal';
+      var outcomeText = historyEntryOutcome(e);
+      h += '<div role="button" tabindex="0" aria-label="查看這筆' + (isNatal ? '星盤主題分析' : '占卜') + '紀錄的完整解讀" onclick="histOpen(' + idx + ')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();histOpen(' + idx + ')}" style="border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:14px 16px;background:rgba(255,255,255,.02);cursor:pointer">';
       h += '<div style="display:flex;justify-content:space-between;align-items:baseline">';
-      h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;color:#c9a96e">' + esc(e.typeLabel) + ' · ' + esc(e.spreadLabel) + (e.categoryLabel ? ' · ' + esc(e.categoryLabel) : '') + '</div>';
+      h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;color:#c9a96e;display:flex;align-items:center;gap:6px;flex-wrap:wrap">'
+        + '<span style="font-size:10px;border:1px solid ' + (isNatal ? 'rgba(143,199,244,.5)' : 'rgba(201,169,110,.45)') + ';color:' + (isNatal ? '#8fc7f4' : '#c9a96e') + ';border-radius:8px;padding:2px 7px">' + (isNatal ? '星盤' : '占卜') + '</span>'
+        + '<span>' + esc(e.typeLabel) + ' · ' + esc(e.spreadLabel) + (e.categoryLabel && !isNatal ? ' · ' + esc(e.categoryLabel) : '') + '</span></div>';
       h += '<div style="font:400 10px \'EB Garamond\',serif;color:rgba(240,233,216,.62)">' + fmtDate(e.date) + '</div>';
       h += '</div>';
       if (e.question || e.target) h += '<div style="font:italic 11px \'EB Garamond\',serif;color:rgba(240,233,216,.62);margin-top:4px">' + (e.target ? '關於「' + esc(e.target) + '」' : '') + (e.question ? '「' + esc(e.question) + '」' : '') + '</div>';
       h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);margin-top:6px;line-height:1.6">' + esc(e.summary) + '</div>';
-      if (e.detail) h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:7px">查看完整解讀 →</div>';
+      if (outcomeText) {
+        h += '<div style="margin-top:8px;border-left:2px solid rgba(155,197,163,.5);padding-left:9px">'
+          + '<span style="font:500 10px \'Noto Sans TC\',sans-serif;color:#9bc5a3">後來</span>'
+          + '<div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.6;margin-top:2px">' + esc(outcomeText.length > 60 ? outcomeText.slice(0, 60) + '…' : outcomeText) + '</div></div>';
+      }
+      if (e.detail) h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:7px">' + (outcomeText ? '查看完整解讀 →' : '查看完整解讀・記錄後來發生的事 →') + '</div>';
       h += '</div>';
     });
     h += '</div>';
   } else {
-    h += '<div style="text-align:center;margin-top:60px;font:italic 13px \'EB Garamond\',serif;color:rgba(240,233,216,.62)">尚無紀錄 · No history yet</div>';
+    h += '<div style="text-align:center;margin-top:60px;font:italic 13px \'EB Garamond\',serif;color:rgba(240,233,216,.62)">還沒有紀錄。占卜結果與人生主題分析都會自動存在這裡，之後可以回頭比對。</div>';
   }
   h += '</div>';
   return h;

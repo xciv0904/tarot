@@ -4663,6 +4663,7 @@ function natalTopicGenerate() {
   state.natalTopicGenerating = true;
   try {
     state.natalTopicResult = analyzeNatalTopic(state.astroResult, catKey, sel, !!state.astroUnknownTime);
+    saveNatalTopicToHistory(state.natalTopicResult);
   } finally {
     state.natalTopicGenerating = false;
   }
@@ -5014,6 +5015,44 @@ function renderNatalTopicSection(chart) {
   h += '</div>';
 
   return h + '</div>';
+}
+
+/* ---- 人生主題分析寫入歷史 ----
+   只存畫面上看得到的內容（結論、分項、提醒），不存 ranked evidence 與 debug——
+   那些每題可以到數 KB，30 筆會把 localStorage 撐爆，而且回頭看歷史時也用不到。
+   命盤身分一併存下來，之後即使使用者換了盤，也能知道當時看的是哪一組出生資料。 */
+function saveNatalTopicToHistory(result) {
+  if (!result || !result.answers || !result.answers.length) return;
+  var cat = NATAL_TOPIC_CATEGORIES.find(function (c) { return c.key === result.topicId; });
+  var id = (typeof astroActiveChartIdentity === 'function') ? astroActiveChartIdentity() : null;
+  var entry = {
+    kind: 'natal',
+    date: new Date().toISOString(),
+    typeLabel: '人生主題',
+    spreadLabel: cat ? cat.zh : result.topicId,
+    categoryLabel: cat ? cat.zh : '',
+    summary: result.answers.map(function (a) { return a.title; }).join('　'),
+    question: '',
+    target: '',
+    outcome: '',
+    detail: {
+      topicId: result.topicId,
+      overview: result.topicOverview,
+      chartFingerprint: result.chartFingerprint,
+      birth: id ? { date: id.date, time: id.time, city: id.city, tz: id.tz, houseSystem: id.houseSystem, unknownTime: id.unknownTime } : null,
+      answers: result.answers.map(function (a) {
+        return {
+          title: a.title,
+          headline: natalHeadlineForTitle(a.title, a.headline),
+          summary: a.contractStatus === 'insufficient' ? a.summary : '',
+          details: visibleNatalDetails(a).map(function (d) { return { label: d.label, text: d.text }; }),
+          caution: a.caution || '',
+        };
+      }),
+    },
+  };
+  state.history = [entry].concat(state.history || []).slice(0, HISTORY_MAX);
+  historySave();
 }
 
 /* ---- 人生主題專題分析：複製給 AI 解讀（含完整 evidence，不受畫面字數限制） ---- */
