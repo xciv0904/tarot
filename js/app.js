@@ -54,6 +54,8 @@ var state = {
   astroUnknownTime: false, astroResult: null, astroView: 'chart', astroGenerating: false, astroTourDismissed: true,
   /* 星盤頁的頁內狀態訊息（取代原本的 alert）：{ kind:'error'|'success'|'info', text } */
   astroNotice: null,
+  /* 多命盤：清單、目前啟用的 id、以及「正在建立新的一張」的旗標 */
+  astroCharts: [], astroActiveId: null, astroPendingNew: false, astroChartsOpen: false,
   returnToReadingAfterAstro: false,
   astroTourIdx: 0, astroTabsMoreOpen: false, astroForecastOpen: false,
   /* 人生主題專題分析：選主題／選題目（每主題各自最多 3 個，keyed 儲存所以切換
@@ -1353,6 +1355,7 @@ function aboutToggle() { state.aboutOpen = !state.aboutOpen; render(); }
 var APP_STORAGE_KEYS = [
   'tl_history', 'tl_learn', 'tl_study', 'tl_astro_profile',
   'tl_xiu_partners', 'tl_ai_persona', 'tl_home_tour_seen', 'tl_astro_tour_seen',
+  'tl_astro_charts',
   'tl_astro_copy_mode',
 ];
 function clearAllData() {

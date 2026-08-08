@@ -1147,6 +1147,166 @@ function validateBirthDate(yRaw, mRaw, dRaw, hRaw, minRaw, unknownTime) {
   return null;
 }
 
+/* ================= 多命盤管理 =================
+   先前只存一組 tl_astro_profile。實際上最常見的使用情境是幫家人朋友看盤，
+   而現在換一個人就得覆蓋掉自己的，換回來還要重打一次出生資料。
+
+   儲存格式（tl_astro_charts）：
+     { version:1, activeId, charts:[{ id, name, y,m,d,h,min, unknownTime, cityIdx, houseSystem, createdAt }] }
+
+   遷移規則——舊使用者本機已有 tl_astro_profile，絕對不能弄丟：
+     1. 若已有 tl_astro_charts，直接使用，不再看舊 key
+     2. 若沒有但有 tl_astro_profile，包成單筆命盤（名稱「我的星盤」）
+     3. 舊的 tl_astro_profile 保留不刪。它只佔幾百 bytes，留著等於保有回退能力；
+        萬一新格式寫壞，使用者的出生資料還在。
+   astroSaveProfile() 仍然同步寫回舊 key（寫的是目前啟用的那一組），
+   所以就算使用者退回舊版本，資料依然讀得到。 */
+var ASTRO_CHARTS_KEY = 'tl_astro_charts';
+var ASTRO_CHARTS_VERSION = 1;
+var ASTRO_CHART_NAME_MAX = 20;
+var ASTRO_CHARTS_MAX = 10;
+
+function astroChartNewId() {
+  return 'c' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
+}
+/* 出生資料相同就是同一張盤。用來擋重複建立，也用來把舊 profile 對應到已存在的盤。 */
+function astroChartSignature(ch) {
+  if (!ch) return '';
+  return [ch.y, ch.m, ch.d, ch.unknownTime ? 'U' : (ch.h + ':' + ch.min), ch.cityIdx, ch.houseSystem || 'placidus'].join('|');
+}
+function astroChartFromState(name) {
+  return {
+    id: astroChartNewId(),
+    name: String(name || '').slice(0, ASTRO_CHART_NAME_MAX) || '未命名',
+    y: state.astroY, m: state.astroM, d: state.astroD, h: state.astroH, min: state.astroMin,
+    unknownTime: !!state.astroUnknownTime,
+    cityIdx: state.astroCityIdx,
+    houseSystem: state.astroHouseSystem || 'placidus',
+    createdAt: new Date().toISOString(),
+  };
+}
+function astroChartsSave() {
+  try {
+    localStorage.setItem(ASTRO_CHARTS_KEY, JSON.stringify({
+      version: ASTRO_CHARTS_VERSION,
+      activeId: state.astroActiveId,
+      charts: state.astroCharts,
+    }));
+  } catch (e) {}
+}
+function astroChartsLoad() {
+  var parsed = null;
+  try { parsed = JSON.parse(localStorage.getItem(ASTRO_CHARTS_KEY) || 'null'); } catch (e) { parsed = null; }
+  if (parsed && Array.isArray(parsed.charts) && parsed.charts.length) {
+    state.astroCharts = parsed.charts.slice(0, ASTRO_CHARTS_MAX);
+    state.astroActiveId = parsed.activeId || state.astroCharts[0].id;
+    if (!state.astroCharts.some(function (c) { return c.id === state.astroActiveId; })) {
+      state.astroActiveId = state.astroCharts[0].id;
+    }
+    return true;
+  }
+  /* 遷移：舊的單筆 profile 包成第一張命盤。 */
+  var legacy = null;
+  try { legacy = JSON.parse(localStorage.getItem('tl_astro_profile') || 'null'); } catch (e) { legacy = null; }
+  if (legacy && legacy.y && legacy.m && legacy.d) {
+    var migrated = {
+      id: astroChartNewId(), name: '我的星盤',
+      y: legacy.y, m: legacy.m, d: legacy.d, h: legacy.h, min: legacy.min,
+      unknownTime: !!legacy.unknownTime, cityIdx: legacy.cityIdx,
+      houseSystem: legacy.houseSystem || 'placidus',
+      createdAt: new Date().toISOString(), migratedFromLegacy: true,
+    };
+    state.astroCharts = [migrated];
+    state.astroActiveId = migrated.id;
+    astroChartsSave();
+    return true;
+  }
+  state.astroCharts = [];
+  state.astroActiveId = null;
+  return false;
+}
+function astroActiveChartRecord() {
+  return (state.astroCharts || []).filter(function (c) { return c.id === state.astroActiveId; })[0] || null;
+}
+/* 把一筆命盤紀錄套進 state 的輸入欄位，並實際排盤。 */
+async function astroApplyChartRecord(rec) {
+  if (!rec) return false;
+  state.astroY = rec.y; state.astroM = rec.m; state.astroD = rec.d;
+  state.astroH = rec.h; state.astroMin = rec.min;
+  state.astroUnknownTime = !!rec.unknownTime;
+  state.astroHouseSystem = rec.houseSystem || 'placidus';
+  state.astroCityIdx = rec.cityIdx;
+  var city = CITY_LIST[state.astroCityIdx];
+  if (!city) { state.astroResult = null; return false; }
+  await ensureAstronomyLoaded();
+  var hh = state.astroUnknownTime ? 12 : (parseInt(state.astroH, 10) || 0);
+  var mm = state.astroUnknownTime ? 0 : (parseInt(state.astroMin, 10) || 0);
+  state.astroResult = computeNatalChart(parseInt(rec.y, 10), parseInt(rec.m, 10), parseInt(rec.d, 10), hh, mm, city.lat, city.lon, city.tz, state.astroHouseSystem);
+  state.astroCityUsed = city;
+  /* 換盤＝先前的主題分析全部失效，一律清掉不留殘影。 */
+  resetNatalTopicAnalysisForChartChange();
+  return true;
+}
+async function astroChartSwitch(id) {
+  if (!id || id === state.astroActiveId) return;
+  var rec = (state.astroCharts || []).filter(function (c) { return c.id === id; })[0];
+  if (!rec) return;
+  state.astroActiveId = id;
+  astroChartsSave();
+  var ok = await astroApplyChartRecord(rec);
+  astroSaveProfile();
+  astroSetNotice(ok ? 'success' : 'error',
+    ok ? ('已切換到「' + rec.name + '」，下方所有內容都改用這張盤重新計算。')
+       : ('「' + rec.name + '」的出生地資料遺失，請重新選擇出生地後再生成一次。'));
+  render();
+  window.scrollTo(0, 0);
+}
+function astroChartRename(id, name) {
+  var rec = (state.astroCharts || []).filter(function (c) { return c.id === id; })[0];
+  if (!rec) return;
+  rec.name = String(name || '').replace(/[\s　]+/g, ' ').trim().slice(0, ASTRO_CHART_NAME_MAX) || rec.name;
+  astroChartsSave();
+  render();
+}
+function astroChartRenameFromInput(id) {
+  var el = document.getElementById('astro-chart-name-' + id);
+  if (el) astroChartRename(id, el.value);
+}
+async function astroChartDelete(id) {
+  var rec = (state.astroCharts || []).filter(function (c) { return c.id === id; })[0];
+  if (!rec) return;
+  try {
+    if (!confirm('確定要刪除「' + rec.name + '」嗎？\n這張盤的出生資料會從這台裝置移除，無法復原。\n（已存的歷史紀錄不受影響）')) return;
+  } catch (e) {}
+  state.astroCharts = state.astroCharts.filter(function (c) { return c.id !== id; });
+  if (state.astroActiveId === id) {
+    state.astroActiveId = state.astroCharts.length ? state.astroCharts[0].id : null;
+    if (state.astroActiveId) await astroApplyChartRecord(astroActiveChartRecord());
+    else { state.astroResult = null; resetNatalTopicAnalysisForChartChange(); }
+  }
+  astroChartsSave();
+  astroSaveProfile();
+  astroSetNotice('success', '已刪除「' + rec.name + '」。');
+  render();
+}
+/* 「再建一張」：保留目前這張，把輸入欄位清空回到表單。 */
+function astroChartStartNew() {
+  if ((state.astroCharts || []).length >= ASTRO_CHARTS_MAX) {
+    astroSetNotice('info', '最多可以保存 ' + ASTRO_CHARTS_MAX + ' 張命盤。請先刪除一張再新增。');
+    render();
+    return;
+  }
+  state.astroY = ''; state.astroM = ''; state.astroD = ''; state.astroH = ''; state.astroMin = '';
+  state.astroCityQuery = ''; state.astroCityIdx = null; state.astroCityUsed = null;
+  state.astroUnknownTime = false; state.astroHouseSystem = 'placidus';
+  state.astroResult = null;
+  state.astroPendingNew = true;
+  resetNatalTopicAnalysisForChartChange();
+  astroSetNotice('info', '請輸入另一個人的出生資料。目前已保存的命盤都還在，生成後可以隨時切換。');
+  render();
+  window.scrollTo(0, 0);
+}
+
 function astroSaveProfile() {
   try {
     localStorage.setItem('tl_astro_profile', JSON.stringify({
@@ -1157,7 +1317,12 @@ function astroSaveProfile() {
 }
 async function astroLoadProfile() {
   try {
-    var sv = JSON.parse(localStorage.getItem('tl_astro_profile') || 'null');
+    /* 先載入命盤清單（含舊 tl_astro_profile 的一次性遷移），再把啟用中的那張排出來。 */
+    var hasCharts = astroChartsLoad();
+    var sv = hasCharts ? astroActiveChartRecord() : null;
+    if (!sv) {
+      try { sv = JSON.parse(localStorage.getItem('tl_astro_profile') || 'null'); } catch (e2) { sv = null; }
+    }
     if (!sv) return;
     state.astroY = sv.y; state.astroM = sv.m; state.astroD = sv.d;
     state.astroH = sv.h; state.astroMin = sv.min;
@@ -1248,6 +1413,8 @@ function astroImportProfileFile(fileInput) {
 }
 function astroForget() {
   try { localStorage.removeItem('tl_astro_profile'); } catch (e) {}
+  try { localStorage.removeItem(ASTRO_CHARTS_KEY); } catch (e) {}
+  state.astroCharts = []; state.astroActiveId = null; state.astroPendingNew = false;
   state.astroY = ''; state.astroM = ''; state.astroD = ''; state.astroH = ''; state.astroMin = '';
   state.astroCityQuery = ''; state.astroCityIdx = null; state.astroCityUsed = null;
   state.astroUnknownTime = false; state.astroHouseSystem = 'placidus'; state.astroResult = null;
@@ -1286,7 +1453,7 @@ async function astroGenerate() {
     resetNatalTopicAnalysisForChartChange();
     state.astroCityUsed = city;
     state.astroGenerating = false;
-    astroSetNotice('success', '星盤已依照上方「目前命盤」的出生資料重新計算完成。');
+    astroRegisterGeneratedChart();
     astroSaveProfile();
     if (state.returnToReadingAfterAstro) {
       state.returnToReadingAfterAstro = false;
@@ -1298,6 +1465,44 @@ async function astroGenerate() {
     window.scrollTo(0, 0);
   }, 30);
 }
+/* 生成完成後把這組出生資料登錄進命盤清單。
+   同一組出生資料只會有一筆——重算既有的盤（例如換宮位制）就更新那一筆，
+   不會每按一次就多一張重複的盤。 */
+function astroRegisterGeneratedChart() {
+  if (!state.astroCharts) state.astroCharts = [];
+  var draft = astroChartFromState('');
+  var sig = astroChartSignature(draft);
+  var existing = state.astroCharts.filter(function (c) { return astroChartSignature(c) === sig; })[0];
+  if (existing) {
+    state.astroActiveId = existing.id;
+    state.astroPendingNew = false;
+    astroChartsSave();
+    astroSetNotice('success', '已切換到已保存的「' + existing.name + '」，不會重複建立同一張盤。');
+    return;
+  }
+  /* 沒按過「再建一張」而且已有啟用中的盤＝使用者是在修改目前這張，就地更新。 */
+  var active = astroActiveChartRecord();
+  if (active && !state.astroPendingNew) {
+    active.y = draft.y; active.m = draft.m; active.d = draft.d;
+    active.h = draft.h; active.min = draft.min;
+    active.unknownTime = draft.unknownTime; active.cityIdx = draft.cityIdx;
+    active.houseSystem = draft.houseSystem;
+    astroChartsSave();
+    astroSetNotice('success', '「' + active.name + '」已用新的出生資料重新計算完成。');
+    return;
+  }
+  if (state.astroCharts.length >= ASTRO_CHARTS_MAX) {
+    astroSetNotice('info', '已達 ' + ASTRO_CHARTS_MAX + ' 張命盤上限，這次的結果不會被保存。要留下來請先刪除一張。');
+    return;
+  }
+  draft.name = '命盤 ' + (state.astroCharts.length + 1);
+  state.astroCharts.push(draft);
+  state.astroActiveId = draft.id;
+  state.astroPendingNew = false;
+  astroChartsSave();
+  astroSetNotice('success', '星盤計算完成，已保存為「' + draft.name + '」。可以在上方「目前命盤」重新命名或切換。');
+}
+
 function astroReset() {
   try {
     if (!confirm('確定要重新輸入嗎？\n目前算好的星盤解讀會被清除（出生日期／時間／地點資料還在，可以直接修改後重新生成）。')) return;
@@ -4776,6 +4981,42 @@ function astroActiveChartIdentity() {
     fingerprint: natalChartFingerprint(chart, unknown),
   };
 }
+/* 命盤切換／命名／刪除。放在身分列裡面，跟「目前是哪一張盤」同一個位置——
+   使用者要換盤時，第一個會看的就是顯示目前盤的那一塊。 */
+function renderChartSwitcher() {
+  var charts = state.astroCharts || [];
+  var h = '<div style="margin-top:9px;border-top:1px solid rgba(201,169,110,.15);padding-top:8px">';
+  h += '<button type="button" aria-expanded="' + (!!state.astroChartsOpen) + '" onclick="toggleAstroCharts()" style="min-height:36px;width:100%;text-align:left;background:none;border:none;color:var(--brand);font:500 11px var(--font-sans);cursor:pointer;padding:4px 0;display:flex;justify-content:space-between;align-items:center;gap:8px">'
+    + '<span>已保存 ' + charts.length + ' 張命盤　切換／命名／刪除</span><span aria-hidden="true">' + (state.astroChartsOpen ? '▴' : '▾') + '</span></button>';
+  if (!state.astroChartsOpen) return h + '</div>';
+
+  if (!charts.length) {
+    h += '<div style="font:400 10.5px/1.7 var(--font-sans);color:var(--text-muted)">目前還沒有保存任何命盤。生成星盤後會自動保存。</div>';
+    return h + '</div>';
+  }
+  charts.forEach(function (rec) {
+    var on = rec.id === state.astroActiveId;
+    var city = CITY_LIST[rec.cityIdx];
+    h += '<div style="border:1px solid ' + (on ? 'var(--brand)' : 'var(--border)') + ';border-radius:var(--radius-md);padding:9px 11px;margin-top:7px;background:' + (on ? 'rgba(201,169,110,.10)' : 'transparent') + '">';
+    h += '<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">';
+    h += '<input id="astro-chart-name-' + esc(rec.id) + '" value="' + esc(rec.name) + '" maxlength="' + ASTRO_CHART_NAME_MAX + '" aria-label="命盤名稱"'
+      + ' onchange="astroChartRename(\'' + esc(rec.id) + '\',this.value)"'
+      + ' style="flex:1;min-width:110px;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 9px;font:500 12px var(--font-sans);color:var(--text);outline:none">';
+    if (on) h += '<span style="font:500 10px var(--font-sans);color:var(--brand-bright);border:1px solid var(--brand);border-radius:8px;padding:3px 8px;white-space:nowrap">使用中</span>';
+    else h += '<button type="button" onclick="astroChartSwitch(\'' + esc(rec.id) + '\')" style="min-height:36px;font:500 11px var(--font-sans);background:rgba(201,169,110,.10);border:1px solid var(--border);color:var(--brand);border-radius:16px;padding:7px 14px;cursor:pointer;white-space:nowrap">切換</button>';
+    h += '<button type="button" onclick="astroChartDelete(\'' + esc(rec.id) + '\')" aria-label="刪除命盤 ' + esc(rec.name) + '" style="min-height:36px;min-width:36px;background:none;border:1px solid rgba(214,120,120,.4);color:var(--danger);border-radius:16px;padding:6px 11px;font:400 11px var(--font-sans);cursor:pointer">刪除</button>';
+    h += '</div>';
+    h += '<div style="font:400 10px var(--font-sans);color:var(--text-muted);margin-top:5px">'
+      + esc(rec.y + '/' + rec.m + '/' + rec.d) + '　' + (rec.unknownTime ? '時間未知' : esc(pad2(rec.h) + ':' + pad2(rec.min)))
+      + '　' + esc(city ? city.zh : '出生地資料遺失') + '</div>';
+    h += '</div>';
+  });
+  h += '<button type="button" onclick="astroChartStartNew()" style="width:100%;min-height:var(--control-h);margin-top:9px;background:none;border:1px dashed var(--border-strong);color:var(--brand);border-radius:var(--radius-md);padding:11px;font:500 12px var(--font-sans);cursor:pointer">＋ 幫別人也建一張（最多 ' + ASTRO_CHARTS_MAX + ' 張）</button>';
+  h += '<div style="font:400 10px/1.6 var(--font-sans);color:var(--text-muted);margin-top:6px">所有命盤只存在這台裝置。切換時下方所有內容都會用新的盤重新計算，先前的主題分析會清空。</div>';
+  return h + '</div>';
+}
+function toggleAstroCharts() { state.astroChartsOpen = !state.astroChartsOpen; render(); }
+
 function renderChartIdentityBar() {
   var id = astroActiveChartIdentity();
   if (!id) return '';
@@ -4793,6 +5034,7 @@ function renderChartIdentityBar() {
   if (id.unknownTime) {
     h += '<div style="margin-top:6px;font:400 10.5px/1.7 var(--font-sans);color:var(--warning)">△ 出生時間未提供：上升、天頂、宮位、福點與宿命點不列入計算與解讀。</div>';
   }
+  h += renderChartSwitcher();
   if (natalTopicDevelopmentMode()) {
     h += '<div style="margin-top:6px;font:400 9px/1.6 monospace;color:var(--text-faint)">dev · chartFingerprint=' + esc(id.fingerprint)
       + ' · view=' + esc(String(state.astroView || 'chart'))
