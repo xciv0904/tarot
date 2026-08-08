@@ -1026,10 +1026,25 @@ function renderNatalWheel(chart) {
 }
 
 /* ---- UI ---- */
+/* 城市搜尋的字面正規化。
+   實測「臺北」「臺中」查無結果——清單裡存的是「台北市」，而「臺」才是戶籍與身分證
+   上的官方用字，很多人就是這樣打。搜尋不到出生地等於整個星盤流程直接卡死，
+   而使用者完全不會知道問題只是一個異體字。
+   同時處理前後空白、全形空白，以及「台灣／臺灣」「巿／市」這類常見輸入差異。 */
+function normalizeCityQuery(q) {
+  return String(q == null ? '' : q)
+    .replace(/[\s\u3000]+/g, '')
+    .replace(/臺/g, '台')
+    .replace(/巿/g, '市')
+    .toLowerCase();
+}
 function filterCityList(q) {
-  if (!q) return CITY_LIST.slice(0, 6);
-  var ql = q.toLowerCase();
-  return CITY_LIST.filter(function (c) { return c.zh.indexOf(q) !== -1 || c.en.toLowerCase().indexOf(ql) !== -1; }).slice(0, 12);
+  var key = normalizeCityQuery(q);
+  if (!key) return CITY_LIST.slice(0, 6);
+  return CITY_LIST.filter(function (c) {
+    return normalizeCityQuery(c.zh).indexOf(key) !== -1
+      || normalizeCityQuery(c.en).indexOf(key) !== -1;
+  }).slice(0, 12);
 }
 
 /* 城市搜尋框絕對不能在打字時整段 render()——那等於把使用者正在輸入的那個 <input>
@@ -1048,7 +1063,7 @@ function renderCityLiveBlock(prefix, genFnName) {
   });
   h += '</div>';
   if (matches.length === 0 && query && query.trim()) {
-    h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:8px">查無此城市，試試看用中文城市名或英文拼音（例如 Tokyo、New York）搜尋</div>';
+    h += '<div role="status" class="md-status md-status--info" style="margin-top:8px"><span class="md-status__icon" aria-hidden="true">ⓘ</span><span>找不到「' + esc(String(query).slice(0, 20)) + '」。城市清單收錄 ' + CITY_LIST.length + ' 個常見出生地（台灣 22 縣市全部收錄）。試試看：改用英文拼音（Tokyo、New York）、只打前兩個字，或改選<strong style="color:var(--brand-bright)">同一時區內最近的大城市</strong>——同時區的城市對行星星座完全沒有影響，只有上升與宮位會有幾分鐘的差異。</span></div>';
   }
   if (state[prefix + 'CityIdx'] != null) {
     h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:8px">已選擇：' + CITY_LIST[state[prefix + 'CityIdx']].zh + '</div>';

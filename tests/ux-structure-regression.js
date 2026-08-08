@@ -137,6 +137,12 @@ check('回到首頁時才注入，且只注入一次',
 check('natalTopicGenerate() 有重入防護', /if \(state\.natalTopicGenerating\) return;/.test(astro));
 check('城市搜尋輸入有長度上限', /aria-label="搜尋出生城市" type="text" maxlength="40"/.test(astro));
 
+/* ---------- 9.7 出生地搜尋不得被異體字卡死 ---------- */
+/* 「臺北」查無結果——清單存的是「台北市」，但「臺」才是身分證上的官方用字。
+   搜尋不到出生地等於整個星盤流程直接中斷，而使用者不會知道問題只是一個異體字。 */
+check('城市搜尋有字面正規化', /function normalizeCityQuery/.test(astro));
+check('查無城市時提供可執行的替代做法', /同一時區內最近的大城市/.test(astro));
+
 /* ---------- 10. 動態偏好 ---------- */
 check('尊重 prefers-reduced-motion，並停用首頁背景影片',
   /prefers-reduced-motion/.test(html) && /\.home-ambient-video\{display:none!important\}/.test(html));
@@ -167,6 +173,12 @@ function loadRuntimeContext() {
 const c = loadRuntimeContext();
 
 check('沒有命盤時身分列輸出空字串，不會誤畫出空殼', c.renderChartIdentityBar() === '');
+
+/* 異體字、全形空白、前後空白都必須能找到同一個城市 */
+['臺北', '台北', ' 台北 ', '臺北巿', 'TAIPEI'].forEach(function (q) {
+  check('城市搜尋「' + q + '」找得到台北市',
+    c.filterCityList(q).some(function (city) { return city.zh === '台北市'; }));
+});
 check('沒有訊息時 renderAstroNotice() 輸出空字串', c.renderAstroNotice() === '');
 
 c.astroSetNotice('error', '測試訊息');
