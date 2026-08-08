@@ -55,7 +55,7 @@ var state = {
   /* 星盤頁的頁內狀態訊息（取代原本的 alert）：{ kind:'error'|'success'|'info', text } */
   astroNotice: null,
   /* 多命盤：清單、目前啟用的 id、以及「正在建立新的一張」的旗標 */
-  astroCharts: [], astroActiveId: null, astroPendingNew: false, astroChartsOpen: false,
+  astroCharts: [], astroActiveId: null, astroPendingNew: false, astroChartsOpen: false, ascWindowsOpen: false,
   returnToReadingAfterAstro: false,
   astroTourIdx: 0, astroTabsMoreOpen: false, astroForecastOpen: false,
   /* 人生主題專題分析：選主題／選題目（每主題各自最多 3 個，keyed 儲存所以切換

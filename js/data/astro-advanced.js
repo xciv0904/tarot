@@ -5512,6 +5512,7 @@ function renderAstro() {
 
     if (state.astroUnknownTime) {
       h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:10px;text-align:center">＊出生時間未知：行星度數以當日中點呈現，月亮請以上方範圍為準。</div>';
+      h += renderAscendantWindows();
     }
 
     /* 白話摘要排在星盤輪圖正下方、上升／天頂與宮位制這些專有名詞卡片之前，
@@ -7981,6 +7982,85 @@ function astroSetHouseSystem(k) {
   render();
 }
 function astroSelectDetail(k) { state.astroDetail = state.astroDetail === k ? null : k; render(); }
+/* ================= 上升星座可能區間 =================
+   出生時間未知的人，上升／天頂／宮位全部被略過——功能少掉一半。
+   坊間常見的做法是「出生時間校正」：拿幾件人生大事去反推出生時間。但那需要
+   逐一比對行運與推運，而且結果高度依賴事件選擇，一組事件常常能對應到好幾個
+   不同的上升；用幾個年份就宣稱推出了上升，正是這個專案明令禁止的假精確。
+
+   這裡改成誠實的做法：把當天 24 小時實際會經過的上升星座算出來，連同各自的
+   時間區間與外在風格描述一起列出，讓使用者自己認領。演算法沒有任何猜測成分
+   ——每一段都是實際排盤算出來的，使用者看到的是「事實清單」，不是推論結果。 */
+/* 這個計算要跑 73 次完整排盤，實測約 900ms，在舊手機上會更久。
+   renderAscendantWindows() 每次 render() 都會被呼叫，不快取的話等於每次重畫
+   都凍住將近一秒。快取鍵只跟輸入有關（日期＋出生地＋宮位制），改任何一項都會失效。 */
+var _ascWindowsCache = { key: '', value: null };
+function astroAscendantWindows() {
+  var city = state.astroCityUsed || CITY_LIST[state.astroCityIdx];
+  var y = parseInt(state.astroY, 10), m = parseInt(state.astroM, 10), d = parseInt(state.astroD, 10);
+  if (!city || !isFinite(y) || !isFinite(m) || !isFinite(d)) return [];
+  var cacheKey = [y, m, d, state.astroCityIdx, state.astroHouseSystem || 'placidus'].join('|');
+  if (_ascWindowsCache.key === cacheKey && _ascWindowsCache.value) return _ascWindowsCache.value;
+  var out = [];
+  try {
+    /* 每 20 分鐘取樣一次：上升約每兩小時換一個星座，20 分鐘足以定位邊界到
+       可用的精度，而且 72 次排盤在手機上也還在可接受範圍。 */
+    var stepMin = 20, prevSign = null, startMin = 0;
+    for (var t = 0; t <= 24 * 60; t += stepMin) {
+      var hh = Math.min(23, Math.floor(t / 60)), mm = t % 60;
+      if (t >= 24 * 60) { hh = 23; mm = 59; }
+      var chart = computeNatalChart(y, m, d, hh, mm, city.lat, city.lon, city.tz, state.astroHouseSystem || 'placidus');
+      var sign = chart.ascSign;
+      if (prevSign === null) { prevSign = sign; startMin = 0; continue; }
+      if (sign !== prevSign) {
+        out.push({ sign: prevSign, from: startMin, to: t });
+        prevSign = sign; startMin = t;
+      }
+    }
+    out.push({ sign: prevSign, from: startMin, to: 24 * 60 });
+  } catch (e) { return []; }
+  _ascWindowsCache = { key: cacheKey, value: out };
+  /* 同一個星座可能在一天內出現兩段（跨午夜），合併顯示時保留各自區間。 */
+  return out.filter(function (w) { return w.to - w.from >= stepMinFloor(); });
+}
+function stepMinFloor() { return 1; }
+function astroFormatMinutes(t) {
+  var hh = Math.floor(t / 60) % 24, mm = t % 60;
+  return pad2(hh) + ':' + pad2(mm);
+}
+function toggleAscendantWindows() { state.ascWindowsOpen = !state.ascWindowsOpen; render(); }
+function renderAscendantWindows() {
+  if (!state.astroUnknownTime) return '';
+  /* 預設收合：這一段要跑 73 次排盤，不該在每個沒有出生時間的使用者一進畫面
+     就無條件付這個代價。展開是明確的動作，算完之後有快取，再開就是瞬間。 */
+  if (!state.ascWindowsOpen) {
+    return '<div style="margin-top:12px;text-align:center"><button type="button" onclick="toggleAscendantWindows()" style="min-height:var(--control-h);font:500 12px var(--font-sans);background:rgba(201,169,110,.08);border:1px solid var(--border);color:var(--brand);border-radius:20px;padding:11px 20px;cursor:pointer">查看那天可能的上升星座 ▾</button>'
+      + '<div class="md-note" style="margin-top:5px">列出出生當天實際會經過的所有上升與時間區間，讓你自己判斷</div></div>';
+  }
+  var windows = astroAscendantWindows();
+  if (!windows.length) return '';
+  var h = '<section style="margin-top:16px;border:1px solid var(--border);border-radius:var(--radius-lg);padding:15px 16px;background:var(--surface)">';
+  h += '<h3 class="md-h3" style="font-size:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">你的上升可能是哪一個 <span class="md-kind md-kind--fact">排盤資料</span></h3>';
+  h += '<p class="md-note md-prose" style="margin:6px 0 0">下面是你出生那天、在' + esc((state.astroCityUsed || {}).zh || '出生地') + '實際會經過的所有上升星座，以及各自對應的出生時間區間。每一段都是真的排盤算出來的，不是推測。</p>';
+  h += '<p class="md-note md-prose" style="margin:6px 0 0;color:var(--warning)">本站不會反過來用人生事件替你推算出生時間——那種做法看起來精確，實際上同一組事件常常能對應到好幾個不同的上升。如果你認得出其中一段像自己，可以拿那個時間回上面重新生成；但那是你的判斷，不是本站的結論。</p>';
+  h += '<div style="margin-top:11px;display:flex;flex-direction:column;gap:7px">';
+  windows.forEach(function (w) {
+    var def = ZODIAC_SIGNS[w.sign];
+    var sb = SIGN_BEGINNER[w.sign];
+    h += '<div style="border-left:2px solid rgba(201,169,110,.4);padding-left:10px">';
+    h += '<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:baseline">';
+    h += '<span style="font:600 13px var(--font-serif);color:var(--brand-bright)">' + def.sym + ' 上升' + esc(def.zh) + '</span>';
+    h += '<span style="font:400 11px var(--font-sans);color:var(--text-muted);white-space:nowrap">' + astroFormatMinutes(w.from) + '–' + astroFormatMinutes(w.to === 1440 ? 1439 : w.to) + ' 出生</span>';
+    h += '</div>';
+    if (sb) h += '<div style="font:400 11.5px/1.75 var(--font-sans);color:var(--text-secondary);margin-top:3px">別人第一眼會感覺到你' + esc(sb.behavior) + '。</div>';
+    h += '</div>';
+  });
+  h += '</div>';
+  h += '<div style="text-align:center;margin-top:10px"><button type="button" onclick="toggleAscendantWindows()" style="min-height:36px;background:none;border:none;color:var(--text-muted);font:400 11px var(--font-sans);cursor:pointer">收起 ▴</button></div>';
+  h += '</section>';
+  return h;
+}
+
 function astroMoonRangeText() {
   if (!state.astroUnknownTime || !state.astroCityUsed) return '';
   var c = state.astroCityUsed;

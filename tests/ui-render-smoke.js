@@ -416,6 +416,51 @@ c.state.astroUnknownTime = false;
   if (text.indexOf('非事件預言') === -1) fail('分享圖', '沒有標示解讀性質，容易被當成預言轉發');
 })();
 
+/* ---------- 上升可能區間（取代出生時間校正） ---------- */
+/* 出生時間未知的人少掉一半功能。坊間做法是拿人生事件反推出生時間，但同一組
+   事件常能對應到好幾個不同的上升——那正是本專案禁止的假精確。這裡只列出當天
+   實際會經過的上升與時間區間，全部是排盤結果，判斷交給使用者。 */
+(function checkAscendantWindows() {
+  c.state.astroY = '1990'; c.state.astroM = '5'; c.state.astroD = '20';
+  c.state.astroCityIdx = 0; c.state.astroCityUsed = c.CITY_LIST[0];
+  c.state.astroHouseSystem = 'placidus';
+
+  c.state.astroUnknownTime = false;
+  if (c.renderAscendantWindows() !== '') fail('上升區間', '有出生時間時不該顯示這一段');
+
+  c.state.astroUnknownTime = true;
+  c.state.ascWindowsOpen = false;
+  const collapsed = c.renderAscendantWindows();
+  if (!/查看那天可能的上升星座/.test(collapsed)) fail('上升區間', '收合狀態沒有提供展開入口');
+  if (/上升牡羊座|上升金牛座/.test(collapsed)) fail('上升區間', '收合時就已經算完並輸出，等於沒有延後成本');
+
+  c.state.ascWindowsOpen = true;
+  const windows = c.astroAscendantWindows();
+  if (windows.length < 12) fail('上升區間', '只算出 ' + windows.length + ' 段，一天應經過全部十二個星座');
+  const covered = windows.reduce(function (n, w) { return n + (w.to - w.from); }, 0);
+  if (covered !== 1440) fail('上升區間', '區間涵蓋 ' + covered + ' 分鐘，應完整覆蓋 24 小時不留缺口');
+  windows.forEach(function (w, i) {
+    if (w.to <= w.from) fail('上升區間', '第 ' + (i + 1) + ' 段的結束時間不晚於開始時間');
+    if (i > 0 && windows[i - 1].to !== w.from) fail('上升區間', '第 ' + i + ' 段與第 ' + (i + 1) + ' 段之間有缺口或重疊');
+  });
+  const signs = new Set(windows.map(function (w) { return w.sign; }));
+  if (signs.size !== 12) fail('上升區間', '只涵蓋 ' + signs.size + ' 個星座，一天應經過全部十二個');
+
+  /* 快取：這段要跑 73 次排盤，render() 每次呼叫都重算的話畫面會凍住將近一秒。 */
+  const t1 = Date.now(); c.astroAscendantWindows(); const cached = Date.now() - t1;
+  if (cached > 50) fail('上升區間', '重複呼叫耗時 ' + cached + 'ms，快取沒有生效');
+  c.state.astroD = '21';
+  const other = c.astroAscendantWindows();
+  if (JSON.stringify(other) === JSON.stringify(windows)) fail('上升區間', '換日期後結果相同，快取沒有正確失效');
+  c.state.astroD = '20';
+
+  const html = c.renderAscendantWindows();
+  if (!/不是本站的結論/.test(html)) fail('上升區間', '沒有講明判斷由使用者做，容易被讀成本站推算出了出生時間');
+  if (/校正|推算出你的出生時間/.test(html)) fail('上升區間', '用詞暗示本站能反推出生時間');
+  c.state.astroUnknownTime = false;
+  c.state.ascWindowsOpen = false;
+})();
+
 /* ---------- 輸出 ---------- */
 console.log('# 畫面渲染煙霧測試');
 console.log('');
