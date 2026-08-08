@@ -27,7 +27,6 @@ var state = {
   phase: 'setup',      // setup | shuffling | picking | result
   pickOrder: [],       // shuffled indices of the full deck (picking pool)
   picked: [],          // pool cell indices the user has tapped, in order
-  dailyFlipped: true,
   history: [],
   libDeck: 'tarot',
   libSuit: 'all',
@@ -118,7 +117,7 @@ try {
    js/data/reading-rich-data.js 並按需載入（見 index.html 的 ensureReadingRichLoaded），
    所以這裡改成可重複呼叫的函式：第一次執行時資料通常還沒到，會直接跳過；
    資料載入完成後由載入器再呼叫一次補掛。所有讀 card.rich 的地方本來就都有
-   短牌義可以降級（例如 dailyFullMeaning、cardCoreMeaning），不會出現空白內容。 */
+   短牌義可以降級（例如 cardCoreMeaning、cardPosText），不會出現空白內容。 */
 function attachRichMeanings() {
   if (typeof RICH === 'undefined' || !RICH) return false;
   TAROT.forEach(function (c) { c.rich = RICH[c.id] || null; });
@@ -132,33 +131,6 @@ function hashStr(s) {
   return h;
 }
 
-/* 今日一牌原本只用日期當種子，等於全世界所有人同一天拿到同一張牌。
-   放在「抽牌」的語境裡，使用者理所當然以為那是自己抽到的。
-
-   改成日期＋這台裝置專屬的隨機碼：
-     · 同一天內重整、關掉再開，牌都不會變（種子固定）
-     · 不同人拿到不同的牌
-     · 裝置碼只是一串本機亂數，不含任何個人資訊，也不會離開這台裝置
-   清除所有資料時裝置碼會一併移除，之後會重新產生一組。 */
-var DAILY_SEED_KEY = 'tl_daily_seed';
-function dailyDeviceSeed() {
-  try {
-    var v = localStorage.getItem(DAILY_SEED_KEY);
-    if (!v) {
-      v = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
-      localStorage.setItem(DAILY_SEED_KEY, v);
-    }
-    return v;
-  } catch (e) {
-    /* 無痕模式或封鎖 localStorage 時退回日期種子——牌仍然一天固定一張，
-       只是會跟其他同樣無法寫入的裝置相同。這比每次重整換一張牌好。 */
-    return '';
-  }
-}
-var _today = new Date().toISOString().slice(0, 10);
-var _seed = hashStr(_today + '|' + dailyDeviceSeed());
-var dailyCard = TAROT[_seed % TAROT.length];
-var dailyReversed = (_seed >> 3) % 2 === 1;
 
 function esc(s) {
   return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -198,10 +170,8 @@ function doFlip(id, flipped) {
    不到一半的流量；只有 2 張牌並排（單張約 240px 寬）這種大圖情境才用全尺寸。
    decoding="async" 讓圖片解碼不佔用主執行緒，多張牌同時出現時捲動比較不會頓。 */
 /* 牌面圖的實際比例：assets/cards 全部是 420×700，縮圖 300×500，都是 0.6。
-   任何要讓圖片「滿版」的版面都必須從這個比例推導，不能各自寫死高度。 */
+   需要讓圖片填滿容器的版面請從這個比例推導高度，不要各自寫死。 */
 var CARD_ART_RATIO = 0.6;
-var DAILY_CARD_W = 170;
-var DAILY_CARD_LABEL_H = 80;   // 卡面底部名稱／正逆位那一塊的實際高度
 
 function cardImgHtml(src, alt, useThumb) {
   if (!src) return '<div style="flex:1;display:flex;align-items:center;justify-content:center;font:600 13px \'Noto Serif TC\',serif;color:#a9784f;padding:6px;text-align:center">' + esc(alt) + '</div>';
@@ -1384,7 +1354,7 @@ function aboutToggle() { state.aboutOpen = !state.aboutOpen; render(); }
 var APP_STORAGE_KEYS = [
   'tl_history', 'tl_learn', 'tl_study', 'tl_astro_profile',
   'tl_xiu_partners', 'tl_ai_persona', 'tl_home_tour_seen', 'tl_astro_tour_seen',
-  'tl_astro_charts', 'tl_daily_seed',
+  'tl_astro_charts',
   'tl_astro_copy_mode',
 ];
 function clearAllData() {
@@ -1467,7 +1437,7 @@ function toggleHomeMore() { state.homeMoreOpen = !state.homeMoreOpen; render(); 
    寫「我想問一個問題」但按鈕是「我有一件事想問」，寫「快速占卜」但那顆叫
    「直接抽一張牌」——一併改成畫面上真正看得到的名稱。 */
 var HOME_TOUR_ITEMS = [
-  ['首頁「今天需要一點指引」', '不用填任何資料，直接看今天這張牌的提醒'],
+  ['首頁「抽一張牌」', '不用填任何資料，直接抽一張，看看今天的提醒'],
   ['首頁「我有一件事想問」', '心裡有具體的事，一步一步帶你完成占卜'],
   ['底部「星盤」', '填出生年月日與地點，算出你的個人星盤'],
   ['底部「牌典」', '查每一張牌的完整牌義，也可以做記憶測驗'],
@@ -1544,19 +1514,7 @@ function quickDraw() {
   go('reading', state.deck || 'tarot');
   startReading();
 }
-function homeDailyGuide() {
-  state.dailyFlipped = true;
-  render();
-  var el = document.getElementById('daily-card-block');
-  if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
 
-/* daily card's full meaning text: prefer the rich (upright/reversed) paragraph,
-   fall back to the short zh meaning if no rich entry exists for this card */
-function dailyFullMeaning(c, reversed) {
-  if (c.rich) return reversed ? c.rich.r : c.rich.u;
-  return reversed ? c.revZh : c.upZh;
-}
 
 function renderHome() {
   var h = '';
@@ -1565,7 +1523,14 @@ function renderHome() {
   // 新手先依需求選入口，不必先理解塔羅、雷諾曼或星盤的差別。
   h += '<div style="text-align:center;margin:2px 0 16px"><h2 style="font:600 18px \'Noto Serif TC\',serif;color:#f0e9d8;margin:0">你現在最想獲得什麼？</h2><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:5px">選一個最接近現在狀態的入口就好</div></div>';
   h += '<div style="display:flex;flex-direction:column;gap:10px">';
-  h += '<button onclick="homeDailyGuide()" style="min-height:68px;font:500 14px \'Noto Sans TC\',sans-serif;background:rgba(201,169,110,.08);border:1px solid rgba(201,169,110,.35);color:#f0e9d8;padding:14px 17px;border-radius:14px;cursor:pointer;text-align:left"><div style="color:#e6cd9a;font:600 15px \'Noto Serif TC\',serif">今天需要一點指引</div><div style="font-size:11px;opacity:.55;margin-top:4px">不用準備問題，直接看看今天的提醒</div></button>';
+  /* 原本第一顆是「今天需要一點指引」，它只是捲到下方的今日一牌並翻開——
+     使用者要的其實是「現在就抽一張」。今日一牌是系統指定的、被動的；
+     直接抽牌是使用者自己的動作，參與感完全不同，而它先前卻埋在折疊的
+     「其他功能」裡。這裡對調兩者的位置。 */
+  h += '<button onclick="quickDraw()" style="min-height:72px;font:500 14px \'Noto Sans TC\',sans-serif;background:rgba(201,169,110,.10);border:1px solid rgba(201,169,110,.4);color:#f0e9d8;padding:14px 17px;border-radius:14px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:13px">'
+    + '<span aria-hidden="true" style="flex:none;width:34px;height:52px;border-radius:5px;border:1px solid #c9a96e;background:linear-gradient(160deg,#241f2e,#1a1622);display:flex;align-items:center;justify-content:center">' + sigil(22, 22) + '</span>'
+    + '<span><span style="display:block;color:#e6cd9a;font:600 15px \'Noto Serif TC\',serif">抽一張牌</span>'
+    + '<span style="display:block;font-size:11px;opacity:.6;margin-top:4px">不用準備問題，現在就抽，看看今天的提醒</span></span></button>';
   h += '<button onclick="startQuestionFlow()" style="min-height:72px;font:600 16px \'Noto Serif TC\',serif;background:linear-gradient(120deg,#c9a96e,#e6cd9a);color:#1a1622;border:none;padding:16px 18px;border-radius:14px;cursor:pointer;text-align:left"><div>我有一件事想問 →</div><div style="font:400 11px \'Noto Sans TC\',sans-serif;opacity:.65;margin-top:4px">依照你的問題，一步一步完成占卜</div></button>';
   h += '<button onclick="go(\'astro\')" style="min-height:68px;font:500 14px \'Noto Sans TC\',sans-serif;background:rgba(124,92,255,.06);border:1px solid rgba(201,169,110,.28);color:#f0e9d8;padding:14px 17px;border-radius:14px;cursor:pointer;text-align:left"><div style="color:#e6cd9a;font:600 15px \'Noto Serif TC\',serif">我想更了解自己</div><div style="font-size:11px;opacity:.55;margin-top:4px">用出生資料建立個人星盤，了解性格與人生主題</div></button>';
   h += '</div>';
@@ -1579,45 +1544,10 @@ function renderHome() {
     h += '<div style="text-align:center;margin-top:12px"><button type="button" onclick="homeShowTour()" style="min-height:36px;background:none;border:none;color:rgba(240,233,216,.62);font:400 10px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">新手導覽 · 再看一次</button></div>';
   }
 
-  // ---- daily card, always shown, no click needed ----
-  var c = dailyCard;
-  var meaningZh = dailyReversed ? c.revZh : c.upZh;
-  var meaningEn = dailyReversed ? c.revEn : c.upEn;
-  var todayLabel = new Date().toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' });
-  h += '<div id="daily-card-block" style="margin-top:28px">';
-  h += '<div style="text-align:center;font:500 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);margin-bottom:16px">' + esc(todayLabel) + '・今日一牌</div>';
-  var frontInner = '<div style="position:absolute;inset:4px;border:1px solid #d8b96c;border-radius:7px;overflow:hidden;display:flex;flex-direction:column">'
-    + cardImgHtml(c.img, c.nameZh + ' ' + c.nameEn, true)
-    + '<div style="flex:none;background:#f2e9d8;padding:8px 6px 10px;text-align:center;border-top:1px solid #d8b96c">'
-    + '<div style="font:600 11px \'Noto Serif TC\',serif;color:#8a6f47">' + esc(c.num) + '</div>'
-    + '<div style="font:600 15px \'Noto Serif TC\',serif;color:#4a3826;margin-top:2px">' + esc(c.nameZh) + '</div>'
-    + '<div style="font:italic 10px \'EB Garamond\',serif;color:#a9784f">' + esc(c.nameEn) + '</div>'
-    + '<div style="font:500 10px \'Noto Sans TC\',sans-serif;color:#8a6f47;margin-top:4px">' + (dailyReversed ? '逆位 Reversed' : '正位 Upright') + '</div>'
-    + '</div></div>';
-  /* 卡框高度不能隨便寫死。牌面圖是 420×700（比例 0.6），但卡框底下還有一塊
-     名稱／正逆位的說明區；先前框高 262px 扣掉那塊之後，圖片可用區域變成約
-     0.88 的比例，object-fit:contain 就以高度為準縮放，左右各留約 26px 白邊，
-     看起來就是「沒有滿版」。這裡改成由牌面比例往回推框高。 */
-  var dailyArtW = DAILY_CARD_W - 10;                               // 扣掉 inset 4px×2 與外框線
-  var dailyFrameH = Math.round(dailyArtW / CARD_ART_RATIO) + DAILY_CARD_LABEL_H + 10;
-  h += '<div role="button" tabindex="0" aria-label="翻開或收起今日一牌" aria-pressed="' + state.dailyFlipped + '" onclick="toggleDailyFlip()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();toggleDailyFlip()}" style="margin:0 auto;width:' + DAILY_CARD_W + 'px;height:' + dailyFrameH + 'px;cursor:pointer;position:relative">';
-  h += flipBox('daily', state.dailyFlipped, 10, sigil(76, 76), frontInner);
-  h += '</div>';
-  h += '<div id="daily-meaning" style="text-align:center;margin-top:16px;padding:0 20px;display:' + (state.dailyFlipped ? 'block' : 'none') + '">';
-  h += '<div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + esc(meaningZh) + '</div>';
-  h += '<div style="font:italic 12px \'EB Garamond\',serif;color:rgba(240,233,216,.5);margin-top:3px">' + esc(meaningEn) + '</div>';
-  h += '</div>';
-  h += '<div style="margin-top:18px;display:flex;flex-direction:column;gap:10px;padding:0 4px">';
-  h += '<div style="border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:12px 15px;background:rgba(255,255,255,.02)">';
-  h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;color:#c9a96e">今天可以怎麼看</div>';
-  h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);margin-top:6px;line-height:1.85;text-align:justify">把這張牌當作今天的提醒：留意它描述的狀態，看看是否正出現在你的選擇、情緒或人際互動裡。</div>';
-  h += '</div>';
-  h += '<div style="border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:12px 15px;background:rgba(255,255,255,.02)">';
-  h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;color:#c9a96e">這張牌的意義</div>';
-  h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);margin-top:6px;line-height:1.85;text-align:justify">' + esc(dailyFullMeaning(c, dailyReversed)) + '</div>';
-  h += '</div>';
-  h += '</div>';
-  h += '</div>';
+  /* 今日一牌已從首頁移除。它是系統依日期指定的、被動的一張牌；使用者真正想要的
+     是「現在就抽一張」——那是自己的動作，參與感完全不同，而且抽完就是一次完整
+     的占卜流程，可以存進紀錄、可以回填後來發生的事。相關的牌義查詢仍在牌典，
+     單張抽牌入口在上方主按鈕。 */
 
   // ---- everything else, collapsed by default ----
   h += '<div style="margin-top:32px;border-top:1px solid rgba(201,169,110,.15);padding-top:16px">';
@@ -1629,7 +1559,6 @@ function renderHome() {
     /* 塔羅百科／星盤已經各自是底部導覽列的獨立分頁，這裡不再重複列出同一個
        目的地，避免使用者以為底部「更多」跟這裡是兩份不一樣的清單 */
     h += '<div style="display:flex;flex-direction:column;gap:10px;margin-top:14px">';
-    h += '<button onclick="quickDraw()" style="font:500 14px \'Noto Sans TC\',sans-serif;background:rgba(255,255,255,.02);color:#f0e9d8;border:1px solid rgba(201,169,110,.3);padding:13px 16px;border-radius:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"><span>直接抽一張牌<div style="font-size:10px;opacity:.45;margin-top:3px">不設定問題，快速獲得一個方向</div></span><span>›</span></button>';
     h += '<button onclick="go(\'history\')" style="font:500 14px \'Noto Sans TC\',sans-serif;background:rgba(255,255,255,.02);color:#f0e9d8;border:1px solid rgba(201,169,110,.3);padding:13px 16px;border-radius:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"><span>查看占卜紀錄</span><span>›</span></button>';
     h += '</div>';
     h += renderStudyWidget();
@@ -1642,16 +1571,6 @@ function renderHome() {
   return h;
 }
 
-function toggleDailyFlip() {
-  state.dailyFlipped = !state.dailyFlipped;
-  doFlip('daily', state.dailyFlipped);
-  var flipButton = document.querySelector('[aria-label="翻開或收起今日一牌"]');
-  if (flipButton) flipButton.setAttribute('aria-pressed', String(state.dailyFlipped));
-  /* #daily-meaning 只有首頁才存在；少了這個判斷，只要在非首頁的狀態下被呼叫到
-     （例如鍵盤事件在切分頁的空檔觸發），就會丟出 TypeError 中斷後續程式。 */
-  var meaning = document.getElementById('daily-meaning');
-  if (meaning) meaning.style.display = state.dailyFlipped ? 'block' : 'none';
-}
 
 /* ---------- reading ---------- */
 

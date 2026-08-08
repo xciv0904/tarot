@@ -170,19 +170,19 @@ check('複製按鈕數量符合預期（10 顆，塔羅與星盤都有）', (fun
 check('外部連結一律 noopener noreferrer', !/target="_blank"(?![^>]*rel="noopener noreferrer")/.test(app + astro));
 check('明確聲明本站不會自行送出資料', /不會自行傳送任何資料/.test(app));
 
-/* ---------- 9.9 今日一牌要各人各抽 ---------- */
-/* 種子原本只有日期，等於全世界同一天拿到同一張牌。放在「抽牌」的語境裡，
-   使用者理所當然以為那是自己抽到的。 */
-check('今日一牌的種子包含裝置專屬亂數', /hashStr\(_today \+ '\|' \+ dailyDeviceSeed\(\)\)/.test(app));
-check('裝置碼會持久化，同一天不會每次重整就換牌', /localStorage\.setItem\(DAILY_SEED_KEY/.test(app));
-check('無法寫入 localStorage 時安全降級', /return '';/.test(app) && /function dailyDeviceSeed/.test(app));
-check('清除所有資料會一併移除裝置碼', /'tl_daily_seed'/.test(app));
-
-/* ---------- 9.10 牌面圖必須填滿卡框 ---------- */
-/* 牌面是 0.6 比例（420×700），但卡框底下還有名稱區；先前框高寫死 262px，
-   圖片可用區變成 0.93 比例，object-fit:contain 以高度縮放後左右各留 28px 白邊。 */
-check('卡框高度由牌面比例推導，不寫死', /var CARD_ART_RATIO = 0\.6/.test(app) && /dailyArtW \/ CARD_ART_RATIO/.test(app));
-check('今日一牌不再使用寫死的 262px 框高', !/width:170px;height:262px/.test(app));
+/* ---------- 9.9 首頁主入口是「抽一張牌」 ---------- */
+/* 今日一牌是系統依日期指定的、被動的一張牌；使用者要的是「現在就抽一張」。
+   後者原本埋在折疊的「其他功能」裡，前者佔著首頁最大的版面。已經對調。 */
+check('首頁主入口包含「抽一張牌」', /onclick="quickDraw\(\)"/.test(app));
+check('抽牌入口只出現一次，沒有重複的目的地',
+  (app.match(/onclick="quickDraw\(\)"/g) || []).length === 1,
+  '出現 ' + (app.match(/onclick="quickDraw\(\)"/g) || []).length + ' 次');
+check('今日一牌區塊已從首頁移除', !/daily-card-block/.test(app));
+check('今日一牌的相關程式碼一併清乾淨，沒有留下死碼',
+  !/function toggleDailyFlip|function dailyFullMeaning|function homeDailyGuide|var dailyCard/.test(app));
+check('新手導覽第一項指向實際存在的按鈕',
+  /首頁「抽一張牌」/.test(app) && !/首頁「今天需要一點指引」/.test(app));
+check('牌面比例常數保留供其他版面推導', /var CARD_ART_RATIO = 0\.6/.test(app));
 
 /* ---------- 10. 動態偏好 ---------- */
 check('尊重 prefers-reduced-motion，並停用首頁背景影片',
