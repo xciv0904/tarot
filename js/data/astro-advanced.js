@@ -4940,6 +4940,7 @@ function renderNatalTopicResult(result) {
 
   result.answers.forEach(function (a) { h += renderNatalTopicQuestionCard(a); });
   h += '<div style="text-align:center;margin-top:18px;padding-bottom:8px"><button id="natal-topic-copy-btn" onclick="natalTopicCopyForAI()" style="min-height:44px;font:400 12px \'Noto Sans TC\',sans-serif;background:none;border:1px solid rgba(201,169,110,.4);color:#c9a96e;padding:10px 20px;border-radius:20px;cursor:pointer">複製給 AI 解讀 Copy for AI</button></div>';
+  h += renderAiPasteHint();
   h += '</div>';
   return h;
 }
@@ -5340,6 +5341,7 @@ function renderAstro() {
 
     h += renderPersonaPicker();
     h += '<button id="astro-copy-btn" onclick="astroCopyForAI()" style="width:100%;margin-top:24px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製給 AI 解讀 Copy for AI</button>';
+    h += renderAiPasteHint();
     h += '<button onclick="astroReset()" style="width:100%;margin-top:10px;padding:12px;border-radius:12px;border:1px solid rgba(201,169,110,.3);background:rgba(255,255,255,.02);color:rgba(240,233,216,.6);font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">重新輸入 ↺</button>';
     h += '<div style="text-align:center;margin-top:10px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap">';
     h += '<button onclick="astroExportProfile()" style="background:none;border:none;color:rgba(240,233,216,.62);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">匯出星盤資料備份</button>';
@@ -5742,6 +5744,7 @@ function renderSynastry() {
 
   h += renderPersonaPicker();
   h += '<button id="syn-copy-btn" onclick="synastryCopyForAI()" style="width:100%;margin-top:22px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製給 AI 解讀 Copy for AI</button>';
+  h += renderAiPasteHint();
   h += '<button onclick="synReset()" style="width:100%;margin-top:10px;padding:12px;border-radius:12px;border:1px solid rgba(201,169,110,.3);background:rgba(255,255,255,.02);color:rgba(240,233,216,.6);font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">重新輸入對方資料 ↺</button>';
   return h;
 }
@@ -6127,6 +6130,7 @@ function renderXiu28() {
       h += xiuMansionCard(idx, '你的本命星宿 · ');
       h += renderPersonaPicker();
       h += '<button id="xiu-copy-btn" onclick="xiuCopyForAI()" style="width:100%;margin-top:16px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製給 AI 解讀 Copy for AI</button>';
+      h += renderAiPasteHint();
       h += '<button onclick="xiuSetMode(\'compat\')" style="width:100%;margin-top:10px;padding:11px;border-radius:12px;border:1px solid rgba(201,169,110,.3);background:rgba(255,255,255,.02);color:rgba(240,233,216,.6);font:500 12px \'Noto Sans TC\',sans-serif;cursor:pointer">想知道你跟另一半／朋友的星宿關係嗎？點這裡試試合盤比較 →</button>';
     } else {
       h += '<div style="margin-top:14px;text-align:center;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62)">請輸入完整的出生年月日</div>';
@@ -6160,6 +6164,7 @@ function renderXiu28() {
       h += '<button onclick="xiuSavePartner()" style="width:100%;margin-top:10px;padding:11px;border-radius:12px;border:1px solid rgba(201,169,110,.3);background:rgba(255,255,255,.02);color:rgba(240,233,216,.6);font:500 12px \'Noto Sans TC\',sans-serif;cursor:pointer">💾 存下對方資料，下次快速選取</button>';
       h += renderPersonaPicker();
       h += '<button id="xiu-copy-btn" onclick="xiuCopyForAI()" style="width:100%;margin-top:16px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製給 AI 解讀 Copy for AI</button>';
+      h += renderAiPasteHint();
     } else {
       h += '<div style="margin-top:14px;text-align:center;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62)">請輸入兩人完整的出生年月日</div>';
     }
@@ -6178,6 +6183,7 @@ function renderXiu28() {
     h += xiuMansionCard(dIdx, xiuDateStr(ay, am, ad) + ' · ');
     h += renderXiuWeekStrip(ay, am, ad);
     h += '<button id="xiu-copy-btn" onclick="xiuCopyForAI()" style="width:100%;margin-top:16px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製給 AI 解讀 Copy for AI</button>';
+    h += renderAiPasteHint();
 
   } else if (state.xiuMode === 'wiki') {
     var _wikiNow = new Date();

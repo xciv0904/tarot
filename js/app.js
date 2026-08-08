@@ -3774,6 +3774,29 @@ function revealMeanings() {
   }, unflipped ? unflipped * 160 + 500 : 100);
 }
 
+/* 「複製給 AI 解讀」按下去只會把按鈕文字換成「已複製！」，然後就沒有下文了。
+   第一次用的人手上握著三萬字的提示詞，畫面沒有任何地方告訴他要貼到哪裡。
+
+   刻意做成常駐而不是「複製後才出現」：使用者在按下按鈕之前就該知道這個功能
+   要搭配外部 AI 使用，否則按鈕本身的意思也不清楚。三個連結一律 noopener，
+   而且只是開啟對話頁面——本站不會、也沒有能力把資料自動送出去。 */
+var AI_CHAT_LINKS = [
+  { zh: 'ChatGPT', url: 'https://chatgpt.com/' },
+  { zh: 'Claude', url: 'https://claude.ai/new' },
+  { zh: 'Gemini', url: 'https://gemini.google.com/app' },
+];
+function renderAiPasteHint(extraStyle) {
+  var h = '<div style="margin-top:8px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface);padding:10px 12px;' + (extraStyle || '') + '">';
+  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.75">複製後貼到任一個 AI 對話框送出即可，不需要另外下指令——提示詞裡已經寫好解讀原則。</div>';
+  h += '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:7px">';
+  AI_CHAT_LINKS.forEach(function (a) {
+    h += '<a href="' + a.url + '" target="_blank" rel="noopener noreferrer" style="min-height:36px;display:inline-flex;align-items:center;font:500 11.5px \'Noto Sans TC\',sans-serif;color:#c9a96e;background:rgba(201,169,110,.08);border:1px solid rgba(201,169,110,.35);border-radius:18px;padding:7px 15px;text-decoration:none">' + a.zh + ' ↗</a>';
+  });
+  h += '</div>';
+  h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);line-height:1.6;margin-top:7px">本站只把文字放進你的剪貼簿，不會自行傳送任何資料。要不要貼、貼給誰，由你決定。</div>';
+  return h + '</div>';
+}
+
 var _copyTimer = null;
 var _astroCopyTimer = null;
 function flashCopied() {
@@ -4600,6 +4623,7 @@ function renderHistory() {
     h += renderHistoryOutcome(state.histSelected, e);
     h += renderPersonaPicker();
     h += '<button id="hist-copy-btn" onclick="historyCopyForAI()" style="width:100%;margin-top:22px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製給 AI 解讀 Copy for AI</button>';
+    h += renderAiPasteHint();
     h += '</div></div>';
     return h;
   }

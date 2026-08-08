@@ -143,6 +143,22 @@ check('城市搜尋輸入有長度上限', /aria-label="搜尋出生城市" type
 check('城市搜尋有字面正規化', /function normalizeCityQuery/.test(astro));
 check('查無城市時提供可執行的替代做法', /同一時區內最近的大城市/.test(astro));
 
+/* ---------- 9.8 複製給 AI 之後要有下一步 ---------- */
+check('提供貼上目的地指引', /function renderAiPasteHint/.test(app));
+check('每一顆「複製給 AI」按鈕後面都接上指引', (function () {
+  var missing = 0;
+  [['app.js', app], ['astro-advanced.js', astro]].forEach(function (pair) {
+    var lines = pair[1].split('\n');
+    lines.forEach(function (line, i) {
+      if (line.indexOf('複製給 AI 解讀 Copy for AI</button>') === -1) return;
+      if (!/renderAiPasteHint\(\)/.test(lines[i + 1] || '')) missing++;
+    });
+  });
+  return missing === 0;
+})());
+check('外部連結一律 noopener noreferrer', !/target="_blank"(?![^>]*rel="noopener noreferrer")/.test(app + astro));
+check('明確聲明本站不會自行送出資料', /不會自行傳送任何資料/.test(app));
+
 /* ---------- 10. 動態偏好 ---------- */
 check('尊重 prefers-reduced-motion，並停用首頁背景影片',
   /prefers-reduced-motion/.test(html) && /\.home-ambient-video\{display:none!important\}/.test(html));
