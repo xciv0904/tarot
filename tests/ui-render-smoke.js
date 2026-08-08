@@ -373,6 +373,49 @@ c.state.astroUnknownTime = false;
   }
 })();
 
+/* ---------- 分享圖不得洩漏出生資料 ---------- */
+/* 使用者想公開的是「這段話說中我」，不是自己的出生日期、時間與城市。
+   貼到社群之後就收不回來了，所以分享圖只帶主題與解讀。 */
+(function checkSharePrivacy() {
+  var drawnText = [];
+  var madeBlob = false;
+  var origCreate = c.document.createElement;
+  c.document.createElement = function (tag) {
+    var node = origCreate(tag);
+    node.getContext = function () {
+      return {
+        font: '', fillStyle: '', strokeStyle: '', lineWidth: 0, textAlign: '',
+        measureText: function (t) { return { width: String(t).length * 22 }; },
+        fillRect: function () {}, strokeRect: function () {},
+        fillText: function (t) { drawnText.push(String(t)); },
+        createRadialGradient: function () { return { addColorStop: function () {} }; },
+      };
+    };
+    node.toBlob = function (cb) { madeBlob = true; cb({ size: 1 }); };
+    return node;
+  };
+  c.URL = { createObjectURL: function () { return 'blob:test'; }, revokeObjectURL: function () {} };
+
+  c.state.astroResult = c.GOLDEN_TEST_CHARTS[0];
+  c.state.astroY = '1990'; c.state.astroM = '5'; c.state.astroD = '20';
+  c.state.astroH = '14'; c.state.astroMin = '30';
+  c.state.astroCityUsed = { zh: '台北市', tz: 'Asia/Taipei' };
+  c.state.astroUnknownTime = false;
+  c.state.natalTopicResult = c.analyzeNatalTopic(
+    c.GOLDEN_TEST_CHARTS[0], 'love',
+    c.NATAL_TOPIC_QUESTIONS.love.slice(0, 2).map(function (q) { return q.id; }), false);
+  c.shareNatalTopicImage();
+  c.document.createElement = origCreate;
+
+  var text = drawnText.join(' ');
+  if (!madeBlob) fail('分享圖', 'shareNatalTopicImage() 沒有產生圖片');
+  if (drawnText.length < 8) fail('分享圖', '圖片內容過少（' + drawnText.length + ' 行），解讀可能沒有被畫進去');
+  ['1990', '台北', '14:30', 'Asia/Taipei'].forEach(function (secret) {
+    if (text.indexOf(secret) !== -1) fail('分享圖', '洩漏出生資料「' + secret + '」——分享圖不得包含出生日期、時間或地點');
+  });
+  if (text.indexOf('非事件預言') === -1) fail('分享圖', '沒有標示解讀性質，容易被當成預言轉發');
+})();
+
 /* ---------- 輸出 ---------- */
 console.log('# 畫面渲染煙霧測試');
 console.log('');

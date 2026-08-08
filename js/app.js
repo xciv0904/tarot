@@ -555,6 +555,92 @@ function currentSubtopicShareData() {
   };
 }
 
+/* ================= 通用文字分享圖 =================
+   占卜有 shareResultImage()，但星盤沒有——而人生主題分析才是這個站最值得被分享的
+   內容。那支函式是為牌陣寫的（要排牌圖、算列數），星盤紀錄套不上，所以另外做一個
+   純文字版的海報產生器，之後命盤總覽之類的區塊也能直接呼叫。
+
+   隱私：分享圖刻意不包含出生日期、時間與城市。使用者要公開的是解讀，不是自己的
+   出生資料；一旦貼到社群就收不回來了。 */
+function shareTextCardImage(opts) {
+  try {
+    var W = 750, pad = 46;
+    var cv = document.createElement('canvas');
+    var mctx = cv.getContext('2d');
+    mctx.font = '24px "Noto Sans TC", sans-serif';
+    var maxW = W - 2 * pad;
+
+    /* 先量測高度再決定畫布大小——CJK 換行後的行數沒辦法預估。 */
+    var blocks = [];
+    (opts.sections || []).forEach(function (sec) {
+      var titleLines = sec.title ? wrapCJK(mctx, sec.title, maxW) : [];
+      var bodyLines = sec.body ? wrapCJK(mctx, sec.body, maxW) : [];
+      var noteLines = sec.note ? wrapCJK(mctx, sec.note, maxW) : [];
+      blocks.push({ label: sec.label || '', titleLines: titleLines, bodyLines: bodyLines, noteLines: noteLines });
+    });
+    var headH = 200;
+    var bodyH = blocks.reduce(function (n, b) {
+      return n + (b.label ? 30 : 0) + b.titleLines.length * 40 + b.bodyLines.length * 34 + b.noteLines.length * 30 + 30;
+    }, 0);
+    var H = headH + bodyH + 110;
+    cv.width = W; cv.height = H;
+    var ctx = cv.getContext('2d');
+
+    ctx.fillStyle = '#14111a'; ctx.fillRect(0, 0, W, H);
+    var grd = ctx.createRadialGradient(W * 0.2, 60, 10, W * 0.2, 60, 520);
+    grd.addColorStop(0, 'rgba(201,169,110,.12)'); grd.addColorStop(1, 'rgba(201,169,110,0)');
+    ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = 'rgba(201,169,110,.5)'; ctx.lineWidth = 1.5; ctx.strokeRect(16, 16, W - 32, H - 32);
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#c9a96e'; ctx.font = 'italic 19px Georgia, serif';
+    ctx.fillText('M Y S T I C   D E C K', W / 2, 66);
+    ctx.fillStyle = '#f0e9d8'; ctx.font = '600 34px "Noto Serif TC", serif';
+    ctx.fillText(String(opts.title || ''), W / 2, 114);
+    if (opts.subtitle) {
+      ctx.fillStyle = 'rgba(240,233,216,.6)'; ctx.font = '19px "Noto Sans TC", sans-serif';
+      ctx.fillText(String(opts.subtitle), W / 2, 152);
+    }
+
+    ctx.textAlign = 'left';
+    var y = headH;
+    blocks.forEach(function (b) {
+      if (b.label) {
+        ctx.fillStyle = '#c9a96e'; ctx.font = '500 19px "Noto Sans TC", sans-serif';
+        ctx.fillText(b.label, pad, y); y += 30;
+      }
+      ctx.fillStyle = '#e6cd9a'; ctx.font = '600 27px "Noto Serif TC", serif';
+      b.titleLines.forEach(function (l) { ctx.fillText(l, pad, y + 22); y += 40; });
+      ctx.fillStyle = 'rgba(240,233,216,.82)'; ctx.font = '22px "Noto Sans TC", sans-serif';
+      b.bodyLines.forEach(function (l) { ctx.fillText(l, pad, y + 18); y += 34; });
+      ctx.fillStyle = 'rgba(240,233,216,.6)'; ctx.font = '19px "Noto Sans TC", sans-serif';
+      b.noteLines.forEach(function (l) { ctx.fillText(l, pad, y + 16); y += 30; });
+      y += 30;
+    });
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(240,233,216,.45)'; ctx.font = 'italic 15px Georgia, serif';
+    ctx.fillText(opts.footer || 'Mystic Deck · 塔羅 · 占星', W / 2, H - 42);
+
+    cv.toBlob(function (blob) {
+      if (!blob) return;
+      var name = (opts.fileName || '分享圖') + '_' + new Date().toISOString().slice(0, 10) + '.png';
+      var file;
+      try { file = new File([blob], name, { type: 'image/png' }); } catch (e) { file = null; }
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file], title: opts.title || 'Mystic Deck' }).catch(function () {});
+      } else {
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = name;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+      }
+    }, 'image/png');
+    return true;
+  } catch (e) { return false; }
+}
+
 function shareResultImage() {
   try {
     var drawn = state.drawn;

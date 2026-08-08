@@ -4939,7 +4939,8 @@ function renderNatalTopicResult(result) {
   h += '<div role="status" style="text-align:right;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.6);margin-top:3px">目前：' + (pro ? '專業模式（在一般內容之上，額外列出行星／星座／宮位／相位、權重、替代資料與解讀限制）' : '一般模式（只顯示白話結論、生活表現與做法）') + '　結論本身不會因模式而改變。</div>';
 
   result.answers.forEach(function (a) { h += renderNatalTopicQuestionCard(a); });
-  h += '<div style="text-align:center;margin-top:18px;padding-bottom:8px"><button id="natal-topic-copy-btn" onclick="natalTopicCopyForAI()" style="min-height:44px;font:400 12px \'Noto Sans TC\',sans-serif;background:none;border:1px solid rgba(201,169,110,.4);color:#c9a96e;padding:10px 20px;border-radius:20px;cursor:pointer">複製給 AI 解讀 Copy for AI</button></div>';
+  h += '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:18px"><button type="button" onclick="shareNatalTopicImage()" style="min-height:44px;font:400 12px \'Noto Sans TC\',sans-serif;background:none;border:1px solid rgba(201,169,110,.4);color:#c9a96e;padding:10px 20px;border-radius:20px;cursor:pointer">分享結果圖 Share</button></div>';
+  h += '<div style="text-align:center;margin-top:10px;padding-bottom:8px"><button id="natal-topic-copy-btn" onclick="natalTopicCopyForAI()" style="min-height:44px;font:400 12px \'Noto Sans TC\',sans-serif;background:none;border:1px solid rgba(201,169,110,.4);color:#c9a96e;padding:10px 20px;border-radius:20px;cursor:pointer">複製給 AI 解讀 Copy for AI</button></div>';
   h += renderAiPasteHint();
   h += '</div>';
   return h;
@@ -5016,6 +5017,34 @@ function renderNatalTopicSection(chart) {
   h += '</div>';
 
   return h + '</div>';
+}
+
+/* ---- 人生主題分析：分享圖 ----
+   分享圖只帶主題與解讀，不帶出生日期、時間、城市。使用者想公開的是「這段話說中我」，
+   不是自己的出生資料——貼到社群之後就收不回來了。 */
+function shareNatalTopicImage() {
+  var result = state.natalTopicResult;
+  if (!result || !result.answers || !result.answers.length) return;
+  var cat = NATAL_TOPIC_CATEGORIES.find(function (c) { return c.key === result.topicId; });
+  var sections = [];
+  if (result.topicOverview) sections.push({ label: '主題總覽', body: result.topicOverview });
+  result.answers.forEach(function (a) {
+    var det = visibleNatalDetails(a)[0];
+    sections.push({
+      label: a.title,
+      title: natalHeadlineForTitle(a.title, a.headline),
+      body: det ? det.text : '',
+      note: a.caution ? ('提醒：' + a.caution) : '',
+    });
+  });
+  var ok = shareTextCardImage({
+    title: '人生主題分析',
+    subtitle: (cat ? cat.zh : '') + ' · ' + new Date().toLocaleDateString('zh-TW'),
+    sections: sections,
+    footer: 'Mystic Deck · 依本命星盤推導，非事件預言',
+    fileName: '人生主題分析',
+  });
+  if (!ok) { astroSetNotice('error', '無法產生分享圖，你的瀏覽器可能不支援。解讀內容沒有受影響，仍可使用「複製給 AI 解讀」。'); render(); }
 }
 
 /* ---- 人生主題分析寫入歷史 ----
