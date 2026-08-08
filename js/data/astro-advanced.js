@@ -6246,6 +6246,7 @@ function renderProgression() {
 
   h += renderPersonaPicker();
   h += '<button id="prog-copy-btn" onclick="progressionCopyForAI()" style="width:100%;margin-top:22px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製未來 ' + state.progYears + ' 年給 AI 解讀</button>';
+  h += renderAiPasteHint();
   return h;
 }
 function progressionFlashCopied() {
@@ -7966,6 +7967,7 @@ function renderHoroscope(periodKey) {
 
   h += renderPersonaPicker();
   h += '<button id="horo-copy-btn" onclick="horoCopyForAI()" style="width:100%;margin-top:22px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">' + (periodKey === 'yearly' && state.horoYearRange > 1 ? '複製未來 ' + state.horoYearRange + ' 年給 AI 解讀' : '複製給 AI 解讀 Copy for AI') + '</button>';
+  h += renderAiPasteHint();
   h += '<button onclick="astroSetView(\'chart\')" style="width:100%;margin-top:10px;padding:12px;border-radius:12px;border:1px solid rgba(201,169,110,.3);background:rgba(255,255,255,.02);color:rgba(240,233,216,.6);font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">← 回到本命星盤</button>';
   return h;
 }

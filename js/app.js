@@ -132,8 +132,31 @@ function hashStr(s) {
   return h;
 }
 
+/* 今日一牌原本只用日期當種子，等於全世界所有人同一天拿到同一張牌。
+   放在「抽牌」的語境裡，使用者理所當然以為那是自己抽到的。
+
+   改成日期＋這台裝置專屬的隨機碼：
+     · 同一天內重整、關掉再開，牌都不會變（種子固定）
+     · 不同人拿到不同的牌
+     · 裝置碼只是一串本機亂數，不含任何個人資訊，也不會離開這台裝置
+   清除所有資料時裝置碼會一併移除，之後會重新產生一組。 */
+var DAILY_SEED_KEY = 'tl_daily_seed';
+function dailyDeviceSeed() {
+  try {
+    var v = localStorage.getItem(DAILY_SEED_KEY);
+    if (!v) {
+      v = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+      localStorage.setItem(DAILY_SEED_KEY, v);
+    }
+    return v;
+  } catch (e) {
+    /* 無痕模式或封鎖 localStorage 時退回日期種子——牌仍然一天固定一張，
+       只是會跟其他同樣無法寫入的裝置相同。這比每次重整換一張牌好。 */
+    return '';
+  }
+}
 var _today = new Date().toISOString().slice(0, 10);
-var _seed = hashStr(_today);
+var _seed = hashStr(_today + '|' + dailyDeviceSeed());
 var dailyCard = TAROT[_seed % TAROT.length];
 var dailyReversed = (_seed >> 3) % 2 === 1;
 
@@ -174,6 +197,12 @@ function doFlip(id, flipped) {
    選尺寸——顯示寬度在 180px 以內時，300px 的縮圖在 2 倍螢幕上仍然銳利，卻只要
    不到一半的流量；只有 2 張牌並排（單張約 240px 寬）這種大圖情境才用全尺寸。
    decoding="async" 讓圖片解碼不佔用主執行緒，多張牌同時出現時捲動比較不會頓。 */
+/* 牌面圖的實際比例：assets/cards 全部是 420×700，縮圖 300×500，都是 0.6。
+   任何要讓圖片「滿版」的版面都必須從這個比例推導，不能各自寫死高度。 */
+var CARD_ART_RATIO = 0.6;
+var DAILY_CARD_W = 170;
+var DAILY_CARD_LABEL_H = 80;   // 卡面底部名稱／正逆位那一塊的實際高度
+
 function cardImgHtml(src, alt, useThumb) {
   if (!src) return '<div style="flex:1;display:flex;align-items:center;justify-content:center;font:600 13px \'Noto Serif TC\',serif;color:#a9784f;padding:6px;text-align:center">' + esc(alt) + '</div>';
   var finalSrc = useThumb ? cardThumbSrc(src) : src;
@@ -1355,7 +1384,7 @@ function aboutToggle() { state.aboutOpen = !state.aboutOpen; render(); }
 var APP_STORAGE_KEYS = [
   'tl_history', 'tl_learn', 'tl_study', 'tl_astro_profile',
   'tl_xiu_partners', 'tl_ai_persona', 'tl_home_tour_seen', 'tl_astro_tour_seen',
-  'tl_astro_charts',
+  'tl_astro_charts', 'tl_daily_seed',
   'tl_astro_copy_mode',
 ];
 function clearAllData() {
@@ -1565,7 +1594,13 @@ function renderHome() {
     + '<div style="font:italic 10px \'EB Garamond\',serif;color:#a9784f">' + esc(c.nameEn) + '</div>'
     + '<div style="font:500 10px \'Noto Sans TC\',sans-serif;color:#8a6f47;margin-top:4px">' + (dailyReversed ? '逆位 Reversed' : '正位 Upright') + '</div>'
     + '</div></div>';
-  h += '<div role="button" tabindex="0" aria-label="翻開或收起今日一牌" aria-pressed="' + state.dailyFlipped + '" onclick="toggleDailyFlip()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();toggleDailyFlip()}" style="margin:0 auto;width:170px;height:262px;cursor:pointer;position:relative">';
+  /* 卡框高度不能隨便寫死。牌面圖是 420×700（比例 0.6），但卡框底下還有一塊
+     名稱／正逆位的說明區；先前框高 262px 扣掉那塊之後，圖片可用區域變成約
+     0.88 的比例，object-fit:contain 就以高度為準縮放，左右各留約 26px 白邊，
+     看起來就是「沒有滿版」。這裡改成由牌面比例往回推框高。 */
+  var dailyArtW = DAILY_CARD_W - 10;                               // 扣掉 inset 4px×2 與外框線
+  var dailyFrameH = Math.round(dailyArtW / CARD_ART_RATIO) + DAILY_CARD_LABEL_H + 10;
+  h += '<div role="button" tabindex="0" aria-label="翻開或收起今日一牌" aria-pressed="' + state.dailyFlipped + '" onclick="toggleDailyFlip()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();toggleDailyFlip()}" style="margin:0 auto;width:' + DAILY_CARD_W + 'px;height:' + dailyFrameH + 'px;cursor:pointer;position:relative">';
   h += flipBox('daily', state.dailyFlipped, 10, sigil(76, 76), frontInner);
   h += '</div>';
   h += '<div id="daily-meaning" style="text-align:center;margin-top:16px;padding:0 20px;display:' + (state.dailyFlipped ? 'block' : 'none') + '">';
@@ -2153,6 +2188,7 @@ function renderReading() {
     h += '<button id="copy-btn" onclick="copyForAI()" style="font:400 12px \'Noto Sans TC\',sans-serif;background:none;border:1px solid rgba(201,169,110,.4);color:#c9a96e;padding:8px 18px;border-radius:20px;cursor:pointer">' + (state.copied ? '已複製！Copied' : '複製給 AI 解讀 Copy for AI') + '</button>';
     h += '<button onclick="shareResultImage()" style="font:400 12px \'Noto Sans TC\',sans-serif;background:none;border:1px solid rgba(201,169,110,.4);color:#c9a96e;padding:8px 18px;border-radius:20px;cursor:pointer">分享結果圖 Share</button>';
     h += '</div>';
+    h += renderAiPasteHint();
 
     // summary panel
     h += '<div id="summary-panel" style="margin-top:28px;border-top:1px solid rgba(201,169,110,.2);padding-top:20px;display:' + (allFlipped() ? 'block' : 'none') + '">';

@@ -145,19 +145,44 @@ check('查無城市時提供可執行的替代做法', /同一時區內最近的
 
 /* ---------- 9.8 複製給 AI 之後要有下一步 ---------- */
 check('提供貼上目的地指引', /function renderAiPasteHint/.test(app));
+/* 先前這條是用按鈕的字面文字比對，於是漏掉了占卜結果那一顆——它的標籤是
+   `state.copied ? '已複製！' : '複製給 AI 解讀'` 動態組出來的，字面對不上。
+   改成比對 onclick 的函式名，任何 xxxCopyForAI() 都會被納入檢查。 */
 check('每一顆「複製給 AI」按鈕後面都接上指引', (function () {
-  var missing = 0;
+  var missing = [];
   [['app.js', app], ['astro-advanced.js', astro]].forEach(function (pair) {
     var lines = pair[1].split('\n');
     lines.forEach(function (line, i) {
-      if (line.indexOf('複製給 AI 解讀 Copy for AI</button>') === -1) return;
-      if (!/renderAiPasteHint\(\)/.test(lines[i + 1] || '')) missing++;
+      if (!/onclick="[a-zA-Z]*[Cc]opyForAI\(\)"/.test(line)) return;
+      if (!/renderAiPasteHint\(\)/.test(lines.slice(i + 1, i + 6).join('\n'))) {
+        missing.push(pair[0] + ':' + (i + 1));
+      }
     });
   });
-  return missing === 0;
+  if (missing.length) console.log('   缺少指引的按鈕：' + missing.join('、'));
+  return missing.length === 0;
+})());
+check('複製按鈕數量符合預期（10 顆，塔羅與星盤都有）', (function () {
+  var n = (app.match(/onclick="[a-zA-Z]*[Cc]opyForAI\(\)"/g) || []).length
+        + (astro.match(/onclick="[a-zA-Z]*[Cc]opyForAI\(\)"/g) || []).length;
+  return n === 10;
 })());
 check('外部連結一律 noopener noreferrer', !/target="_blank"(?![^>]*rel="noopener noreferrer")/.test(app + astro));
 check('明確聲明本站不會自行送出資料', /不會自行傳送任何資料/.test(app));
+
+/* ---------- 9.9 今日一牌要各人各抽 ---------- */
+/* 種子原本只有日期，等於全世界同一天拿到同一張牌。放在「抽牌」的語境裡，
+   使用者理所當然以為那是自己抽到的。 */
+check('今日一牌的種子包含裝置專屬亂數', /hashStr\(_today \+ '\|' \+ dailyDeviceSeed\(\)\)/.test(app));
+check('裝置碼會持久化，同一天不會每次重整就換牌', /localStorage\.setItem\(DAILY_SEED_KEY/.test(app));
+check('無法寫入 localStorage 時安全降級', /return '';/.test(app) && /function dailyDeviceSeed/.test(app));
+check('清除所有資料會一併移除裝置碼', /'tl_daily_seed'/.test(app));
+
+/* ---------- 9.10 牌面圖必須填滿卡框 ---------- */
+/* 牌面是 0.6 比例（420×700），但卡框底下還有名稱區；先前框高寫死 262px，
+   圖片可用區變成 0.93 比例，object-fit:contain 以高度縮放後左右各留 28px 白邊。 */
+check('卡框高度由牌面比例推導，不寫死', /var CARD_ART_RATIO = 0\.6/.test(app) && /dailyArtW \/ CARD_ART_RATIO/.test(app));
+check('今日一牌不再使用寫死的 262px 框高', !/width:170px;height:262px/.test(app));
 
 /* ---------- 10. 動態偏好 ---------- */
 check('尊重 prefers-reduced-motion，並停用首頁背景影片',
