@@ -22,7 +22,9 @@ var state = {
      切換 Step 1 的分類時也不需要清除，因為畫面永遠只讀目前 state.category 對應的那一份。 */
   wizFocusSel: {},        // { [categoryKey]: string[] }，每個分類最多 3 項
   wizFocusExpanded: {},   // { [categoryKey]: boolean }，是否展開顯示全部分組
-  wizFocusLimitHit: '',   // 選滿 3 項後又點擊第 4 項時，記錄是哪個分類觸發，顯示提示用
+  wizFocusLimitHit: '',
+  /* Step 3 的兩個選填 disclosure */
+  wizFocusOpen: false, wizContextOpen: false,   // 選滿 3 項後又點擊第 4 項時，記錄是哪個分類觸發，顯示提示用
   drawn: [],
   phase: 'setup',      // setup | shuffling | picking | result
   pickOrder: [],       // shuffled indices of the full deck (picking pool)
@@ -2486,51 +2488,132 @@ function wizToggleFocus(catKey, opt) {
   }
   render();
 }
+function wizToggleFocusPanel() { state.wizFocusOpen = !state.wizFocusOpen; render(); }
+function wizToggleContextPanel() { state.wizContextOpen = !state.wizContextOpen; render(); }
+function wizFocusCount() { return ((state.wizFocusSel && state.wizFocusSel[state.category]) || []).length; }
 function wizToggleFocusExpand(catKey) {
   state.wizFocusExpanded[catKey] = !state.wizFocusExpanded[catKey];
   render();
 }
+/* 哪些面向分組屬於「看完解讀之後才適合探索」，而不是回答眼前這個問題所必需。
+   典型是自我成長類：抽的是「未來可能遇到什麼類型的人」，卻先要你選「我在感情中的
+   慣性模式」——那是很好的題目，只是時機不對。這些題目不刪除，改成結果頁的延伸探索。 */
+var FOCUS_FOLLOWUP_GROUPS = {
+  love: ['self'],
+  career: ['growth', 'self'],
+  family: ['self'],
+  wealth: ['self'],
+  health: ['self'],
+  social: ['self'],
+  study: ['self'],
+  general: ['self'],
+};
+function focusGroupIsFollowUp(catKey, groupKey) {
+  return (FOCUS_FOLLOWUP_GROUPS[catKey] || []).indexOf(groupKey) !== -1;
+}
+/* 解讀前只顯示能直接幫助回答目前問題的分組。 */
+function focusGroupsForNow(catKey, cfg) {
+  var groups = focusGroupsForSpread(catKey, cfg);
+  var kept = groups.filter(function (g) { return !focusGroupIsFollowUp(catKey, g.key); });
+  return kept.length ? kept : groups;
+}
+/* 結果頁的延伸探索題庫：被移出解讀前流程的分組，加上這次沒被選到的其他面向。 */
+function focusFollowUpOptions(catKey) {
+  var cfg = topicQuestionConfig[catKey];
+  if (!cfg) return [];
+  var sel = (state.wizFocusSel && state.wizFocusSel[catKey]) || [];
+  var out = [];
+  (cfg.focusGroups || []).forEach(function (g) {
+    if (!focusGroupIsFollowUp(catKey, g.key)) return;
+    g.options.forEach(function (o) { if (out.indexOf(o) === -1) out.push(o); });
+  });
+  focusGroupsForSpread(catKey, cfg).forEach(function (g) {
+    g.options.forEach(function (o) {
+      if (sel.indexOf(o) === -1 && out.indexOf(o) === -1) out.push(o);
+    });
+  });
+  return out;
+}
+
+var FOCUS_PREVIEW_COUNT = 5;
+/* 結果頁的延伸探索。原本被移出解讀前流程的自我成長類題目在這裡回來——
+   看完這次的解讀，才是探索「我在感情中的慣性模式」比較有意義的時機。
+
+   點下去會用同一個分類重新開始一次占卜，並把該題目預先填進自由輸入。
+   刻意講明「需要重新抽一次牌」——不能讓使用者以為新問題自動適用剛才那幾張牌。 */
+function readingFollowUpStart(optIndex) {
+  var opts = focusFollowUpOptions(state.category);
+  var opt = opts[optIndex];
+  if (!opt) return;
+  state.question = opt;
+  state.wizContextOpen = true;
+  state.wizFocusOpen = false;
+  state.drawn = [];
+  state.picked = [];
+  state.phase = 'setup';
+  state.wizardStep = 3;
+  render();
+  window.scrollTo(0, 0);
+}
+function renderReadingFollowUp() {
+  var opts = focusFollowUpOptions(state.category).slice(0, 5);
+  if (!opts.length) return '';
+  var h = '<section style="margin-top:22px;border-top:1px solid rgba(201,169,110,.2);padding-top:16px">';
+  h += '<h3 class="md-h3" style="font-size:14px">還想繼續了解？</h3>';
+  h += '<p class="md-note" style="margin:5px 0 0">這些是看完解讀之後比較適合探索的方向。點下去會把問題帶進去，<strong style="color:var(--brand-bright)">需要重新抽一次牌</strong>——剛才那幾張牌回答的是這次的問題。</p>';
+  h += '<div style="display:flex;flex-direction:column;gap:7px;margin-top:10px">';
+  opts.forEach(function (opt, i) {
+    h += '<button type="button" onclick="readingFollowUpStart(' + i + ')" style="min-height:44px;text-align:left;font:400 12px \'Noto Sans TC\',sans-serif;background:rgba(255,255,255,.03);border:1px solid rgba(201,169,110,.28);color:rgba(240,233,216,.85);padding:10px 13px;border-radius:12px;cursor:pointer;white-space:normal;line-height:1.5;display:flex;justify-content:space-between;gap:8px;align-items:center">'
+      + '<span>' + esc(opt) + '</span><span aria-hidden="true" style="flex:none;color:#c9a96e">›</span></button>';
+  });
+  h += '</div></section>';
+  return h;
+}
+
 function renderFocusAreaPicker() {
   var catKey = state.category;
   var cfg = topicQuestionConfig[catKey];
   if (!cfg) return '';
   var sel = state.wizFocusSel[catKey] || [];
-  var groups = focusGroupsForSpread(catKey, cfg);
-  var filtered = groups.length < cfg.focusGroups.length;
-  var defaultOpts = computeDefaultFocusOptions(cfg, groups);
-  var hasHiddenSelection = sel.some(function (o) { return defaultOpts.indexOf(o) === -1; });
+  var groups = focusGroupsForNow(catKey, cfg);
+
+  /* 攤平成單一清單。原本每組都印一個標題（「單身、曖昧中或還沒在一起」
+     「自我成長（任何狀態都適用）」），那是網站內部的分類法，使用者沒有義務理解；
+     分組標題移到「更多面向」裡才出現。 */
+  var flat = [];
+  groups.forEach(function (g) { g.options.forEach(function (o) { if (flat.indexOf(o) === -1) flat.push(o); }); });
+  var hasHiddenSelection = sel.some(function (o) { return flat.slice(0, FOCUS_PREVIEW_COUNT).indexOf(o) === -1; });
   var expanded = !!state.wizFocusExpanded[catKey] || hasHiddenSelection;
+  var shown = expanded ? flat : flat.slice(0, FOCUS_PREVIEW_COUNT);
 
   function optBtn(opt) {
     var active = sel.indexOf(opt) !== -1;
-    return '<button type="button" aria-pressed="' + active + '" onclick="wizToggleFocus(\'' + catKey + '\',&quot;' + esc(opt) + '&quot;)" style="min-height:40px;text-align:left;font:400 11.5px \'Noto Sans TC\',sans-serif;background:' + (active ? 'rgba(201,169,110,.22)' : 'rgba(201,169,110,.06)') + ';border:1px solid ' + (active ? '#e6cd9a' : 'rgba(201,169,110,.28)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.72)') + ';padding:8px 12px;border-radius:10px;cursor:pointer">' + (active ? '✓ ' : '') + esc(opt) + '</button>';
+    var full = sel.length >= 3 && !active;
+    /* 選滿之後其他選項仍然清楚可讀——整區變灰會讓人以為壞掉了。
+       未選／已選的差別同時用邊框、底色與勾號三種訊號表達，不只靠顏色。 */
+    return '<button type="button" aria-pressed="' + active + '" onclick="wizToggleFocus(\'' + catKey + '\',&quot;' + esc(opt) + '&quot;)"'
+      + ' style="min-height:44px;text-align:left;font:400 12px \'Noto Sans TC\',sans-serif;'
+      + 'background:' + (active ? 'rgba(201,169,110,.22)' : 'rgba(255,255,255,.03)') + ';'
+      + 'border:1px solid ' + (active ? '#e6cd9a' : 'rgba(201,169,110,.28)') + ';'
+      + 'color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,' + (full ? '.72' : '.85') + ')') + ';'
+      + 'padding:9px 13px;border-radius:12px;cursor:pointer;white-space:normal;line-height:1.5">'
+      + (active ? '✓ ' : '') + esc(opt) + '</button>';
   }
 
-  var h = '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px">';
-  h += '<div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">想深入了解的面向</div>';
-  h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:' + (sel.length >= 3 ? '#e6cd9a' : 'rgba(240,233,216,.4)') + '">已選 ' + sel.length + '／3</div>';
+  var h = '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap">';
+  h += '<span style="font:500 12px \'Noto Sans TC\',sans-serif;color:#f0e9d8">想特別看哪些部分？</span>';
+  h += '<span style="font:400 11px \'Noto Sans TC\',sans-serif;color:' + (sel.length ? '#e6cd9a' : 'rgba(240,233,216,.62)') + '">選填・已選 ' + sel.length + ' / 3</span>';
   h += '</div>';
-  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:4px;line-height:1.6">看你現在符合哪一組就好，不必全部看完。最多可複選 3 項，再點一次可以取消。</div>';
-  if (filtered) {
-    var spreadDef = currentSpreads()[state.spread];
-    var subDef = (SUBTOPICS[catKey] || []).filter(function (x) { return x.key === state.subtopic; })[0];
-    var byWhat = subDef ? ('你想知道的「' + subDef.zh + '」') : ('你選的「' + (spreadDef ? spreadDef.zh : '') + '」');
-    h += '<div style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:6px;line-height:1.6;border-left:2px solid rgba(201,169,110,.4);padding-left:8px">已依' + esc(byWhat) + '篩選，只留下用得上的面向。想看其他面向，改上面的選項或回上一步換牌陣。</div>';
+  h += '<div style="display:flex;flex-direction:column;gap:7px;margin-top:9px">';
+  shown.forEach(function (opt) { h += optBtn(opt); });
+  h += '</div>';
+
+  if (flat.length > shown.length || expanded) {
+    h += '<button type="button" aria-expanded="' + expanded + '" onclick="wizToggleFocusExpand(\'' + catKey + '\')" style="min-height:44px;width:100%;margin-top:8px;background:none;border:none;color:#c9a96e;font:400 11.5px \'Noto Sans TC\',sans-serif;cursor:pointer">'
+      + (expanded ? '收起其他面向 ▴' : '更多面向 ↓（還有 ' + (flat.length - shown.length) + ' 個）') + '</button>';
   }
-
-  h += '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:10px">';
-  /* 收合與展開都用同一套分組結構，差別只在每組顯示幾項——
-     少了標題的那份清單才是造成選擇障礙的原因，不是選項數量本身。 */
-  (expanded ? groups : computeDefaultFocusGroups(cfg, groups)).forEach(function (g, gi) {
-    h += '<div style="flex-basis:100%;font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:' + (gi === 0 ? '0' : '10') + 'px">' + esc(g.title) + '</div>';
-    g.options.forEach(function (opt) { h += optBtn(opt); });
-  });
-  h += '</div>';
-
-  h += '<div style="text-align:center;margin-top:10px"><button type="button" onclick="wizToggleFocusExpand(\'' + catKey + '\')" style="min-height:44px;background:none;border:none;color:#c9a96e;font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(201,169,110,.4);padding:4px 2px">' + (expanded ? '收起，只看常用選項' : '顯示每一組的完整選項') + '</button></div>';
-
   if (state.wizFocusLimitHit === catKey) {
-    h += '<div role="status" style="font:400 11px \'Noto Sans TC\',sans-serif;color:#d67878;margin-top:4px;text-align:center">最多可選 3 項，請先取消一項再選新的</div>';
+    h += '<div role="status" style="font:400 11px \'Noto Sans TC\',sans-serif;color:#d67878;margin-top:6px">最多選 3 個，再點一次已選的可以取消</div>';
   }
   return h;
 }
@@ -2597,10 +2680,6 @@ function renderWizard(spreads, isTarot) {
     if (focusCfg && focusCfg.riskNotice) {
       h += '<div style="margin-top:10px;border:1px solid rgba(214,120,120,.35);border-radius:10px;padding:10px 13px;background:rgba(214,120,120,.06);font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.7">⚠ ' + esc(focusCfg.riskNotice) + '</div>';
     }
-    if (targetCfg) {
-      h += '<label for="target-input" style="display:block;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:14px">' + targetCfg.label + '</label>';
-      h += '<input id="target-input" maxlength="80" value="' + esc(state.target) + '" oninput="state.target=this.value.slice(0,80)" placeholder="' + targetCfg.placeholder + '" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:10px 13px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
-    }
     if (['love', 'career', 'family', 'wealth', 'health', 'social', 'study', 'general'].indexOf(state.category) !== -1) {
       /* 已完成牌卡＋星盤引擎的分類皆顯示解讀來源選擇器。 */
       h += renderModePicker();
@@ -2614,26 +2693,65 @@ function renderWizard(spreads, isTarot) {
     /* 「想深入了解的面向」複選器：copyForAI() 組裝 AI 提示詞時會讀 state.wizFocusSel
        （見 var wizFocus = ...），少了這段渲染，使用者就沒有任何地方可以選面向，
        那段提示詞永遠是空的。這裡把它接回問題輸入框的正上方——先選面向、再寫問題。 */
-    h += renderFocusAreaPicker();
-    h += '<label for="question-input" style="display:block;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:18px">具體問題（選填，可點下方範例）</label>';
-    h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:4px;line-height:1.6">用一句話描述現在的情況即可；不想輸入也可以直接繼續。</div>';
-    h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">';
-    spreadQuestionExamples.slice(0, 5).forEach(function (c2, i2) {
-      h += '<button type="button" onclick="wizChip(' + i2 + ')" style="min-height:44px;display:inline-flex;align-items:center;font:400 11px \'Noto Sans TC\',sans-serif;background:rgba(201,169,110,.08);border:1px solid rgba(201,169,110,.3);color:rgba(240,233,216,.7);padding:8px 12px;border-radius:22px;cursor:pointer">' + esc(c2) + '</button>';
-    });
+    /* 兩個 disclosure。原本這裡連續攤開三個大型區塊（主問題／面向多選／自由輸入），
+       使用者會覺得一直被追問「你到底想問什麼」。
+       實際上只有主問題是必要的——它驅動 cardSubtopicReading() 與 readingSchemaFor()；
+       面向與自由輸入都只進 AI 提示詞，屬於選填的加強。所以只留一個必要決策，
+       其餘收合，而且明講「也可以直接開始」。 */
+    h += '<div style="margin-top:16px;border:1px solid rgba(201,169,110,.22);border-radius:12px;background:rgba(255,255,255,.02);overflow:hidden">';
+    h += '<button type="button" aria-expanded="' + (!!state.wizFocusOpen) + '" onclick="wizToggleFocusPanel()" style="min-height:44px;width:100%;background:none;border:none;padding:13px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px;text-align:left">'
+      + '<span><span style="font:500 12.5px \'Noto Sans TC\',sans-serif;color:#e6cd9a">＋ 想讓解讀更聚焦</span>'
+      + '<span style="display:block;font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:3px">選填・最多 3 個'
+      + (wizFocusCount() ? ('・已選 ' + wizFocusCount()) : '') + '</span></span>'
+      + '<span aria-hidden="true" style="color:#c9a96e">' + (state.wizFocusOpen ? '▴' : '▾') + '</span></button>';
+    if (state.wizFocusOpen) {
+      h += '<div style="padding:0 14px 14px">' + renderFocusAreaPicker() + '</div>';
+    }
     h += '</div>';
-    h += '<textarea id="question-input" maxlength="300" aria-describedby="q-hint q-count" oninput="updateQHint(this.value)" placeholder="' + esc(spreadQuestionPreset.placeholder || (focusCfg ? focusCfg.placeholder : tmpl.placeholder)) + '" style="width:100%;box-sizing:border-box;margin-top:10px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:11px 14px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none;min-height:74px;resize:vertical">' + esc(state.question) + '</textarea>';
-    h += '<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">';
-    h += '<div id="q-hint" aria-live="polite" style="flex:1;font:400 11px \'Noto Sans TC\',sans-serif;margin-top:7px;line-height:1.6;min-height:16px"></div>';
-    h += '<div id="q-count" aria-live="polite" style="flex:none;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:8px">' + Math.min(state.question.length, 300) + ' / 300</div></div>';
-    if (!isTarot) {
-      var ranges = [['week','一週內'],['month','一個月內'],['quarter','三個月內'],['half','半年內'],['open','不限時間']];
-      h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:14px">想看的時間範圍</div>';
-      h += '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:8px">';
-      ranges.forEach(function (r) { var active = state.timeframe === r[0]; h += '<button type="button" aria-pressed="' + active + '" onclick="wizSetTimeframe(\'' + r[0] + '\')" style="min-height:44px;font:400 11px \'Noto Sans TC\',sans-serif;background:' + (active ? 'rgba(201,169,110,.18)' : 'rgba(255,255,255,.02)') + ';border:1px solid ' + (active ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.6)') + ';padding:8px 12px;border-radius:22px;cursor:pointer">' + r[1] + '</button>'; });
+
+    h += '<div style="margin-top:9px;border:1px solid rgba(201,169,110,.22);border-radius:12px;background:rgba(255,255,255,.02);overflow:hidden">';
+    h += '<button type="button" aria-expanded="' + (!!state.wizContextOpen) + '" onclick="wizToggleContextPanel()" style="min-height:44px;width:100%;background:none;border:none;padding:13px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px;text-align:left">'
+      + '<span><span style="font:500 12.5px \'Noto Sans TC\',sans-serif;color:#e6cd9a">＋ 有具體情況想補充？</span>'
+      + '<span style="display:block;font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:3px">選填'
+      + (state.question ? '・已填寫' : '') + '</span></span>'
+      + '<span aria-hidden="true" style="color:#c9a96e">' + (state.wizContextOpen ? '▴' : '▾') + '</span></button>';
+    if (state.wizContextOpen) {
+      h += '<div style="padding:0 14px 14px">';
+      h += '<label for="question-input" style="display:block;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62)">寫下你的情況（選填）</label>';
+      h += '<textarea id="question-input" maxlength="300" aria-describedby="q-hint q-count" oninput="updateQHint(this.value)" placeholder="例如：最近有人主動接近我，但我不知道他只是友善還是有好感。" style="width:100%;box-sizing:border-box;margin-top:7px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:11px 13px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none;min-height:74px;resize:vertical">' + esc(state.question) + '</textarea>';
+      h += '<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">';
+      h += '<div id="q-hint" aria-live="polite" style="flex:1;font:400 11px \'Noto Sans TC\',sans-serif;margin-top:6px;line-height:1.6;color:rgba(240,233,216,.62)"></div>';
+      h += '<div id="q-count" aria-live="polite" style="flex:none;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:7px"></div>';
+      h += '</div>';
+      if (spreadQuestionExamples.length) {
+        h += '<div style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:9px">或直接套用範例：</div>';
+        h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">';
+        spreadQuestionExamples.slice(0, 3).forEach(function (c2, i2) {
+          h += '<button type="button" onclick="wizChip(' + i2 + ')" style="min-height:36px;font:400 11px \'Noto Sans TC\',sans-serif;background:none;border:1px dashed rgba(201,169,110,.35);color:rgba(240,233,216,.75);padding:7px 12px;border-radius:14px;cursor:pointer;text-align:left;white-space:normal;line-height:1.5">' + esc(c2) + '</button>';
+        });
+        h += '</div>';
+      }
+      if (targetCfg) {
+        h += '<label for="target-input" style="display:block;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:12px">' + esc(targetCfg.label) + '（選填）</label>';
+        h += '<input id="target-input" maxlength="80" value="' + esc(state.target) + '" oninput="state.target=this.value.slice(0,80)" placeholder="' + esc(targetCfg.placeholder) + '" style="width:100%;box-sizing:border-box;margin-top:6px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:10px 13px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none">';
+      }
+      if (!isTarot) {
+        var ranges = [['week','一週內'],['month','一個月內'],['quarter','三個月內'],['half','半年內'],['open','不限時間']];
+        h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:12px">想看的時間範圍</div>';
+        h += '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:7px">';
+        ranges.forEach(function (r) {
+          var active = state.timeframe === r[0];
+          h += '<button type="button" aria-pressed="' + active + '" onclick="wizSetTimeframe(\'' + r[0] + '\')" style="min-height:36px;font:400 11px \'Noto Sans TC\',sans-serif;background:' + (active ? 'rgba(201,169,110,.22)' : 'none') + ';border:1px solid ' + (active ? '#e6cd9a' : 'rgba(201,169,110,.3)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.75)') + ';padding:7px 13px;border-radius:14px;cursor:pointer">' + (active ? '✓ ' : '') + r[1] + '</button>';
+        });
+        h += '</div>';
+      }
       h += '</div>';
     }
-    h += wizBtns(true, true, '下一步', 'wizNext()');
+    h += '</div>';
+
+    h += '<div style="text-align:center;margin-top:10px;font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62)">上面兩項都是選填，不設定也可以直接開始。</div>';
+
+    h += wizBtns(true, true, '開始解讀 →', 'wizNext()');
 
   } else {
     var cat4 = CATEGORIES.find(function (x) { return x.key === state.category; });
@@ -2859,6 +2977,7 @@ function renderReading() {
 
     }
 
+    h += renderReadingFollowUp();
     h += renderPersonaPicker();
     h += '<div style="display:flex;justify-content:center;gap:10px;margin-top:22px;flex-wrap:wrap">';
     h += '<button onclick="flipAll()" style="font:400 12px \'Noto Sans TC\',sans-serif;background:none;border:1px solid rgba(201,169,110,.4);color:#c9a96e;padding:8px 18px;border-radius:20px;cursor:pointer">全部翻牌 Reveal All</button>';
