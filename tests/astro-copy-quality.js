@@ -347,14 +347,28 @@ c.state.synResult = chartB; c.state.synCityUsed = city2; c.state.synRelationship
 
 /* 合盤與推運畫面不得把「思考溝通／核心自我」等內部分類名稱直接當成解讀。
    使用者先看到的內容必須說清楚是兩人怎麼互動，或這段時間什麼正在改變。 */
+/* 合盤已從「一相位一卡」改為關係模式聚合（見 tests/synastry-pattern-regression.js）。
+   這裡保留的是同一個關切點：使用者先看到的內容不得是內部分類名稱串接。
+   舊斷言要求標題出現「你的溝通與理解方式 × 對方的溝通與理解方式」——那正是
+   現在被判定為看不懂的格式，所以反過來斷言它不能出現。 */
 ['conjunction', 'sextile', 'trine', 'square', 'opposition'].forEach(type => {
   const asp = { aKey: 'Mercury', bKey: 'Mercury', type, orb: 1.2 };
-  const visibleCard = c.renderCrossAspectBeginnerCard(asp, {}).split('<details')[0];
-  if (!visibleCard.includes('你的溝通與理解方式') || !visibleCard.includes('對方的溝通與理解方式')) {
-    fail(`合盤 ${type} 沒有把水星翻成雙方可辨認的溝通行為`);
-  }
-  if (/本人的思考溝通|對方的思考溝通|主動使用才會出現/.test(visibleCard)) {
-    fail(`合盤 ${type} 仍直接顯示內部分類名稱`);
+  const patterns = c.buildSynastryPatterns([asp]);
+  if (!patterns.length) {
+    fail(`合盤 ${type} 的水星相位沒有落進任何關係模式，等於這組相位不會被解讀`);
+  } else {
+    c.state.synProfessional = false;
+    c.state.synPatternOpen = {};
+    const visibleCard = c.renderSynastryPatternCard(patterns[0], 0).split('為什麼這樣說')[0];
+    if (visibleCard.includes(' × ') || /你的溝通與理解方式/.test(visibleCard)) {
+      fail(`合盤 ${type} 的一般模式標題仍是「你的X × 對方的Y」這種內部語義串接`);
+    }
+    if (/本人的思考溝通|對方的思考溝通|主動使用才會出現/.test(visibleCard)) {
+      fail(`合盤 ${type} 仍直接顯示內部分類名稱`);
+    }
+    if (/誤差 \d|權重/.test(visibleCard)) {
+      fail(`合盤 ${type} 的一般模式外露了容許度或權重`);
+    }
   }
 
   const progression = c.progressionAspectPlain({ aKey: 'Sun', bKey: 'Venus', type, orb: 1.2 }, {});

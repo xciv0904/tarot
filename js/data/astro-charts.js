@@ -18,6 +18,388 @@
 /* 合盤相性的五個面向，以及各自由哪些行星決定。
    一個相位只要任一端落在該面向的行星清單裡就會計入，所以同一組相位可能同時
    影響多個面向——這是刻意的，月亮金星的相位本來就同時牽動情感與吸引力。 */
+/* ============================================================================
+   合盤：關係模式聚合（Relationship Patterns）
+
+   原本的架構是「一個交叉相位 → 一張完整卡片」：renderSynastry() 取前 10 組相位，
+   每組都輸出標題＋直接說明＋優勢＋卡點＋做法四段。問題有三層：
+
+   1. 文案只由相位「類型」決定（crossAspectEveryday 只有 conjunction/sextile/
+      trine/square/opposition 五套模板），兩個名詞代入後，所有合相讀起來一模一樣。
+   2. 標題直接用內部語義串接——「你的情緒反應與安全感 × 對方的想像、同理與理想化
+      傾向」——那是占星師的工作稿，不是給一般人讀的。
+   3. 月亮－海王星、金星－海王星、月亮－金星本質上都在講「情緒感應與理想化」，
+      但會各自產出一篇相近的文章，讀者看完十篇仍拼不出「所以我們是什麼關係」。
+
+   改成：多個支持同一種關係主題的相位 → 聚合成一個「生活模式」。
+   一般模式顯示模式，專業模式才回頭列出所有支持相位。
+
+   關鍵：聚合只改變「怎麼呈現」，不改變「哪些資料被計算」。
+   buildSynastryPatterns() 收到的是完整的 aspects 陣列，每個 pattern 都保留
+   supporting／conflicting 的原始相位參照，專業模式與 AI 複製都能追回去。
+   ========================================================================== */
+
+/* 每個模式的 pairs 是「哪兩顆星的交叉相位算數」。順序不拘——A 的月亮對 B 的海王星，
+   與 A 的海王星對 B 的月亮，都算同一個模式（合盤本來就是雙向的）。 */
+var SYNASTRY_PATTERN_DEFS = [
+  {
+    key: 'empathy',
+    pairs: [['Moon','Neptune'], ['Venus','Neptune'], ['Moon','Moon'], ['Moon','Venus']],
+    core: '情緒感應與想像投射',
+    harmonious: {
+      title: '你們很容易感受到彼此',
+      lead: '對方情緒還沒說出口，你們通常就先察覺了；相處時不太需要把話講得很白。',
+      strength: '很容易出現「他真的懂我」的感覺，難過的時候不必解釋太多。',
+      friction: '因為太習慣用感覺溝通，真正需要講清楚的事反而容易被跳過。',
+      action: '重要的事還是要用講的，不要只靠感覺確認彼此同意。',
+    },
+    tense: {
+      title: '你們很容易猜對方在想什麼，也很容易猜錯',
+      lead: '你們對彼此的情緒很敏感，但接收到的往往混著自己的想像。',
+      strength: '願意核對的時候，能很快發現對方沒說出口的難處。',
+      friction: '會把自己的猜測當成對方真正的意思，然後對著那個版本生氣或難過。',
+      action: '不確定時直接問一句「你剛剛是不是在想…」，不要替對方補答案。',
+    },
+    mixed: {
+      title: '你們很容易感受到彼此，但也容易猜過頭',
+      lead: '你們通常很快察覺對方的情緒，即使對方沒有全部說出口；狀態好的時候是默契，累的時候就變成各自腦補。',
+      strength: '心情對上時，很容易有「他真的懂我」的感覺。',
+      friction: '一方壓力大或距離拉開時，猜測會取代確認，兩人開始對著想像中的對方反應。',
+      action: '感覺不對勁的當下先問一句，把猜測換成一個具體問題。',
+    },
+  },
+  {
+    key: 'attraction',
+    pairs: [['Venus','Mars'], ['Sun','Venus'], ['Mars','Mars'], ['Sun','Mars'], ['Venus','Venus']],
+    core: '吸引力與化學反應',
+    harmonious: {
+      title: '你們之間的火花不太需要刻意製造',
+      lead: '互相欣賞的感覺來得很自然，喜歡的表達方式也對得上。',
+      strength: '想靠近的時候很順，兩人的節奏容易同步。',
+      friction: '太順反而少了推進的動力，關係可能停在「還不錯」。',
+      action: '偶爾安排一件兩人都沒做過的事，讓吸引力有新的著力點。',
+    },
+    tense: {
+      title: '你們互相吸引，但也很容易互相點火',
+      lead: '感覺來得快也強，可是想要的方式不太一樣，容易在同一件事上爭。',
+      strength: '張力本身就是吸引力的一部分，關係不會無聊。',
+      friction: '一方主動的方式，剛好踩到另一方最在意的點。',
+      action: '想靠近的時候直接說做法，不要用試探或賭氣的方式表達。',
+    },
+    mixed: {
+      title: '你們吸引彼此的方式，跟表達的方式不太一樣',
+      lead: '想靠近的心情是一致的，但一個習慣直接出手、一個更在意氣氛與過程。',
+      strength: '節奏對上的時候，兩人都能感覺到明顯的來電。',
+      friction: '急起來的時候，主動的一方會覺得對方冷，另一方則覺得被推著走。',
+      action: '把「我現在想怎麼靠近」講出來，讓對方不用猜你的節奏。',
+    },
+  },
+  {
+    key: 'talk',
+    pairs: [['Mercury','Mercury'], ['Mercury','Moon'], ['Mercury','Uranus'], ['Mercury','Jupiter'], ['Mercury','Saturn']],
+    core: '溝通與理解方式',
+    harmonious: {
+      title: '你們講話容易對得上',
+      lead: '交換想法時不太費力，一方起個頭，另一方通常接得住。',
+      strength: '討論事情很快就能到重點，不太需要來回澄清。',
+      friction: '因為溝通太順，可能忽略對方沒說的部分其實才是重點。',
+      action: '除了討論事情，偶爾也問一句「你怎麼看這件事」。',
+    },
+    tense: {
+      title: '同一句話，你們常聽成不同意思',
+      lead: '你們處理資訊的方式不同，一方講重點、一方講過程，很容易對不上。',
+      strength: '一旦講開，兩人能補到對方原本沒想到的角度。',
+      friction: '誤會多半不是立場不同，而是話還沒講完就先各自下結論。',
+      action: '對話卡住時先複述一次對方的話，確認理解正確再回應。',
+    },
+    mixed: {
+      title: '做共同決定時，你們在意的事情不太一樣',
+      lead: '你們都願意講，但一個先看結論、一個先看細節，討論常常繞路。',
+      strength: '把兩種視角合起來時，決定通常比各自做更周全。',
+      friction: '時間壓力一大，兩人會各自認定對方沒抓到重點。',
+      action: '討論前先講好這次要決定什麼，避免中途變成討論怎麼討論。',
+    },
+  },
+  {
+    key: 'security',
+    pairs: [['Moon','Sun'], ['Moon','Saturn'], ['Sun','Sun']],
+    core: '安全感與被照顧的方式',
+    harmonious: {
+      title: '你們待在一起的時候很容易放鬆',
+      lead: '不用特別做什麼，相處本身就有安定感。',
+      strength: '低潮的時候，對方的存在本身就有幫助。',
+      friction: '太自在時容易把對方的付出當成理所當然。',
+      action: '偶爾把「你在我覺得很安心」直接說出來。',
+    },
+    tense: {
+      title: '你們想要的安全感，來源不太一樣',
+      lead: '一方靠靠近取得安心，一方靠把事情安排好取得安心。',
+      strength: '需求講清楚之後，兩人剛好能補上對方缺的那一塊。',
+      friction: '需要陪伴的一方會覺得被冷落，需要秩序的一方會覺得被打亂。',
+      action: '講需求時說具體行為，例如「今晚想一起吃飯」而不是「你都不在乎」。',
+    },
+    mixed: {
+      title: '一方需要靠近，一方需要把事情安排好',
+      lead: '你們都在乎這段關係，但安心的來源不同：一個要人在，一個要事情穩。',
+      strength: '兩種需求都被看見時，關係同時有溫度也有結構。',
+      friction: '壓力來的時候，一方想靠近、一方想先把事情處理完，容易被讀成冷淡。',
+      action: '忙起來時先講一句「我在處理什麼、大概多久」，比事後解釋有用。',
+    },
+  },
+  {
+    key: 'commit',
+    pairs: [['Saturn','Sun'], ['Saturn','Venus'], ['Saturn','Moon'], ['Saturn','Saturn'], ['Saturn','Mars']],
+    core: '責任、界線與長期結構',
+    harmonious: {
+      title: '你們適合一起把事情做長',
+      lead: '對責任的看法接近，答應的事會做到，關係有實際的支撐。',
+      strength: '遇到現實問題時，兩人願意一起扛，不會一方獨自撐。',
+      friction: '把重心都放在把事做好，容易忘了關係也需要放鬆的時間。',
+      action: '每隔一陣子安排一件沒有目的、只是好玩的事。',
+    },
+    tense: {
+      title: '一方想推進，一方會先踩煞車',
+      lead: '對於「什麼時候該認真」的判斷不同，容易一個覺得太慢、一個覺得太急。',
+      strength: '煞車的一方常常提前看到風險，推進的一方能避免關係停滯。',
+      friction: '被踩煞車的一方會覺得不被支持，踩煞車的一方會覺得不被理解。',
+      action: '談進度時把「我擔心的具體是什麼」講出來，不要只說還沒準備好。',
+    },
+    mixed: {
+      title: '你們都認真，但認真的方式會互相絆到',
+      lead: '兩人都想把關係經營好，只是一個用承諾表達、一個用穩住現實表達。',
+      strength: '真正要決定大事時，這種組合通常撐得住。',
+      friction: '壓力大的時候，責任感會變成互相要求，關係從合作變成考核。',
+      action: '把「這件事我需要你怎麼做」講清楚，取代「你應該知道」。',
+    },
+  },
+  {
+    key: 'freedom',
+    pairs: [['Uranus','Venus'], ['Uranus','Moon'], ['Uranus','Sun'], ['Uranus','Mars'], ['Uranus','Uranus']],
+    core: '自由、空間與變化的需要',
+    harmonious: {
+      title: '你們給彼此的空間剛剛好',
+      lead: '不用時時黏在一起也不會不安，各自的生活反而讓關係更有話講。',
+      strength: '對方有新的嘗試時，你們傾向支持而不是攔阻。',
+      friction: '各自太自在時，關係可能少了一起經歷的事。',
+      action: '刻意留一段固定的共同時間，不要全靠臨時湊。',
+    },
+    tense: {
+      title: '一方需要新鮮感，一方比較在意關係怎麼維持',
+      lead: '一個人想要變化與空間，另一個人靠穩定與規律感覺安全。',
+      strength: '想變的一方帶來新的可能，想穩的一方讓改變不會失控。',
+      friction: '要空間的時候若沒有先講，另一方會直接讀成關係出問題。',
+      action: '要獨處或臨時改計畫時先講一聲，重點不是准不准，是有沒有預告。',
+    },
+    mixed: {
+      title: '你們一邊想靠近，一邊需要各自的空間',
+      lead: '關係裡同時有想在一起與想透氣兩種力量，兩種都是真的。',
+      strength: '節奏抓對時，這段關係既不悶也不會太疏遠。',
+      friction: '一方剛好想靠近、另一方剛好想抽身時，很容易誤讀成不愛了。',
+      action: '把節奏講成時間，例如「今天我想自己待著，明天一起吃飯」。',
+    },
+  },
+  {
+    key: 'trust',
+    pairs: [['Pluto','Venus'], ['Pluto','Moon'], ['Pluto','Sun'], ['Pluto','Mars'], ['Pluto','Pluto']],
+    core: '信任、投入深度與控制',
+    harmonious: {
+      title: '你們的關係很容易變得很深',
+      lead: '投入的程度比一般關係深，願意讓對方看到不對外的那一面。',
+      strength: '真正的難關反而是這段關係最能發揮的時候。',
+      friction: '投入太深時，關係的分量可能大過各自的生活。',
+      action: '保留一些不屬於這段關係的事，讓兩個人都還是完整的人。',
+    },
+    tense: {
+      title: '在乎的事情上，你們容易變成拉鋸',
+      lead: '兩人都很認真，但在誰決定、誰讓步這件事上很難鬆手。',
+      strength: '願意把底層的在意講出來時，這段關係能處理很深的議題。',
+      friction: '不安的時候會想掌握更多，被掌握的一方則更想保留自己的部分。',
+      action: '感覺被逼緊時先說「我需要一點時間」，不要用沉默或反擊回應。',
+    },
+    mixed: {
+      title: '你們很投入，但投入的時候容易想抓緊',
+      lead: '這段關係對兩人都不是可有可無的，正因為在乎，鬆手才特別難。',
+      strength: '一起走過困難之後，關係的韌性會明顯提高。',
+      friction: '一方不安時會加強掌控，另一方則用退開來保護自己，形成循環。',
+      action: '把「我現在的不安是什麼」講出來，比要求對方改變行為更有用。',
+    },
+  },
+  {
+    key: 'growth',
+    pairs: [['Jupiter','Sun'], ['Jupiter','Venus'], ['Jupiter','Moon'], ['Jupiter','Mercury'], ['Jupiter','Jupiter']],
+    core: '鼓勵、成長與擴展',
+    harmonious: {
+      title: '你們會把對方帶往比較開闊的方向',
+      lead: '在一起的時候比較敢嘗試，對方的存在會讓視野變大。',
+      strength: '低潮時對方通常能給出有用的角度，而不只是安慰。',
+      friction: '互相鼓勵得太順，可能低估了實際的難度。',
+      action: '興奮地決定一件事之前，先各自講一個最實際的顧慮。',
+    },
+    tense: {
+      title: '你們對「值得投入什麼」的看法差得有點多',
+      lead: '一個覺得該把握機會，一個覺得該先看清楚，容易互相覺得對方過頭。',
+      strength: '兩種判斷合起來時，比較不會衝動也不會錯過。',
+      friction: '各自堅持時，樂觀的一方覺得被潑冷水，謹慎的一方覺得不被當回事。',
+      action: '討論大決定時先各自說出「最好」與「最壞」的情況再比較。',
+    },
+    mixed: {
+      title: '你們互相鼓勵，但踩油門的時機不一樣',
+      lead: '兩人都希望對方過得更好，只是對什麼時候該衝的判斷不同。',
+      strength: '狀態對上的時候，兩人一起做決定會比各自想得更遠。',
+      friction: '一方正興頭上、另一方正保守時，善意會被讀成潑冷水或不負責任。',
+      action: '把「我支持你，但我擔心的是這一點」說成同一句話。',
+    },
+  },
+  {
+    key: 'drive',
+    pairs: [['Mars','Saturn'], ['Mars','Moon'], ['Mars','Sun'], ['Mars','Jupiter']],
+    core: '行動節奏與衝突處理',
+    harmonious: {
+      title: '要一起做事的時候，你們推得動彼此',
+      lead: '行動的節奏接近，決定之後多半能一起執行。',
+      strength: '需要有人先動的時候，兩人不太會互相等待。',
+      friction: '都習慣往前推時，可能沒人負責喊停。',
+      action: '重要決定前刻意留一次「我們是不是太快了」的檢查。',
+    },
+    tense: {
+      title: '一方想立刻處理，一方需要時間',
+      lead: '面對問題的第一反應不同，一個想馬上解決，一個想先冷靜。',
+      strength: '兩種節奏都在的時候，衝突比較不會失控。',
+      friction: '想立刻處理的一方會追，需要時間的一方會躲，追得越緊躲得越遠。',
+      action: '吵起來時約定一個時間再談，講清楚是暫停不是不理。',
+    },
+    mixed: {
+      title: '衝突來的時候，你們一個往前一個往後',
+      lead: '同一件事，一方的反應是趕快解決，另一方的反應是先離開現場。',
+      strength: '雙方都冷靜時，這個組合處理事情很有效率。',
+      friction: '情緒上來時，追與躲會互相加強，問題本身反而沒被談到。',
+      action: '先講「我需要十分鐘」或「我需要現在講完」，讓對方知道你在做什麼。',
+    },
+  },
+];
+
+/* 相位分成三類。conjunction 視情況而定——它會放大兩顆星的互動，
+   到底是順是卡，取決於這個模式裡其他相位的走向，所以歸為中性。 */
+var SYNASTRY_HARMONIOUS = ['trine', 'sextile'];
+var SYNASTRY_TENSE = ['square', 'opposition'];
+
+function synastryAspectWeight(asp) {
+  var orbLimit = (typeof CROSS_ASPECT_ORB !== 'undefined' && CROSS_ASPECT_ORB[asp.type]) || 6;
+  /* 越接近正相位權重越高；個人行星參與的相位在合盤裡份量明顯較重。 */
+  var tightness = 1 - Math.min(1, asp.orb / orbLimit);
+  var PERSONAL = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars'];
+  var personal = (PERSONAL.indexOf(asp.aKey) >= 0 ? 1 : 0) + (PERSONAL.indexOf(asp.bKey) >= 0 ? 1 : 0);
+  var personalWeight = [0.6, 1.0, 1.5][personal];
+  var typeWeight = { conjunction: 1.2, opposition: 1.1, square: 1.0, trine: 0.95, sextile: 0.7 }[asp.type] || 0.8;
+  return (0.35 + tightness) * personalWeight * typeWeight;
+}
+
+function synastryPairMatches(def, asp) {
+  return def.pairs.some(function (pair) {
+    return (pair[0] === asp.aKey && pair[1] === asp.bKey)
+        || (pair[1] === asp.aKey && pair[0] === asp.bKey);
+  });
+}
+
+/* 把完整的相位陣列聚合成關係模式。
+   回傳的每個 pattern 都保留 supporting／conflicting 原始相位，專業模式可追回去。 */
+function buildSynastryPatterns(aspects) {
+  var all = aspects || [];
+  var patterns = [];
+  SYNASTRY_PATTERN_DEFS.forEach(function (def) {
+    var hits = all.filter(function (asp) { return synastryPairMatches(def, asp); });
+    if (!hits.length) return;
+    var harmonious = hits.filter(function (a) { return SYNASTRY_HARMONIOUS.indexOf(a.type) >= 0; });
+    var tense = hits.filter(function (a) { return SYNASTRY_TENSE.indexOf(a.type) >= 0; });
+    var neutral = hits.filter(function (a) { return a.type === 'conjunction'; });
+    var hw = harmonious.reduce(function (n, a) { return n + synastryAspectWeight(a); }, 0);
+    var tw = tense.reduce(function (n, a) { return n + synastryAspectWeight(a); }, 0);
+    var nw = neutral.reduce(function (n, a) { return n + synastryAspectWeight(a); }, 0);
+    var total = hw + tw + nw;
+
+    /* 語氣判定。兩邊都有明顯份量時走 mixed——這是規格要求的「相反訊號必須整合」：
+       不能一張卡說你們很親近、另一張說你們容易疏離，讓使用者自己拼。
+       合相不偏向任何一邊，會被歸給目前較強的那一側，兩側都弱時才算 mixed。 */
+    var tone;
+    var strongSide = Math.max(hw, tw);
+    var weakSide = Math.min(hw, tw);
+    if (hw > 0 && tw > 0 && weakSide / strongSide >= 0.45) tone = 'mixed';
+    else if (hw > tw) tone = 'harmonious';
+    else if (tw > hw) tone = 'tense';
+    /* 只有合相、兩側都是 0 的情況。合相本身不偏順也不偏卡，它是「放大」——
+       用 mixed 的文案（描述兩種狀況都會出現）是對的，但不能宣稱存在相反的相位訊號，
+       所以另外標成 intense，讓語氣標籤與專業區的敘述說實話。 */
+    else tone = nw > 0 ? 'intense' : 'harmonious';
+
+    var copy = def[tone] || def.mixed || def.harmonious;
+    /* 重要度：總權重＋支持相位數量的加成。多組相位共同指向同一個主題，
+       代表這個模式在這段關係裡反覆出現，份量應該高於單一相位。 */
+    var importance = total * (1 + Math.min(0.6, (hits.length - 1) * 0.22));
+    patterns.push({
+      key: def.key, core: def.core, tone: tone,
+      hasContradiction: hw > 0 && tw > 0,
+      title: copy.title, lead: copy.lead,
+      strength: copy.strength, friction: copy.friction, action: copy.action,
+      aspects: hits.slice().sort(function (a, b) { return a.orb - b.orb; }),
+      supporting: harmonious.concat(neutral), conflicting: tense,
+      harmoniousWeight: Math.round(hw * 100) / 100,
+      tenseWeight: Math.round(tw * 100) / 100,
+      totalWeight: Math.round(total * 100) / 100,
+      importance: Math.round(importance * 100) / 100,
+    });
+  });
+  return patterns.sort(function (a, b) { return b.importance - a.importance; });
+}
+
+/* 30 秒摘要。三行都直接引用被選中模式自己的句子，不另外編一套文案——
+   這樣摘要與下面的卡片一定講同一件事，也不可能出現「摘要說很順、卡片說很卡」。
+   摘要裡不得出現相位名稱、容許度、權重或星體代碼。 */
+function buildSynastryOverview(patterns) {
+  if (!patterns || !patterns.length) return null;
+  var top = patterns[0];
+  /* 容易靠近：優先取語氣為順的模式；全部都緊張時，取張力最大那組裡仍然成立的優勢，
+     因為緊張相位也有它的作用，不能假裝沒有好的一面。 */
+  var closeFrom = patterns.filter(function (p) { return p.tone === 'harmonious'; })[0]
+    || patterns.filter(function (p) { return p.tone === 'mixed'; })[0] || top;
+  /* 最容易卡住：優先取張力明顯的模式。 */
+  var stuckFrom = patterns.filter(function (p) { return p.tone === 'tense'; })[0]
+    || patterns.filter(function (p) { return p.tone === 'mixed'; })[0] || top;
+  /* 相處關鍵：取整體重要度最高那一組的做法——那是最值得先練的一件事。 */
+  var keyFrom = top;
+
+  /* 核心段落控制在 80–140 字：主模式的直接說明，加上第二個不同主題的一句提醒。 */
+  var second = patterns.filter(function (p) { return p.key !== top.key; })[0];
+  var core = top.lead;
+  if (second) core += '另外，' + second.core + '也是這段關係的重點：' + second.friction;
+  /* 下限 80 字：只有兩句時偏短，補上最該練的一件事，讓摘要本身就能用。 */
+  if (core.length < 80) core += '真的要挑一件事先做，' + keyFrom.action;
+  if (core.length > 140) core = core.slice(0, 138).replace(/[，、；：]$/, '') + '。';
+
+  return {
+    core: core,
+    close: closeFrom.strength,
+    closeKey: closeFrom.key,
+    stuck: stuckFrom.friction,
+    stuckKey: stuckFrom.key,
+    key: keyFrom.action,
+    keyPattern: keyFrom.key,
+  };
+}
+
+/* 選出要預設顯示的前 N 個模式。
+   規格要求「不要單純選前三個相位」，也要求「如果前三名都在描述同一件事，
+   必須先聚合再選下一個不同模式」——聚合已經在 buildSynastryPatterns 做掉了
+   （同一主題的相位本來就進同一個 pattern），所以這裡只要按重要度取前 N 即可，
+   每個 pattern 天生就是語義不同的主題。額外再擋一次語氣完全相同且核心相近的情況。 */
+function pickTopSynastryPatterns(patterns, n) {
+  var out = [];
+  (patterns || []).forEach(function (p) {
+    if (out.length >= n) return;
+    out.push(p);
+  });
+  return out;
+}
+
 var SYNASTRY_FACETS = [
   { key: 'emotion', zh: '情感共鳴', planets: ['Moon', 'Venus'], hint: '感受能不能被接住、相處起來舒不舒服' },
   { key: 'talk', zh: '溝通理解', planets: ['Mercury'], hint: '講話合不合拍、容不容易誤會' },

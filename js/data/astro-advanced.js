@@ -5843,13 +5843,6 @@ function computeSynastryScore(aspects) {
   });
   return Math.max(20, Math.min(95, Math.round(score)));
 }
-function crossAspectText(asp, labelA, labelB) {
-  var aDef = PLANET_DEFS.find(function (x) { return x.key === asp.aKey; });
-  var bDef = PLANET_DEFS.find(function (x) { return x.key === asp.bKey; });
-  var def = ASPECT_DEFS[asp.type];
-  var body = def.tpl.replace('{A}', labelA + aDef.zh).replace('{B}', labelB + bDef.zh).replace('{ak}', aDef.kw).replace('{bk}', bDef.kw);
-  return labelA + aDef.zh + def.zh + labelB + bDef.zh + '（誤差 ' + asp.orb.toFixed(1) + '°）：' + body + '。';
-}
 var CROSS_POINT_EVERYDAY = {
   Sun: '自我定位與人生方向',
   Moon: '情緒反應與安全感',
@@ -5866,60 +5859,111 @@ function crossPointEveryday(key, owner) {
   var def = findAnyPointDef(key);
   return owner + '的' + (CROSS_POINT_EVERYDAY[key] || (def ? def.meaning : '反應方式'));
 }
-function crossAspectEveryday(asp) {
-  var a = crossPointEveryday(asp.aKey, '你');
-  var b = crossPointEveryday(asp.bKey, '對方');
-  var byType = {
-    conjunction: {
-      lead: a + '很容易直接帶動' + b + '，兩人的反應常會在同一時間被放大。',
-      strength: '彼此一有反應，另一方通常很快就能接到，容易形成鮮明而緊密的互動。',
-      watch: '兩人的反應黏得太近時，可能分不清現在真正需要處理的是誰的需求。',
-      practice: '事情升溫時，先各自說一句「我現在需要什麼」，再決定下一步。',
-    },
-    sextile: {
-      lead: '只要其中一人先開口或採取行動，' + a + '和' + b + '通常就能互相配合。',
-      strength: '願意主動確認彼此想法時，這一塊很容易成為關係中的助力。',
-      watch: '因為平時沒有明顯衝突，兩人可能忽略這份默契需要主動使用才看得見。',
-      practice: '遇到相關事情時，直接提出一個具體邀請或問題，不要只等對方先反應。',
-    },
-    trine: {
-      lead: a + '和' + b + '很容易接上，相處時通常不必花太多力氣磨合這一塊。',
-      strength: '兩人容易理解彼此的節奏，合作或相處時較少在這件事上互相消耗。',
-      watch: '太習慣事情自然順下去，可能把對方的配合視為理所當然。',
-      practice: '把這份默契用在一件共同目標上，並明確說出你欣賞對方的哪個做法。',
-    },
-    square: {
-      lead: a + '容易碰到' + b + '的敏感點，同一件事常讓兩人採取不同反應。',
-      strength: '如果願意把差異說清楚，這種摩擦能幫兩人看見原本忽略的角度。',
-      watch: '壓力一高，雙方容易各自加大力道，最後從處理事情變成互相防衛。',
-      practice: '發生摩擦時先只談一件具體事件，不翻舊帳，也不猜測對方動機。',
-    },
-    opposition: {
-      lead: a + '和' + b + '常站在不同位置，一方越往前，另一方越容易往相反方向反應。',
-      strength: '兩人能補到彼此看不到的一面，適合在決策前交換不同立場。',
-      watch: '若只認為自己的反應合理，關係容易變成一人推進、另一人抵抗。',
-      practice: '做決定前，各自說出最在意的一項需求，再找能同時保留兩邊的方案。',
-    },
-  };
-  return byType[asp.type] || byType.conjunction;
+/* ---------- 合盤：關係模式卡片 ----------
+   取代原本「一個相位一張卡」的 renderCrossAspectBeginnerCard()。
+   一般模式只顯示四件事：生活化標題、一句直接說明、一項優勢、一項卡點、一項做法。
+   專業依據預設收合；一般模式展開後是白話說明，專業模式才列完整技術表。 */
+function synastryToneLabel(tone) {
+  if (tone === 'harmonious') return '相處較順';
+  if (tone === 'tense') return '張力較明顯';
+  if (tone === 'intense') return '影響特別明顯';
+  return '兩種情況都會出現';
 }
-/* 合盤原本用上面那段 crossAspectText（術語堆砌、每種相位類型只有一套固定敘述）
-   直接顯示給使用者看，這正是個人星盤在任務 #61/#63 修過的同一個問題——現在
-   改用跟本命盤同一套 aspectBeginnerData／ASPECT_BEGINNER 白話系統，只是標題
-   加上「本人／對方」以區分這是兩個人之間的交叉相位，其餘的白話敘述、關鍵字
-   代入與多種句型輪替完全共用同一份邏輯，不用另外重寫一份。 */
-/* usedSet（選填）：跟 aspectBeginnerDataUnique() 同樣的用意——合盤一次會列出
-   最多 10 組交叉相位（見 renderSynastry），每組相位各自從只有 2 個版本的模板池
-   挑句子，同一種相位類型出現多次時很容易撞到同一個版本，讀起來像同一句話講
-   了好幾遍。有傳 usedSet 進來時，四個欄位（lead/strength/watch/practice）都
-   會各自檢查、避開同一份清單裡已經用過的模板骨架；不傳就跟原本行為一樣。 */
-function renderCrossAspectBeginnerCard(asp, usedSet) {
+function synastryAspectLine(asp) {
   var aDef = findAnyPointDef(asp.aKey), bDef = findAnyPointDef(asp.bKey);
-  var d = crossAspectEveryday(asp);
-  var title = crossPointEveryday(asp.aKey, '你') + ' × ' + crossPointEveryday(asp.bKey, '對方');
-  var lead = d.lead, strength = d.strength, watch = d.watch, practice = d.practice;
-  return '<article style="border-top:1px solid rgba(201,169,110,.15);padding:12px 0"><div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + esc(title) + '</div><div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.75;margin-top:5px">' + esc(lead) + '</div><div style="margin-top:7px;font:400 11px \'Noto Sans TC\',sans-serif;color:#9bc5a3;line-height:1.65">優勢：' + esc(strength) + '</div><div style="margin-top:3px;font:400 11px \'Noto Sans TC\',sans-serif;color:#d9a0a0;line-height:1.65">容易卡住：' + esc(watch) + '</div><div style="margin-top:3px;font:400 11px \'Noto Sans TC\',sans-serif;color:#e6cd9a;line-height:1.65">可以怎麼練習：' + esc(practice) + '</div><details style="margin-top:8px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);cursor:pointer">查看相位名稱、容許度與專業解讀</summary><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.7;margin-top:6px">' + esc(crossAspectText(asp, '本人', '對方')) + '</div></details></article>';
+  return '本人' + (aDef ? aDef.zh : asp.aKey) + ' ' + ASPECT_DEFS[asp.type].zh
+    + ' 對方' + (bDef ? bDef.zh : asp.bKey) + '（誤差 ' + asp.orb.toFixed(1) + '°）';
 }
+/* 一般模式展開後的白話依據：講「這個結論來自哪兩顆星的連結」，不列技術表。 */
+function synastryPlainEvidence(pattern) {
+  var first = pattern.aspects[0];
+  if (!first) return '';
+  var aDef = findAnyPointDef(first.aKey), bDef = findAnyPointDef(first.bKey);
+  var txt = '這個模式主要來自你的' + (aDef ? aDef.zh : first.aKey)
+    + '與對方' + (bDef ? bDef.zh : first.bKey) + '之間的連結，因此'
+    + pattern.core + '容易在你們之間反覆出現。';
+  if (pattern.aspects.length > 1) {
+    txt += '另外還有 ' + (pattern.aspects.length - 1) + ' 組相位指向同一件事，所以這個傾向會比單一組明顯。';
+  }
+  if (pattern.hasContradiction) {
+    txt += '其中同時有讓你們靠近與讓你們拉開的訊號，所以同一件事在不同狀態下會有兩種走向。';
+  } else if (pattern.tone === 'intense') {
+    txt += '這幾組都是把兩人反應放大的連結，所以這一塊在你們之間會特別鮮明，順與卡都比一般關係明顯。';
+  }
+  return txt;
+}
+function toggleSynPattern(key) {
+  state.synPatternOpen = state.synPatternOpen || {};
+  state.synPatternOpen[key] = !state.synPatternOpen[key];
+  render();
+}
+function renderSynastryPatternCard(pattern, idx) {
+  var open = !!(state.synPatternOpen && state.synPatternOpen[pattern.key]);
+  var h = '<article style="margin-top:12px;border:1px solid var(--border);border-radius:var(--radius-lg);padding:15px 16px;background:var(--surface)">';
+  h += '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap">';
+  h += '<span style="font:500 10.5px var(--font-sans);color:var(--brand)">' + (idx != null ? ('模式 ' + (idx + 1)) : '其他互動') + '</span>';
+  /* 語氣標籤同時用文字與外框，不只靠顏色 */
+  h += '<span class="md-kind ' + (pattern.tone === 'harmonious' ? 'md-kind--reading' : (pattern.tone === 'tense' ? 'md-kind--limit' : 'md-kind--rule')) + '">' + synastryToneLabel(pattern.tone) + '</span>';
+  h += '</div>';
+  h += '<h4 style="font:600 15px var(--font-serif);color:var(--brand-bright);margin:7px 0 0;line-height:1.55">' + esc(pattern.title) + '</h4>';
+  h += '<p style="font:400 12.5px/1.85 var(--font-sans);color:var(--text-secondary);margin:7px 0 0">' + esc(pattern.lead) + '</p>';
+
+  [['相處好的時候', pattern.strength, '#9bc5a3'],
+   ['卡住的時候', pattern.friction, '#d9a0a0'],
+   ['最有用的做法', pattern.action, '#e6cd9a']].forEach(function (row) {
+    h += '<div style="margin-top:9px;border-left:2px solid ' + row[2] + ';padding-left:10px">'
+      + '<span style="font:500 10.5px var(--font-sans);color:' + row[2] + '">' + row[0] + '</span>'
+      + '<div style="font:400 11.5px/1.8 var(--font-sans);color:var(--text-secondary);margin-top:2px">' + esc(row[1]) + '</div></div>';
+  });
+
+  h += '<button type="button" aria-expanded="' + open + '" onclick="toggleSynPattern(\'' + esc(pattern.key) + '\')" style="min-height:var(--control-h);width:100%;margin-top:10px;text-align:left;background:none;border:none;border-top:1px solid rgba(201,169,110,.14);color:var(--brand);font:500 11px var(--font-sans);cursor:pointer;padding:10px 0 0;display:flex;justify-content:space-between;align-items:center;gap:8px">'
+    + '<span>為什麼這樣說？</span><span aria-hidden="true">' + (open ? '▴' : '›') + '</span></button>';
+  if (open) {
+    h += '<div style="font:400 11.5px/1.85 var(--font-sans);color:var(--text-muted);padding:4px 0 0">' + esc(synastryPlainEvidence(pattern)) + '</div>';
+    if (state.synProfessional) {
+      h += '<div style="margin-top:9px;padding-top:9px;border-top:1px dashed rgba(201,169,110,.2)">';
+      h += '<div style="font:500 11px var(--font-sans);color:var(--brand)">支持這個模式的相位</div>';
+      pattern.aspects.forEach(function (asp) {
+        var side = SYNASTRY_HARMONIOUS.indexOf(asp.type) >= 0 ? '順' : (SYNASTRY_TENSE.indexOf(asp.type) >= 0 ? '張力' : '放大');
+        h += '<div style="font:400 10.5px/1.7 var(--font-sans);color:var(--text-secondary);margin-top:5px">・'
+          + esc(synastryAspectLine(asp)) + '　<span style="color:var(--text-muted)">'
+          + side + '｜權重 ' + synastryAspectWeight(asp).toFixed(2) + '</span></div>';
+      });
+      h += '<div style="font:400 10.5px/1.7 var(--font-sans);color:var(--text-muted);margin-top:7px">'
+        + '語義維度：' + esc(pattern.core) + '　／　順向權重 ' + pattern.harmoniousWeight
+        + '、張力權重 ' + pattern.tenseWeight + '、重要度 ' + pattern.importance + '</div>';
+      h += '</div>';
+    }
+  }
+  return h + '</article>';
+}
+
+function toggleSynProfessional(on) {
+  if (!!state.synProfessional === !!on) return;
+  state.synProfessional = !!on;
+  var y = (window.pageYOffset || document.documentElement.scrollTop || 0);
+  render();
+  window.scrollTo(0, y);
+}
+function toggleSynMorePatterns() { state.synMoreOpen = !state.synMoreOpen; render(); }
+
+/* 30 秒摘要區塊。三行分別回答：最容易靠近什麼、最容易卡在哪、最該練的一件事。 */
+function renderSynastryOverview(overview) {
+  if (!overview) return '';
+  var h = '<section style="margin-top:16px;border:1px solid var(--border-strong);border-radius:var(--radius-lg);padding:16px 17px;background:rgba(201,169,110,.07)">';
+  h += '<h3 class="md-h3" style="font-size:14px">你們的相處核心</h3>';
+  h += '<p class="md-prose" style="font:400 12.5px/1.9 var(--font-sans);color:var(--text);margin:8px 0 0">' + esc(overview.core) + '</p>';
+  h += '<div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">';
+  [['❤️', '容易靠近', overview.close], ['⚠️', '最容易卡住', overview.stuck], ['🔑', '相處關鍵', overview.key]].forEach(function (row) {
+    h += '<div style="display:flex;gap:9px;align-items:flex-start">'
+      + '<span aria-hidden="true" style="flex:none;font-size:13px;line-height:1.6">' + row[0] + '</span>'
+      + '<div><span style="font:500 11px var(--font-sans);color:var(--brand)">' + row[1] + '</span>'
+      + '<div style="font:400 12px/1.8 var(--font-sans);color:var(--text-secondary);margin-top:1px">' + esc(row[2]) + '</div></div></div>';
+  });
+  h += '</div></section>';
+  return h;
+}
+
 function synastryFlashCopied() {
   var btn = document.getElementById('syn-copy-btn');
   if (btn) btn.textContent = '已複製！Copied';
@@ -5969,7 +6013,9 @@ function renderSynastry() {
   var chartA = state.astroResult, chartB = state.synResult;
   var aspects = computeCrossChartAspects(chartA, chartB).sort(function (a, b) { return a.orb - b.orb; });
   var score = computeSynastryScore(aspects);
-  h += renderOverallScoreBlock(score, synRelationshipLabel() + '相性指數');
+  /* 原本這裡是一個 20–95 的「相性指數」大分數。合盤不該被壓成單一數字——
+     使用者要的是「哪裡自然、哪裡要磨合」，而不是一句你們很合／不合。
+     分數仍然算（下面的敘述與 AI 複製會用到），但不再當成頁面的第一個結論。 */
   h += '<div style="display:flex;gap:10px;margin-top:14px;text-align:center">';
   h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62)">本人</div><div style="font:600 13px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + (state.astroUnknownTime ? '出生時間未知' : ZODIAC_SIGNS[chartA.ascSign].sym + ' ' + ZODIAC_SIGNS[chartA.ascSign].zh + '上升') + '</div><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:2px">' + ZODIAC_SIGNS[chartA.planets.Sun.sign].zh + '太陽　' + ZODIAC_SIGNS[chartA.planets.Moon.sign].zh + '月亮</div></div>';
   h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62)">對方</div><div style="font:600 13px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + (state.synUnknownTime ? '出生時間未知' : ZODIAC_SIGNS[chartB.ascSign].sym + ' ' + ZODIAC_SIGNS[chartB.ascSign].zh + '上升') + '</div><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:2px">' + ZODIAC_SIGNS[chartB.planets.Sun.sign].zh + '太陽　' + ZODIAC_SIGNS[chartB.planets.Moon.sign].zh + '月亮</div></div>';
@@ -5984,6 +6030,9 @@ function renderSynastry() {
   /* 相性指數、和諧與挑戰的組數、每組相位的緊密程度本來就都算好了，
      以前只是整包用文字列出來，讓人自己在腦中組裝。這兩張圖用的是同一份
      aspects，不另外計算，所以圖跟下面的文字一定一致。 */
+  /* 30 秒摘要放在最前面：先給結論，再看最重要的模式，其餘漸進展開。 */
+  h += renderSynastryOverview(buildSynastryOverview(buildSynastryPatterns(aspects)));
+
   if (typeof renderSynastryLinkChart === 'function') {
     h += renderSynastryLinkChart(chartA, chartB, aspects, state.synFacet);
   }
@@ -5993,6 +6042,16 @@ function renderSynastry() {
 
   /* 點了某個面向之後，下面的相位卡片跟著只顯示相關的那幾組——
      這同時解決「畫面太多字」與「圖跟文字各說各話」兩個問題。 */
+  /* 閱讀深度切換：一般模式只看得懂就好，專業模式在同樣的內容之上疊加技術依據。
+     兩者的結論完全相同——專業模式不會換一組答案，只是多列可追查的相位。 */
+  var synPro = !!state.synProfessional;
+  h += '<div role="group" aria-label="閱讀深度" style="display:flex;justify-content:flex-end;align-items:center;gap:6px;margin-top:14px;flex-wrap:wrap">';
+  h += '<span style="font:400 10.5px var(--font-sans);color:var(--text-muted);padding:6px 2px">閱讀深度</span>';
+  h += '<button type="button" aria-pressed="' + (!synPro) + '" onclick="toggleSynProfessional(false)" style="min-height:36px;font:500 10.5px var(--font-sans);border:1px solid ' + (!synPro ? 'var(--brand-bright)' : 'var(--border-strong)') + ';border-radius:12px;padding:5px 9px;background:' + (!synPro ? 'rgba(201,169,110,.18)' : 'transparent') + ';color:' + (!synPro ? 'var(--text)' : 'var(--brand)') + ';cursor:pointer">' + (!synPro ? '✓ ' : '') + '一般</button>';
+  h += '<button type="button" aria-pressed="' + synPro + '" onclick="toggleSynProfessional(true)" style="min-height:36px;font:500 10.5px var(--font-sans);border:1px solid ' + (synPro ? 'var(--brand-bright)' : 'var(--border-strong)') + ';border-radius:12px;padding:5px 9px;background:' + (synPro ? 'rgba(201,169,110,.18)' : 'transparent') + ';color:' + (synPro ? 'var(--text)' : 'var(--brand)') + ';cursor:pointer">' + (synPro ? '✓ ' : '') + '專業</button>';
+  h += '</div>';
+  h += '<div role="status" style="text-align:right;font:400 10px var(--font-sans);color:var(--text-muted);margin-top:3px">目前：' + (synPro ? '專業模式（展開「為什麼這樣說？」後會額外列出支持相位、容許度與權重）' : '一般模式（只顯示白話結論與做法）') + '　結論本身不會因模式而改變。</div>';
+
   var activeFacetDef = state.synFacet && typeof SYNASTRY_FACETS !== 'undefined'
     ? SYNASTRY_FACETS.filter(function (f) { return f.key === state.synFacet; })[0] : null;
   var listed = activeFacetDef ? aspects.filter(function (asp) {
@@ -6001,7 +6060,7 @@ function renderSynastry() {
 
   h += '<div style="margin-top:18px;display:flex;justify-content:space-between;align-items:baseline;gap:10px">';
   h += '<span style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5)">'
-    + (activeFacetDef ? esc(activeFacetDef.zh) + '　相關的牽動' : '兩人之間最關鍵的幾組牽動') + '</span>';
+    + (activeFacetDef ? esc(activeFacetDef.zh) + '　相關的互動' : '你們最值得注意的 3 個互動') + '</span>';
   if (activeFacetDef) {
     h += '<button type="button" onclick="synSetFacet(\'\')" style="flex:none;background:none;border:1px solid rgba(201,169,110,.35);color:#c9a96e;font:400 10.5px \'Noto Sans TC\',sans-serif;padding:5px 10px;border-radius:14px;cursor:pointer">看全部 ✕</button>';
   }
@@ -6009,10 +6068,25 @@ function renderSynastry() {
   if (!listed.length) {
     h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:10px;line-height:1.8">這個面向沒有明顯的交叉相位，代表兩人在這一塊沒有特別強的互相牽動——不是好或壞，就是比較平淡。</div>';
   }
-  var crossUsedSet = {};
-  listed.slice(0, 10).forEach(function (asp) {
-    h += renderCrossAspectBeginnerCard(asp, crossUsedSet);
-  });
+  /* 原本這裡是 listed.slice(0,10).forEach(renderCrossAspectBeginnerCard)——
+     一個相位一張完整卡片，而卡片文案只由相位「類型」決定，所以十張讀起來像同一張。
+     現在先把相位聚合成關係模式，預設只展開前三個語義不同的模式，其餘收合。 */
+  var synPatterns = buildSynastryPatterns(listed);
+  var topPatterns = pickTopSynastryPatterns(synPatterns, 3);
+  var restPatterns = synPatterns.slice(topPatterns.length);
+  if (!synPatterns.length) {
+    h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:10px;line-height:1.8">這個範圍內沒有形成明顯的關係模式。可以取消面向篩選，看兩人整體的互動。</div>';
+  }
+  topPatterns.forEach(function (pat, i) { h += renderSynastryPatternCard(pat, i); });
+
+  if (restPatterns.length) {
+    h += '<button type="button" aria-expanded="' + (!!state.synMoreOpen) + '" onclick="toggleSynMorePatterns()" style="width:100%;min-height:var(--control-h);margin-top:14px;background:none;border:1px dashed var(--border-strong);color:var(--brand);border-radius:var(--radius-md);padding:12px;font:500 12px var(--font-sans);cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:8px">'
+      + '<span>其他值得注意的互動 · ' + restPatterns.length + '<span style="display:block;font:400 10.5px var(--font-sans);color:var(--text-muted);margin-top:3px">想研究得更完整，可以繼續看。</span></span>'
+      + '<span aria-hidden="true">' + (state.synMoreOpen ? '▴' : '▾') + '</span></button>';
+    if (state.synMoreOpen) {
+      restPatterns.forEach(function (pat) { h += renderSynastryPatternCard(pat, null); });
+    }
+  }
 
   h += renderPersonaPicker();
   h += '<button id="syn-copy-btn" onclick="synastryCopyForAI()" style="width:100%;margin-top:22px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製給 AI 解讀 Copy for AI</button>';

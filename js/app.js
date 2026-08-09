@@ -77,7 +77,9 @@ var state = {
   synY: '', synM: '', synD: '', synH: '', synMin: '', synGenerating: false,
   synCityQuery: '', synCityIdx: null, synCityUsed: null,
   synUnknownTime: false, synResult: null,
-  synFacet: null,       // 合盤：目前只看哪一個相性面向（null＝全部）
+  synFacet: null,
+  /* 合盤：關係模式的展開狀態、專業模式、其他互動是否展開 */
+  synPatternOpen: {}, synProfessional: false, synMoreOpen: false,       // 合盤：目前只看哪一個相性面向（null＝全部）
   xiuMode: 'personal', xiuY: '', xiuM: '', xiuD: '',
   xiuPartnerY: '', xiuPartnerM: '', xiuPartnerD: '',
   xiuDayAnchor: null, xiuWikiOpen: null, xiuSavedPartners: [],
