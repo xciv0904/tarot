@@ -34,6 +34,8 @@ var state = {
   histSelected: null,
   mnOpen: false,
   mnTab: 'suit',
+  /* 牌典：展開狀態、學習模式、解牌練習的答案是否揭曉 */
+  mnExpanded: {}, mnLearnMode: false, mnDrillOpen: {},
   libQuiz: false,
   quiz: null,
   mnTabLen: 'tone',
@@ -285,32 +287,406 @@ function lenStory(drawn) {
 }
 
 /* ================= 記憶心法 Mnemonics (tarot encyclopedia) ================= */
+/* ============================================================================
+   牌典知識層：花色 × 數字 × 宮廷
+
+   原本這三份資料都是「速查關鍵字」，而且數字那一份是從單張牌義倒推回去的：
+     3：初步成果／合作　　　← 合作只是錢幣三的表現
+     5：衝突／損失　　　　　← 損失只是錢幣五的表現
+     7：評估／迷惘
+     8：專注／行動　　　　　← 行動只是權杖八的表現
+     9：獨自滿足／焦慮　　　← 焦慮只是寶劍九的表現
+   最明顯的證據是 3 那一列自己標了「例外：寶劍三＝心碎」——需要標例外，
+   就代表這個定義本身不成立。數字是「事情發展到哪個階段」的原型，
+   合作、損失、行動都是某個花色在那個階段的具體長相，不能倒過來當數字的定義。
+
+   現在改成：數字＝發展階段原型，花色＝人生領域，兩者相乘才得到單張牌，
+   而單張牌仍保有自己的傳統獨立意義（RICH／牌義資料不變，這裡不取代它）。
+   ========================================================================== */
+
 var SUIT_DOMAIN_DATA = [
-  { suit: 'pentacles', title: '錢幣 Pentacles', life: '金錢與物質', tags: ['工作', '現實', '資產', '安全感'], color: '#9fbf7f' },
-  { suit: 'cups', title: '聖杯 Cups', life: '情感與人際', tags: ['愛', '直覺', '情緒', '關係'], color: '#7fa8c9' },
-  { suit: 'wands', title: '權杖 Wands', life: '行動與能量', tags: ['熱情', '忙碌', '目標', '創造力'], color: '#d9964a' },
-  { suit: 'swords', title: '寶劍 Swords', life: '思想與衝突', tags: ['邏輯', '焦慮', '衝突', '真相'], color: '#a9a9c9' },
-];
-var NUMBER_FORMULA_DATA = [
-  { num: '1 A', theme: '新開端', example: '聖杯A＝新戀情、錢幣A＝新財路' },
-  { num: '2', theme: '二選一／平衡', example: '錢幣二＝財務周轉、權杖二＝決定方向' },
-  { num: '3', theme: '初步成果／合作', example: '錢幣三＝磨練技能（例外：寶劍三＝心碎）' },
-  { num: '4', theme: '穩定／停滯', example: '權杖四＝安家、錢幣四＝守財' },
-  { num: '5', theme: '衝突／損失', example: '錢幣五＝匱乏、寶劍五＝爭執（也是改變的契機）' },
-  { num: '6', theme: '給予／過渡', example: '錢幣六＝慷慨互助、寶劍六＝邁向平靜' },
-  { num: '7', theme: '評估／迷惘', example: '錢幣七＝耐心等待收穫、聖杯七＝選項太多的白日夢' },
-  { num: '8', theme: '專注／行動', example: '錢幣八＝打磨技藝、權杖八＝極速推進' },
-  { num: '9', theme: '獨自滿足／焦慮', example: '錢幣九＝富足獨立、寶劍九＝焦慮失眠' },
-  { num: '10', theme: '結局', example: '聖杯十＝幸福圓滿、寶劍十＝徹底結束' },
-];
-var COURT_ROLE_DATA = [
-  { title: '侍者 Page', en: '新消息／學習', desc: '通常代表一個來自外界的新開始或靈感，還在學習階段。', power: '起點角色' },
-  { title: '騎士 Knight', en: '行動／任務', desc: '快速朝目標前進，帶有衝勁，象徵事情正在積極推進中。', power: '行動角色' },
-  { title: '皇后 Queen', en: '滋養／感受', desc: '向內的力量，擅長關懷與體察情緒，是情感面的守護者。', power: '向內的力量' },
-  { title: '國王 King', en: '責任／掌控', desc: '向外的力量，展現領導力與成熟穩健的決策能力。', power: '向外的力量' },
+  {
+    suit: 'wands', title: '權杖 Wands', life: '行動與能量', element: '火',
+    coreQuestion: '我想做什麼？',
+    tags: ['熱情', '目標', '創造力', '競爭'],
+    domain: '行動、企圖、創造、熱情、競爭、生命力',
+    healthy: '有動力、敢行動、願意嘗試沒把握的事',
+    excess: '衝動、急躁、把每件事都當成要贏的比賽',
+    lack: '提不起勁、沒有方向、想很久卻遲遲不動',
+    love: '看的是「有沒有火花、想不想主動靠近」，而不是穩不穩定。',
+    work: '看的是「想不想做、推不推得動」，而不是薪水或制度。',
+    money: '看的是「敢不敢投入、有沒有開創新收入」，偏向賺的動能而非守成。',
+    advice: '通常在說「去做就對了」，先動起來再修正，不要等萬全準備。',
+    color: '#d9964a',
+  },
+  {
+    suit: 'cups', title: '聖杯 Cups', life: '情感與人際', element: '水',
+    coreQuestion: '我感覺如何？',
+    tags: ['愛', '直覺', '情緒', '關係'],
+    domain: '情感、關係、直覺、想像、同理、療癒',
+    healthy: '感受得到自己與別人的情緒，願意投入關係',
+    excess: '想太多、耽溺在情緒裡、把想像當成事實',
+    lack: '麻木、說不出感受、用理性擋掉所有情緒',
+    love: '直接就是感情本身，看的是「投入到什麼程度、感受被不被接住」。',
+    work: '看的是「做這件事開不開心、跟人合不合得來」，而不是效率。',
+    money: '看的是「錢帶來的安全感與情緒」，常牽涉為了關係而花的錢。',
+    advice: '通常在說「先照顧感受」，把心裡真正想要的講出來再談做法。',
+    color: '#7fa8c9',
+  },
+  {
+    suit: 'swords', title: '寶劍 Swords', life: '思想與溝通', element: '風',
+    coreQuestion: '事實是什麼？我怎麼想？',
+    tags: ['邏輯', '真相', '溝通', '衝突'],
+    domain: '思考、判斷、語言、真相、界線、衝突',
+    healthy: '看得清楚、講得明白、敢面對不舒服的事實',
+    excess: '過度分析、鑽牛角尖、用道理傷人',
+    lack: '不敢面對真相、話說不清楚、任由誤會累積',
+    love: '看的是「講不講得通、有沒有把話說開」，常牽涉溝通與誤解。',
+    work: '看的是「策略對不對、資訊夠不夠」，也常指涉職場上的角力。',
+    money: '看的是「帳算不算得清、合約與條件是否明確」。',
+    advice: '通常在說「先把事情弄清楚」，把感覺放一邊，先確認事實。',
+    color: '#a9a9c9',
+  },
+  {
+    suit: 'pentacles', title: '錢幣 Pentacles', life: '現實與資源', element: '土',
+    coreQuestion: '實際上會怎麼樣？',
+    tags: ['工作', '金錢', '身體', '安全感'],
+    domain: '金錢、工作、身體、技能、時間、實際成果',
+    healthy: '踏實、把事情做出來、能長期累積',
+    excess: '只看得到現實條件、過度保守、被錢綁住',
+    lack: '不切實際、撐不下去、投入了卻沒有累積',
+    love: '看的是「能不能一起過日子」，重點在承諾與實際相處。',
+    work: '直接就是工作本身，看的是技能、報酬與長期發展。',
+    money: '直接就是金錢與資源，也看身體與時間這兩種本錢。',
+    advice: '通常在說「回到現實條件」，先確認資源與時間夠不夠。',
+    color: '#9fbf7f',
+  },
 ];
 
+/* 數字＝發展階段。每一階段回答一個核心問題，四花色只是同一階段落在不同領域的長相。
+   suits 欄位刻意寫成「因為…所以…」的推導句，不是關鍵字，讓使用者看得到中間的邏輯。 */
+var NUMBER_FORMULA_DATA = [
+  {
+    num: 'A', keywords: ['種子', '潛力', '起點'], label: 'A／1', name: '開始', memory: '一顆種子剛落地，什麼都還沒發生。',
+    question: '什麼東西剛開始？',
+    concept: '純粹的潛力，還沒有形狀。這股力量最完整也最未經使用，可能性最大，但也最不確定能不能長成。',
+    why: '這是整個花色的源頭。後面所有階段都是這顆種子在不同條件下的發展結果。',
+    positive: '機會出現、有了新的念頭、拿到可以開始的資源。',
+    shadow: '只停在想像，遲遲不落地；或抓著機會卻沒有真的投入。',
+    suits: {
+      wands: '行動力剛冒出來，因此常是靈感、衝動與想開始做一件事。',
+      cups: '情感剛被打開，因此常是心動、新的關係或重新有感覺。',
+      swords: '想法剛變清楚，因此常是突破性的認知、真相或一句關鍵的話。',
+      pentacles: '現實資源剛到位，因此常是新工作、新收入或具體的機會。',
+    },
+    ask: '這個開始我真的想要嗎？我願意投入什麼去讓它長大？',
+    myth: '「A＝好事」過度簡化。A 只說有東西開始了，好不好要看花色與後續。',
+  },
+  {
+    num: '2', keywords: ['成雙', '取捨', '關係'], label: '2', name: '互動', memory: '出現了第二股力量，要決定怎麼相處。',
+    question: '兩邊現在要怎麼相處？',
+    concept: '一分為二。有了對象、有了選項，也就有了關係與取捨。重點不是誰對，而是兩邊要用什麼方式並存。',
+    why: '種子長出來之後就會遇到別的東西——另一個人、另一個選擇、另一種可能。',
+    positive: '找到平衡、建立合作、做出選擇。',
+    shadow: '卡在中間不決定，或為了維持平衡什麼都不敢動。',
+    suits: {
+      wands: '要決定往哪個方向使力，因此常是規劃、評估兩條路。',
+      cups: '兩個人之間形成連結，因此常是相互吸引、承諾與和解。',
+      swords: '兩種想法互不相讓，因此常是僵持、迴避與不願面對的選擇。',
+      pentacles: '資源要在兩處之間調度，因此常是周轉、兼顧與取捨。',
+    },
+    ask: '我在平衡的是哪兩件事？我是在選擇，還是只是不想決定？',
+    myth: '「2＝伴侶」過度簡化。2 是任何兩股力量的關係，不一定是人。',
+  },
+  {
+    num: '3', keywords: ['成形', '看得見', '初果'], label: '3', name: '成形', memory: '事情開始形成可以看見的結果。',
+    question: '目前正在形成什麼結果？',
+    concept: '兩股力量互動之後產生了第三樣東西。這是第一次看得到成果——不論那個成果是好是壞。',
+    why: '1 是開始，2 是互動，到了 3，前面的力量開始形成具體結果。',
+    positive: '初步成果出現、有人加入、事情變得看得見。',
+    shadow: '成果還不成熟就當成定局，或看見結果才發現方向錯了。',
+    suits: {
+      wands: '行動開始向外發展，因此常涉及規劃下一步、等待成果與拓展。',
+      cups: '情感在人與人之間形成交流，因此常涉及聚會、分享與支持。',
+      swords: '想法或真相形成清楚結果，因此痛苦、分離或失望變得無法忽視。',
+      pentacles: '能力形成實際成果，因此涉及技能、合作與分工。',
+    },
+    ask: '目前已經成形的是什麼？這是我要的結果嗎？',
+    myth: '「3＝合作」過度簡化。合作只是部分三號牌的具體表現；寶劍三同樣是 3，卻是心碎。',
+  },
+  {
+    num: '4', keywords: ['框架', '守住', '卡住'], label: '4', name: '穩固', memory: '東西定下來了，也開始有點動不了。',
+    question: '什麼已經穩定？什麼開始卡住？',
+    concept: '結構出現。有了框架、規則與界線，安全感隨之而來，但彈性也隨之減少。',
+    why: '成果出現之後，人會想把它固定住，於是形成結構。',
+    positive: '有了基礎、可以休息、把成果守住。',
+    shadow: '守得太緊變成停滯，或把暫時的安全當成永久。',
+    suits: {
+      wands: '行動有了穩定的基地，因此常是慶祝、安頓與階段性完成。',
+      cups: '情感進入停滯，因此常是提不起勁、對現況無感。',
+      swords: '思緒暫停下來，因此常是休息、退場與必要的沉澱。',
+      pentacles: '資源被牢牢握住，因此常是儲蓄、保守與不願放手。',
+    },
+    ask: '這個穩定在保護我，還是在限制我？',
+    myth: '「4＝穩定」只講對一半。4 同時是穩定與卡住，聖杯四就是穩定到無聊。',
+  },
+  {
+    num: '5', keywords: ['打破', '碰撞', '鬆動'], label: '5', name: '失衡', memory: '原本的平衡被打破了。',
+    question: '原本的平衡被什麼打破？',
+    concept: '結構被挑戰。可能來自外力，也可能是內部撐不住。不舒服，但這是讓事情繼續動的必要環節。',
+    why: '4 建立的結構總會遇到它無法處理的狀況，於是被打破。',
+    positive: '看見原本忽略的問題、被迫調整、離開不適合的位置。',
+    shadow: '只停在受害或爭輸贏，沒有把失衡轉成調整。',
+    suits: {
+      wands: '行動彼此衝撞，因此常是競爭、意見不合與內耗。',
+      cups: '情感受損，因此常是失落、後悔與只看得到失去的部分。',
+      swords: '想法上出現勝負，因此常是爭執、羞辱與撕破臉。',
+      pentacles: '現實條件出問題，因此常是匱乏、被排除與撐不下去。',
+    },
+    ask: '被打破的是什麼？這個失衡在逼我調整什麼？',
+    myth: '「5＝損失」過度簡化。5 是失衡，權杖五是競爭而非損失，重點在平衡被打破。',
+  },
+  {
+    num: '6', keywords: ['流動', '調整', '移動'], label: '6', name: '重整', memory: '衝突之後，重新找到相處的方式。',
+    question: '經過衝突後，如何重新調整？',
+    concept: '流動恢復。有東西被交換、有人退讓、有位置被移動，關係或局面重新運作起來。',
+    why: '5 打破平衡之後，總要有人做出調整，事情才能繼續。',
+    positive: '得到協助、放下過去、往比較平靜的地方移動。',
+    shadow: '表面和解但問題沒解決，或只是逃離現場而非真正調整。',
+    suits: {
+      wands: '行動被肯定，因此常是成功、認可與階段性的勝利。',
+      cups: '情感回到過去的連結，因此常是回憶、舊人與單純的善意。',
+      swords: '思緒離開混亂，因此常是轉換環境、暫時離開與慢慢平復。',
+      pentacles: '資源在人之間流動，因此常是給予、接受與不對等的援助。',
+    },
+    ask: '我調整的是做法，還是只是換個地方繼續原本的問題？',
+    myth: '「6＝給予」過度簡化。給予只是錢幣六的表現，6 的核心是重新流動。',
+  },
+  {
+    num: '7', keywords: ['評估', '中場', '策略'], label: '7', name: '檢視', memory: '走到一半，停下來評估要不要繼續。',
+    question: '走到這裡後，我要繼續、改變還是防守？',
+    concept: '中場評估。投入已經很多，成果還沒定案，這時最需要判斷力，也最容易自我懷疑。',
+    why: '6 讓事情重新運作之後，會走到一個必須決定要不要繼續的位置。',
+    positive: '看清楚投入是否值得、調整策略、守住已經有的。',
+    shadow: '想太多而不動、被幻想牽著走，或用不誠實的方式取巧。',
+    suits: {
+      wands: '需要守住立場，因此常是防衛、應付挑戰與撐住壓力。',
+      cups: '想像取代了判斷，因此常是選項太多、白日夢與看不清真實。',
+      swords: '策略取代了正面對決，因此常是取巧、隱瞞與獨自行動。',
+      pentacles: '成果需要時間，因此常是評估、耐心與判斷值不值得繼續。',
+    },
+    ask: '我投入的這些，現在看起來值得嗎？我要繼續、轉向還是先守住？',
+    myth: '「7＝等待」過度簡化。等待只是錢幣七的表現，7 的核心是評估與選擇。',
+  },
+  {
+    num: '8', keywords: ['持續', '重複', '累積'], label: '8', name: '投入', memory: '決定之後，力量開始持續投入。',
+    question: '能量現在被持續投入在哪裡？',
+    concept: '進入運作。評估完就是執行，這階段講的是持續、重複與累積，不是一次性的爆發。',
+    why: '7 做完決定之後，力量會集中到某一個方向並持續運作。',
+    positive: '專注、熟練、事情快速推進或穩定累積。',
+    shadow: '投入在錯的地方而不自知，或被自己建立的模式困住。',
+    suits: {
+      wands: '行動全速展開，因此常是快速推進、消息與同時發生很多事。',
+      cups: '情感離開原本的投入，因此常是主動放下、去尋找更深的東西。',
+      swords: '思考把自己綁住，因此常是自我設限、進退兩難與看不到出路。',
+      pentacles: '技能被反覆練習，因此常是精進、專業與重複操作。',
+    },
+    ask: '我的時間與力氣實際上投在哪裡？那是我七號牌時決定的方向嗎？',
+    myth: '「8＝行動」過度簡化。行動只是權杖八的表現，錢幣八同樣是 8，卻是安靜的重複練習。',
+  },
+  {
+    num: '9', keywords: ['總和', '獨自', '承受'], label: '9', name: '承受', memory: '一路累積下來，現在由我一個人面對結果。',
+    question: '一路累積下來，我現在得到或承受什麼？',
+    concept: '接近完成，但還沒結束。前面所有投入的總和，此刻集中在個人身上——可能是收穫，也可能是代價。',
+    why: '8 持續投入之後，累積的結果會回到自己身上。',
+    positive: '享受成果、獨立、知道自己撐得住。',
+    shadow: '獨自承擔到過頭、只看見還沒完成的部分。',
+    suits: {
+      wands: '長期作戰留下疲憊，因此常是戒備、耗損與硬撐。',
+      cups: '願望得到滿足，因此常是滿意、如願與短暫的自得。',
+      swords: '思緒的重量集中在夜裡，因此常是焦慮、失眠與反覆自責。',
+      pentacles: '長期經營帶來實質富足，因此常是獨立、餘裕與自己掙來的安穩。',
+    },
+    ask: '我現在承受的，是我自己選擇累積出來的嗎？',
+    myth: '「9＝焦慮」過度簡化。焦慮只是寶劍九的表現，錢幣九同樣是 9，卻是富足。',
+  },
+  {
+    num: '10', keywords: ['飽和', '到底', '換檔'], label: '10', name: '完成', memory: '這個階段走到底了，接下來是新的循環。',
+    question: '這個階段最後形成了什麼？',
+    concept: '飽和。這個領域的力量發展到極限，形成一個完整的結果，同時也意味著這種模式無法再繼續。',
+    why: '9 承受完累積之後，事情走到這個花色所能到達的盡頭。',
+    positive: '完整、交棒、一個階段真正結束。',
+    shadow: '被結果困住、扛了不屬於自己的份量、以為結束就是失敗。',
+    suits: {
+      wands: '責任堆到極限，因此常是超載、硬撐與該放下卻放不下。',
+      cups: '情感達到圓滿，因此常是家庭、歸屬與長期的幸福。',
+      swords: '思想走到盡頭，因此常是徹底結束、痛到底與再壞不過如此。',
+      pentacles: '資源累積成傳承，因此常是家業、長期保障與跨世代的結果。',
+    },
+    ask: '這個階段真正完成了什麼？下一個循環我想從哪裡開始？',
+    myth: '「10＝結局」不等於「事情結束就沒了」。10 是這一輪的飽和，下一張是同花色的 A，循環重新開始。',
+  },
+];
+
+/* 宮廷＝你跟這股能量的關係處在哪個位置。四個位階是同一條學習曲線。 */
+var COURT_ROLE_DATA = [
+  {
+    rank: 'page', keywords: ['新手', '好奇', '學'], title: '侍者 Page', en: 'Page', power: '正在認識',
+    model: '我正在認識／學習這股能量',
+    desc: '第一次接觸這個領域，還在摸索。好奇、生澀，但也因為沒有包袱而最願意嘗試。',
+    asPerson: '年紀較輕或資歷較淺的人，也可能是任何在這件事上還是新手的人。',
+    asState: '你在這個領域剛起步，知道的還不多，但興趣正濃。',
+    asAdvice: '用學習者的姿態進場，先問、先看、先試，不要急著證明自己會。',
+    love: '曖昧、剛開始、還在確認要不要投入。',
+    work: '新職位、新專案，還在學規則的階段。',
+    shadow: '光說不練、三分鐘熱度，或把新鮮感當成能力。',
+    suits: {
+      wands: '對新的可能性感到興奮，正想試試看能不能做到。',
+      cups: '剛開始感覺到什麼，還說不清楚那是不是喜歡。',
+      swords: '急著把想法說出口，還沒學會挑時機與分寸。',
+      pentacles: '剛開始學一項技能，願意從最基本的做起。',
+    },
+  },
+  {
+    rank: 'knight', keywords: ['衝', '追', '快'], title: '騎士 Knight', en: 'Knight', power: '正在追求',
+    model: '我正在追求／執行這股能量',
+    desc: '已經知道自己要什麼，正全力往那個方向去。速度快、企圖強，但也最容易過頭。',
+    asPerson: '行動力強、目標明確的人，通常帶著明顯的方向感或衝勁。',
+    asState: '你正在為這件事全力衝刺，其他事都暫時排在後面。',
+    asAdvice: '該行動了，但先確認方向對，因為這個位階很容易一路衝到底才發現走錯。',
+    love: '主動追求、明確表態，也可能來得快去得快。',
+    work: '正在執行、推進，處在專案最用力的階段。',
+    shadow: '衝過頭、只顧目標而忽略人，或半途失去耐心。',
+    suits: {
+      wands: '追求刺激、行動與體驗，想到就去做。',
+      cups: '主動追求情感與浪漫，願意為對方做出姿態。',
+      swords: '主動追求想法、答案與突破，講話直接、行動快。',
+      pentacles: '持續執行現實責任，慢但一步都不會少。',
+    },
+  },
+  {
+    rank: 'queen', keywords: ['成熟', '內化', '穩'], title: '皇后 Queen', en: 'Queen', power: '已經內化',
+    model: '我已經把這股能力內化',
+    desc: '這個領域的能力已經長在身上，不需要刻意就能運用。向內、成熟，重點在品質而非速度。',
+    asPerson: '在這個領域已經很成熟的人，通常給人穩定、能接住別人的感覺。',
+    asState: '你在這件事上已經有自己的一套，不用再靠外在肯定。',
+    asAdvice: '相信自己已經會的部分，用你的方式處理，不必模仿別人。',
+    love: '穩定投入、能照顧關係，也知道自己的界線在哪。',
+    work: '這個領域的資深者，靠品質與判斷力而不是靠拚。',
+    shadow: '過度照顧別人而忽略自己，或用成熟包裝控制。',
+    suits: {
+      wands: '有影響力也有溫度，能帶動別人而不必壓過別人。',
+      cups: '能深刻同理，也容易被別人的情緒淹沒。',
+      swords: '看得清楚、講得準確，有時準確得讓人受傷。',
+      pentacles: '把生活與資源照顧得很好，務實而可靠。',
+    },
+  },
+  {
+    rank: 'king', keywords: ['負責', '決定', '用'], title: '國王 King', en: 'King', power: '對外運用',
+    model: '我能穩定管理並對外運用這股能力',
+    desc: '不只自己會，還能對外承擔與分配。向外、負責，重點在讓這股能量在更大的範圍裡運作。',
+    asPerson: '在這個領域握有決定權或責任的人，通常是主管、長輩或專業權威。',
+    asState: '你在這件事上要負最終責任，而且有能力承擔。',
+    asAdvice: '做決定並承擔它，這個位階的力量來自負責，不是來自控制。',
+    love: '願意承諾並負責，但也可能把關係當成需要管理的事。',
+    work: '需要拍板、對結果負責的位置。',
+    shadow: '變成專制、只用權威解決問題，或把責任當成不能鬆手的理由。',
+    suits: {
+      wands: '有願景也敢下注，能把一群人帶往一個方向。',
+      cups: '情緒穩定成熟，能接住整個環境的感受。',
+      swords: '以規則與邏輯治理，公正但可能顯得冷。',
+      pentacles: '把資源經營成長期的穩定，重視實際結果。',
+    },
+  },
+];
+
+/* 「自己試著解牌」。題目由數字 × 花色即時組出來，不是寫死的題庫——
+   使用者先自己用公式推一次，再展開答案比對。
+   刻意不計分、不做連續答對：一旦有分數，人會開始猜答案而不是練推導。 */
+var LIBRARY_DRILLS = [
+  { num: '7', suit: 'pentacles' },
+  { num: '8', suit: 'wands' },
+  { num: '5', suit: 'cups' },
+  { num: '4', suit: 'swords' },
+];
+function libraryDrillCard(numKey, suitKey) {
+  var numMap = { A: 'A', '2': '2', '3': '3', '4': '4', '5': '5', '6': '6', '7': '7', '8': '8', '9': '9', '10': '10' };
+  return TAROT.filter(function (c) { return c.suit === suitKey && String(c.num) === numMap[numKey]; })[0] || null;
+}
+function renderLibraryDrills() {
+  var h = '<div style="margin-top:16px;border-top:1px solid rgba(201,169,110,.2);padding-top:14px">';
+  h += '<div style="font:600 13px \'Noto Serif TC\',serif;color:#e6cd9a">自己試著解牌</div>';
+  h += '<p class="md-note" style="margin:5px 0 0">先用上面的公式自己推一次，再展開對答案。這裡不計分——重點是練會推導的過程。</p>';
+  LIBRARY_DRILLS.forEach(function (d, i) {
+    var numDef = NUMBER_FORMULA_DATA.filter(function (x) { return x.num === d.num; })[0];
+    var suitDef = SUIT_DOMAIN_DATA.filter(function (x) { return x.suit === d.suit; })[0];
+    var card = libraryDrillCard(d.num, d.suit);
+    if (!numDef || !suitDef || !card) return;
+    var key = 'drill:' + i;
+    var open = !!(state.mnDrillOpen && state.mnDrillOpen[key]);
+    h += '<div style="border:1px solid rgba(201,169,110,.25);border-radius:8px;padding:12px 13px;background:rgba(255,255,255,.02);margin-top:9px">';
+    h += '<div style="font:600 13px \'Noto Serif TC\',serif;color:#f0e9d8">' + esc(card.nameZh) + '</div>';
+    h += '<div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);margin-top:5px;line-height:1.75">先想想看：<br>・' + esc(numDef.label) + ' 代表什麼階段？<br>・' + esc(suitDef.title.split(' ')[0]) + ' 處理哪個領域？</div>';
+    h += '<button type="button" aria-expanded="' + open + '" onclick="mnDrillToggle(\'' + key + '\')" style="min-height:44px;width:100%;margin-top:8px;background:none;border:none;border-top:1px solid rgba(201,169,110,.14);color:#c9a96e;font:500 11px \'Noto Sans TC\',sans-serif;cursor:pointer;padding:10px 0 0;display:flex;justify-content:space-between;align-items:center">'
+      + '<span>' + (open ? '收起答案' : '展開答案') + '</span><span aria-hidden="true">' + (open ? '▴' : '›') + '</span></button>';
+    if (open) {
+      h += mnField(numDef.label + '＝' + numDef.name, numDef.question, '#e6cd9a');
+      h += mnField(suitDef.title.split(' ')[0] + '＝' + suitDef.life, suitDef.domain, '#c9a96e');
+      h += mnField('所以 ' + card.nameZh + ' 常呈現', numDef.suits[d.suit]);
+      h += '<div style="margin-top:8px;font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);line-height:1.7">這是用公式推出來的方向。這張牌完整的傳統牌義，可以在上方牌陣列表點進' + esc(card.nameZh) + '查看。</div>';
+    }
+    h += '</div>';
+  });
+  return h + '</div>';
+}
+
 function mnToggle() { state.mnOpen = !state.mnOpen; render(); }
+/* Progressive disclosure：列表只給名稱、一句核心與關鍵字，深入內容點開才載入。
+   key 前綴避免不同分頁的同名項目互相打架（例如花色 wands 與宮廷 wands 欄位）。 */
+function mnExpandToggle(key) {
+  state.mnExpanded = state.mnExpanded || {};
+  state.mnExpanded[key] = !state.mnExpanded[key];
+  render();
+}
+function mnIsExpanded(key) { return !!(state.mnExpanded && state.mnExpanded[key]); }
+function mnLearnToggle() { state.mnLearnMode = !state.mnLearnMode; render(); }
+/* 「自己試著解牌」的答案是否揭曉。刻意不做計分或連續答對——目的是建立推導能力，
+   不是玩遊戲；一旦有分數，使用者會開始猜答案而不是想推導過程。 */
+function mnDrillToggle(key) {
+  state.mnDrillOpen = state.mnDrillOpen || {};
+  state.mnDrillOpen[key] = !state.mnDrillOpen[key];
+  render();
+}
+function mnKeywordChips(words, color) {
+  return '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">' + (words || []).map(function (w) {
+    return '<span style="font:400 10px \'Noto Sans TC\',sans-serif;border:1px solid rgba(201,169,110,.3);color:' + (color || 'rgba(240,233,216,.72)') + ';border-radius:10px;padding:2px 8px">' + esc(w) + '</span>';
+  }).join('') + '</div>';
+}
+function mnDisclosure(key, label) {
+  var open = mnIsExpanded(key);
+  return '<button type="button" aria-expanded="' + open + '" onclick="mnExpandToggle(\'' + esc(key) + '\')" style="min-height:44px;width:100%;margin-top:8px;background:none;border:none;border-top:1px solid rgba(201,169,110,.14);color:#c9a96e;font:500 11px \'Noto Sans TC\',sans-serif;cursor:pointer;padding:10px 0 0;display:flex;justify-content:space-between;align-items:center;gap:8px">'
+    + '<span>' + esc(label) + '</span><span aria-hidden="true">' + (open ? '▴' : '›') + '</span></button>';
+}
+function mnField(label, text, color) {
+  if (!text) return '';
+  return '<div style="margin-top:8px;border-left:2px solid ' + (color || 'rgba(201,169,110,.35)') + ';padding-left:9px">'
+    + '<span style="font:500 10.5px \'Noto Sans TC\',sans-serif;color:' + (color || '#c9a96e') + '">' + esc(label) + '</span>'
+    + '<div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.8;margin-top:2px">' + esc(text) + '</div></div>';
+}
+/* 四花色變化：這是「數字 × 花色 → 單張牌」推導的展示位置，
+   每一句都寫成「因為…所以…」，讓使用者看得到中間的邏輯而不只是結果。 */
+function mnSuitBreakdown(map) {
+  var order = [['wands', '權杖', '#d9964a'], ['cups', '聖杯', '#7fa8c9'], ['swords', '寶劍', '#a9a9c9'], ['pentacles', '錢幣', '#9fbf7f']];
+  var h = '<div style="margin-top:9px">';
+  order.forEach(function (o) {
+    if (!map[o[0]]) return;
+    h += '<div style="display:flex;gap:8px;margin-top:6px;align-items:flex-start">'
+      + '<span style="flex:none;font:500 10.5px \'Noto Sans TC\',sans-serif;color:' + o[2] + ';border:1px solid ' + o[2] + '55;border-radius:8px;padding:2px 7px;white-space:nowrap">' + o[1] + '</span>'
+      + '<span style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.75">' + esc(map[o[0]]) + '</span></div>';
+  });
+  return h + '</div>';
+}
+
 function mnSetTab(k) { state.mnTab = k; render(); }
 
 function renderMnemonic() {
@@ -327,55 +703,148 @@ function renderMnemonic() {
       h += '<button type="button" onclick="mnSetTab(\'' + t[0] + '\')" style="min-height:44px;flex:1;background:' + (active ? 'rgba(201,169,110,.18)' : 'transparent') + ';border:1px solid ' + (active ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.5)') + ';padding:7px 4px;border-radius:8px;cursor:pointer;font:500 12px \'Noto Sans TC\',sans-serif">' + t[1] + '</button>';
     });
     h += '</div>';
+    /* 一般／學習模式。兩者用同一份知識資料，學習模式只是多開幾層推導內容，
+       不會產生互相矛盾的牌義。 */
+    h += '<div role="group" aria-label="閱讀模式" style="display:flex;justify-content:flex-end;align-items:center;gap:6px;margin-top:10px;flex-wrap:wrap">';
+    h += '<span style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);padding:6px 2px">閱讀模式</span>';
+    [[false, '一般'], [true, '學習']].forEach(function (m) {
+      var on = !!state.mnLearnMode === m[0];
+      h += '<button type="button" aria-pressed="' + on + '" onclick="mnLearnToggle()" style="min-height:36px;font:500 10.5px \'Noto Sans TC\',sans-serif;border:1px solid ' + (on ? '#e6cd9a' : 'rgba(201,169,110,.3)') + ';border-radius:12px;padding:5px 10px;background:' + (on ? 'rgba(201,169,110,.18)' : 'transparent') + ';color:' + (on ? '#f0e9d8' : '#c9a96e') + ';cursor:pointer">' + (on ? '✓ ' : '') + m[1] + '</button>';
+    });
+    h += '</div>';
+    h += '<div role="status" style="text-align:right;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:3px">目前：' + (state.mnLearnMode ? '學習模式（數字公式頁會多出推導練習）' : '一般模式（只看核心與關鍵字，需要時再展開）') + '</div>';
     if (state.mnTab === 'suit') {
-      h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px">';
+      h += '<p class="md-note" style="margin:10px 0 0">花色回答「這件事發生在人生的哪一塊」。點開可以看到同一個花色在感情、工作、金錢題裡各自怎麼翻譯。</p>';
       SUIT_DOMAIN_DATA.forEach(function (d) {
-        h += '<div style="border:1px solid rgba(201,169,110,.25);border-left:3px solid ' + d.color + ';border-radius:8px;padding:11px 12px;background:rgba(255,255,255,.02)">';
-        h += '<div style="font:600 13px \'Noto Serif TC\',serif;color:' + d.color + '">' + d.title + '</div>';
-        h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:3px">' + d.life + '</div>';
-        h += '<div style="margin-top:6px">' + d.tags.map(function (t2) {
-          return '<span style="display:inline-block;font:400 10px \'Noto Sans TC\',sans-serif;border:1px solid rgba(201,169,110,.3);color:rgba(240,233,216,.6);border-radius:9px;padding:2px 7px;margin:2px 3px 0 0">' + t2 + '</span>';
-        }).join('') + '</div>';
+        var key = 'suit:' + d.suit;
+        h += '<div style="border:1px solid rgba(201,169,110,.25);border-left:3px solid ' + d.color + ';border-radius:8px;padding:12px 13px;background:rgba(255,255,255,.02);margin-top:9px">';
+        h += '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap">';
+        h += '<span style="font:600 13.5px \'Noto Serif TC\',serif;color:' + d.color + '">' + d.title + '</span>';
+        h += '<span style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62)">' + esc(d.element) + '元素・' + esc(d.life) + '</span>';
+        h += '</div>';
+        h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:5px">核心問題：' + esc(d.coreQuestion) + '</div>';
+        h += mnKeywordChips(d.tags, 'rgba(240,233,216,.72)');
+        h += mnDisclosure(key, '深入理解這個花色');
+        if (mnIsExpanded(key)) {
+          h += mnField('關注領域', d.domain);
+          h += mnField('健康運作', d.healthy, '#9bc5a3');
+          h += mnField('過度運作', d.excess, '#d9a0a0');
+          h += mnField('能量不足', d.lack, '#b7a4d8');
+          h += '<div style="margin-top:11px;font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e">同一個花色，不同問題怎麼讀</div>';
+          h += mnField('感情題', d.love);
+          h += mnField('工作題', d.work);
+          h += mnField('金錢題', d.money);
+          h += mnField('當成建議牌', d.advice);
+        }
         h += '</div>';
       });
-      h += '</div>';
     } else if (state.mnTab === 'number') {
-      h += '<div style="margin-top:12px">';
+      /* 推牌公式放在最上面：使用者要先知道「牌義是被推導出來的」，
+         後面每個數字的四花色變化才有意義，而不是又一份關鍵字表。 */
+      h += '<div style="margin-top:12px;border:1px solid rgba(201,169,110,.35);border-radius:10px;padding:13px 14px;background:rgba(201,169,110,.07)">';
+      h += '<div style="font:600 13px \'Noto Serif TC\',serif;color:#e6cd9a">一張小阿爾克那怎麼讀？</div>';
+      [['數字', '事情發展到哪個階段'], ['花色', '事情發生在哪種人生領域'],
+       ['牌面圖像與傳統牌義', '這股力量具體怎麼表現'], ['正逆位', '這股能量目前如何運作'],
+       ['問題情境', '最後翻譯成感情、工作、金錢或其他生活問題']].forEach(function (r, i) {
+        h += '<div style="display:flex;gap:8px;align-items:baseline;margin-top:' + (i ? '6' : '9') + 'px">'
+          + '<span style="flex:none;font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;min-width:104px">' + (i ? '× ' : '　') + r[0] + '</span>'
+          + '<span style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.7">' + r[1] + '</span></div>';
+      });
+      h += '<div style="margin-top:10px;padding-top:9px;border-top:1px dashed rgba(201,169,110,.25);font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.8">'
+        + '例：<strong style="color:#e6cd9a">8</strong>＝持續投入、進入運作　×　<strong style="color:#9fbf7f">錢幣</strong>＝技能、工作、現實資源　→　'
+        + '<strong style="color:#f0e9d8">錢幣八</strong>＝持續投入技能與工作，因此形成練習、精進、重複操作與培養專業的牌義。</div>';
+      h += '<div style="margin-top:8px;font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);line-height:1.7">公式是用來推導與記憶的，不取代單張牌的傳統牌義；每張牌在牌典裡仍有自己完整的解釋。</div>';
+      h += '</div>';
+
+      h += '<p class="md-note" style="margin:11px 0 0">數字說的是「發展到哪個階段」，不是固定的好壞。點開任一階段可以看到它在四個花色裡各自長成什麼樣子。</p>';
       NUMBER_FORMULA_DATA.forEach(function (d) {
-        h += '<div style="display:flex;gap:11px;padding:8px 2px;border-bottom:1px solid rgba(201,169,110,.12);align-items:flex-start">';
-        h += '<div style="flex:none;width:34px;text-align:center;font:600 13px \'Noto Serif TC\',serif;color:#c9a96e;border:1px solid rgba(201,169,110,.35);border-radius:7px;padding:3px 0">' + d.num + '</div>';
-        h += '<div style="flex:1;min-width:0"><div style="font:500 12.5px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + d.theme + '</div>';
-        h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:2px;line-height:1.5">' + d.example + '</div></div>';
+        var key = 'num:' + d.num;
+        h += '<div style="border:1px solid rgba(201,169,110,.22);border-radius:8px;padding:11px 12px;background:rgba(255,255,255,.02);margin-top:9px">';
+        h += '<div style="display:flex;gap:11px;align-items:flex-start">';
+        h += '<div style="flex:none;min-width:36px;text-align:center;font:600 14px \'Noto Serif TC\',serif;color:#c9a96e;border:1px solid rgba(201,169,110,.35);border-radius:8px;padding:5px 4px">' + esc(d.label) + '</div>';
+        h += '<div style="flex:1;min-width:0">';
+        h += '<div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + esc(d.name) + '</div>';
+        h += '<div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);margin-top:3px;line-height:1.65">' + esc(d.memory) + '</div>';
+        h += mnKeywordChips(d.keywords, '#c9a96e');
+        h += '</div></div>';
+        h += mnDisclosure(key, '為什麼會發展到這個階段');
+        if (mnIsExpanded(key)) {
+          h += mnField('核心問題', d.question, '#e6cd9a');
+          h += mnField('核心概念', d.concept);
+          h += mnField('為什麼會走到這裡', d.why);
+          h += mnField('正向運作', d.positive, '#9bc5a3');
+          h += mnField('過度或陰影運作', d.shadow, '#d9a0a0');
+          h += '<div style="margin-top:11px;font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e">同一個階段，四個花色的長相</div>';
+          h += mnSuitBreakdown(d.suits);
+          h += mnField('抽到這個數字先問自己', d.ask, '#e6cd9a');
+          h += mnField('常見誤區', d.myth, '#b7a4d8');
+        }
         h += '</div>';
       });
-      h += '</div>';
+
+      /* 自己試著解牌：先讓使用者用上面的公式推一次，再揭曉。
+         刻意不計分、不排行——目的是建立推導能力，有分數就會變成猜答案。 */
+      if (state.mnLearnMode) {
+        h += renderLibraryDrills();
+      }
     } else if (state.mnTab === 'confuse') {
-      h += '<div style="margin-top:12px">';
-      CONFUSE_DATA.forEach(function (g) {
-        h += '<div style="border:1px solid rgba(201,169,110,.25);border-radius:8px;padding:11px 13px;background:rgba(255,255,255,.02);margin-bottom:9px">';
-        h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e">' + g.common + '，差在哪?</div>';
+      h += '<p class="md-note" style="margin:10px 0 0">分不出來的兩張牌，差別通常不在關鍵字，而在「為什麼會走到這一步」。每組最後都有一個可以直接拿來判斷的問題。</p>';
+      CONFUSE_DATA.forEach(function (g, gi) {
+        var key = 'cf:' + gi;
+        h += '<div style="border:1px solid rgba(201,169,110,.25);border-radius:8px;padding:12px 13px;background:rgba(255,255,255,.02);margin-top:9px">';
+        h += '<div style="font:500 11.5px \'Noto Sans TC\',sans-serif;color:#c9a96e">' + esc(g.common) + '</div>';
+        h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:7px">';
         g.cards.forEach(function (cc) {
           var card = TAROT.find(function (x) { return x.id === cc.id; });
           if (!card) return;
-          h += '<div style="display:flex;gap:9px;margin-top:8px;align-items:baseline">';
-          h += '<span onclick="openLibCard(\'' + card.id + '\')" style="flex:none;font:600 12px \'Noto Serif TC\',serif;color:#e6cd9a;cursor:pointer;border-bottom:1px dotted rgba(201,169,110,.4)">' + card.nameZh + '</span>';
-          h += '<span style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.65);line-height:1.6">' + cc.diff + '</span>';
-          h += '</div>';
+          h += '<button type="button" onclick="openLibCard(\'' + esc(card.id) + '\')" style="min-height:36px;font:600 11.5px \'Noto Serif TC\',serif;color:#e6cd9a;background:none;border:1px solid rgba(201,169,110,.35);border-radius:14px;padding:6px 12px;cursor:pointer">' + esc(card.nameZh) + '</button>';
         });
         h += '</div>';
-      });
-      h += '</div>';
-    } else {
-      h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px">';
-      COURT_ROLE_DATA.forEach(function (d) {
-        h += '<div style="border:1px solid rgba(201,169,110,.25);border-radius:8px;padding:11px 12px;background:rgba(255,255,255,.02)">';
-        h += '<div style="font:600 13px \'Noto Serif TC\',serif;color:#e6cd9a">' + d.title + '</div>';
-        h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:2px">' + d.en + '</div>';
-        h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.65);margin-top:5px;line-height:1.6">' + d.desc + '</div>';
-        h += '<div style="display:inline-block;font:400 10px \'Noto Sans TC\',sans-serif;border:1px solid rgba(201,169,110,.35);color:rgba(240,233,216,.55);border-radius:9px;padding:2px 8px;margin-top:7px">' + d.power + '</div>';
+        h += mnDisclosure(key, '怎麼分辨這幾張');
+        if (mnIsExpanded(key)) {
+          g.cards.forEach(function (cc) {
+            var card = TAROT.find(function (x) { return x.id === cc.id; });
+            if (!card) return;
+            h += '<div style="margin-top:9px;border-left:2px solid rgba(201,169,110,.35);padding-left:9px">';
+            h += '<div style="font:600 12px \'Noto Serif TC\',serif;color:#e6cd9a">' + esc(card.nameZh) + '</div>';
+            if (cc.stance) h += '<div style="font:500 11.5px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:3px;line-height:1.7">「' + esc(cc.stance) + '」</div>';
+            h += '<div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);margin-top:3px;line-height:1.75">' + esc(cc.diff) + '</div>';
+            if (cc.when) h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:3px;line-height:1.7">什麼情況比較像它：' + esc(cc.when) + '</div>';
+            h += '</div>';
+          });
+          if (g.decide) {
+            h += '<div style="margin-top:11px;border:1px solid rgba(201,169,110,.3);border-radius:8px;padding:9px 11px;background:rgba(201,169,110,.06)">'
+              + '<span style="font:500 10.5px \'Noto Sans TC\',sans-serif;color:#c9a96e">判斷問題</span>'
+              + '<div style="font:500 12px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:3px;line-height:1.75">' + esc(g.decide) + '</div></div>';
+          }
+        }
         h += '</div>';
       });
-      h += '</div>';
+    } else {
+      h += '<p class="md-note" style="margin:10px 0 0">宮廷牌問的是「你跟這股能量的關係走到哪」。四個位階是同一條學習曲線：認識 → 追求 → 內化 → 對外運用。</p>';
+      COURT_ROLE_DATA.forEach(function (d) {
+        var key = 'court:' + d.rank;
+        h += '<div style="border:1px solid rgba(201,169,110,.25);border-radius:8px;padding:12px 13px;background:rgba(255,255,255,.02);margin-top:9px">';
+        h += '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap">';
+        h += '<span style="font:600 13.5px \'Noto Serif TC\',serif;color:#e6cd9a">' + esc(d.title) + '</span>';
+        h += '<span style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:#c9a96e">' + esc(d.power) + '</span>';
+        h += '</div>';
+        h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:5px;line-height:1.7">「' + esc(d.model) + '」</div>';
+        h += mnKeywordChips(d.keywords, '#c9a96e');
+        h += mnDisclosure(key, '深入理解這個位階');
+        if (mnIsExpanded(key)) {
+          h += mnField('這個位階在說什麼', d.desc);
+          h += mnField('當成人物', d.asPerson);
+          h += mnField('當成你自己的狀態', d.asState);
+          h += mnField('當成行動建議', d.asAdvice, '#e6cd9a');
+          h += mnField('感情中的表現', d.love);
+          h += mnField('工作中的表現', d.work);
+          h += mnField('陰影面', d.shadow, '#d9a0a0');
+          h += '<div style="margin-top:11px;font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e">同一個位階，四個花色的長相</div>';
+          h += mnSuitBreakdown(d.suits);
+        }
+        h += '</div>';
+      });
     }
     h += '</div>';
   }
@@ -787,48 +1256,66 @@ function reassignImages() {
 /* ================= 學習系統:易混淆對比 / 抽認卡測驗 / 22天計畫 ================= */
 
 /* ---- 易混淆牌對比(記憶心法第四頁籤) ---- */
+/* 易混淆比較。每組不只列關鍵字，而是給：兩張的共同點 → 各自的立場（第一人稱一句話）
+   → 什麼情況比較像它 → 一個可以直接拿來判斷的問題。
+   stance 是這張牌「如果會說話，它會怎麼說」——實測這比形容詞更容易記住差異。 */
 var CONFUSE_DATA = [
-  { common: '都是「結束」', cards: [
-    { id: 'm13', diff: '漸進的轉化——一個階段自然走完，放下迎新' },
-    { id: 'm16', diff: '突然的崩塌——根基不穩的結構瞬間瓦解' },
-    { id: 'swords-10', diff: '谷底的終點——痛到底了，之後只會更好' },
+  { common: '都可能是「結束」', decide: '這個結束是自然走完、突然斷裂，還是已經痛到谷底？', cards: [
+    { id: 'm13', stance: '這個階段已經走完了，我要放下它往前。', diff: '漸進的轉化——結束是過程的一部分，通常早有徵兆。', when: '事情慢慢淡掉、你自己也知道該告一段落。' },
+    { id: 'm16', stance: '我以為穩固的東西，其實根基是假的。', diff: '突然的崩塌——外力介入，把撐不住的結構一次打掉。', when: '毫無預警、你完全沒準備好的變故。' },
+    { id: 'swords-10', stance: '已經壞到底了，不會更糟。', diff: '谷底的終點——痛感最強，但也代表這一輪真的結束了。', when: '你已經耗盡、只想承認事情結束的時候。' },
   ]},
-  { common: '都是「兩人關係」', cards: [
-    { id: 'm6', diff: '靈魂層面的契合與重大抉擇，關乎價值觀' },
-    { id: 'cups-2', diff: '日常層面的情感連結與相互吸引' },
+  { common: '都在講「兩人關係」', decide: '這是價值觀層級的重大選擇，還是日常的情感連結？', cards: [
+    { id: 'm6', stance: '我要選擇成為什麼樣的人，而這個選擇跟關係有關。', diff: '靈魂層面的契合與重大抉擇，牽涉價值觀與人生方向。', when: '關係逼你面對「我到底要什麼」的時候。' },
+    { id: 'cups-2', stance: '我們之間有真實的連結。', diff: '日常層面的情感連結、相互吸引與對等的交流。', when: '兩人正在建立或修復關係本身。' },
   ]},
-  { common: '都是「力量」', cards: [
-    { id: 'm8', diff: '向內的柔性力量——用耐心馴服，而非壓制' },
-    { id: 'm7', diff: '向外的意志推進——駕馭對立、衝向目標' },
+  { common: '都是「被綁住的感覺」', decide: '綁住我的是自己的慾望，還是我正在做的選擇？', cards: [
+    { id: 'm15', stance: '我知道這樣不好，但我離不開。', diff: '被慾望、依賴或不健康的模式綑住，而且鎖鏈其實是鬆的。', when: '明知有問題卻反覆回去的狀況。' },
+    { id: 'm6', stance: '我要選哪一邊？', diff: '關係中的選擇本身，重點在做出決定而非被困住。', when: '你其實有選擇權，只是還沒決定。' },
   ]},
-  { common: '都是「引導者」', cards: [
-    { id: 'm1', diff: '主動創造——整合手上資源實現目標' },
-    { id: 'm5', diff: '傳承指導——依循傳統與體制的智慧' },
+  { common: '都是「暫停與獨處」', decide: '我是主動退開去想清楚，還是被迫停下來休息？', cards: [
+    { id: 'm9', stance: '我需要離開人群，自己把答案想清楚。', diff: '主動的、有目的的獨處，帶著尋找的意圖。', when: '你自己選擇抽離，而且知道在找什麼。' },
+    { id: 'swords-4', stance: '我撐不住了，需要先停下來。', diff: '被動的、恢復性的休息，重點是止損與復原。', when: '你已經耗損，需要的是休息而不是答案。' },
   ]},
-  { common: '都是「暫停」', cards: [
-    { id: 'm9', diff: '主動退隱——自己選擇獨處尋找答案' },
-    { id: 'm12', diff: '被動懸置——被迫停下，換個角度看世界' },
+  { common: '都可能是「離開」', decide: '是因為不再想要，還是因為現在需要離開困境？', cards: [
+    { id: 'cups-8', stance: '我情感上已經得不到滿足，所以決定離開。', diff: '主動放下——即使外在看起來還不錯，內在已經沒有了。', when: '你自己選擇走，而且不打算回頭。' },
+    { id: 'swords-6', stance: '現在的環境太混亂，所以先移動到比較平靜的地方。', diff: '過渡性的移動——不是不要了，是需要先脫離現在的處境。', when: '你是為了喘口氣而離開，未必是永久的。' },
   ]},
-  { common: '都在「夜空」', cards: [
-    { id: 'm17', diff: '希望——風暴後的平靜與療癒' },
-    { id: 'm18', diff: '迷霧——不安、幻象與模糊不清' },
-    { id: 'm19', diff: '明朗——一切清晰、成功與喜悅' },
+  { common: '都是「不做決定」', decide: '我是刻意不看，還是選擇先什麼都不做？', cards: [
+    { id: 'swords-2', stance: '我不想看，所以我把眼睛遮起來。', diff: '迴避——訊息就在那裡，但你選擇不去面對。', when: '你其實知道答案，只是不想承認。' },
+    { id: 'm12', stance: '我先停在這裡，換個角度看。', diff: '主動的暫停與觀點轉換，犧牲當下換取不同的理解。', when: '你願意等，而且期待從中看到新的東西。' },
   ]},
-  { common: '都是「被困住」', cards: [
-    { id: 'swords-2', diff: '自己選擇不看——蒙眼迴避抉擇的僵局' },
-    { id: 'swords-8', diff: '自己以為出不去——其實束縛鬆綁就能走' },
+  { common: '都是「好事、有希望」', decide: '這份好是還在醞釀的希望，還是已經實現的成果？', cards: [
+    { id: 'm17', stance: '風暴過去了，我可以慢慢重建。', diff: '療癒與希望——安靜的、還在恢復中的，尚未成形。', when: '剛脫離低潮，前面還需要時間。' },
+    { id: 'm19', stance: '一切都清楚而明亮。', diff: '成功與清晰——結果已經出來，可以被看見與慶祝。', when: '事情已經明朗，能量充足。' },
   ]},
-  { common: '都是「不滿足」', cards: [
-    { id: 'cups-4', diff: '麻木倦怠——遞到眼前的機會也提不起勁' },
-    { id: 'cups-7', diff: '幻想過多——選項太多反而抓不到重點' },
+  { common: '都跟「看不見的事」有關', decide: '這是可以被理解的內在智慧，還是會扭曲判斷的投射？', cards: [
+    { id: 'm2', stance: '答案在裡面，但還不到說出口的時候。', diff: '內在的、可信任的直覺與潛在知識，安靜但清楚。', when: '你需要的是安靜下來聽自己。' },
+    { id: 'm18', stance: '我看到的東西，可能不是真的。', diff: '恐懼、幻想與投射——看到的畫面被自己的情緒改造過。', when: '不安讓你開始腦補劇情。' },
   ]},
-  { common: '都是「擁有金錢」', cards: [
-    { id: 'pentacles-4', diff: '緊抓不放——守財帶來安全感也帶來僵化' },
-    { id: 'pentacles-9', diff: '豐盛獨立——靠自己掙來的餘裕與自在' },
+  { common: '都是「成熟的女性能量」', decide: '這是豐盛的創造與滋養，還是深度的情感理解？', cards: [
+    { id: 'm3', stance: '我讓事物生長、豐盛起來。', diff: '創造與孕育，偏向物質、感官與具體的產出。', when: '重點是把東西生出來、養大。' },
+    { id: 'cups-Queen', stance: '我能感覺到你沒說出口的部分。', diff: '情感的深度與同理，偏向感受、療癒與接住人。', when: '重點是情緒的理解與陪伴。' },
   ]},
-  { common: '都是「等待成果」', cards: [
-    { id: 'wands-3', diff: '遠眺已啟航的船——布局後的自信期待' },
-    { id: 'pentacles-7', diff: '凝視結果的藤——長期投入後的耐心評估' },
+  { common: '都是「快速前進」', decide: '推動我的是意志力，還是事情本身的速度？', cards: [
+    { id: 'm7', stance: '我靠意志把兩股相反的力量控制住，往前走。', diff: '有駕馭者——前進來自自我控制與方向感。', when: '你需要克服阻力、掌握局面。' },
+    { id: 'wands-8', stance: '事情一次全部來了。', diff: '沒有駕馭者——速度來自外在，消息與事件同時發生。', when: '你只是被捲進快速的進展裡。' },
+  ]},
+  { common: '都跟「結果與判決」有關', decide: '這是我行為的直接後果，還是一次更大的清算與召喚？', cards: [
+    { id: 'm11', stance: '因為你做了什麼，所以得到什麼。', diff: '因果與平衡——就事論事，重點在公平與責任。', when: '牽涉合約、對錯、該負的責任。' },
+    { id: 'm20', stance: '該面對全部的過去了。', diff: '總結算與覺醒——跨越整個階段的回顧與召喚。', when: '重大轉折、重新評估整段人生。' },
+  ]},
+  { common: '都是「權威與規則」', decide: '這個權威來自實力與地位，還是來自傳統與信念體系？', cards: [
+    { id: 'm4', stance: '規矩由我訂，因為責任在我身上。', diff: '世俗的權威——結構、控制與實際的掌權。', when: '牽涉制度、位階與現實中的決定權。' },
+    { id: 'm5', stance: '我們照著傳下來的方式做。', diff: '精神與傳統的權威——教導、共識與既有的價值體系。', when: '牽涉信念、教育、群體規範。' },
+  ]},
+  { common: '都是「新的開始」', decide: '這是我主動創造的開始，還是機會被送到我面前？', cards: [
+    { id: 'm1', stance: '我有全部的工具，可以開始創造。', diff: '主動的創造者——能力齊備，重點在把想法變成現實。', when: '你有意識地啟動一件事。' },
+    { id: 'wands-A', stance: '一個新的可能性出現了。', diff: '被給予的火種——機會與衝動出現，還沒被組織起來。', when: '靈感或機會剛冒出來，尚未成形。' },
+  ]},
+  { common: '都是「一個循環完成」', decide: '這是還在轉動的階段變化，還是真正的完整結束？', cards: [
+    { id: 'm10', stance: '情況變了，輪子又轉了一格。', diff: '轉動中的變化——起伏會繼續，不是終點。', when: '運勢或處境正在改變，但故事沒完。' },
+    { id: 'm21', stance: '這一輪完整了。', diff: '真正的完成與整合——所有部分都到位。', when: '一個大階段確實走完。' },
   ]},
 ];
 
