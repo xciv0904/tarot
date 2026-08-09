@@ -529,6 +529,182 @@ var NUMBER_FORMULA_DATA = [
 ];
 
 /* 宮廷＝你跟這股能量的關係處在哪個位置。四個位階是同一條學習曲線。 */
+/* ============================================================================
+   大阿爾克那：旅程結構
+
+   大牌沒有「數字 × 花色」可以推導，但它有兩個真實而且可教的結構：
+
+   1. 三個階段（1–7 / 8–14 / 15–21，愚人 0 在整條路之外）
+      建立自我 → 向內轉化 → 整合超越。
+
+   2. 七組直行對應
+      把 1–21 排成三列七行，同一行的三張牌在講同一個課題的三種層次：
+        1 魔術師 ／ 8 力量  ／15 惡魔　→ 怎麼駕馭自己的力量
+        2 女祭司 ／ 9 隱士  ／16 塔　　→ 隱藏的東西怎麼被看見
+        3 皇后　 ／10 輪　　／17 星星　→ 生命怎麼流動與再生
+        4 皇帝　 ／11 正義  ／18 月亮　→ 秩序與真相怎麼被確立
+        5 教皇　 ／12 吊人  ／19 太陽　→ 意義從哪裡來
+        6 戀人　 ／13 死神  ／20 審判　→ 選擇與放下
+        7 戰車　 ／14 節制  ／21 世界　→ 前進的方式
+
+   這個對應是牌陣結構本身，不是本站自創；它讓使用者可以從已經懂的牌推到還不懂的牌，
+   這正是大牌版本的「推導」。單張牌的傳統牌義（upZh／revZh／RICH）不受影響。
+   ========================================================================== */
+var MAJOR_STAGE_DATA = [
+  { key: 'outer', range: '1–7', title: '第一階段・建立自我', memory: '在外面的世界裡，把「我是誰」搭起來。',
+    desc: '遇到的都是外在的角色與規則：怎麼開始、怎麼相信自己、怎麼面對權威與選擇。這一段在學的是把自己立起來。' },
+  { key: 'inner', range: '8–14', title: '第二階段・向內轉化', memory: '外面走完一圈，開始面對自己內在。',
+    desc: '力量從外在轉向內在：需要耐心、獨處、接受無法控制的事，也需要面對結束。這一段在學的是放手與整合。' },
+  { key: 'beyond', range: '15–21', title: '第三階段・整合超越', memory: '面對最不想看的部分，然後重新長回來。',
+    desc: '從陰影開始，經過崩解與重建，最後回到清晰與完整。這一段在學的是把破碎的部分收回同一個人身上。' },
+];
+
+var MAJOR_COLUMN_DATA = [
+  { col: 1, theme: '怎麼駕馭自己的力量', ids: ['m1', 'm8', 'm15'] },
+  { col: 2, theme: '隱藏的東西怎麼被看見', ids: ['m2', 'm9', 'm16'] },
+  { col: 3, theme: '生命怎麼流動與再生', ids: ['m3', 'm10', 'm17'] },
+  { col: 4, theme: '秩序與真相怎麼被確立', ids: ['m4', 'm11', 'm18'] },
+  { col: 5, theme: '意義從哪裡來', ids: ['m5', 'm12', 'm19'] },
+  { col: 6, theme: '選擇與放下', ids: ['m6', 'm13', 'm20'] },
+  { col: 7, theme: '前進的方式', ids: ['m7', 'm14', 'm21'] },
+];
+
+/* numberEcho 只寫在對應站得住腳的地方（1–10）。11–21 靠直行對應理解，
+   不硬套數字，避免製造看起來精確但實際牽強的關聯。 */
+var MAJOR_JOURNEY_DATA = {
+  m0: { stage: null, col: null, role: '整條路的起點，也是路本身。',
+    lesson: '在還不知道會發生什麼之前，仍然願意踏出去。',
+    shadow: '把沒有計畫當成自由，用天真迴避該負的責任。',
+    love: '關係剛開始，還沒有任何條件與包袱。', work: '轉換跑道或投入沒把握的事。',
+    advice: '不用等準備好，先走再說。', ask: '我在害怕的是失敗，還是害怕自己其實想要？' },
+  m1: { stage: 'outer', col: 1, numberEcho: '和小牌的 A 一樣是「開始」，但大牌處理的是「我有能力創造」這件事本身。',
+    role: '認識到自己手上有工具，可以動手把想法變成現實。',
+    lesson: '把潛力變成實際的行動。',
+    shadow: '只表演會什麼，卻沒有真的做出東西；或用能力操縱別人。',
+    love: '主動出擊、把心意化為具體行動。', work: '有資源也有能力，適合啟動新的事。',
+    advice: '你要的東西已經在手邊了，開始用它。', ask: '我手上已經有的資源，我真的用上了嗎？' },
+  m2: { stage: 'outer', col: 2, numberEcho: '和小牌的 2 一樣是「兩股力量」，但這裡是意識與潛意識之間的那道門。',
+    role: '學會相信說不出口、但確實知道的東西。',
+    lesson: '安靜下來，讓答案自己浮現。',
+    shadow: '什麼都不說變成隔絕，或用神秘感取代真正的理解。',
+    love: '曖昧、心照不宣，尚未攤開的情感。', work: '資訊還不完整，先觀察不要急著表態。',
+    advice: '先別問別人，先聽自己。', ask: '我其實已經知道答案了嗎？只是還不想承認？' },
+  m3: { stage: 'outer', col: 3, numberEcho: '和小牌的 3 一樣是「成形」，這裡成形的是生命與豐盛本身。',
+    role: '把東西真的孕育出來、養大。',
+    lesson: '創造需要時間，也需要願意照顧。',
+    shadow: '過度給予變成掌控，或用照顧綁住對方。',
+    love: '穩定滋養的關係，也可能牽涉家庭與生育。', work: '成果正在長大，適合經營而非開創。',
+    advice: '讓它慢慢長，不要急著收成。', ask: '我在照顧的這件事，是不是也需要被放手？' },
+  m4: { stage: 'outer', col: 4, numberEcho: '和小牌的 4 一樣是「穩固」，這裡建立的是規則與秩序。',
+    role: '把混亂變成有結構、可以運作的東西。',
+    lesson: '負起責任，並且承擔決定的後果。',
+    shadow: '把控制當成安全，用權威壓過需要。',
+    love: '穩定可靠，但也可能缺乏彈性。', work: '需要建立制度、扛起管理責任。',
+    advice: '先把框架定下來，其他再說。', ask: '我建立的秩序在保護誰？' },
+  m5: { stage: 'outer', col: 5, numberEcho: '小牌的 5 是平衡被打破；大牌的 5 是那個「之後會被打破的體系」本身。',
+    role: '學會既有的規則與傳承下來的做法。',
+    lesson: '先進入體系，才知道哪些值得留下。',
+    shadow: '把規矩當真理，或用身分壓過真正的問題。',
+    love: '傳統形式的關係，例如公開、承諾、婚姻。', work: '在既有制度內學習與取得資格。',
+    advice: '照著已經被驗證的方法做。', ask: '我遵守的是有用的規則，還是別人的期待？' },
+  m6: { stage: 'outer', col: 6, numberEcho: '和小牌的 6 一樣是「重新調整」，這裡調整的是價值觀層級的選擇。',
+    role: '面對一個會決定你成為什麼人的選擇。',
+    lesson: '選擇不只是挑一邊，是承認自己重視什麼。',
+    shadow: '為了不失去而不選，或把選擇推給別人。',
+    love: '真實的連結，也可能是關係中的重大決定。', work: '要在兩條路之間表態。',
+    advice: '選你真正認同的，不是比較安全的。', ask: '我逃避的是選錯，還是逃避承認我要什麼？' },
+  m7: { stage: 'outer', col: 7, numberEcho: '和小牌的 7 一樣是「繼續、改變還是防守」，這裡的答案是靠意志推進。',
+    role: '用意志把互相拉扯的力量控制住，往前走。',
+    lesson: '方向感比速度重要。',
+    shadow: '硬撐、只靠壓制而不整合，最後失控。',
+    love: '主動推進關係，但可能太用力。', work: '需要衝刺並掌握節奏的階段。',
+    advice: '抓住方向盤，不要讓情緒開車。', ask: '我在控制的兩股力量，各自想要什麼？' },
+  m8: { stage: 'inner', col: 1, numberEcho: '和小牌的 8 一樣是「持續投入」，這裡投入的是溫柔而穩定的內在力量。',
+    role: '不靠壓制，而是靠理解來馴服自己的本能。',
+    lesson: '真正的力量是溫和且持續的。',
+    shadow: '用意志硬壓情緒，或誤以為忍耐就是堅強。',
+    love: '有耐心地面對關係中的難處。', work: '靠穩定與韌性而不是強勢取勝。',
+    advice: '柔軟一點，但不要放棄。', ask: '我想壓下去的那個反應，它其實想告訴我什麼？' },
+  m9: { stage: 'inner', col: 2, numberEcho: '和小牌的 9 一樣是「獨自面對累積下來的結果」，這裡是主動選擇的獨處。',
+    role: '離開人群，把自己的答案想清楚。',
+    lesson: '有些事只能自己走完。',
+    shadow: '獨處變成逃避，或用清高隔絕所有人。',
+    love: '需要空間，或關係中的一段沉澱期。', work: '適合鑽研、不適合合作的階段。',
+    advice: '安靜一段時間，不要急著問別人。', ask: '我是在找答案，還是在躲？' },
+  m10: { stage: 'inner', col: 3, numberEcho: '和小牌的 10 一樣是「一輪走到底」，但輪子還會繼續轉。',
+    role: '接受有些事不由自己決定。',
+    lesson: '在變動裡找到自己能做的部分。',
+    shadow: '把一切交給運氣，或在低點時以為永遠如此。',
+    love: '關係出現轉折，時機的成分很大。', work: '外在條件改變，需要順勢調整。',
+    advice: '這次的變化不是你造成的，但回應方式是你的。', ask: '這個轉變裡，哪一部分真的在我手上？' },
+  m11: { stage: 'inner', col: 4, numberEcho: null,
+    role: '照著事實與責任，做出公平的結算。',
+    lesson: '每個選擇都有它的代價，而且會回到自己身上。',
+    shadow: '用道理當武器，或以公平之名不願體諒。',
+    love: '關係需要坦白與對等，也可能牽涉法律形式。', work: '合約、責任歸屬與是非判定。',
+    advice: '就事論事，把該講的講清楚。', ask: '如果拿掉情緒，事實到底是什麼？' },
+  m12: { stage: 'inner', col: 5, numberEcho: null,
+    role: '主動停下來，用完全不同的角度看同一件事。',
+    lesson: '有時候不動才是真正的行動。',
+    shadow: '把拖延說成等待，或用犧牲換取愧疚感。',
+    love: '關係停滯，需要換位思考。', work: '暫時無法推進，適合重新理解問題。',
+    advice: '先別動，換個角度看。', ask: '如果反過來看，這件事會變成什麼？' },
+  m13: { stage: 'inner', col: 6, numberEcho: null,
+    role: '讓已經結束的東西真的結束。',
+    lesson: '不放手，新的就進不來。',
+    shadow: '抓著殘骸不放，或用一切都會過去逃避處理。',
+    love: '關係的某個階段確實結束了。', work: '該收掉的項目或角色。',
+    advice: '承認它結束了，然後往前。', ask: '我不放手的，是這件事本身，還是我對它的期待？' },
+  m14: { stage: 'inner', col: 7, numberEcho: null,
+    role: '把兩種相反的東西調成剛好的比例。',
+    lesson: '中庸不是妥協，是找到可持續的配方。',
+    shadow: '什麼都要一點，最後什麼都不到位。',
+    love: '需要磨合出彼此都舒服的節奏。', work: '調整資源配置與步調。',
+    advice: '不要極端，慢慢調到剛好。', ask: '我現在是哪一邊過多了？' },
+  m15: { stage: 'beyond', col: 1, numberEcho: null,
+    role: '面對自己被什麼綁住。',
+    lesson: '看清楚鎖鏈其實是自己套上的。',
+    shadow: '用「我沒辦法」合理化不想改變。',
+    love: '難以離開的依賴或不健康的模式。', work: '為了現實條件困在不適合的位置。',
+    advice: '先承認你其實有選擇。', ask: '如果沒有後果，我還會留在這裡嗎？' },
+  m16: { stage: 'beyond', col: 2, numberEcho: null,
+    role: '假的結構被一次打掉。',
+    lesson: '倒下來的東西，本來就不該撐那麼久。',
+    shadow: '把崩塌全歸咎外力，錯過看清真相的機會。',
+    love: '關係中不能再假裝的部分被攤開。', work: '突發變故打破原本的安排。',
+    advice: '先讓它倒，再看剩下什麼是真的。', ask: '倒掉的這個東西，我早就知道它不穩嗎？' },
+  m17: { stage: 'beyond', col: 3, numberEcho: null,
+    role: '在崩塌之後，慢慢恢復希望。',
+    lesson: '療癒需要時間，而且是安靜的。',
+    shadow: '把希望當成不用行動的理由。',
+    love: '關係開始修復，需要耐心。', work: '重新找到方向，但還在起步。',
+    advice: '慢慢來，方向是對的。', ask: '我願意相信這次會不一樣嗎？' },
+  m18: { stage: 'beyond', col: 4, numberEcho: null,
+    role: '在看不清楚的地方前進。',
+    lesson: '分辨哪些恐懼是真的，哪些是自己加上去的。',
+    shadow: '把想像當成事實，然後對著幻覺反應。',
+    love: '不安與猜測放大了實際的問題。', work: '資訊不足，判斷容易失真。',
+    advice: '先確認事實，再決定要不要害怕。', ask: '這件事我看到的，有多少是我自己補上的？' },
+  m19: { stage: 'beyond', col: 5, numberEcho: null,
+    role: '事情變得清楚，能量回來了。',
+    lesson: '不需要遮掩，可以直接做自己。',
+    shadow: '過度樂觀而忽略還沒解決的部分。',
+    love: '關係明朗、坦率而愉快。', work: '成果被看見，狀態正好。',
+    advice: '把握現在，直接去做。', ask: '這份順利，我要用來完成什麼？' },
+  m20: { stage: 'beyond', col: 6, numberEcho: null,
+    role: '回頭把整段過去做一次總結算。',
+    lesson: '看懂自己走過的路，才能真的往前。',
+    shadow: '不斷審判自己或別人，停在檢討裡。',
+    love: '舊關係重新浮現，或關係進入新的階段。', work: '過去的努力被重新評價。',
+    advice: '面對它，然後做出回應。', ask: '如果現在重來，我會怎麼選？' },
+  m21: { stage: 'beyond', col: 7, numberEcho: null,
+    role: '整段旅程完整了。',
+    lesson: '完成之後，下一輪從更高的位置重新開始。',
+    shadow: '以為到終點就結束了，停在原地。',
+    love: '關係達到完整與滿足。', work: '專案圓滿收束。',
+    advice: '好好結束它，再開始下一件。', ask: '這一輪我真正學會的是什麼？' },
+};
+
 var COURT_ROLE_DATA = [
   {
     rank: 'page', keywords: ['新手', '好奇', '學'], title: '侍者 Page', en: 'Page', power: '正在認識',
@@ -640,6 +816,98 @@ function renderLibraryDrills() {
   return h + '</div>';
 }
 
+/* 大牌分頁。小牌靠「數字 × 花色」推導，大牌沒有這個結構，
+   但它有三階段旅程與七組直行對應——那是牌陣本身的排列，不是本站自創。
+   同一行的三張牌在講同一個課題的三種層次，使用者可以從已經懂的那張推到還不懂的。 */
+function majorCardById(id) { return TAROT.filter(function (x) { return x.id === id; })[0] || null; }
+function renderMajorJourney() {
+  var h = '<p class="md-note" style="margin:10px 0 0">大牌沒有花色，推導靠的是它在整條旅程裡的位置。先看三個階段，再看七組對照——同一組的三張牌在講同一個課題的三種層次。</p>';
+
+  /* 三階段 */
+  h += '<div style="margin-top:11px">';
+  MAJOR_STAGE_DATA.forEach(function (st) {
+    var key = 'majstage:' + st.key;
+    h += '<div style="border:1px solid rgba(201,169,110,.25);border-radius:8px;padding:11px 12px;background:rgba(255,255,255,.02);margin-top:8px">';
+    h += '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap">';
+    h += '<span style="font:600 13px \'Noto Serif TC\',serif;color:#e6cd9a">' + esc(st.title) + '</span>';
+    h += '<span style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:#c9a96e">' + esc(st.range) + '</span></div>';
+    h += '<div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);margin-top:4px;line-height:1.7">' + esc(st.memory) + '</div>';
+    h += mnDisclosure(key, '這個階段在學什麼');
+    if (mnIsExpanded(key)) h += mnField('階段任務', st.desc);
+    h += '</div>';
+  });
+  h += '</div>';
+
+  /* 七組直行對應 */
+  h += '<div style="margin-top:16px;font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e">七組對照・同一個課題的三種層次</div>';
+  MAJOR_COLUMN_DATA.forEach(function (colDef) {
+    var key = 'majcol:' + colDef.col;
+    h += '<div style="border:1px solid rgba(201,169,110,.22);border-radius:8px;padding:11px 12px;background:rgba(255,255,255,.02);margin-top:8px">';
+    h += '<div style="font:500 12.5px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + esc(colDef.theme) + '</div>';
+    h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">';
+    colDef.ids.forEach(function (id) {
+      var card = majorCardById(id);
+      if (!card) return;
+      h += '<button type="button" onclick="openLibCard(\'' + esc(id) + '\')" style="min-height:36px;font:500 11.5px \'Noto Serif TC\',serif;color:#e6cd9a;background:none;border:1px solid rgba(201,169,110,.35);border-radius:14px;padding:6px 12px;cursor:pointer">' + esc(card.nameZh) + '</button>';
+    });
+    h += '</div>';
+    h += mnDisclosure(key, '這三張差在哪一層');
+    if (mnIsExpanded(key)) {
+      colDef.ids.forEach(function (id) {
+        var card = majorCardById(id), j = MAJOR_JOURNEY_DATA[id];
+        if (!card || !j) return;
+        var stage = MAJOR_STAGE_DATA.filter(function (x) { return x.key === j.stage; })[0];
+        h += '<div style="margin-top:9px;border-left:2px solid rgba(201,169,110,.35);padding-left:9px">';
+        h += '<div style="font:600 12px \'Noto Serif TC\',serif;color:#e6cd9a">' + esc(card.nameZh)
+          + '<span style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-left:6px">' + esc(stage ? stage.title.split('・')[1] : '') + '</span></div>';
+        h += '<div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);margin-top:3px;line-height:1.75">' + esc(j.role) + '</div>';
+        h += '</div>';
+      });
+    }
+    h += '</div>';
+  });
+
+  /* 22 張逐張 */
+  h += '<div style="margin-top:16px;font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e">22 張大牌</div>';
+  TAROT.filter(function (x) { return x.arcana === 'major'; }).forEach(function (card) {
+    var j = MAJOR_JOURNEY_DATA[card.id];
+    if (!j) return;
+    var key = 'maj:' + card.id;
+    var stage = MAJOR_STAGE_DATA.filter(function (x) { return x.key === j.stage; })[0];
+    h += '<div style="border:1px solid rgba(201,169,110,.22);border-radius:8px;padding:11px 12px;background:rgba(255,255,255,.02);margin-top:8px">';
+    h += '<div style="display:flex;gap:10px;align-items:flex-start">';
+    h += '<div style="flex:none;min-width:32px;text-align:center;font:600 12px \'Noto Serif TC\',serif;color:#c9a96e;border:1px solid rgba(201,169,110,.35);border-radius:8px;padding:5px 4px">' + esc(card.num) + '</div>';
+    h += '<div style="flex:1;min-width:0">';
+    h += '<div style="font:600 13px \'Noto Serif TC\',serif;color:#f0e9d8">' + esc(card.nameZh) + '</div>';
+    h += '<div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);margin-top:3px;line-height:1.7">' + esc(j.role) + '</div>';
+    h += mnKeywordChips(String(card.upZh || '').split(/[、,]/).slice(0, 3), '#c9a96e');
+    h += '</div></div>';
+    h += mnDisclosure(key, '這張牌怎麼推出來');
+    if (mnIsExpanded(key)) {
+      if (stage) h += mnField('在旅程的哪一段', stage.title + '（' + stage.range + '）——' + stage.memory);
+      if (j.col) {
+        var colDef = MAJOR_COLUMN_DATA.filter(function (x) { return x.col === j.col; })[0];
+        if (colDef) {
+          var others = colDef.ids.filter(function (x) { return x !== card.id; })
+            .map(function (x) { var cc = majorCardById(x); return cc ? cc.nameZh : x; }).join('、');
+          h += mnField('同一個課題的另外兩張', colDef.theme + '——另外兩張是' + others + '，同一件事在不同層次的版本。', '#8fc7f4');
+        }
+      }
+      if (j.numberEcho) h += mnField('和小牌數字的呼應', j.numberEcho);
+      h += mnField('這張牌的課題', j.lesson, '#e6cd9a');
+      h += mnField('陰影面', j.shadow, '#d9a0a0');
+      h += mnField('感情題怎麼讀', j.love);
+      h += mnField('工作題怎麼讀', j.work);
+      h += mnField('當成建議牌', j.advice, '#9bc5a3');
+      h += mnField('抽到這張先問自己', j.ask, '#e6cd9a');
+      h += '<div style="margin-top:8px;font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);line-height:1.7">這裡講的是推導結構。'
+        + esc(card.nameZh) + ' 完整的正逆位牌義，可以在牌陣列表點進這張牌查看。</div>';
+    }
+    h += '</div>';
+  });
+  return h;
+}
+
 function mnToggle() { state.mnOpen = !state.mnOpen; render(); }
 /* Progressive disclosure：列表只給名稱、一句核心與關鍵字，深入內容點開才載入。
    key 前綴避免不同分頁的同名項目互相打架（例如花色 wands 與宮廷 wands 欄位）。 */
@@ -697,10 +965,10 @@ function renderMnemonic() {
   h += '</button>';
   if (state.mnOpen) {
     h += '<div style="padding:0 15px 15px">';
-    h += '<div style="display:flex;gap:7px">';
-    [['suit', '花色領域'], ['number', '數字公式'], ['court', '宮廷角色'], ['confuse', '易混淆']].forEach(function (t) {
+    h += '<div style="display:flex;gap:6px;flex-wrap:wrap">';
+    [['suit', '花色領域'], ['number', '數字公式'], ['court', '宮廷角色'], ['major', '大牌旅程'], ['confuse', '易混淆']].forEach(function (t) {
       var active = state.mnTab === t[0];
-      h += '<button type="button" onclick="mnSetTab(\'' + t[0] + '\')" style="min-height:44px;flex:1;background:' + (active ? 'rgba(201,169,110,.18)' : 'transparent') + ';border:1px solid ' + (active ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.5)') + ';padding:7px 4px;border-radius:8px;cursor:pointer;font:500 12px \'Noto Sans TC\',sans-serif">' + t[1] + '</button>';
+      h += '<button type="button" onclick="mnSetTab(\'' + t[0] + '\')" style="min-height:44px;flex:1 1 92px;background:' + (active ? 'rgba(201,169,110,.18)' : 'transparent') + ';border:1px solid ' + (active ? '#c9a96e' : 'rgba(201,169,110,.3)') + ';color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.5)') + ';padding:7px 4px;border-radius:8px;cursor:pointer;font:500 12px \'Noto Sans TC\',sans-serif">' + t[1] + '</button>';
     });
     h += '</div>';
     /* 一般／學習模式。兩者用同一份知識資料，學習模式只是多開幾層推導內容，
@@ -820,6 +1088,8 @@ function renderMnemonic() {
         }
         h += '</div>';
       });
+    } else if (state.mnTab === 'major') {
+      h += renderMajorJourney();
     } else {
       h += '<p class="md-note" style="margin:10px 0 0">宮廷牌問的是「你跟這股能量的關係走到哪」。四個位階是同一條學習曲線：認識 → 追求 → 內化 → 對外運用。</p>';
       COURT_ROLE_DATA.forEach(function (d) {

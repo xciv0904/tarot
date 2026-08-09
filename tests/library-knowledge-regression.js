@@ -42,7 +42,8 @@ vm.createContext(c);
   .forEach(f => vm.runInContext(read(f), c, { filename: f }));
 /* reading-data.js 用 const 宣告，不會掛到 VM 的全域物件上，要另外取出來。 */
 const G = vm.runInContext(
-  '({TAROT, NUMBER_FORMULA_DATA, SUIT_DOMAIN_DATA, COURT_ROLE_DATA, CONFUSE_DATA, LIBRARY_DRILLS})', c);
+  '({TAROT, NUMBER_FORMULA_DATA, SUIT_DOMAIN_DATA, COURT_ROLE_DATA, CONFUSE_DATA, LIBRARY_DRILLS,'
+  + ' MAJOR_JOURNEY_DATA, MAJOR_COLUMN_DATA, MAJOR_STAGE_DATA})', c);
 
 const SUITS = ['wands', 'cups', 'swords', 'pentacles'];
 
@@ -138,6 +139,64 @@ G.CONFUSE_DATA.forEach((g, i) => {
 });
 check('判斷問題不是同一句複製到所有組', decides.size === G.CONFUSE_DATA.length);
 
+/* ---------- 5.5 大阿爾克那旅程 ---------- */
+/* 大牌沒有「數字 × 花色」可推導，改用兩個真實存在於牌陣結構裡的骨架：
+   三階段旅程，以及把 1–21 排成三列七行後的直行對應（1魔術師／8力量／15惡魔
+   都在講怎麼駕馭力量）。愚人 0 在整條路之外，不屬於任何一行。 */
+const majors = G.TAROT.filter(x => x.arcana === 'major');
+check('大阿爾克那共 22 張', majors.length === 22);
+check('22 張大牌都有旅程資料',
+  majors.every(m => !!G.MAJOR_JOURNEY_DATA[m.id]),
+  majors.filter(m => !G.MAJOR_JOURNEY_DATA[m.id]).map(m => m.id).join('、'));
+check('三個階段', G.MAJOR_STAGE_DATA.length === 3);
+check('七組直行對應', G.MAJOR_COLUMN_DATA.length === 7);
+
+const inColumns = new Set();
+G.MAJOR_COLUMN_DATA.forEach(col => {
+  check('第 ' + col.col + ' 組有共同課題', !!col.theme && col.theme.length > 4);
+  check('第 ' + col.col + ' 組恰好三張牌（三個層次）', col.ids.length === 3, col.ids.join('、'));
+  col.ids.forEach(id => {
+    check('直行牌 ' + id + ' 存在', !!G.TAROT.find(x => x.id === id));
+    check('直行牌 ' + id + ' 沒有重複出現在其他組', !inColumns.has(id));
+    inColumns.add(id);
+  });
+  /* 同一組的三張必須分屬三個不同階段，否則那不是「三種層次」。 */
+  const stages = col.ids.map(id => (G.MAJOR_JOURNEY_DATA[id] || {}).stage);
+  check('第 ' + col.col + ' 組的三張分屬三個階段', new Set(stages).size === 3, stages.join('、'));
+});
+check('直行對應涵蓋 1–21 共 21 張', inColumns.size === 21, '實際 ' + inColumns.size);
+check('愚人不屬於任何一行（它在整條路之外）',
+  !inColumns.has('m0') && G.MAJOR_JOURNEY_DATA.m0.col === null);
+
+const majorThemes = new Set(G.MAJOR_COLUMN_DATA.map(x => x.theme));
+check('七組課題互不相同', majorThemes.size === 7);
+
+Object.keys(G.MAJOR_JOURNEY_DATA).forEach(id => {
+  const j = G.MAJOR_JOURNEY_DATA[id];
+  const card = G.TAROT.find(x => x.id === id);
+  const label = card ? card.nameZh : id;
+  ['role', 'lesson', 'shadow', 'love', 'work', 'advice', 'ask'].forEach(f => {
+    check('大牌 ' + label + ' 有 ' + f, !!j[f] && String(j[f]).length > 4);
+  });
+  check('大牌 ' + label + ' 的感情／工作說明不同', j.love !== j.work);
+  if (id !== 'm0') {
+    check('大牌 ' + label + ' 有所屬階段', !!j.stage);
+    check('大牌 ' + label + ' 有所屬直行', typeof j.col === 'number');
+  }
+});
+/* numberEcho 只寫在對應站得住腳的地方（1–10）。硬替 11–21 套數字會製造
+   看起來精確、實際牽強的關聯，寧可不寫。 */
+const echoed = Object.keys(G.MAJOR_JOURNEY_DATA).filter(id => G.MAJOR_JOURNEY_DATA[id].numberEcho);
+check('數字呼應只寫在 1–10 這幾張', echoed.length === 10, echoed.join('、'));
+check('11–21 沒有硬套數字呼應',
+  ['m11','m12','m13','m14','m15','m16','m17','m18','m19','m20','m21']
+    .every(id => !G.MAJOR_JOURNEY_DATA[id].numberEcho));
+/* 每張牌的課題與提問都必須是自己的，不能複製同一句。 */
+const lessons = Object.keys(G.MAJOR_JOURNEY_DATA).map(id => G.MAJOR_JOURNEY_DATA[id].lesson);
+check('22 張的課題互不相同', new Set(lessons).size === lessons.length);
+const asks = Object.keys(G.MAJOR_JOURNEY_DATA).map(id => G.MAJOR_JOURNEY_DATA[id].ask);
+check('22 張的自問問題互不相同', new Set(asks).size === asks.length);
+
 /* ---------- 6. Progressive Disclosure ---------- */
 c.state.mnOpen = true;
 function renderTab(tab, expanded, learn) {
@@ -150,6 +209,7 @@ function renderTab(tab, expanded, learn) {
 [['suit', 'suit:wands', '關注領域'],
  ['number', 'num:3', '常見誤區'],
  ['court', 'court:page', '陰影面'],
+ ['major', 'maj:m8', '這張牌的課題'],
  ['confuse', 'cf:0', '判斷問題']].forEach(row => {
   const collapsed = renderTab(row[0], {});
   const opened = renderTab(row[0], { [row[1]]: true });
@@ -211,6 +271,8 @@ console.log('# 牌典知識層回歸測試');
 console.log('');
 console.log('- 檢查項目：' + checks.length);
 console.log('- 失敗：' + failures.length);
+console.log('- 大牌 ' + Object.keys(G.MAJOR_JOURNEY_DATA).length + ' 張、' + G.MAJOR_STAGE_DATA.length
+  + ' 階段、' + G.MAJOR_COLUMN_DATA.length + ' 組直行對應');
 console.log('- 數字階段 ' + G.NUMBER_FORMULA_DATA.length + '、花色 ' + G.SUIT_DOMAIN_DATA.length
   + '、宮廷 ' + G.COURT_ROLE_DATA.length + '、易混淆 ' + G.CONFUSE_DATA.length + ' 組（'
   + G.CONFUSE_DATA.reduce((n, g) => n + g.cards.length, 0) + ' 張牌）');
