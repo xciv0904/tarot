@@ -878,3 +878,360 @@ var topicQuestionConfig = {
     examples: ['我目前人生中最需要優先處理的是什麼？', '接下來三個月的整體發展重點是什麼？', '我現在適合主動改變，還是先等待？', '哪一件事正在阻礙我前進？', '我目前最需要放下的是什麼？', '我的下一步應該從哪裡開始？'],
   },
 };
+
+/* ============================================================================
+   Question Taxonomy（階層式題庫）
+
+   舊架構的問題不是 UI，是「上游選擇沒有真的控制下游」：
+     · SUBTOPIC_FOCUS_GROUPS 對應的是「分組」而不是「題目」，只能把 4 個分組
+       篩掉幾組，做不到 question-intent 層級的過濾。實測 35 個 primary 裡有
+       18 個（51%）與同類其他 primary 拿到完全相同的初始面向，family 更是
+       4 個 primary 只產生 1 種清單。
+     · placeholder 與 examples 掛在 category 上，同類所有 primary 共用。
+   結果就是使用者選了「未來可能遇到什麼類型的人」，卻仍看到「對方目前對我的
+   真實感受」——那題預設已經有特定對象。
+
+   新結構讓每一層都真的控制下一層：
+     categoryId → primaryQuestion → allowedFocusIds → contextExamples → payload
+
+   FOCUS_AREA_REGISTRY 是所有面向的單一事實來源，每個面向帶 requires／excludes
+   前提；primary 只引用 id，不再靠文字比對。舊的 topicQuestionConfig 完全保留，
+   尚未遷移的分類自動沿用舊行為（見 taxonomyHasCategory）。
+   ========================================================================== */
+
+/* 前提旗標。用來擋掉語意矛盾的組合，例如「未來對象」不該出現需要特定對象的面向。 */
+var FOCUS_AREA_REGISTRY = {
+  /* ---- 愛情：未來對象 ---- */
+  'lv-future-personality': { label: '對方可能的個性', semanticFocus: 'partner_traits', requires: { futurePerson: true } },
+  'lv-future-appearance': { label: '對方給人的外在感覺', semanticFocus: 'partner_impression', requires: { futurePerson: true } },
+  'lv-future-lifestyle': { label: '對方可能的生活或工作狀態', semanticFocus: 'partner_context', requires: { futurePerson: true } },
+  'lv-future-scene': { label: '比較容易在哪種情境認識', semanticFocus: 'meeting_context', requires: { futurePerson: true } },
+  'lv-future-start': { label: '關係可能怎麼開始', semanticFocus: 'relationship_start', requires: { futurePerson: true } },
+  'lv-future-attraction': { label: '我容易被他什麼特質吸引', semanticFocus: 'self_attraction_pattern' },
+  'lv-future-signals': { label: '需要觀察哪些適配訊號', semanticFocus: 'compatibility_signal' },
+  /* ---- 愛情：特定對象 ---- */
+  'lv-target-feeling': { label: '對方目前對我的感受', semanticFocus: 'partner_feeling', requires: { specificPerson: true } },
+  'lv-target-romantic': { label: '是否帶有戀愛好感', semanticFocus: 'romantic_interest', requires: { specificPerson: true } },
+  'lv-target-hesitation': { label: '對方的顧慮是什麼', semanticFocus: 'partner_concern', requires: { specificPerson: true } },
+  'lv-target-passive': { label: '為什麼沒有主動', semanticFocus: 'partner_inaction', requires: { specificPerson: true } },
+  'lv-target-wanted': { label: '對方希望維持什麼關係', semanticFocus: 'relationship_expectation', requires: { specificPerson: true } },
+  'lv-target-intent': { label: '是否有進一步發展的意願', semanticFocus: 'progression_will', requires: { specificPerson: true } },
+  /* ---- 愛情：曖昧 ---- */
+  'lv-amb-interaction': { label: '雙方目前的真實互動', semanticFocus: 'mutual_dynamic', requires: { specificPerson: true } },
+  'lv-amb-obstacle': { label: '關係最大的阻礙', semanticFocus: 'main_obstacle', requires: { specificPerson: true } },
+  'lv-amb-clarify': { label: '關係是否會明朗化', semanticFocus: 'clarification', requires: { specificPerson: true } },
+  'lv-amb-trend': { label: '接下來一段時間的走向', semanticFocus: 'near_trend', requires: { specificPerson: true } },
+  /* ---- 愛情：穩定交往 ---- */
+  'lv-rel-bond': { label: '目前的情緒連結', semanticFocus: 'emotional_bond', requires: { existingRelationship: true } },
+  'lv-rel-comm': { label: '溝通上卡在哪裡', semanticFocus: 'communication_gap', requires: { existingRelationship: true } },
+  'lv-rel-balance': { label: '雙方付出是否平衡', semanticFocus: 'effort_balance', requires: { existingRelationship: true } },
+  'lv-rel-conflict': { label: '衝突的真正來源', semanticFocus: 'conflict_source', requires: { existingRelationship: true } },
+  'lv-rel-commit': { label: '承諾的程度與方向', semanticFocus: 'commitment', requires: { existingRelationship: true } },
+  'lv-rel-longterm': { label: '長期會往哪裡走', semanticFocus: 'long_term', requires: { existingRelationship: true } },
+  /* ---- 愛情：復合 ---- */
+  'lv-ex-cause': { label: '分開的核心原因', semanticFocus: 'breakup_cause', requires: { pastRelationship: true } },
+  'lv-ex-feeling': { label: '對方是否還有情感', semanticFocus: 'residual_feeling', requires: { pastRelationship: true } },
+  'lv-ex-will': { label: '對方是否有復合意願', semanticFocus: 'reunion_will', requires: { pastRelationship: true } },
+  'lv-ex-unresolved': { label: '還沒處理的舊問題', semanticFocus: 'unresolved_issue', requires: { pastRelationship: true } },
+  'lv-ex-risk': { label: '復合可能重複的風險', semanticFocus: 'reunion_risk', requires: { pastRelationship: true } },
+  'lv-ex-change': { label: '重新開始需要改變什麼', semanticFocus: 'required_change', requires: { pastRelationship: true } },
+  /* ---- 愛情：自我 ---- */
+  'lv-self-pattern': { label: '我在感情中的慣性模式', semanticFocus: 'self_pattern' },
+  'lv-self-attract': { label: '我容易被哪種人吸引', semanticFocus: 'attraction_type' },
+  'lv-self-blindspot': { label: '我在關係中的盲點', semanticFocus: 'blind_spot' },
+  'lv-self-boundary': { label: '我該怎麼守住自己的底線', semanticFocus: 'boundary' },
+  'lv-self-need': { label: '我目前最需要被滿足的情緒需求', semanticFocus: 'emotional_need' },
+  'lv-self-choice': { label: '我選擇伴侶的判斷方式', semanticFocus: 'partner_selection' },
+
+  /* ---- 事業：職涯方向 ---- */
+  'cr-dir-strength': { label: '我目前最值得發揮的能力', semanticFocus: 'core_strength' },
+  'cr-dir-style': { label: '適合我的工作方式', semanticFocus: 'work_style' },
+  'cr-dir-env': { label: '哪種環境比較適合我', semanticFocus: 'work_environment' },
+  'cr-dir-block': { label: '現階段最大的阻礙', semanticFocus: 'main_block' },
+  'cr-dir-next': { label: '下一步最值得投入什麼', semanticFocus: 'next_investment' },
+  /* ---- 事業：求職 ---- */
+  'cr-job-fit': { label: '這份職缺與我的適配度', semanticFocus: 'role_fit', requires: { specificOpportunity: true } },
+  'cr-job-interview': { label: '面試需要注意什麼', semanticFocus: 'interview_prep', requires: { specificOpportunity: true } },
+  'cr-job-employer': { label: '對方看重的是什麼', semanticFocus: 'employer_priority', requires: { specificOpportunity: true } },
+  'cr-job-edge': { label: '我最大的競爭優勢', semanticFocus: 'competitive_edge' },
+  'cr-job-worth': { label: '是否值得繼續投入', semanticFocus: 'worth_pursuing', requires: { specificOpportunity: true } },
+  /* ---- 事業：工作選擇 ---- */
+  'cr-ab-a-pro': { label: 'A 的優勢', semanticFocus: 'option_a_upside', requires: { twoOptions: true } },
+  'cr-ab-a-con': { label: 'A 的風險', semanticFocus: 'option_a_risk', requires: { twoOptions: true } },
+  'cr-ab-b-pro': { label: 'B 的優勢', semanticFocus: 'option_b_upside', requires: { twoOptions: true } },
+  'cr-ab-b-con': { label: 'B 的風險', semanticFocus: 'option_b_risk', requires: { twoOptions: true } },
+  'cr-ab-longterm': { label: '哪一個長期發展比較好', semanticFocus: 'long_term_compare', requires: { twoOptions: true } },
+  'cr-ab-priority': { label: '我真正需要優先考慮的條件', semanticFocus: 'decision_priority' },
+  /* ---- 事業：現職 ---- */
+  'cr-now-chance': { label: '目前工作最大的機會', semanticFocus: 'current_opportunity', requires: { currentJob: true } },
+  'cr-now-stress': { label: '目前最大的壓力來源', semanticFocus: 'stress_source', requires: { currentJob: true } },
+  'cr-now-people': { label: '與主管或團隊的互動', semanticFocus: 'workplace_relation', requires: { currentJob: true } },
+  'cr-now-promo': { label: '升遷或責任會怎麼變化', semanticFocus: 'promotion', requires: { currentJob: true } },
+  'cr-now-stay': { label: '是否值得繼續投入', semanticFocus: 'stay_worth', requires: { currentJob: true } },
+  /* ---- 事業：轉職 ---- */
+  'cr-move-why': { label: '想離開的真正原因', semanticFocus: 'leave_reason', requires: { currentJob: true } },
+  'cr-move-block': { label: '現在轉職的阻力', semanticFocus: 'transition_block' },
+  'cr-move-chance': { label: '新方向的機會', semanticFocus: 'new_direction' },
+  'cr-move-cost': { label: '留下與離開各自的代價', semanticFocus: 'stay_or_go_cost' },
+  'cr-move-prep': { label: '應該先準備什麼', semanticFocus: 'preparation' },
+
+  /* ---- 家庭 ---- */
+  'fm-conf-trigger': { label: '真正的觸發點是什麼', semanticFocus: 'conflict_trigger' },
+  'fm-conf-mine': { label: '我的反應模式', semanticFocus: 'own_reaction' },
+  'fm-conf-theirs': { label: '對方的反應模式', semanticFocus: 'their_reaction' },
+  'fm-conf-unsaid': { label: '沒有說清楚的需求', semanticFocus: 'unspoken_need' },
+  'fm-conf-boundary': { label: '最需要建立的界線', semanticFocus: 'boundary' },
+  'fm-conf-improve': { label: '可以怎麼改善互動', semanticFocus: 'improvement' },
+  'fm-parent-expect': { label: '父母真正在意的是什麼', semanticFocus: 'parent_concern', requires: { parents: true } },
+  'fm-parent-gap': { label: '兩代之間的落差在哪', semanticFocus: 'generation_gap', requires: { parents: true } },
+  'fm-parent-indep': { label: '如何在關心與獨立之間取得平衡', semanticFocus: 'autonomy', requires: { parents: true } },
+  'fm-child-need': { label: '孩子目前真正需要什麼', semanticFocus: 'child_need', requires: { children: true } },
+  'fm-child-comm': { label: '怎麼跟孩子溝通比較有效', semanticFocus: 'child_communication', requires: { children: true } },
+  'fm-sib-role': { label: '手足之間的角色分配', semanticFocus: 'sibling_role', requires: { siblings: true } },
+  'fm-sib-fair': { label: '公平感從哪裡失衡', semanticFocus: 'fairness', requires: { siblings: true } },
+  'fm-duty-load': { label: '我扛的責任是否過重', semanticFocus: 'duty_load' },
+  'fm-duty-share': { label: '責任可以怎麼重新分配', semanticFocus: 'duty_share' },
+  'fm-change-impact': { label: '這個變動對家庭的影響', semanticFocus: 'change_impact', requires: { familyChange: true } },
+  'fm-change-adapt': { label: '大家最需要適應的是什麼', semanticFocus: 'adaptation', requires: { familyChange: true } },
+  'fm-support-who': { label: '目前誰是我真正的支持', semanticFocus: 'support_source' },
+  'fm-support-ask': { label: '我可以怎麼開口求助', semanticFocus: 'asking_help' },
+};
+
+/* 每個 primary question 明確宣告：意圖、前提、相容牌陣、面向、範例與 placeholder。
+   assumptions 是 Assumption Guard 的來源——面向的 requires 必須被 primary 的
+   assumptions 滿足才會出現，這是「未來對象不該看到『對方目前對我的感受』」的實作。 */
+var QUESTION_TAXONOMY = {
+  love: {
+    categoryId: 'love', label: '愛情',
+    placeholder: '例如：我們最近每天聊天，但關係一直沒有更進一步。',
+    primaries: [
+      { id: 'lv-future', label: '未來可能遇到什麼類型的人', intent: 'future_partner_profile',
+        assumptions: { futurePerson: true },
+        spreads: ['three-time', 'single', 'celtic'],
+        focus: ['lv-future-personality', 'lv-future-appearance', 'lv-future-lifestyle', 'lv-future-scene', 'lv-future-start', 'lv-future-attraction', 'lv-future-signals'],
+        placeholder: '例如：我單身一段時間了，想知道接下來可能會遇到什麼樣的人。',
+        examples: { base: ['我目前單身，想知道接下來可能會遇到什麼樣的對象。'],
+          byFocus: { 'lv-future-scene': ['我平常生活圈很固定，想知道比較可能在什麼場合認識新的人。'],
+                     'lv-future-attraction': ['我常被同一類型的人吸引，想知道那反映了我什麼。'] } } },
+      { id: 'lv-target', label: '對方現在怎麼看我', intent: 'partner_current_view',
+        assumptions: { specificPerson: true },
+        spreads: ['relationship', 'crosslove', 'three-time'],
+        focus: ['lv-target-feeling', 'lv-target-romantic', 'lv-target-hesitation', 'lv-target-passive', 'lv-target-wanted', 'lv-target-intent'],
+        placeholder: '例如：我們認識一陣子了，但我不確定他把我當朋友還是有別的意思。',
+        examples: { base: ['我們認識一陣子了，但我看不出他對我的想法。'],
+          byFocus: { 'lv-target-passive': ['他平常回訊息很快，但從來不主動約我。'],
+                     'lv-target-hesitation': ['他好像有點在意什麼，但一直沒有說出口。'] } } },
+      { id: 'lv-ambiguous', label: '這段曖昧會怎麼發展', intent: 'ambiguous_progression',
+        assumptions: { specificPerson: true },
+        spreads: ['relationship', 'crosslove', 'three-time'],
+        focus: ['lv-amb-interaction', 'lv-target-feeling', 'lv-target-intent', 'lv-amb-obstacle', 'lv-amb-clarify', 'lv-amb-trend'],
+        placeholder: '例如：我們最近每天聊天，但關係一直沒有更進一步。',
+        examples: { base: ['我們互動很密切，但誰都沒有把話講開。'],
+          byFocus: { 'lv-amb-obstacle': ['我們之間好像有什麼卡著，但我說不上來是什麼。'],
+                     'lv-amb-clarify': ['這樣的狀態已經一段時間了，我想知道會不會有結果。'] } } },
+      { id: 'lv-relationship', label: '這段關係接下來會怎麼走', intent: 'relationship_development',
+        assumptions: { specificPerson: true, existingRelationship: true },
+        spreads: ['relationship', 'crosslove', 'three-time', 'celtic'],
+        focus: ['lv-rel-bond', 'lv-rel-comm', 'lv-rel-balance', 'lv-rel-conflict', 'lv-rel-commit', 'lv-rel-longterm'],
+        placeholder: '例如：我們在一起一段時間了，最近相處變得有點消耗。',
+        examples: { base: ['我們交往一段時間了，我想知道接下來的方向。'],
+          byFocus: { 'lv-rel-conflict': ['我們最近為了同一件事反覆爭執。'],
+                     'lv-rel-balance': ['我覺得自己付出比較多，但不確定是不是我想太多。'] } } },
+      { id: 'lv-reunion', label: '和前任還有沒有可能', intent: 'reunion_possibility',
+        assumptions: { specificPerson: true, pastRelationship: true },
+        spreads: ['crosslove', 'relationship', 'three-time'],
+        focus: ['lv-ex-cause', 'lv-ex-feeling', 'lv-ex-will', 'lv-ex-unresolved', 'lv-ex-risk', 'lv-ex-change'],
+        placeholder: '例如：我們分開幾個月了，最近又開始有聯絡。',
+        examples: { base: ['我們分開一段時間了，最近又有聯絡。'],
+          byFocus: { 'lv-ex-risk': ['如果真的復合，我擔心會重複以前的問題。'],
+                     'lv-ex-cause': ['我到現在還是不太確定我們為什麼會走到分開。'] } } },
+      { id: 'lv-self', label: '我在感情裡的模式是什麼', intent: 'self_relationship_pattern',
+        assumptions: {},
+        spreads: ['three-mbs', 'three-time', 'single', 'celtic'],
+        focus: ['lv-self-pattern', 'lv-self-attract', 'lv-self-blindspot', 'lv-self-boundary', 'lv-self-need', 'lv-self-choice'],
+        placeholder: '例如：我每段感情好像都會遇到類似的問題。',
+        examples: { base: ['我每段感情好像都會走到同樣的地方。'],
+          byFocus: { 'lv-self-boundary': ['我常常答應了不想答應的事，事後才後悔。'],
+                     'lv-self-need': ['我不太確定自己在關係裡真正需要什麼。'] } } },
+    ],
+  },
+  career: {
+    categoryId: 'career', label: '事業',
+    placeholder: '例如：我拿到一份新工作邀請，但薪資、發展與工作環境讓我很難取捨。',
+    primaries: [
+      { id: 'cr-direction', label: '我下一步適合往哪個方向發展', intent: 'career_direction',
+        assumptions: {},
+        spreads: ['three-time', 'celtic', 'three-mbs'],
+        focus: ['cr-dir-strength', 'cr-dir-style', 'cr-dir-env', 'cr-dir-block', 'cr-dir-next'],
+        placeholder: '例如：我做現在這行幾年了，想知道下一步該往哪裡走。',
+        examples: { base: ['我做現在這行一段時間了，想知道下一步的方向。'],
+          byFocus: { 'cr-dir-env': ['我發現自己在不同的工作環境表現差很多。'],
+                     'cr-dir-block': ['我知道想做什麼，但一直沒有真的動起來。'] } } },
+      { id: 'cr-jobhunt', label: '這次求職的機會如何', intent: 'job_application',
+        assumptions: { specificOpportunity: true },
+        spreads: ['three-time', 'single', 'celtic'],
+        focus: ['cr-job-fit', 'cr-job-interview', 'cr-job-employer', 'cr-job-edge', 'cr-job-worth'],
+        placeholder: '例如：我投了一個很想要的職缺，想知道需要注意什麼。',
+        examples: { base: ['我投了一個很想要的職缺，想知道機會如何。'],
+          byFocus: { 'cr-job-interview': ['下週要面試，我不太確定該準備哪個部分。'],
+                     'cr-job-employer': ['我不確定這家公司真正在找的是什麼樣的人。'] } } },
+      { id: 'cr-choose', label: '兩份工作我該選哪一個', intent: 'job_comparison',
+        assumptions: { twoOptions: true },
+        spreads: ['fork', 'three-time', 'celtic'],
+        focus: ['cr-ab-a-pro', 'cr-ab-a-con', 'cr-ab-b-pro', 'cr-ab-b-con', 'cr-ab-longterm', 'cr-ab-priority'],
+        placeholder: '例如：A 比較穩定，B 發展性高但風險也大，我很難取捨。',
+        examples: { base: ['我手上有兩個機會，條件各有優缺點。'],
+          byFocus: { 'cr-ab-longterm': ['短期看 A 比較好，但我想知道三年後呢。'],
+                     'cr-ab-priority': ['我不確定自己現在最該優先考慮哪個條件。'] } } },
+      { id: 'cr-current', label: '目前的工作狀況該怎麼看', intent: 'current_job_status',
+        assumptions: { currentJob: true },
+        spreads: ['three-time', 'celtic', 'single'],
+        focus: ['cr-now-chance', 'cr-now-stress', 'cr-now-people', 'cr-now-promo', 'cr-now-stay'],
+        placeholder: '例如：我在現在的位置上有點卡住，不知道問題在哪。',
+        examples: { base: ['我在現在的位置上有點卡住。'],
+          byFocus: { 'cr-now-people': ['我跟主管的互動最近變得很緊繃。'],
+                     'cr-now-stress': ['我最近上班一直很累，但說不出是哪裡的問題。'] } } },
+      { id: 'cr-transition', label: '我該不該轉職', intent: 'career_transition',
+        assumptions: { currentJob: true },
+        spreads: ['fork', 'three-time', 'celtic'],
+        focus: ['cr-move-why', 'cr-move-block', 'cr-move-chance', 'cr-move-cost', 'cr-move-prep'],
+        placeholder: '例如：我想離開現在的工作，但不確定是不是衝動。',
+        examples: { base: ['我最近一直想離開，但不確定是不是一時的。'],
+          byFocus: { 'cr-move-why': ['我說不清楚自己到底是想換工作，還是只是累了。'],
+                     'cr-move-cost': ['留下和離開好像各有代價，我想先看清楚。'] } } },
+    ],
+  },
+  family: {
+    categoryId: 'family', label: '家庭',
+    placeholder: '例如：家人常替我做決定，我不知道該怎麼建立界線。',
+    primaries: [
+      { id: 'fm-conflict', label: '我和家人的衝突為什麼一直重複', intent: 'family_conflict_pattern',
+        assumptions: {},
+        spreads: ['three-time', 'crosslove', 'celtic'],
+        focus: ['fm-conf-trigger', 'fm-conf-mine', 'fm-conf-theirs', 'fm-conf-unsaid', 'fm-conf-boundary', 'fm-conf-improve'],
+        placeholder: '例如：我們每次談到同一件事就會吵起來。',
+        examples: { base: ['我們每次談到同一件事就會吵起來。'],
+          byFocus: { 'fm-conf-unsaid': ['我覺得真正的問題根本沒有被講出來。'],
+                     'fm-conf-boundary': ['我不知道該怎麼拒絕又不傷感情。'] } } },
+      { id: 'fm-parents', label: '和父母之間的關係該怎麼調整', intent: 'parent_relationship',
+        assumptions: { parents: true },
+        spreads: ['crosslove', 'three-time', 'relationship'],
+        focus: ['fm-parent-expect', 'fm-parent-gap', 'fm-parent-indep', 'fm-conf-unsaid', 'fm-conf-boundary'],
+        placeholder: '例如：父母很關心我，但常替我決定事情。',
+        examples: { base: ['父母的關心讓我有壓力，但我不想傷他們的心。'],
+          byFocus: { 'fm-parent-indep': ['我想有自己的決定權，又不想讓他們覺得被推開。'] } } },
+      { id: 'fm-children', label: '和孩子的互動需要注意什麼', intent: 'child_relationship',
+        assumptions: { children: true },
+        spreads: ['three-time', 'relationship', 'single'],
+        focus: ['fm-child-need', 'fm-child-comm', 'fm-conf-trigger', 'fm-conf-improve'],
+        placeholder: '例如：孩子最近變得不太願意跟我說話。',
+        examples: { base: ['孩子最近變得不太願意跟我說話。'],
+          byFocus: { 'fm-child-comm': ['我一開口他就防備，我不知道怎麼講比較好。'] } } },
+      { id: 'fm-siblings', label: '手足之間的問題該怎麼處理', intent: 'sibling_relationship',
+        assumptions: { siblings: true },
+        spreads: ['crosslove', 'three-time'],
+        focus: ['fm-sib-role', 'fm-sib-fair', 'fm-duty-share', 'fm-conf-unsaid'],
+        placeholder: '例如：家裡的事好像都落在我身上。',
+        examples: { base: ['家裡的事好像都落在我身上。'],
+          byFocus: { 'fm-sib-fair': ['我覺得不公平，但講出來又怕變成計較。'] } } },
+      { id: 'fm-duty', label: '家庭責任讓我喘不過氣', intent: 'family_duty_load',
+        assumptions: {},
+        spreads: ['three-mbs', 'three-time', 'single'],
+        focus: ['fm-duty-load', 'fm-duty-share', 'fm-conf-boundary', 'fm-support-who', 'fm-support-ask'],
+        placeholder: '例如：我扛了很多家裡的事，已經有點撐不住。',
+        examples: { base: ['我扛了很多家裡的事，已經有點撐不住。'],
+          byFocus: { 'fm-support-ask': ['我不太知道該怎麼開口說我需要幫忙。'] } } },
+      { id: 'fm-change', label: '家庭正在變動，我該怎麼面對', intent: 'family_change',
+        assumptions: { familyChange: true },
+        spreads: ['three-time', 'celtic'],
+        focus: ['fm-change-impact', 'fm-change-adapt', 'fm-support-who', 'fm-conf-improve'],
+        placeholder: '例如：家裡最近有很大的變動，大家都在適應。',
+        examples: { base: ['家裡最近有很大的變動，大家都還在適應。'],
+          byFocus: { 'fm-change-adapt': ['我不確定自己最需要先調整哪一塊。'] } } },
+    ],
+  },
+};
+
+/* ---------- 依賴鏈引擎 ----------
+   category → primary → allowedFocus → examples → placeholder → payload
+   每一層都由上一層實際計算，不再靠分組粗篩或文字比對。 */
+function taxonomyHasCategory(catId) { return !!QUESTION_TAXONOMY[catId]; }
+function taxonomyPrimaries(catId) {
+  var t = QUESTION_TAXONOMY[catId];
+  return t ? t.primaries : [];
+}
+function taxonomyPrimary(catId, primaryId) {
+  return taxonomyPrimaries(catId).filter(function (p) { return p.id === primaryId; })[0] || null;
+}
+/* Assumption Guard：面向的 requires 必須全部被 primary 的 assumptions 滿足。
+   這是「未來對象不會出現『對方目前對我的感受』」的實作——那個面向
+   requires.specificPerson，而未來對象的 assumptions 沒有這一項。 */
+function taxonomyFocusAllowed(primary, focusId) {
+  var area = FOCUS_AREA_REGISTRY[focusId];
+  if (!area || !primary) return false;
+  var need = area.requires || {}, has = primary.assumptions || {};
+  var ok = true;
+  Object.keys(need).forEach(function (k) { if (need[k] && !has[k]) ok = false; });
+  var no = area.excludes || {};
+  Object.keys(no).forEach(function (k) { if (no[k] && has[k]) ok = false; });
+  return ok;
+}
+function taxonomyAllowedFocusIds(catId, primaryId) {
+  var p = taxonomyPrimary(catId, primaryId);
+  if (!p) return [];
+  return (p.focus || []).filter(function (id) { return taxonomyFocusAllowed(p, id); });
+}
+function taxonomyFocusLabel(focusId) {
+  var a = FOCUS_AREA_REGISTRY[focusId];
+  return a ? a.label : focusId;
+}
+/* 範例由 category + primary + 已選面向共同決定。選了不同面向，範例會換掉一部分。 */
+function taxonomyExamples(catId, primaryId, selectedFocusIds) {
+  var p = taxonomyPrimary(catId, primaryId);
+  if (!p) return [];
+  var ex = p.examples || {};
+  var out = (ex.base || []).slice();
+  (selectedFocusIds || []).forEach(function (fid) {
+    ((ex.byFocus || {})[fid] || []).forEach(function (line) {
+      if (out.indexOf(line) === -1) out.unshift(line);
+    });
+  });
+  return out.slice(0, 3);
+}
+function taxonomyPlaceholder(catId, primaryId) {
+  var p = taxonomyPrimary(catId, primaryId);
+  if (p && p.placeholder) return p.placeholder;
+  var t = QUESTION_TAXONOMY[catId];
+  return t ? t.placeholder : '';
+}
+/* 牌陣推薦：primary 宣告 compatibleSpreads，Step 1 那句「系統會依內容推薦合適的
+   牌陣」因此成立。仍允許使用者自行選其他牌陣，只是不被標為推薦。 */
+function taxonomyRecommendedSpreads(catId, primaryId) {
+  var p = taxonomyPrimary(catId, primaryId);
+  return (p && p.spreads) ? p.spreads.slice() : [];
+}
+/* 切換上游時清掉不再相容的下游選擇——不能讓隱藏的舊選擇偷偷送進 prompt。 */
+function taxonomyPruneFocus(catId, primaryId, selectedIds) {
+  var allowed = taxonomyAllowedFocusIds(catId, primaryId);
+  return (selectedIds || []).filter(function (id) { return allowed.indexOf(id) !== -1; });
+}
+/* Reading payload 保留語意角色，不把所有文字拼成一段 question string。 */
+function buildReadingPayload(opts) {
+  var catId = opts.categoryId, primaryId = opts.primaryId;
+  var p = taxonomyPrimary(catId, primaryId);
+  var sel = taxonomyPruneFocus(catId, primaryId, opts.focusIds);
+  return {
+    category: { id: catId, label: (QUESTION_TAXONOMY[catId] || {}).label || catId },
+    spread: { id: opts.spreadId, recommended: taxonomyRecommendedSpreads(catId, primaryId).indexOf(opts.spreadId) !== -1 },
+    readingMode: opts.readingMode === 'combined' ? 'tarot_and_natal' : 'tarot_only',
+    primaryQuestion: p ? { id: p.id, intent: p.intent, label: p.label } : null,
+    focusAreas: sel.map(function (id) {
+      var a = FOCUS_AREA_REGISTRY[id] || {};
+      return { id: id, semanticFocus: a.semanticFocus || '', label: a.label || id };
+    }),
+    customContext: opts.customContext || '',
+    tarotCards: opts.cards || [],
+    /* 星盤只有在 readingMode 允許時才進 payload——Tarot only 不得夾帶命盤資料。 */
+    astrologyContext: opts.readingMode === 'combined' ? (opts.astrologyContext || null) : null,
+  };
+}
