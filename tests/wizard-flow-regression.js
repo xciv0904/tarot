@@ -156,16 +156,22 @@ const copyFn = app.slice(app.indexOf('function copyForAI()'), app.indexOf('funct
 check('AI 提示詞讀得到主問題', /readingSchemaFor\(state\.category, state\.subtopic\)/.test(copyFn));
 check('AI 提示詞讀得到已選面向', /state\.wizFocusSel\[state\.category\]/.test(copyFn));
 check('AI 提示詞讀得到自由輸入', /state\.question/.test(copyFn));
+/* 欄位在 payload 化時改名：想深入了解的面向 → 優先補充的面向、
+   使用者的具體問題 → 使用者補充的現實背景。三者仍各自成段。 */
 check('三者沒有被合併成同一個字串',
-  /想深入了解的面向：/.test(copyFn) && /使用者的具體問題：/.test(copyFn));
+  /優先補充的面向/.test(copyFn) && /使用者補充的現實背景/.test(copyFn)
+  && /主要問題（這次最需要回答的）/.test(copyFn));
 
 /* ---------- 8. 選擇狀態 ---------- */
-const selHtml = step3('love', { focusOpen: true, sel: { love: ['對方只是友善還是有好感'] } });
-check('已選項目有勾號而不只有顏色', selHtml.indexOf('✓ 對方只是友善還是有好感') !== -1);
+/* 面向清單已改由 taxonomy 決定，標籤跟著換；用該主問題實際會出現的第一個面向來測。 */
+const selLabel = '對方可能的個性';
+const selHtml = step3('love', { subtopic: 'partner-type', focusOpen: true, sel: { love: [selLabel] } });
+check('已選項目有勾號而不只有顏色', selHtml.indexOf('✓ ' + selLabel) !== -1);
 check('已選項目 aria-pressed 為 true', /aria-pressed="true"/.test(selHtml));
 check('顯示已選數量', plain(selHtml).indexOf('已選 1 / 3') !== -1);
 /* 選滿 3 個之後，其他項目仍然可讀、不整片變灰。 */
-const fullSel = step3('love', { focusOpen: true, sel: { love: ['對方只是友善還是有好感', '曖昧關係是否會明朗化', '對方遲遲不表態的原因'] } });
+const fullSel = step3('love', { subtopic: 'partner-type', focusOpen: true,
+  sel: { love: ['對方可能的個性', '對方給人的外在感覺', '對方可能的生活或工作狀態'] } });
 check('選滿 3 個後其他項目仍可點擊', (fullSel.match(/onclick="wizToggleFocus\(/g) || []).length >= 4);
 check('選滿 3 個後未選項目沒有被 disabled', !/disabled[^>]*wizToggleFocus/.test(fullSel));
 

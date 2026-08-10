@@ -40,7 +40,7 @@ const G = vm.runInContext(
   '({QUESTION_TAXONOMY, FOCUS_AREA_REGISTRY, CATEGORIES, SUBTOPICS, topicQuestionConfig,'
   + ' TAROT_SPREADS, taxonomyAllowedFocusIds, taxonomyExamples, taxonomyPlaceholder,'
   + ' taxonomyRecommendedSpreads, taxonomyPruneFocus, buildReadingPayload, taxonomyHasCategory,'
-  + ' taxonomyPrimaries, taxonomyFocusLabel, taxonomyFocusIdByLabel, taxonomyPrimaryForSubtopic})', c);
+  + ' taxonomyPrimaries, taxonomyFocusLabel, taxonomyFocusIdByLabel, taxonomyPrimaryForSubtopic, taxonomyNeutralFocusIds})', c);
 
 const migrated = Object.keys(G.QUESTION_TAXONOMY);
 const allCats = G.CATEGORIES.map(x => x.key);
@@ -130,7 +130,7 @@ migrated.forEach(cat => {
   check(cat + '：牌陣推薦不是所有題目都一樣', sets.size > 1, '只有 ' + sets.size + ' 種推薦組合');
 });
 check('CASE8 A/B 選擇題優先推薦選擇型牌陣',
-  G.taxonomyRecommendedSpreads('career', 'cr-choose')[0] === 'fork');
+  G.taxonomyRecommendedSpreads('decision', 'dc-ab')[0] === 'fork');
 
 /* ---------- 切換上游會清掉不相容的下游 ---------- */
 const kept = G.taxonomyPruneFocus('love', 'lv-future', ['lv-target-feeling', 'lv-future-scene']);
@@ -347,6 +347,49 @@ check('九個分類全部遷移完成', migrated.length === allCats.length,
     readingMode:'cards', focusIds:['lv-future-scene'], customContext:'x', cards:[{}], astrologyContext:{ chart:1 } });
   check('payload 在 tarot only 時強制清空 astrologyContext', pOnly.astrologyContext === null);
 })();
+
+/* ---------- 每個舊題目都必須對應到 taxonomy ---------- */
+/* 漏掉對應的舊題目會靜默退回舊清單——實際發生過：單身牌陣裡只有
+   partner-type 有對應，另外兩題仍顯示「對方遲遲不表態的原因」這種
+   預設已有特定對象的面向。 */
+allCats.forEach(cat => {
+  const mapped = new Set(G.taxonomyPrimaries(cat).map(p => p.legacyKey).filter(Boolean));
+  (G.SUBTOPICS[cat] || []).forEach(sub => {
+    check('舊題目 ' + cat + '/' + sub.key + ' 有對應的 taxonomy primary', mapped.has(sub.key));
+  });
+});
+
+/* ---------- 還沒選主問題時不得出現需要前提的面向 ---------- */
+migrated.forEach(cat => {
+  const neutral = G.taxonomyNeutralFocusIds(cat);
+  neutral.forEach(id => {
+    check('中性面向 ' + id + ' 不需要任何前提',
+      Object.keys((G.FOCUS_AREA_REGISTRY[id].requires) || {}).length === 0);
+  });
+});
+const noneShown = focusOf(step3('love', ''));
+['對方只是友善還是有好感', '對方遲遲不表態的原因', '對方目前對我的感受', '為什麼沒有主動']
+  .forEach(bad => {
+    check('未選主問題時不出現「' + bad + '」', noneShown.indexOf(bad) === -1);
+  });
+check('未選主問題時說明目前只列通用面向',
+  step3('love', '').indexOf('還沒選主問題') !== -1);
+
+/* ---------- 連動說明的標題必須對得上使用者點到的那一題 ---------- */
+/* 實際發生過：使用者選「職場優勢、弱點、主管及團隊類型」，畫面卻說
+   「已依你選的『目前的工作狀況該怎麼看』整理相關面向」——因為 primary 的
+   label 是另外命名的，只是硬掛上 legacyKey。 */
+allCats.forEach(cat => {
+  (G.SUBTOPICS[cat] || []).forEach(sub => {
+    const p = G.taxonomyPrimaryForSubtopic(cat, sub.key);
+    if (!p) return;
+    const html = step3(cat, sub.key);
+    const m = html.match(/已依你選的「([^」]+)」/);
+    check('連動說明引用使用者實際點到的那一題 ' + cat + '/' + sub.key,
+      !!m && m[1] === sub.zh,
+      m ? ('說明寫「' + m[1] + '」但使用者點的是「' + sub.zh + '」') : '沒有顯示連動說明');
+  });
+});
 
 /* ---------- 稽核報告 ---------- */
 migrated.forEach(cat => {

@@ -95,7 +95,7 @@ GOLDEN_SPREADS.forEach(fixture => {
   const html=c.renderSubtopicResultPanel((c.__SUB[fixture.cat]||[]).find(x=>x.key===fixture.sub),result,'直接回答這個問題');
   if(!/直接回答/.test(html) || !/為什麼這樣判斷/.test(html)) fail(`${fixture.id} 網站一般版缺少直接答案或專業摺疊區`);
   c.copyForAI(); const copied=c.__copied();
-  if(!copied.includes('使用者的具體問題') || !copied.includes('牌面依據：') || !copied.includes('繁體中文與文風規則')) fail(`${fixture.id} 複製資料包缺少問題、依據或文風規則`);
+  if(!copied.includes('使用者補充的現實背景') || !copied.includes('牌面依據：') || !copied.includes('繁體中文與文風規則')) fail(`${fixture.id} 複製資料包缺少問題、依據或文風規則`);
   const generatedPart=copied.split('【繁體中文與文風規則】')[0];
   if(c.readingStyleFlags(generatedPart).length) fail(`${fixture.id} 複製資料包的生成內容仍有 AI 味旗標：${c.readingStyleFlags(generatedPart).join(',')}`);
   directAnswers[fixture.id]=result.typed.primaryAnswer;

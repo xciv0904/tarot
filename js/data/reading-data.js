@@ -960,7 +960,7 @@ var FOCUS_AREA_REGISTRY = {
   'cr-ab-a-con': { label: 'A 的風險', semanticFocus: 'option_a_risk', requires: { twoOptions: true } },
   'cr-ab-b-pro': { label: 'B 的優勢', semanticFocus: 'option_b_upside', requires: { twoOptions: true } },
   'cr-ab-b-con': { label: 'B 的風險', semanticFocus: 'option_b_risk', requires: { twoOptions: true } },
-  'cr-ab-longterm': { label: '哪一個長期發展比較好', semanticFocus: 'long_term_compare', requires: { twoOptions: true } },
+  'cr-ab-longterm': { label: '長期發展空間', semanticFocus: 'long_term_prospect' },
   'cr-ab-priority': { label: '我真正需要優先考慮的條件', semanticFocus: 'decision_priority' },
   /* ---- 事業：現職 ---- */
   'cr-now-chance': { label: '目前工作最大的機會', semanticFocus: 'current_opportunity', requires: { currentJob: true } },
@@ -1111,6 +1111,21 @@ var QUESTION_TAXONOMY = {
         examples: { base: ['我目前單身，想知道接下來可能會遇到什麼樣的對象。'],
           byFocus: { 'lv-future-scene': ['我平常生活圈很固定，想知道比較可能在什麼場合認識新的人。'],
                      'lv-future-attraction': ['我常被同一類型的人吸引，想知道那反映了我什麼。'] } } },
+      { id: 'lv-profile', legacyKey: 'partner-profile', label: '未來對象大概是什麼樣子', intent: 'future_partner_detail',
+        assumptions: { futurePerson: true },
+        spreads: ['three-time', 'single', 'celtic'],
+        focus: ['lv-future-personality', 'lv-future-appearance', 'lv-future-lifestyle', 'lv-future-signals', 'lv-future-attraction'],
+        placeholder: '例如：我想知道未來對象大概是什麼樣的人。',
+        examples: { base: ['我想具體一點知道未來對象可能是什麼樣子。'],
+          byFocus: { 'lv-future-lifestyle': ['我想知道對方大概在做什麼樣的工作或過什麼樣的生活。'],
+                     'lv-future-appearance': ['我好奇對方給人的第一印象會是什麼感覺。'] } } },
+      { id: 'lv-meet', legacyKey: 'meet-scene', label: '可能在哪種場合認識', intent: 'meeting_context',
+        assumptions: { futurePerson: true },
+        spreads: ['three-time', 'single', 'horseshoe'],
+        focus: ['lv-future-scene', 'lv-future-start', 'lv-future-signals', 'lv-future-attraction'],
+        placeholder: '例如：我的生活圈很固定，想知道可能在哪裡遇到新的人。',
+        examples: { base: ['我的生活圈很固定，想知道可能在哪裡遇到人。'],
+          byFocus: { 'lv-future-start': ['我想知道關係比較可能怎麼開始。'] } } },
       { id: 'lv-target', legacyKey: 'crush', label: '對方現在怎麼看我', intent: 'partner_current_view',
         assumptions: { specificPerson: true },
         spreads: ['relationship', 'crosslove', 'three-time'],
@@ -1157,46 +1172,43 @@ var QUESTION_TAXONOMY = {
     categoryId: 'career', label: '事業',
     placeholder: '例如：我拿到一份新工作邀請，但薪資、發展與工作環境讓我很難取捨。',
     primaries: [
-      { id: 'cr-direction', legacyKey: 'industry-fit', label: '我下一步適合往哪個方向發展', intent: 'career_direction',
-        assumptions: {},
-        spreads: ['three-time', 'celtic', 'three-mbs'],
-        focus: ['cr-dir-strength', 'cr-dir-style', 'cr-dir-env', 'cr-dir-block', 'cr-dir-next'],
-        placeholder: '例如：我做現在這行幾年了，想知道下一步該往哪裡走。',
-        examples: { base: ['我做現在這行一段時間了，想知道下一步的方向。'],
-          byFocus: { 'cr-dir-env': ['我發現自己在不同的工作環境表現差很多。'],
-                     'cr-dir-block': ['我知道想做什麼，但一直沒有真的動起來。'] } } },
-      { id: 'cr-jobhunt', legacyKey: 'career-timing', label: '這次求職的機會如何', intent: 'job_application',
-        assumptions: { specificOpportunity: true },
-        spreads: ['three-time', 'single', 'celtic'],
-        focus: ['cr-job-fit', 'cr-job-interview', 'cr-job-employer', 'cr-job-edge', 'cr-job-worth'],
-        placeholder: '例如：我投了一個很想要的職缺，想知道需要注意什麼。',
-        examples: { base: ['我投了一個很想要的職缺，想知道機會如何。'],
-          byFocus: { 'cr-job-interview': ['下週要面試，我不太確定該準備哪個部分。'],
-                     'cr-job-employer': ['我不確定這家公司真正在找的是什麼樣的人。'] } } },
-      { id: 'cr-choose', legacyKey: 'work-style-fit', label: '兩份工作我該選哪一個', intent: 'job_comparison',
-        assumptions: { twoOptions: true },
-        spreads: ['fork', 'three-time', 'celtic'],
-        focus: ['cr-ab-a-pro', 'cr-ab-a-con', 'cr-ab-b-pro', 'cr-ab-b-con', 'cr-ab-longterm', 'cr-ab-priority'],
-        placeholder: '例如：A 比較穩定，B 發展性高但風險也大，我很難取捨。',
-        examples: { base: ['我手上有兩個機會，條件各有優缺點。'],
-          byFocus: { 'cr-ab-longterm': ['短期看 A 比較好，但我想知道三年後呢。'],
-                     'cr-ab-priority': ['我不確定自己現在最該優先考慮哪個條件。'] } } },
-      { id: 'cr-current', legacyKey: 'workplace-strength-weakness', label: '目前的工作狀況該怎麼看', intent: 'current_job_status',
-        assumptions: { currentJob: true },
-        spreads: ['three-time', 'celtic', 'single'],
-        focus: ['cr-now-chance', 'cr-now-stress', 'cr-now-people', 'cr-now-promo', 'cr-now-stay'],
-        placeholder: '例如：我在現在的位置上有點卡住，不知道問題在哪。',
-        examples: { base: ['我在現在的位置上有點卡住。'],
+      /* 每個 primary 對應一個實際存在的舊題目，label 就是使用者點到的那句話——
+         先前是把自己另外命名的題目硬套上 legacyKey，畫面因此出現
+         「你選了 A，已依你選的 B 整理面向」這種對不上的情況。 */
+      { id: 'cr-field', legacyKey: 'industry-fit', label: '適合的產業、職務與工作環境', intent: 'field_environment_fit',
+        assumptions: {}, spreads: ['three-time', 'celtic', 'three-mbs'],
+        focus: ['cr-dir-env', 'cr-dir-style', 'cr-dir-strength', 'cr-dir-next', 'cr-dir-block'],
+        placeholder: '例如：我想知道什麼樣的產業或工作環境比較適合我。',
+        examples: { base: ['我想知道什麼樣的工作環境比較適合我。'],
+          byFocus: { 'cr-dir-env': ['我在不同的團隊氣氛下，表現差很多。'],
+                     'cr-dir-next': ['我想知道下一步該往哪個領域走。'] } } },
+      { id: 'cr-mode', legacyKey: 'work-style-fit', label: '適合受雇、接案、創業或管理', intent: 'work_mode_fit',
+        assumptions: {}, spreads: ['fork', 'three-mbs', 'celtic'],
+        focus: ['cr-dir-style', 'cr-dir-strength', 'cr-ab-priority', 'cr-move-cost', 'cr-dir-block'],
+        placeholder: '例如：我在考慮繼續受雇還是自己接案。',
+        examples: { base: ['我在考慮繼續上班還是自己出來做。'],
+          byFocus: { 'cr-dir-style': ['我想知道哪種工作型態比較適合我的節奏。'],
+                     'cr-move-cost': ['換一種工作方式，我要付出什麼代價？'] } } },
+      { id: 'cr-timing', legacyKey: 'career-timing', label: '升遷、轉職、離職與求職趨勢', intent: 'career_timing',
+        assumptions: {}, spreads: ['timeline', 'three-time', 'horseshoe'],
+        focus: ['cr-now-promo', 'cr-move-why', 'cr-move-block', 'cr-move-chance', 'cr-move-cost', 'cr-move-prep'],
+        placeholder: '例如：我在考慮換工作，但不確定現在是不是好時機。',
+        examples: { base: ['我在考慮換工作，但不確定時機。'],
+          byFocus: { 'cr-move-why': ['我說不清楚自己是想換工作，還是只是累了。'],
+                     'cr-now-promo': ['我想知道升遷的機會什麼時候比較明顯。'] } } },
+      { id: 'cr-profile', legacyKey: 'workplace-strength-weakness', label: '職場優勢、弱點與團隊關係', intent: 'workplace_profile',
+        assumptions: { currentJob: true }, spreads: ['three-issue', 'celtic', 'crosslove'],
+        focus: ['cr-dir-strength', 'cr-job-edge', 'cr-now-people', 'cr-now-stress', 'cr-dir-block'],
+        placeholder: '例如：我想知道自己在職場上的優勢與盲點。',
+        examples: { base: ['我想知道自己在職場上的優勢與弱點。'],
           byFocus: { 'cr-now-people': ['我跟主管的互動最近變得很緊繃。'],
-                     'cr-now-stress': ['我最近上班一直很累，但說不出是哪裡的問題。'] } } },
-      { id: 'cr-transition', legacyKey: 'career-talent', label: '我該不該轉職', intent: 'career_transition',
-        assumptions: { currentJob: true },
-        spreads: ['fork', 'three-time', 'celtic'],
-        focus: ['cr-move-why', 'cr-move-block', 'cr-move-chance', 'cr-move-cost', 'cr-move-prep'],
-        placeholder: '例如：我想離開現在的工作，但不確定是不是衝動。',
-        examples: { base: ['我最近一直想離開，但不確定是不是一時的。'],
-          byFocus: { 'cr-move-why': ['我說不清楚自己到底是想換工作，還是只是累了。'],
-                     'cr-move-cost': ['留下和離開好像各有代價，我想先看清楚。'] } } },
+                     'cr-job-edge': ['我不確定自己真正的競爭力在哪。'] } } },
+      { id: 'cr-talent', legacyKey: 'career-talent', label: '職業傾向、天賦與發展方式', intent: 'talent_direction',
+        assumptions: {}, spreads: ['three-mbs', 'celtic', 'three-time'],
+        focus: ['cr-dir-strength', 'cr-dir-style', 'cr-dir-next', 'cr-ab-longterm', 'cr-job-edge'],
+        placeholder: '例如：我想知道自己真正擅長什麼，適合往哪裡發展。',
+        examples: { base: ['我想知道自己真正擅長什麼。'],
+          byFocus: { 'cr-dir-next': ['我想知道接下來最值得培養哪種能力。'] } } },
     ],
   },
   family: {
@@ -1278,6 +1290,23 @@ function taxonomyAllowedFocusIds(catId, primaryId) {
   var p = taxonomyPrimary(catId, primaryId);
   if (!p) return [];
   return (p.focus || []).filter(function (id) { return taxonomyFocusAllowed(p, id); });
+}
+/* 還沒選主問題時的面向。不能退回舊清單——那會把「對方遲遲不表態的原因」這類
+   預設已有特定對象的題目丟給單身的人看。這裡只保留完全不需要前提的面向，
+   也就是不論使用者處在什麼狀態都問得成立的那些。 */
+function taxonomyNeutralFocusIds(catId) {
+  var seen = {}, out = [];
+  taxonomyPrimaries(catId).forEach(function (p) {
+    (p.focus || []).forEach(function (id) {
+      if (seen[id]) return;
+      var area = FOCUS_AREA_REGISTRY[id];
+      if (!area) return;
+      if (Object.keys(area.requires || {}).length) return;
+      seen[id] = true;
+      out.push(id);
+    });
+  });
+  return out;
 }
 function taxonomyFocusLabel(focusId) {
   var a = FOCUS_AREA_REGISTRY[focusId];

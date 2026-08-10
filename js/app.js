@@ -2595,6 +2595,10 @@ function focusOptionsForCurrent(catKey, cfg) {
       options: taxonomyAllowedFocusIds(catKey, taxPrimary.id).map(taxonomyFocusLabel),
     };
   }
+  /* 已遷移的分類但還沒選主問題：只給不需要前提的面向，不要退回舊清單。 */
+  if (taxonomyHasCategory(catKey)) {
+    return { source: 'neutral', primary: null, options: taxonomyNeutralFocusIds(catKey).map(taxonomyFocusLabel) };
+  }
   if (!cfg) return { source: 'none', primary: null, options: [] };
   var groups = focusGroupsForNow(catKey, cfg);
   var flat = [];
@@ -2648,7 +2652,13 @@ function renderFocusAreaPicker() {
   h += '</div>';
   /* 顯示真正的上下游連動。這不是裝飾——下面的清單確實是依這個主問題重新算出來的。 */
   if (src.primary) {
-    h += '<div style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:5px;line-height:1.6;border-left:2px solid rgba(201,169,110,.4);padding-left:8px">已依你選的「' + esc(src.primary.label) + '」整理相關面向。</div>';
+    /* 顯示使用者實際點到的那一句，不是 taxonomy 內部的 label——
+       兩者不一定同字，寫成內部名稱會變成「你選了 A，已依你選的 B 整理」。 */
+    var pickedDef = (SUBTOPICS[catKey] || []).filter(function (x) { return x.key === state.subtopic; })[0];
+    var pickedLabel = pickedDef ? pickedDef.zh : src.primary.label;
+    h += '<div style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:5px;line-height:1.6;border-left:2px solid rgba(201,169,110,.4);padding-left:8px">已依你選的「' + esc(pickedLabel) + '」整理相關面向。</div>';
+  } else if (src.source === 'neutral') {
+    h += '<div style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:5px;line-height:1.6;border-left:2px solid rgba(201,169,110,.25);padding-left:8px">還沒選主問題，這裡先只列出任何狀況都適用的面向。選了上面的問題之後，會換成真正相關的那幾個。</div>';
   }
   h += '<div style="display:flex;flex-direction:column;gap:7px;margin-top:9px">';
   shown.forEach(function (opt) { h += optBtn(opt); });
