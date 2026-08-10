@@ -235,6 +235,29 @@ check('專業模式是在一般內容之上疊加，不是換一組答案',
   proHtml.indexOf(sample.title) !== -1 && proHtml.indexOf(sample.action) !== -1
   && proHtml.length > generalHtml.length);
 
+/* ---------- 面向分數的位置 ----------
+   分數不能被連線圖推出第一屏。使用者回報「分數不見了」，實際上是排序問題：
+   連線圖在手機上很高，夾在結論與數字之間就會讓人以為數字被刪掉。 */
+{
+  const advSrc = fs.readFileSync(path.join(ROOT, 'js/data/astro-advanced.js'), 'utf8');
+  const body = advSrc.slice(advSrc.indexOf('function renderSynastry()'));
+  const iBars = body.indexOf('renderSynastryFacetBars(aspects');
+  const iLink = body.indexOf('renderSynastryLinkChart(chartA');
+  check('合盤仍然渲染五個面向的分數', iBars !== -1);
+  check('合盤仍然渲染雙人連線圖', iLink !== -1);
+  check('面向分數排在連線圖之前', iBars !== -1 && iLink !== -1 && iBars < iLink);
+
+  Object.keys(results).forEach(name => {
+    const rows = c.synastryFacetScores(results[name].aspects);
+    check(name + '：面向分數回傳五個面向', rows.length === 5);
+    check(name + '：沒有相位的面向誠實回報 null 而不是 50 分',
+      rows.every(r => r.score === null ? r.count === 0 : (r.score >= 15 && r.score <= 95)));
+    const bars = c.renderSynastryFacetBars(results[name].aspects, '');
+    check(name + '：有分數時長條圖確實渲染',
+      !rows.some(r => r.score !== null) || bars.indexOf('五個面向') !== -1);
+  });
+}
+
 console.log('# 合盤關係模式回歸測試');
 console.log('');
 console.log('- 檢查項目：' + checks.length);

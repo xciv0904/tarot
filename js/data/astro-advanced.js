@@ -6033,11 +6033,14 @@ function renderSynastry() {
   /* 30 秒摘要放在最前面：先給結論，再看最重要的模式，其餘漸進展開。 */
   h += renderSynastryOverview(buildSynastryOverview(buildSynastryPatterns(aspects)));
 
-  if (typeof renderSynastryLinkChart === 'function') {
-    h += renderSynastryLinkChart(chartA, chartB, aspects, state.synFacet);
-  }
+  /* 五個面向的分數排在連線圖之前。連線圖在手機上很高，夾在中間會把數字整個推出
+     第一屏，讀者滑到一半只看得到一張圖，會以為分數不見了。先給可讀的數字，
+     再給需要細看的圖。兩者用的是同一份 aspects，順序調換不影響任何計算。 */
   if (typeof renderSynastryFacetBars === 'function') {
     h += renderSynastryFacetBars(aspects, state.synFacet);
+  }
+  if (typeof renderSynastryLinkChart === 'function') {
+    h += renderSynastryLinkChart(chartA, chartB, aspects, state.synFacet);
   }
 
   /* 點了某個面向之後，下面的相位卡片跟著只顯示相關的那幾組——
