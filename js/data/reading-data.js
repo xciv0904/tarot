@@ -967,7 +967,7 @@ var FOCUS_AREA_REGISTRY = {
   'cr-now-stress': { label: '目前最大的壓力來源', semanticFocus: 'stress_source', requires: { currentJob: true } },
   'cr-now-people': { label: '與主管或團隊的互動', semanticFocus: 'workplace_relation', requires: { currentJob: true } },
   'cr-now-promo': { label: '升遷或責任會怎麼變化', semanticFocus: 'promotion', requires: { currentJob: true } },
-  'cr-now-stay': { label: '是否值得繼續投入', semanticFocus: 'stay_worth', requires: { currentJob: true } },
+  'cr-now-stay': { label: '是否值得繼續留在這裡', semanticFocus: 'stay_worth', requires: { currentJob: true } },
   /* ---- 事業：轉職 ---- */
   'cr-move-why': { label: '想離開的真正原因', semanticFocus: 'leave_reason', requires: { currentJob: true } },
   'cr-move-block': { label: '現在轉職的阻力', semanticFocus: 'transition_block' },
@@ -1005,7 +1005,7 @@ var QUESTION_TAXONOMY = {
     categoryId: 'love', label: '愛情',
     placeholder: '例如：我們最近每天聊天，但關係一直沒有更進一步。',
     primaries: [
-      { id: 'lv-future', label: '未來可能遇到什麼類型的人', intent: 'future_partner_profile',
+      { id: 'lv-future', legacyKey: 'partner-type', label: '未來可能遇到什麼類型的人', intent: 'future_partner_profile',
         assumptions: { futurePerson: true },
         spreads: ['three-time', 'single', 'celtic'],
         focus: ['lv-future-personality', 'lv-future-appearance', 'lv-future-lifestyle', 'lv-future-scene', 'lv-future-start', 'lv-future-attraction', 'lv-future-signals'],
@@ -1013,7 +1013,7 @@ var QUESTION_TAXONOMY = {
         examples: { base: ['我目前單身，想知道接下來可能會遇到什麼樣的對象。'],
           byFocus: { 'lv-future-scene': ['我平常生活圈很固定，想知道比較可能在什麼場合認識新的人。'],
                      'lv-future-attraction': ['我常被同一類型的人吸引，想知道那反映了我什麼。'] } } },
-      { id: 'lv-target', label: '對方現在怎麼看我', intent: 'partner_current_view',
+      { id: 'lv-target', legacyKey: 'crush', label: '對方現在怎麼看我', intent: 'partner_current_view',
         assumptions: { specificPerson: true },
         spreads: ['relationship', 'crosslove', 'three-time'],
         focus: ['lv-target-feeling', 'lv-target-romantic', 'lv-target-hesitation', 'lv-target-passive', 'lv-target-wanted', 'lv-target-intent'],
@@ -1021,7 +1021,7 @@ var QUESTION_TAXONOMY = {
         examples: { base: ['我們認識一陣子了，但我看不出他對我的想法。'],
           byFocus: { 'lv-target-passive': ['他平常回訊息很快，但從來不主動約我。'],
                      'lv-target-hesitation': ['他好像有點在意什麼，但一直沒有說出口。'] } } },
-      { id: 'lv-ambiguous', label: '這段曖昧會怎麼發展', intent: 'ambiguous_progression',
+      { id: 'lv-ambiguous', legacyKey: 'pace-pattern', label: '這段曖昧會怎麼發展', intent: 'ambiguous_progression',
         assumptions: { specificPerson: true },
         spreads: ['relationship', 'crosslove', 'three-time'],
         focus: ['lv-amb-interaction', 'lv-target-feeling', 'lv-target-intent', 'lv-amb-obstacle', 'lv-amb-clarify', 'lv-amb-trend'],
@@ -1029,7 +1029,7 @@ var QUESTION_TAXONOMY = {
         examples: { base: ['我們互動很密切，但誰都沒有把話講開。'],
           byFocus: { 'lv-amb-obstacle': ['我們之間好像有什麼卡著，但我說不上來是什麼。'],
                      'lv-amb-clarify': ['這樣的狀態已經一段時間了，我想知道會不會有結果。'] } } },
-      { id: 'lv-relationship', label: '這段關係接下來會怎麼走', intent: 'relationship_development',
+      { id: 'lv-relationship', legacyKey: 'marriage-longterm', label: '這段關係接下來會怎麼走', intent: 'relationship_development',
         assumptions: { specificPerson: true, existingRelationship: true },
         spreads: ['relationship', 'crosslove', 'three-time', 'celtic'],
         focus: ['lv-rel-bond', 'lv-rel-comm', 'lv-rel-balance', 'lv-rel-conflict', 'lv-rel-commit', 'lv-rel-longterm'],
@@ -1037,7 +1037,7 @@ var QUESTION_TAXONOMY = {
         examples: { base: ['我們交往一段時間了，我想知道接下來的方向。'],
           byFocus: { 'lv-rel-conflict': ['我們最近為了同一件事反覆爭執。'],
                      'lv-rel-balance': ['我覺得自己付出比較多，但不確定是不是我想太多。'] } } },
-      { id: 'lv-reunion', label: '和前任還有沒有可能', intent: 'reunion_possibility',
+      { id: 'lv-reunion', legacyKey: 'reunion', label: '和前任還有沒有可能', intent: 'reunion_possibility',
         assumptions: { specificPerson: true, pastRelationship: true },
         spreads: ['crosslove', 'relationship', 'three-time'],
         focus: ['lv-ex-cause', 'lv-ex-feeling', 'lv-ex-will', 'lv-ex-unresolved', 'lv-ex-risk', 'lv-ex-change'],
@@ -1045,7 +1045,7 @@ var QUESTION_TAXONOMY = {
         examples: { base: ['我們分開一段時間了，最近又有聯絡。'],
           byFocus: { 'lv-ex-risk': ['如果真的復合，我擔心會重複以前的問題。'],
                      'lv-ex-cause': ['我到現在還是不太確定我們為什麼會走到分開。'] } } },
-      { id: 'lv-self', label: '我在感情裡的模式是什麼', intent: 'self_relationship_pattern',
+      { id: 'lv-self', legacyKey: null, label: '我在感情裡的模式是什麼', intent: 'self_relationship_pattern',
         assumptions: {},
         spreads: ['three-mbs', 'three-time', 'single', 'celtic'],
         focus: ['lv-self-pattern', 'lv-self-attract', 'lv-self-blindspot', 'lv-self-boundary', 'lv-self-need', 'lv-self-choice'],
@@ -1059,7 +1059,7 @@ var QUESTION_TAXONOMY = {
     categoryId: 'career', label: '事業',
     placeholder: '例如：我拿到一份新工作邀請，但薪資、發展與工作環境讓我很難取捨。',
     primaries: [
-      { id: 'cr-direction', label: '我下一步適合往哪個方向發展', intent: 'career_direction',
+      { id: 'cr-direction', legacyKey: 'industry-fit', label: '我下一步適合往哪個方向發展', intent: 'career_direction',
         assumptions: {},
         spreads: ['three-time', 'celtic', 'three-mbs'],
         focus: ['cr-dir-strength', 'cr-dir-style', 'cr-dir-env', 'cr-dir-block', 'cr-dir-next'],
@@ -1067,7 +1067,7 @@ var QUESTION_TAXONOMY = {
         examples: { base: ['我做現在這行一段時間了，想知道下一步的方向。'],
           byFocus: { 'cr-dir-env': ['我發現自己在不同的工作環境表現差很多。'],
                      'cr-dir-block': ['我知道想做什麼，但一直沒有真的動起來。'] } } },
-      { id: 'cr-jobhunt', label: '這次求職的機會如何', intent: 'job_application',
+      { id: 'cr-jobhunt', legacyKey: 'career-timing', label: '這次求職的機會如何', intent: 'job_application',
         assumptions: { specificOpportunity: true },
         spreads: ['three-time', 'single', 'celtic'],
         focus: ['cr-job-fit', 'cr-job-interview', 'cr-job-employer', 'cr-job-edge', 'cr-job-worth'],
@@ -1075,7 +1075,7 @@ var QUESTION_TAXONOMY = {
         examples: { base: ['我投了一個很想要的職缺，想知道機會如何。'],
           byFocus: { 'cr-job-interview': ['下週要面試，我不太確定該準備哪個部分。'],
                      'cr-job-employer': ['我不確定這家公司真正在找的是什麼樣的人。'] } } },
-      { id: 'cr-choose', label: '兩份工作我該選哪一個', intent: 'job_comparison',
+      { id: 'cr-choose', legacyKey: 'work-style-fit', label: '兩份工作我該選哪一個', intent: 'job_comparison',
         assumptions: { twoOptions: true },
         spreads: ['fork', 'three-time', 'celtic'],
         focus: ['cr-ab-a-pro', 'cr-ab-a-con', 'cr-ab-b-pro', 'cr-ab-b-con', 'cr-ab-longterm', 'cr-ab-priority'],
@@ -1083,7 +1083,7 @@ var QUESTION_TAXONOMY = {
         examples: { base: ['我手上有兩個機會，條件各有優缺點。'],
           byFocus: { 'cr-ab-longterm': ['短期看 A 比較好，但我想知道三年後呢。'],
                      'cr-ab-priority': ['我不確定自己現在最該優先考慮哪個條件。'] } } },
-      { id: 'cr-current', label: '目前的工作狀況該怎麼看', intent: 'current_job_status',
+      { id: 'cr-current', legacyKey: 'workplace-strength-weakness', label: '目前的工作狀況該怎麼看', intent: 'current_job_status',
         assumptions: { currentJob: true },
         spreads: ['three-time', 'celtic', 'single'],
         focus: ['cr-now-chance', 'cr-now-stress', 'cr-now-people', 'cr-now-promo', 'cr-now-stay'],
@@ -1091,7 +1091,7 @@ var QUESTION_TAXONOMY = {
         examples: { base: ['我在現在的位置上有點卡住。'],
           byFocus: { 'cr-now-people': ['我跟主管的互動最近變得很緊繃。'],
                      'cr-now-stress': ['我最近上班一直很累，但說不出是哪裡的問題。'] } } },
-      { id: 'cr-transition', label: '我該不該轉職', intent: 'career_transition',
+      { id: 'cr-transition', legacyKey: 'career-talent', label: '我該不該轉職', intent: 'career_transition',
         assumptions: { currentJob: true },
         spreads: ['fork', 'three-time', 'celtic'],
         focus: ['cr-move-why', 'cr-move-block', 'cr-move-chance', 'cr-move-cost', 'cr-move-prep'],
@@ -1105,7 +1105,7 @@ var QUESTION_TAXONOMY = {
     categoryId: 'family', label: '家庭',
     placeholder: '例如：家人常替我做決定，我不知道該怎麼建立界線。',
     primaries: [
-      { id: 'fm-conflict', label: '我和家人的衝突為什麼一直重複', intent: 'family_conflict_pattern',
+      { id: 'fm-conflict', legacyKey: 'family-dynamics', label: '我和家人的衝突為什麼一直重複', intent: 'family_conflict_pattern',
         assumptions: {},
         spreads: ['three-time', 'crosslove', 'celtic'],
         focus: ['fm-conf-trigger', 'fm-conf-mine', 'fm-conf-theirs', 'fm-conf-unsaid', 'fm-conf-boundary', 'fm-conf-improve'],
@@ -1113,35 +1113,35 @@ var QUESTION_TAXONOMY = {
         examples: { base: ['我們每次談到同一件事就會吵起來。'],
           byFocus: { 'fm-conf-unsaid': ['我覺得真正的問題根本沒有被講出來。'],
                      'fm-conf-boundary': ['我不知道該怎麼拒絕又不傷感情。'] } } },
-      { id: 'fm-parents', label: '和父母之間的關係該怎麼調整', intent: 'parent_relationship',
+      { id: 'fm-parents', legacyKey: 'family-relations', label: '和父母之間的關係該怎麼調整', intent: 'parent_relationship',
         assumptions: { parents: true },
         spreads: ['crosslove', 'three-time', 'relationship'],
         focus: ['fm-parent-expect', 'fm-parent-gap', 'fm-parent-indep', 'fm-conf-unsaid', 'fm-conf-boundary'],
         placeholder: '例如：父母很關心我，但常替我決定事情。',
         examples: { base: ['父母的關心讓我有壓力，但我不想傷他們的心。'],
           byFocus: { 'fm-parent-indep': ['我想有自己的決定權，又不想讓他們覺得被推開。'] } } },
-      { id: 'fm-children', label: '和孩子的互動需要注意什麼', intent: 'child_relationship',
+      { id: 'fm-children', legacyKey: null, label: '和孩子的互動需要注意什麼', intent: 'child_relationship',
         assumptions: { children: true },
         spreads: ['three-time', 'relationship', 'single'],
         focus: ['fm-child-need', 'fm-child-comm', 'fm-conf-trigger', 'fm-conf-improve'],
         placeholder: '例如：孩子最近變得不太願意跟我說話。',
         examples: { base: ['孩子最近變得不太願意跟我說話。'],
           byFocus: { 'fm-child-comm': ['我一開口他就防備，我不知道怎麼講比較好。'] } } },
-      { id: 'fm-siblings', label: '手足之間的問題該怎麼處理', intent: 'sibling_relationship',
+      { id: 'fm-siblings', legacyKey: null, label: '手足之間的問題該怎麼處理', intent: 'sibling_relationship',
         assumptions: { siblings: true },
         spreads: ['crosslove', 'three-time'],
         focus: ['fm-sib-role', 'fm-sib-fair', 'fm-duty-share', 'fm-conf-unsaid'],
         placeholder: '例如：家裡的事好像都落在我身上。',
         examples: { base: ['家裡的事好像都落在我身上。'],
           byFocus: { 'fm-sib-fair': ['我覺得不公平，但講出來又怕變成計較。'] } } },
-      { id: 'fm-duty', label: '家庭責任讓我喘不過氣', intent: 'family_duty_load',
+      { id: 'fm-duty', legacyKey: 'living-responsibility', label: '家庭責任讓我喘不過氣', intent: 'family_duty_load',
         assumptions: {},
         spreads: ['three-mbs', 'three-time', 'single'],
         focus: ['fm-duty-load', 'fm-duty-share', 'fm-conf-boundary', 'fm-support-who', 'fm-support-ask'],
         placeholder: '例如：我扛了很多家裡的事，已經有點撐不住。',
         examples: { base: ['我扛了很多家裡的事，已經有點撐不住。'],
           byFocus: { 'fm-support-ask': ['我不太知道該怎麼開口說我需要幫忙。'] } } },
-      { id: 'fm-change', label: '家庭正在變動，我該怎麼面對', intent: 'family_change',
+      { id: 'fm-change', legacyKey: 'family-improve', label: '家庭正在變動，我該怎麼面對', intent: 'family_change',
         assumptions: { familyChange: true },
         spreads: ['three-time', 'celtic'],
         focus: ['fm-change-impact', 'fm-change-adapt', 'fm-support-who', 'fm-conf-improve'],
@@ -1234,4 +1234,28 @@ function buildReadingPayload(opts) {
     /* 星盤只有在 readingMode 允許時才進 payload——Tarot only 不得夾帶命盤資料。 */
     astrologyContext: opts.readingMode === 'combined' ? (opts.astrologyContext || null) : null,
   };
+}
+
+/* 舊的 SUBTOPICS key 直接驅動 cardSubtopicReading() 與 readingSchemaFor()，
+   換掉會讓整個解讀引擎失效，所以主問題的選項與 key 維持不變。
+   taxonomy 透過 legacyKey 掛在它旁邊，負責控制面向、範例、placeholder 與牌陣推薦——
+   使用者回報的「前面選的問題沒有作用」正是這一段。 */
+function taxonomyPrimaryForSubtopic(catId, subtopicKey) {
+  if (!subtopicKey) return null;
+  var prs = taxonomyPrimaries(catId);
+  return prs.filter(function (p) { return p.legacyKey === subtopicKey; })[0] || null;
+}
+/* 尚未對應到 taxonomy 的舊題目退回舊行為，畫面不會空掉。 */
+function taxonomyActiveFor(catId, subtopicKey) {
+  return taxonomyHasCategory(catId) ? taxonomyPrimaryForSubtopic(catId, subtopicKey) : null;
+}
+var _focusIdByLabel = null;
+function taxonomyFocusIdByLabel(label) {
+  if (!_focusIdByLabel) {
+    _focusIdByLabel = {};
+    Object.keys(FOCUS_AREA_REGISTRY).forEach(function (id) {
+      _focusIdByLabel[FOCUS_AREA_REGISTRY[id].label] = id;
+    });
+  }
+  return _focusIdByLabel[label] || null;
 }

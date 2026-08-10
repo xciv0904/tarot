@@ -2535,10 +2535,8 @@ function focusFollowUpOptions(catKey) {
   return out;
 }
 
-var FOCUS_PREVIEW_COUNT = 5;
 /* 結果頁的延伸探索。原本被移出解讀前流程的自我成長類題目在這裡回來——
    看完這次的解讀，才是探索「我在感情中的慣性模式」比較有意義的時機。
-
    點下去會用同一個分類重新開始一次占卜，並把該題目預先填進自由輸入。
    刻意講明「需要重新抽一次牌」——不能讓使用者以為新問題自動適用剛才那幾張牌。 */
 function readingFollowUpStart(optIndex) {
@@ -2570,18 +2568,48 @@ function renderReadingFollowUp() {
   return h;
 }
 
+var FOCUS_PREVIEW_COUNT = 5;
+/* 面向清單的來源。已遷移到 taxonomy 的分類（見 QUESTION_TAXONOMY）改由目前選定的
+   主問題決定——這是修掉「前面選的問題沒有作用」的地方；尚未遷移的分類沿用舊的
+   分組篩選，行為完全不變。 */
+function focusOptionsForCurrent(catKey, cfg) {
+  var taxPrimary = taxonomyActiveFor(catKey, state.subtopic);
+  if (taxPrimary) {
+    return {
+      source: 'taxonomy',
+      primary: taxPrimary,
+      options: taxonomyAllowedFocusIds(catKey, taxPrimary.id).map(taxonomyFocusLabel),
+    };
+  }
+  var groups = focusGroupsForNow(catKey, cfg);
+  var flat = [];
+  groups.forEach(function (g) { g.options.forEach(function (o) { if (flat.indexOf(o) === -1) flat.push(o); }); });
+  return { source: 'legacy', primary: null, options: flat };
+}
+/* placeholder 與範例都由 category + primary + 已選面向決定，不再是整類共用一句。 */
+function wizPlaceholder() {
+  var tax = taxonomyActiveFor(state.category, state.subtopic);
+  if (tax) return taxonomyPlaceholder(state.category, tax.id);
+  var cfg = topicQuestionConfig[state.category];
+  return (cfg && cfg.placeholder) || '例如：最近的狀況讓我有點不確定，想先看看方向。';
+}
+function wizExamples() {
+  var tax = taxonomyActiveFor(state.category, state.subtopic);
+  if (tax) {
+    var sel = (state.wizFocusSel[state.category] || [])
+      .map(taxonomyFocusIdByLabel).filter(Boolean);
+    return taxonomyExamples(state.category, tax.id, sel);
+  }
+  return getSpreadQuestionExamples().slice(0, 3);
+}
+
 function renderFocusAreaPicker() {
   var catKey = state.category;
   var cfg = topicQuestionConfig[catKey];
   if (!cfg) return '';
   var sel = state.wizFocusSel[catKey] || [];
-  var groups = focusGroupsForNow(catKey, cfg);
-
-  /* 攤平成單一清單。原本每組都印一個標題（「單身、曖昧中或還沒在一起」
-     「自我成長（任何狀態都適用）」），那是網站內部的分類法，使用者沒有義務理解；
-     分組標題移到「更多面向」裡才出現。 */
-  var flat = [];
-  groups.forEach(function (g) { g.options.forEach(function (o) { if (flat.indexOf(o) === -1) flat.push(o); }); });
+  var src = focusOptionsForCurrent(catKey, cfg);
+  var flat = src.options;
   var hasHiddenSelection = sel.some(function (o) { return flat.slice(0, FOCUS_PREVIEW_COUNT).indexOf(o) === -1; });
   var expanded = !!state.wizFocusExpanded[catKey] || hasHiddenSelection;
   var shown = expanded ? flat : flat.slice(0, FOCUS_PREVIEW_COUNT);
@@ -2589,8 +2617,6 @@ function renderFocusAreaPicker() {
   function optBtn(opt) {
     var active = sel.indexOf(opt) !== -1;
     var full = sel.length >= 3 && !active;
-    /* 選滿之後其他選項仍然清楚可讀——整區變灰會讓人以為壞掉了。
-       未選／已選的差別同時用邊框、底色與勾號三種訊號表達，不只靠顏色。 */
     return '<button type="button" aria-pressed="' + active + '" onclick="wizToggleFocus(\'' + catKey + '\',&quot;' + esc(opt) + '&quot;)"'
       + ' style="min-height:44px;text-align:left;font:400 12px \'Noto Sans TC\',sans-serif;'
       + 'background:' + (active ? 'rgba(201,169,110,.22)' : 'rgba(255,255,255,.03)') + ';'
@@ -2604,6 +2630,10 @@ function renderFocusAreaPicker() {
   h += '<span style="font:500 12px \'Noto Sans TC\',sans-serif;color:#f0e9d8">想特別看哪些部分？</span>';
   h += '<span style="font:400 11px \'Noto Sans TC\',sans-serif;color:' + (sel.length ? '#e6cd9a' : 'rgba(240,233,216,.62)') + '">選填・已選 ' + sel.length + ' / 3</span>';
   h += '</div>';
+  /* 顯示真正的上下游連動。這不是裝飾——下面的清單確實是依這個主問題重新算出來的。 */
+  if (src.primary) {
+    h += '<div style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:5px;line-height:1.6;border-left:2px solid rgba(201,169,110,.4);padding-left:8px">已依你選的「' + esc(src.primary.label) + '」整理相關面向。</div>';
+  }
   h += '<div style="display:flex;flex-direction:column;gap:7px;margin-top:9px">';
   shown.forEach(function (opt) { h += optBtn(opt); });
   h += '</div>';
@@ -2718,7 +2748,7 @@ function renderWizard(spreads, isTarot) {
     if (state.wizContextOpen) {
       h += '<div style="padding:0 14px 14px">';
       h += '<label for="question-input" style="display:block;font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62)">寫下你的情況（選填）</label>';
-      h += '<textarea id="question-input" maxlength="300" aria-describedby="q-hint q-count" oninput="updateQHint(this.value)" placeholder="例如：最近有人主動接近我，但我不知道他只是友善還是有好感。" style="width:100%;box-sizing:border-box;margin-top:7px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:11px 13px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none;min-height:74px;resize:vertical">' + esc(state.question) + '</textarea>';
+      h += '<textarea id="question-input" maxlength="300" aria-describedby="q-hint q-count" oninput="updateQHint(this.value)" placeholder="' + esc(wizPlaceholder()) + '" style="width:100%;box-sizing:border-box;margin-top:7px;background:rgba(255,255,255,.04);border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:11px 13px;font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;outline:none;min-height:74px;resize:vertical">' + esc(state.question) + '</textarea>';
       h += '<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">';
       h += '<div id="q-hint" aria-live="polite" style="flex:1;font:400 11px \'Noto Sans TC\',sans-serif;margin-top:6px;line-height:1.6;color:rgba(240,233,216,.62)"></div>';
       h += '<div id="q-count" aria-live="polite" style="flex:none;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:7px"></div>';
@@ -2726,7 +2756,7 @@ function renderWizard(spreads, isTarot) {
       if (spreadQuestionExamples.length) {
         h += '<div style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:9px">或直接套用範例：</div>';
         h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">';
-        spreadQuestionExamples.slice(0, 3).forEach(function (c2, i2) {
+        wizExamples().forEach(function (c2, i2) {
           h += '<button type="button" onclick="wizChip(' + i2 + ')" style="min-height:36px;font:400 11px \'Noto Sans TC\',sans-serif;background:none;border:1px dashed rgba(201,169,110,.35);color:rgba(240,233,216,.75);padding:7px 12px;border-radius:14px;cursor:pointer;text-align:left;white-space:normal;line-height:1.5">' + esc(c2) + '</button>';
         });
         h += '</div>';
@@ -2791,13 +2821,26 @@ function wizSetCat(k) {
 }
 /* wizToggleSubtopic() 是子問題還用按鈕呈現時的切換函式；改成 <select> 之後
    由 wizSetSubtopic() 接手，已無呼叫端，予以移除。 */
+/* 換主問題＝下游全部重算。已選但新主問題不適用的面向必須清掉——
+   不能讓隱藏的舊選擇偷偷送進 prompt。範例與 placeholder 也會跟著換。 */
 function wizSetSubtopic(key) {
-  state.subtopic = key || '';
-  /* 子問題會連動面向分組的篩選，所以要清掉已經選了、但新處境用不到的面向，
-     並重畫一次讓下方的面向清單跟著換。 */
-  if (state.category) pruneFocusSelection(state.category);
+  state.subtopic = key;
+  var cat = state.category;
+  var sel = state.wizFocusSel[cat];
+  if (sel && sel.length) {
+    var tax = taxonomyActiveFor(cat, key);
+    if (tax) {
+      var allowed = taxonomyAllowedFocusIds(cat, tax.id).map(taxonomyFocusLabel);
+      state.wizFocusSel[cat] = sel.filter(function (o) { return allowed.indexOf(o) !== -1; });
+    } else {
+      pruneFocusSelection(cat);
+    }
+  }
+  state.wizFocusExpanded[cat] = false;
+  state.wizFocusLimitHit = '';
   render();
 }
+
 function readingBuildAstro() {
   state.returnToReadingAfterAstro = true;
   go('astro');
@@ -2839,13 +2882,15 @@ function wizRestart() {
   resetReading(); render(); window.scrollTo(0, 0);
 }
 function wizChip(i) {
-  var t = getSpreadQuestionExamples()[i];
+  var list = wizExamples();
+  var t = list[i];
   if (!t) return;
   state.question = t;
-  var ta = document.getElementById('question-input');
-  if (ta) ta.value = t;
+  var el = document.getElementById('question-input');
+  if (el) el.value = t;
   updateQHint(t);
 }
+
 function updateQHint(v) {
   state.question = String(v || '').slice(0, 300);
   var hint = document.getElementById('q-hint');

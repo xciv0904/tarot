@@ -139,3 +139,5 @@ user initiated. Do not add automatic transmission or commit exported user data.
 | 2026-08-10 | Assumption Guard：面向宣告 `requires`，primary 宣告 `assumptions`，不滿足就不出現 | 這是「未來對象不會出現『對方目前對我的感受』」的實作——該面向 `requires.specificPerson`，而未來對象的 assumptions 沒有這一項。不再靠 question text 或 substring 判斷 |
 | 2026-08-10 | `buildReadingPayload()` 保留語意角色，且 Tarot only 不得夾帶命盤資料 | payload 分開保存 category／spread／readingMode／primaryQuestion(含 intent)／focusAreas(含 semanticFocus)／customContext／tarotCards／astrologyContext，不拼成單一字串。`readingMode !== 'combined'` 時 `astrologyContext` 強制為 null |
 | 2026-08-10 | 遷移採分階段：love／career／family 先行，其餘六類沿用舊行為 | 一次做完九類必然要用規則自動生成 mapping，那正是現在這套失敗的原因。未遷移的分類在稽核報告標 WARNING，`taxonomyHasCategory()` 決定走新舊哪一套 |
+| 2026-08-10 | Taxonomy 接上 UI 時，主問題的選項與 key 維持不變 | 舊的 `SUBTOPICS` key 直接驅動 `cardSubtopicReading()` 與 `readingSchemaFor()`，換成 taxonomy id 會讓整個解讀引擎失效。改成每個 taxonomy primary 帶 `legacyKey` 掛在舊題目旁邊，由 taxonomy 控制面向、範例、placeholder 與牌陣推薦——使用者回報的「前面選的問題沒有作用」正是這一段 |
+| 2026-08-10 | 面向清單來源由 `focusOptionsForCurrent()` 決定 | 已遷移的分類走 taxonomy（依主問題），未遷移的走舊分組篩選。畫面上顯示「已依你選的『X』整理相關面向」只在真的重算過時才出現 |

@@ -78,8 +78,15 @@ check('展開後出現面向選擇', openedFocus.indexOf('想特別看哪些部�
 check('展開後標示選填與上限', openedFocus.indexOf('選填') !== -1 && openedFocus.indexOf('/ 3') !== -1);
 const openedCtx = plain(step3('love', { contextOpen: true }));
 check('展開後出現自由輸入', openedCtx.indexOf('寫下你的情況') !== -1);
-check('自由輸入有具體的 placeholder',
-  step3('love', { contextOpen: true }).indexOf('最近有人主動接近我') !== -1);
+/* placeholder 現在由 category + primary 決定（見 wizPlaceholder），不再是寫死一句。
+   這裡改為驗證它確實隨主問題改變，而且不是空的。 */
+check('自由輸入的 placeholder 隨主問題改變', (function () {
+  const a = step3('love', { contextOpen: true, subtopic: 'partner-type' });
+  const b = step3('love', { contextOpen: true, subtopic: 'reunion' });
+  const grab = (h) => (h.match(/id="question-input"[^>]*placeholder="([^"]*)"/) || [])[1] || '';
+  const pa = grab(a), pb = grab(b);
+  return !!pa && !!pb && pa !== pb;
+})());
 check('範例不看起來像另一組必選題（最多 3 個）',
   (step3('love', { contextOpen: true }).match(/onclick="wizChip\(/g) || []).length <= 3);
 

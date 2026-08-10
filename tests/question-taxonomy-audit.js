@@ -40,7 +40,7 @@ const G = vm.runInContext(
   '({QUESTION_TAXONOMY, FOCUS_AREA_REGISTRY, CATEGORIES, SUBTOPICS, topicQuestionConfig,'
   + ' TAROT_SPREADS, taxonomyAllowedFocusIds, taxonomyExamples, taxonomyPlaceholder,'
   + ' taxonomyRecommendedSpreads, taxonomyPruneFocus, buildReadingPayload, taxonomyHasCategory,'
-  + ' taxonomyPrimaries, taxonomyFocusLabel})', c);
+  + ' taxonomyPrimaries, taxonomyFocusLabel, taxonomyFocusIdByLabel, taxonomyPrimaryForSubtopic})', c);
 
 const migrated = Object.keys(G.QUESTION_TAXONOMY);
 const allCats = G.CATEGORIES.map(x => x.key);
@@ -179,6 +179,75 @@ allCats.forEach(cat => {
 });
 check('尚未遷移的分類仍可運作（沿用舊行為）',
   pending.every(k => !G.taxonomyHasCategory(k)));
+
+/* ---------- UI 連動：實際渲染驗證 ---------- */
+function step3(cat, sub, sel) {
+  c.state.tab = 'reading'; c.state.deck = 'tarot';
+  c.state.category = cat; c.state.spread = 'three-time'; c.state.wizardStep = 3;
+  c.state.subtopic = sub || '';
+  c.state.wizFocusOpen = true; c.state.wizContextOpen = true;
+  c.state.wizFocusSel = sel || {}; c.state.wizFocusExpanded = {}; c.state.question = '';
+  return c.renderReading();
+}
+const focusOf = (html) =>
+  [...html.matchAll(/onclick="wizToggleFocus\([^)]*&quot;([^&]+)&quot;\)"/g)].map(m => m[1]);
+
+/* 每個已遷移的主問題，畫面上算出來的面向必須真的不同。 */
+migrated.forEach(cat => {
+  const withLegacy = G.taxonomyPrimaries(cat).filter(p => p.legacyKey);
+  const sigs = {};
+  withLegacy.forEach(p => { sigs[p.legacyKey] = focusOf(step3(cat, p.legacyKey)).join('|'); });
+  const uniq = new Set(Object.values(sigs));
+  check('UI／' + cat + '：不同主問題在畫面上得到不同面向',
+    uniq.size === withLegacy.length,
+    withLegacy.length + ' 個主問題只有 ' + uniq.size + ' 種畫面');
+  withLegacy.forEach(p => {
+    const shown = focusOf(step3(cat, p.legacyKey));
+    check('UI／' + cat + '/' + p.legacyKey + ' 有面向可選', shown.length > 0);
+    /* Assumption Guard 必須在畫面上生效。 */
+    shown.forEach(label => {
+      const fid = G.taxonomyFocusIdByLabel(label);
+      if (!fid) return;
+      const need = (G.FOCUS_AREA_REGISTRY[fid].requires) || {};
+      Object.keys(need).forEach(k => {
+        check('UI／' + cat + '/' + p.legacyKey + ' 不該出現「' + label + '」',
+          !need[k] || !!(p.assumptions || {})[k]);
+      });
+    });
+  });
+});
+/* CASE 1：未來對象的畫面不得出現特定對象題 */
+const futureShown = focusOf(step3('love', 'partner-type'));
+['對方目前對我的感受', '為什麼沒有主動', '雙方付出是否平衡'].forEach(bad => {
+  check('CASE1 未來對象畫面不含「' + bad + '」', futureShown.indexOf(bad) === -1);
+});
+/* 連動說明只在已遷移且有對應時出現 */
+check('已遷移的主問題顯示連動說明', step3('love', 'partner-type').indexOf('已依你選的') !== -1);
+check('未遷移的分類不顯示連動說明', step3('health', '').indexOf('已依你選的') === -1);
+check('未遷移的分類仍有面向可選', focusOf(step3('health', '')).length > 0);
+
+/* placeholder 與範例隨主問題改變 */
+const phA = step3('love', 'partner-type'), phB = step3('love', 'reunion');
+check('UI placeholder 隨主問題改變',
+  phA.indexOf('我單身一段時間了') !== -1 && phB.indexOf('我們分開幾個月了') !== -1);
+
+/* 換主問題會清掉不相容的已選面向 */
+c.state.category = 'love'; c.state.subtopic = 'crush';
+c.state.wizFocusSel = { love: ['對方目前對我的感受'] };
+c.state.wizFocusExpanded = {};
+c.wizSetSubtopic('partner-type');
+check('換主問題會清掉不相容的已選面向', (c.state.wizFocusSel.love || []).length === 0,
+  JSON.stringify(c.state.wizFocusSel.love));
+
+/* 主問題本身沒有被換掉——它驅動解讀引擎 */
+migrated.forEach(cat => {
+  const keys = (G.SUBTOPICS[cat] || []).map(s => s.key);
+  G.taxonomyPrimaries(cat).forEach(p => {
+    if (!p.legacyKey) return;
+    check(cat + '/' + p.id + ' 的 legacyKey 對應到實際存在的舊題目',
+      keys.indexOf(p.legacyKey) !== -1, p.legacyKey);
+  });
+});
 
 /* ---------- 稽核報告 ---------- */
 migrated.forEach(cat => {
