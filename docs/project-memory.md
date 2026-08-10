@@ -141,3 +141,5 @@ user initiated. Do not add automatic transmission or commit exported user data.
 | 2026-08-10 | 遷移採分階段：love／career／family 先行，其餘六類沿用舊行為 | 一次做完九類必然要用規則自動生成 mapping，那正是現在這套失敗的原因。未遷移的分類在稽核報告標 WARNING，`taxonomyHasCategory()` 決定走新舊哪一套 |
 | 2026-08-10 | Taxonomy 接上 UI 時，主問題的選項與 key 維持不變 | 舊的 `SUBTOPICS` key 直接驅動 `cardSubtopicReading()` 與 `readingSchemaFor()`，換成 taxonomy id 會讓整個解讀引擎失效。改成每個 taxonomy primary 帶 `legacyKey` 掛在舊題目旁邊，由 taxonomy 控制面向、範例、placeholder 與牌陣推薦——使用者回報的「前面選的問題沒有作用」正是這一段 |
 | 2026-08-10 | 面向清單來源由 `focusOptionsForCurrent()` 決定 | 已遷移的分類走 taxonomy（依主問題），未遷移的走舊分組篩選。畫面上顯示「已依你選的『X』整理相關面向」只在真的重算過時才出現 |
+| 2026-08-10 | 九個分類全部遷移到 taxonomy，決策類從零建立題庫 | 決策原本在 Step 1 有入口但 `SUBTOPICS.decision` 與 `topicQuestionConfig.decision` 都不存在，等於整個題庫是空的。新增 6 個 intent：A/B 選擇、要不要做、現在或等待、留下或離開、接受或拒絕、方向未明。它沒有舊 key，`taxonomyPrimaryForSubtopic()` 因此同時支援 legacyKey 與 taxonomy id 兩種對應 |
+| 2026-08-10 | health 與 wealth 帶 `safetyRules`，並由測試守住用詞 | 健康面向不得出現疾病／診斷／罹患／用藥等診斷式用語；財運面向不得出現保證／必賺／報酬率／漲跌。免責只在分類層級講一次，不塞進每張卡片 |

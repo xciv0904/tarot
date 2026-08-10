@@ -2380,6 +2380,20 @@ function renderModePicker() {
    wizSetCat() 切換分類時已把 readingMode 重設為 'cards'，所以這裡永遠只會列出 cards 子問題，
    career-talent（modes 只有 astro/combined）自然不會出現。原名 renderLoveSubtopicPicker，
    Phase 2A 起改為通用名稱；行為對 love 完全不變。 */
+/* 決策類沒有舊的 SUBTOPICS。它的主問題直接來自 taxonomy——state.subtopic 會存
+   taxonomy id，而該分類本來就沒有接上 cardSubtopicReading()，不影響既有解讀。 */
+function renderTaxonomyPrimaryPicker(catKey) {
+  var prs = taxonomyPrimaries(catKey);
+  if (!prs.length) return '';
+  var h = '<div style="font:600 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:16px">這次你最想問什麼？</div>';
+  h += '<div style="display:flex;flex-direction:column;gap:8px;margin-top:9px">';
+  prs.forEach(function (p) {
+    var on = state.subtopic === p.id;
+    h += '<button type="button" aria-pressed="' + on + '" onclick="wizSetSubtopic(\'' + esc(p.id) + '\')" style="min-height:44px;text-align:left;font:400 13px \'Noto Sans TC\',sans-serif;background:' + (on ? 'rgba(201,169,110,.22)' : 'rgba(255,255,255,.03)') + ';border:1px solid ' + (on ? '#e6cd9a' : 'rgba(201,169,110,.28)') + ';color:' + (on ? '#f0e9d8' : 'rgba(240,233,216,.85)') + ';padding:11px 14px;border-radius:12px;cursor:pointer;white-space:normal;line-height:1.5">' + (on ? '✓ ' : '') + esc(p.label) + '</button>';
+  });
+  return h + '</div>';
+}
+
 function renderSubtopicPicker() {
   var preset = getSpreadQuestionPreset();
   var allowed = preset.subtopics || [];
@@ -2581,6 +2595,7 @@ function focusOptionsForCurrent(catKey, cfg) {
       options: taxonomyAllowedFocusIds(catKey, taxPrimary.id).map(taxonomyFocusLabel),
     };
   }
+  if (!cfg) return { source: 'none', primary: null, options: [] };
   var groups = focusGroupsForNow(catKey, cfg);
   var flat = [];
   groups.forEach(function (g) { g.options.forEach(function (o) { if (flat.indexOf(o) === -1) flat.push(o); }); });
@@ -2606,7 +2621,8 @@ function wizExamples() {
 function renderFocusAreaPicker() {
   var catKey = state.category;
   var cfg = topicQuestionConfig[catKey];
-  if (!cfg) return '';
+  /* 決策類沒有舊的 topicQuestionConfig，但已經有 taxonomy——不能因此整區消失。 */
+  if (!cfg && !taxonomyHasCategory(catKey)) return '';
   var sel = state.wizFocusSel[catKey] || [];
   var src = focusOptionsForCurrent(catKey, cfg);
   var flat = src.options;
@@ -2714,6 +2730,9 @@ function renderWizard(spreads, isTarot) {
       /* 已完成牌卡＋星盤引擎的分類皆顯示解讀來源選擇器。 */
       h += renderModePicker();
       h += renderSubtopicPicker();
+    } else if (!SUBTOPICS[state.category] && taxonomyHasCategory(state.category)) {
+      /* 決策類：沒有舊題庫，主問題直接來自 taxonomy。 */
+      h += renderTaxonomyPrimaryPicker(state.category);
     } else if (SUBTOPICS[state.category]) {
       /* 其他有 SUBTOPICS 定義但尚未做星盤引擎的分類：只顯示子問題選擇器，
          沒有模式切換 UI，renderSubtopicPicker() 依 state.readingMode（此時恆為 'cards'）

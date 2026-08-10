@@ -249,6 +249,52 @@ migrated.forEach(cat => {
   });
 });
 
+/* ---------- 決策類：從零建立的題庫 ---------- */
+check('決策類已有 primary questions', G.taxonomyPrimaries('decision').length >= 5,
+  '只有 ' + G.taxonomyPrimaries('decision').length + ' 個');
+check('決策類支援 A/B 以外的決策型態', (function () {
+  const intents = G.taxonomyPrimaries('decision').map(p => p.intent);
+  return ['binary_choice','act_or_not','timing_choice','stay_or_leave','accept_or_decline','undecided_direction']
+    .every(i => intents.indexOf(i) !== -1);
+})());
+check('決策類在畫面上有主問題可選', step3('decision', '').indexOf('這次你最想問什麼') !== -1);
+G.taxonomyPrimaries('decision').forEach(p => {
+  check('決策／' + p.id + ' 在畫面上有面向可選', focusOf(step3('decision', p.id)).length > 0);
+});
+/* 只有一個方案時不得出現 A/B 比較 */
+const doFocus = focusOf(step3('decision', 'dc-do'));
+['選 A 的機會', '選 B 的機會'].forEach(bad => {
+  check('CASE8 「要不要做」不出現 A/B 比較：' + bad, doFocus.indexOf(bad) === -1);
+});
+
+/* ---------- 健康與財運的安全規則 ---------- */
+check('健康類宣告了安全規則',
+  (G.QUESTION_TAXONOMY.health.safetyRules || []).length > 0);
+check('健康類的安全規則講明不能取代醫療評估',
+  (G.QUESTION_TAXONOMY.health.safetyRules || []).join('').indexOf('不能取代醫療評估') !== -1);
+check('財運類宣告了安全規則',
+  (G.QUESTION_TAXONOMY.wealth.safetyRules || []).length > 0);
+check('財運類的安全規則排除投資標的與報酬承諾',
+  (G.QUESTION_TAXONOMY.wealth.safetyRules || []).join('').indexOf('不提供投資標的') !== -1);
+/* 健康面向不得出現診斷式語言 */
+Object.keys(G.FOCUS_AREA_REGISTRY).filter(k => k.indexOf('ht-') === 0).forEach(k => {
+  const label = G.FOCUS_AREA_REGISTRY[k].label;
+  ['疾病', '診斷', '病症', '罹患', '用藥', '療程', '痊癒'].forEach(w => {
+    check('健康面向「' + label + '」不含診斷式用語「' + w + '」', label.indexOf(w) === -1);
+  });
+});
+/* 財運面向不得出現保證報酬式語言 */
+Object.keys(G.FOCUS_AREA_REGISTRY).filter(k => k.indexOf('wl-') === 0).forEach(k => {
+  const label = G.FOCUS_AREA_REGISTRY[k].label;
+  ['一定', '保證', '必賺', '報酬率', '漲', '跌'].forEach(w => {
+    check('財運面向「' + label + '」不含保證式用語「' + w + '」', label.indexOf(w) === -1);
+  });
+});
+
+/* ---------- 九類全部覆蓋 ---------- */
+check('九個分類全部遷移完成', migrated.length === allCats.length,
+  '尚缺 ' + pending.join('、'));
+
 /* ---------- 稽核報告 ---------- */
 migrated.forEach(cat => {
   G.taxonomyPrimaries(cat).forEach(p => {
