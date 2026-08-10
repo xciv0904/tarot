@@ -129,22 +129,27 @@ if (loveSelf) {
   });
 }
 
-/* ---------- 6. 結果頁的延伸探索 ---------- */
-c.state.category = 'love'; c.state.wizFocusSel = {};
+/* ---------- 6. 結果頁的延伸探索 ----------
+   互動已改為兩階段（選題 → 明確確認），完整驗收在
+   tests/followup-ux-regression.js；這裡只確認題目仍到得了結果頁。 */
+c.state.category = 'love'; c.state.wizFocusSel = {}; c.state.subtopic = '';
+c.state.deck = 'tarot'; c.state.spread = 'three-time'; c.state.phase = 'result';
+c.state.readingDetailOpen = ''; c.state.followUpSelected = '';
+c.state.followUpMoreOpen = false; c.state.previousReading = null;
+c.state.drawn = [0, 1, 2].map(i => ({
+  card: vm.runInContext('TAROT', c)[i], pos: { zh: '位置' + i, en: 'P' + i }, reversed: false,
+}));
 const followHtml = c.renderReadingFollowUp();
-check('結果頁提供延伸探索', followHtml.indexOf('還想繼續了解') !== -1);
-check('延伸探索最多 5 題',
-  (followHtml.match(/onclick="readingFollowUpStart\(/g) || []).length <= 5);
-check('明講需要重新抽牌，不讓人以為沿用原本的牌',
-  followHtml.indexOf('需要重新抽一次牌') !== -1);
-check('延伸探索的觸控目標達 44px', /min-height:44px/.test(followHtml));
-
-/* 點下去會帶進問題並回到設定，且清掉上一次的牌。 */
-c.state.drawn = [{}, {}, {}]; c.state.phase = 'result';
-c.readingFollowUpStart(0);
-check('延伸探索會清掉上一次抽的牌', c.state.drawn.length === 0);
-check('延伸探索會把問題帶進自由輸入', !!c.state.question);
-check('延伸探索會回到問題設定步驟', c.state.wizardStep === 3 && c.state.phase === 'setup');
+check('結果頁提供換一個問題的區塊', followHtml.indexOf('想換一個問題繼續') !== -1);
+check('延伸問題預設最多 3 題',
+  (followHtml.match(/onclick="selectFollowUpQuestion\(/g) || []).length <= 3);
+check('明講需要重新抽牌', followHtml.indexOf('需要重新抽牌') !== -1);
+check('延伸探索的觸控目標達 44px', /min-height:44px|min-height:52px/.test(followHtml));
+/* 單次點擊不得直接開始新占卜——這是這一區最重要的性質。 */
+check('未確認前畫面上沒有開始新占卜的入口',
+  followHtml.indexOf('confirmFollowUpQuestion') === -1);
+/* 這一段把 state 推進到結果頁，後面的 step3() 只重設精靈欄位、不會重設 phase。 */
+c.state.phase = 'setup'; c.state.drawn = [];
 
 /* ---------- 7. 資料結構不得被 UI 合併 ---------- */
 const app = read('js/app.js');

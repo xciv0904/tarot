@@ -24,7 +24,9 @@ var state = {
   wizFocusExpanded: {},   // { [categoryKey]: boolean }，是否展開顯示全部分組
   wizFocusLimitHit: '',
   /* Step 3 的兩個選填 disclosure */
-  wizFocusOpen: false, wizContextOpen: false,   // 選滿 3 項後又點擊第 4 項時，記錄是哪個分類觸發，顯示提示用
+  wizFocusOpen: false, wizContextOpen: false,
+  /* 結果頁延伸區塊：展開中的細節題、選取中的新問題、更多方向、上一個解讀的快照 */
+  readingDetailOpen: '', followUpSelected: '', followUpMoreOpen: false, previousReading: null,   // 選滿 3 項後又點擊第 4 項時，記錄是哪個分類觸發，顯示提示用
   drawn: [],
   phase: 'setup',      // setup | shuffling | picking | result
   pickOrder: [],       // shuffled indices of the full deck (picking pool)
@@ -2553,32 +2555,190 @@ function focusFollowUpOptions(catKey) {
    看完這次的解讀，才是探索「我在感情中的慣性模式」比較有意義的時機。
    點下去會用同一個分類重新開始一次占卜，並把該題目預先填進自由輸入。
    刻意講明「需要重新抽一次牌」——不能讓使用者以為新問題自動適用剛才那幾張牌。 */
-function readingFollowUpStart(optIndex) {
-  var opts = focusFollowUpOptions(state.category);
-  var opt = opts[optIndex];
-  if (!opt) return;
-  state.question = opt;
+/* ============================================================================
+   解讀結果頁的延伸區塊
+
+   原本這裡是一排大卡片，右側只有「›」，點一下就直接清空牌面、跳回問題設定。
+   從 affordance 看它完全像「展開看內容」，實際卻是離開目前解讀並要求重新抽牌——
+   誤觸成本高到只是想看看題目的人會突然掉進新的占卜流程。
+
+   現在分成兩區，依「需不需要重新抽牌」決定互動：
+     A. 想再看懂這次的牌（same_reading_detail）——用現有牌面回答，直接展開。
+     B. 想換一個問題繼續（new_reading）——是新問題，必須先選題再明確確認。
+   ========================================================================== */
+
+/* A 類：完全從這次的牌面推導，不需要任何新資料。 */
+function readingDetailQuestions() {
+  if (!state.drawn.length) return [];
+  var isTarot = state.deck === 'tarot';
+  var out = [];
+  out.push({ id: 'detail-core', label: '這組牌最重要的訊息是什麼', requiresNewDraw: false,
+    answer: function () { return overallReading(); } });
+  var analysis = analyzeSpread(state.drawn, isTarot);
+  if (analysis && analysis.length) {
+    out.push({ id: 'detail-pattern', label: '這組牌整體透露了什麼', requiresNewDraw: false,
+      answer: function () { return analysis.join('\n'); } });
+  }
+  out.push({ id: 'detail-positions', label: '每張牌在它的牌位代表什麼', requiresNewDraw: false,
+    answer: function () {
+      return state.drawn.map(function (d) {
+        return d.pos.zh + '：' + d.card.nameZh + (isTarot ? (d.reversed ? '（逆位）' : '（正位）') : '')
+          + '——' + cardPosText(d, isTarot);
+      }).join('\n');
+    } });
+  var insights = drawInsights(state.drawn, isTarot);
+  if (insights && insights.length) {
+    out.push({ id: 'detail-tension', label: '這組牌裡最需要留意的地方', requiresNewDraw: false,
+      answer: function () { return insights.join('\n'); } });
+  }
+  return out;
+}
+function toggleReadingDetail(id) {
+  state.readingDetailOpen = (state.readingDetailOpen === id) ? '' : id;
+  render();
+}
+
+/* B 類：語意去重。本次的主問題與已選面向都算「已經回答過」，
+   不能再推薦同一件事——用語意 key 比對，不只比字串。 */
+function readingAnsweredSemanticKeys() {
+  var keys = {};
+  var tax = (typeof taxonomyActiveFor === 'function') ? taxonomyActiveFor(state.category, state.subtopic) : null;
+  if (tax) keys[tax.intent] = true;
+  ((state.wizFocusSel && state.wizFocusSel[state.category]) || []).forEach(function (label) {
+    var fid = (typeof taxonomyFocusIdByLabel === 'function') ? taxonomyFocusIdByLabel(label) : null;
+    var area = fid && typeof FOCUS_AREA_REGISTRY !== 'undefined' ? FOCUS_AREA_REGISTRY[fid] : null;
+    if (area && area.semanticFocus) keys[area.semanticFocus] = true;
+    keys['label:' + label] = true;
+  });
+  return keys;
+}
+function readingNewQuestions() {
+  var answered = readingAnsweredSemanticKeys();
+  var out = [];
+  focusFollowUpOptions(state.category).forEach(function (label) {
+    var fid = (typeof taxonomyFocusIdByLabel === 'function') ? taxonomyFocusIdByLabel(label) : null;
+    var area = (fid && typeof FOCUS_AREA_REGISTRY !== 'undefined') ? FOCUS_AREA_REGISTRY[fid] : null;
+    var sem = area ? area.semanticFocus : ('label:' + label);
+    if (answered[sem] || answered['label:' + label]) return;
+    out.push({ id: fid || ('q' + out.length), label: label, semanticIntent: sem, requiresNewDraw: true });
+  });
+  return out;
+}
+function selectFollowUpQuestion(id) {
+  state.followUpSelected = (state.followUpSelected === id) ? '' : id;
+  render();
+}
+function toggleFollowUpMore() { state.followUpMoreOpen = !state.followUpMoreOpen; render(); }
+
+/* 確認之後才真的開始新的一輪。目前這份解讀會先被完整快照起來，
+   使用者在新占卜完成之前都能原樣回到它——不是靠瀏覽器上一頁。 */
+function confirmFollowUpQuestion(id) {
+  var q = readingNewQuestions().filter(function (x) { return x.id === id; })[0];
+  if (!q) return;
+  state.previousReading = {
+    category: state.category, deck: state.deck, spread: state.spread,
+    subtopic: state.subtopic, question: state.question, target: state.target,
+    readingMode: state.readingMode, timeframe: state.timeframe,
+    drawn: state.drawn, picked: state.picked, phase: state.phase,
+    wizFocusSel: JSON.parse(JSON.stringify(state.wizFocusSel || {})),
+    fromQuestionLabel: q.label,
+  };
+  /* 只帶入必要的上下文：分類沿用，問題預填。舊的牌不會跟過去，
+     也不會自動選好面向——新問題必須自己抽牌，舊牌不能當成它的證據。 */
+  state.question = q.label;
   state.wizContextOpen = true;
   state.wizFocusOpen = false;
+  state.wizFocusSel[state.category] = [];
+  state.subtopic = '';
   state.drawn = [];
   state.picked = [];
   state.phase = 'setup';
   state.wizardStep = 3;
+  state.followUpSelected = '';
+  state.readingDetailOpen = '';
   render();
   window.scrollTo(0, 0);
 }
+function returnToPreviousReading() {
+  var prev = state.previousReading;
+  if (!prev) return;
+  state.category = prev.category; state.deck = prev.deck; state.spread = prev.spread;
+  state.subtopic = prev.subtopic; state.question = prev.question; state.target = prev.target;
+  state.readingMode = prev.readingMode; state.timeframe = prev.timeframe;
+  state.drawn = prev.drawn; state.picked = prev.picked; state.phase = prev.phase;
+  state.wizFocusSel = prev.wizFocusSel;
+  state.previousReading = null;
+  state.followUpSelected = '';
+  render();
+  window.scrollTo(0, 0);
+}
+/* 新占卜還沒抽完之前，隨時可以原樣回到上一個解讀。 */
+function renderReturnToPreviousBar() {
+  if (!state.previousReading || state.phase === 'result') return '';
+  return '<button type="button" onclick="returnToPreviousReading()" style="width:100%;min-height:44px;margin-bottom:12px;background:rgba(201,169,110,.08);border:1px solid rgba(201,169,110,.35);color:#c9a96e;border-radius:12px;padding:11px 14px;font:500 12px \'Noto Sans TC\',sans-serif;cursor:pointer;text-align:left">'
+    + '← 回到上一個解讀<span style="display:block;font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:3px">剛才那次的牌與解讀都還在，隨時可以回去看</span></button>';
+}
+
+var FOLLOWUP_PREVIEW = 3;
 function renderReadingFollowUp() {
-  var opts = focusFollowUpOptions(state.category).slice(0, 5);
-  if (!opts.length) return '';
-  var h = '<section style="margin-top:22px;border-top:1px solid rgba(201,169,110,.2);padding-top:16px">';
-  h += '<h3 class="md-h3" style="font-size:14px">還想繼續了解？</h3>';
-  h += '<p class="md-note" style="margin:5px 0 0">這些是看完解讀之後比較適合探索的方向。點下去會把問題帶進去，<strong style="color:var(--brand-bright)">需要重新抽一次牌</strong>——剛才那幾張牌回答的是這次的問題。</p>';
-  h += '<div style="display:flex;flex-direction:column;gap:7px;margin-top:10px">';
-  opts.forEach(function (opt, i) {
-    h += '<button type="button" onclick="readingFollowUpStart(' + i + ')" style="min-height:44px;text-align:left;font:400 12px \'Noto Sans TC\',sans-serif;background:rgba(255,255,255,.03);border:1px solid rgba(201,169,110,.28);color:rgba(240,233,216,.85);padding:10px 13px;border-radius:12px;cursor:pointer;white-space:normal;line-height:1.5;display:flex;justify-content:space-between;gap:8px;align-items:center">'
-      + '<span>' + esc(opt) + '</span><span aria-hidden="true" style="flex:none;color:#c9a96e">›</span></button>';
-  });
-  h += '</div></section>';
+  var details = readingDetailQuestions();
+  var news = readingNewQuestions();
+  if (!details.length && !news.length) return '';
+  var h = '';
+
+  /* ---- A 區：用現有牌面就能回答，直接展開 ---- */
+  if (details.length) {
+    h += '<section style="margin-top:22px;border-top:1px solid rgba(201,169,110,.2);padding-top:16px">';
+    h += '<h3 class="md-h3" style="font-size:14px">想再看懂這次的牌？</h3>';
+    h += '<p class="md-note" style="margin:4px 0 0">不需要重新抽牌，點開就看得到。</p>';
+    h += '<div style="display:flex;flex-direction:column;gap:7px;margin-top:10px">';
+    details.forEach(function (d) {
+      var open = state.readingDetailOpen === d.id;
+      h += '<div style="border:1px solid rgba(201,169,110,.25);border-radius:12px;background:rgba(255,255,255,.02);overflow:hidden">';
+      h += '<button type="button" aria-expanded="' + open + '" onclick="toggleReadingDetail(\'' + esc(d.id) + '\')" style="width:100%;min-height:44px;background:none;border:none;padding:11px 13px;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:8px">'
+        + '<span style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.85);line-height:1.5">' + esc(d.label) + '</span>'
+        + '<span aria-hidden="true" style="flex:none;color:#c9a96e;font-size:11px">' + (open ? '▴ 收起' : '▾ 展開') + '</span></button>';
+      if (open) {
+        h += '<div style="padding:0 13px 12px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.9;white-space:pre-wrap">' + esc(d.answer()) + '</div>';
+      }
+      h += '</div>';
+    });
+    h += '</div></section>';
+  }
+
+  /* ---- B 區：新問題，必須選題再確認 ---- */
+  if (news.length) {
+    var shown = state.followUpMoreOpen ? news : news.slice(0, FOLLOWUP_PREVIEW);
+    h += '<section style="margin-top:20px;border-top:1px solid rgba(201,169,110,.2);padding-top:16px">';
+    h += '<h3 class="md-h3" style="font-size:14px">想換一個問題繼續？</h3>';
+    h += '<p class="md-note" style="margin:4px 0 0">下面都是新的問題，需要重新抽牌。</p>';
+    h += '<p class="md-note" style="margin:2px 0 0;color:rgba(240,233,216,.62)">目前這次的解讀會保留，不會被覆蓋。</p>';
+    h += '<div style="display:flex;flex-direction:column;gap:8px;margin-top:11px">';
+    shown.forEach(function (q) {
+      var open = state.followUpSelected === q.id;
+      h += '<div style="border:1px solid ' + (open ? '#e6cd9a' : 'rgba(201,169,110,.25)') + ';border-radius:12px;background:' + (open ? 'rgba(201,169,110,.08)' : 'rgba(255,255,255,.02)') + ';overflow:hidden">';
+      /* 第一次點擊只選取，不離開這一頁。 */
+      h += '<button type="button" aria-expanded="' + open + '" onclick="selectFollowUpQuestion(\'' + esc(q.id) + '\')" style="width:100%;min-height:52px;background:none;border:none;padding:11px 13px;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:10px">'
+        + '<span><span style="display:block;font:400 12.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.88);line-height:1.5">' + esc(q.label) + '</span>'
+        + '<span style="display:block;font:400 10.5px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:3px">新問題・需要重新抽牌</span></span>'
+        + '<span aria-hidden="true" style="flex:none;color:#c9a96e;font:500 11px \'Noto Sans TC\',sans-serif;white-space:nowrap">' + (open ? '收起' : '選擇') + '</span></button>';
+      if (open) {
+        h += '<div style="padding:0 13px 13px">';
+        h += '<div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.8;border-top:1px solid rgba(201,169,110,.15);padding-top:10px">這是一個新的問題，需要重新抽牌。剛才那幾張牌仍然只回答上一個問題。</div>';
+        h += '<div style="display:flex;gap:9px;margin-top:11px;flex-wrap:wrap">';
+        h += '<button type="button" onclick="confirmFollowUpQuestion(\'' + esc(q.id) + '\')" style="flex:1 1 auto;min-height:44px;background:linear-gradient(120deg,#c9a96e,#e6cd9a);color:#1a1622;border:none;border-radius:22px;padding:11px 18px;font:600 12.5px \'Noto Sans TC\',sans-serif;cursor:pointer">用這題開始新占卜</button>';
+        h += '<button type="button" onclick="selectFollowUpQuestion(\'' + esc(q.id) + '\')" style="flex:0 0 auto;min-height:44px;background:none;border:1px solid rgba(201,169,110,.35);color:rgba(240,233,216,.75);border-radius:22px;padding:11px 20px;font:400 12px \'Noto Sans TC\',sans-serif;cursor:pointer">取消</button>';
+        h += '</div></div>';
+      }
+      h += '</div>';
+    });
+    h += '</div>';
+    if (news.length > FOLLOWUP_PREVIEW) {
+      h += '<button type="button" aria-expanded="' + (!!state.followUpMoreOpen) + '" onclick="toggleFollowUpMore()" style="width:100%;min-height:44px;margin-top:9px;background:none;border:none;color:#c9a96e;font:400 11.5px \'Noto Sans TC\',sans-serif;cursor:pointer">'
+        + (state.followUpMoreOpen ? '收起其他方向 ▴' : '查看更多方向 ↓（還有 ' + (news.length - FOLLOWUP_PREVIEW) + ' 個）') + '</button>';
+    }
+    h += '</section>';
+  }
   return h;
 }
 
@@ -2722,6 +2882,7 @@ function renderWizard(spreads, isTarot) {
     h += wizBtns(true, !!spreads[state.spread] && recs.indexOf(state.spread) !== -1, '下一步', 'wizNext()');
 
   } else if (state.wizardStep === 3) {
+    h += renderReturnToPreviousBar();
     var tmpl = QUESTION_TEMPLATES[state.category] || QUESTION_TEMPLATES.general;
     var focusCfg = topicQuestionConfig[state.category];
     var spreadQuestionPreset = getSpreadQuestionPreset();

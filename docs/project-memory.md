@@ -143,3 +143,6 @@ user initiated. Do not add automatic transmission or commit exported user data.
 | 2026-08-10 | 面向清單來源由 `focusOptionsForCurrent()` 決定 | 已遷移的分類走 taxonomy（依主問題），未遷移的走舊分組篩選。畫面上顯示「已依你選的『X』整理相關面向」只在真的重算過時才出現 |
 | 2026-08-10 | 九個分類全部遷移到 taxonomy，決策類從零建立題庫 | 決策原本在 Step 1 有入口但 `SUBTOPICS.decision` 與 `topicQuestionConfig.decision` 都不存在，等於整個題庫是空的。新增 6 個 intent：A/B 選擇、要不要做、現在或等待、留下或離開、接受或拒絕、方向未明。它沒有舊 key，`taxonomyPrimaryForSubtopic()` 因此同時支援 legacyKey 與 taxonomy id 兩種對應 |
 | 2026-08-10 | health 與 wealth 帶 `safetyRules`，並由測試守住用詞 | 健康面向不得出現疾病／診斷／罹患／用藥等診斷式用語；財運面向不得出現保證／必賺／報酬率／漲跌。免責只在分類層級講一次，不塞進每張卡片 |
+| 2026-08-10 | 結果頁延伸區塊拆成「不需重新抽牌」與「需要重新抽牌」兩區 | 原本所有延伸題都是一排大卡片、右側只有「›」，點一下就清空牌面跳回問題設定。affordance 完全像展開看內容，實際卻是離開解讀。現在 A 區（這組牌最重要的訊息、每張牌在牌位的作用等）用現有牌面即時回答、直接展開；B 區才是新問題 |
+| 2026-08-10 | 需要重新抽牌的操作一律兩階段：選題 → inline 確認 | 第一次點擊只選取，展開後才出現「用這題開始新占卜」與「取消」。不用 modal、不用 `confirm()`。測試斷言未確認前畫面上不存在任何 `confirmFollowUpQuestion` 入口 |
+| 2026-08-10 | 開新占卜前先把目前解讀完整快照到 `state.previousReading` | 新流程未完成前都能用「← 回到上一個解讀」原樣返回。新問題不會沿用舊牌、不會自動選好面向、不會沿用舊的主問題——舊牌不能當成新問題的證據 |
