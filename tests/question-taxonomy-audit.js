@@ -34,7 +34,7 @@ c.document = { head:element(), body:element(), documentElement:element(),
   getElementById(id){ return elements[id] || (elements[id] = element()); },
   querySelector(){return null;}, querySelectorAll(){return [];}, addEventListener(){}, createElement:element };
 vm.createContext(c);
-['js/data/card-images.js','js/data/reading-data.js','js/data/reading-interpretation.js','js/app.js']
+['js/data/card-images.js','js/data/reading-data.js','js/data/reading-interpretation.js','js/data/reading-rich-data.js','js/app.js']
   .forEach(f => vm.runInContext(read(f), c, { filename: f }));
 const G = vm.runInContext(
   '({QUESTION_TAXONOMY, FOCUS_AREA_REGISTRY, CATEGORIES, SUBTOPICS, topicQuestionConfig,'
@@ -294,6 +294,59 @@ Object.keys(G.FOCUS_AREA_REGISTRY).filter(k => k.indexOf('wl-') === 0).forEach(k
 /* ---------- 九類全部覆蓋 ---------- */
 check('九個分類全部遷移完成', migrated.length === allCats.length,
   '尚缺 ' + pending.join('、'));
+
+/* ---------- Prompt payload：語意角色與資料來源分離 ---------- */
+(function checkPrompt() {
+  const T = vm.runInContext('TAROT', c);
+  let copied = '';
+  c.navigator.clipboard = { writeText(t) { copied = t; return Promise.resolve(); } };
+  c.state.deck = 'tarot'; c.state.category = 'love'; c.state.spread = 'three-time';
+  c.state.subtopic = 'partner-type';
+  c.state.wizFocusSel = { love: ['對方可能的個性', '比較容易在哪種情境認識'] };
+  c.state.question = '我單身兩年了';
+  c.state.readingMode = 'cards';
+  c.state.astroResult = null; c.state.astroUnknownTime = false;
+  c.state.drawn = [0, 1, 2].map((i) => ({ card: T[i], pos: { zh: '位置' + i, en: 'P' + i }, reversed: false }));
+  c.copyForAI();
+  const only = copied;
+
+  /* 語意角色必須各自成段，不能被拼成一句話。 */
+  ['主要問題（這次最需要回答的）', '問題意圖 intent', '優先補充的面向', '使用者補充的現實背景', '【輸出優先級】']
+    .forEach(k => check('Prompt 保留語意角色「' + k + '」', only.indexOf(k) !== -1));
+  check('Prompt 帶出 primary 的 intent', only.indexOf('future_partner_profile') !== -1);
+  check('Prompt 帶出這題的前提', only.indexOf('futurePerson') !== -1);
+  check('Prompt 保留使用者補充的原文', only.indexOf('我單身兩年了') !== -1);
+  ['對方可能的個性', '比較容易在哪種情境認識'].forEach(f => {
+    check('Prompt 保留已選面向「' + f + '」', only.indexOf(f) !== -1);
+  });
+
+  /* 輸出優先級：先主問題、面向次之、背景只提高精度。 */
+  check('Prompt 要求先給主問題明確結論', only.indexOf('要有明確結論') !== -1);
+  check('Prompt 禁止因背景自行擴充主題', only.indexOf('不要因此自行增加沒有被問的主題') !== -1);
+  check('Prompt 要求證據不足時說明', only.indexOf('不要硬下定論') !== -1);
+  check('Prompt 禁止把解讀變成長篇清單', only.indexOf('不要為了逐條回答而變成長篇清單') !== -1);
+
+  /* Tarot only 不得夾帶命盤資料。檢查實際的排盤標記，不用「星盤」兩個字判斷——
+     提示詞本身就有一句「本次不使用任何星盤資料」。 */
+  check('Tarot only 標示資料來源只有牌', only.indexOf('只有這次抽到的牌') !== -1);
+  check('Tarot only 明講不要推測星座或命盤', only.indexOf('不要推測使用者的星座') !== -1);
+  ['上升', '宮位', '本命盤', '相位'].forEach(marker => {
+    check('Tarot only 不含命盤資料標記「' + marker + '」', only.indexOf(marker) === -1);
+  });
+
+  /* 安全規則要進提示詞 */
+  c.state.category = 'health'; c.state.subtopic = 'body-lifestyle';
+  c.state.wizFocusSel = {}; c.state.question = '';
+  copied = ''; c.copyForAI();
+  check('健康類的安全規則有進入提示詞', copied.indexOf('不能取代醫療評估') !== -1);
+  c.state.category = 'wealth'; c.state.subtopic = 'cashflow-risk';
+  copied = ''; c.copyForAI();
+  check('財運類的安全規則有進入提示詞', copied.indexOf('不提供投資標的') !== -1);
+
+  const pOnly = G.buildReadingPayload({ categoryId:'love', primaryId:'lv-future', spreadId:'three-time',
+    readingMode:'cards', focusIds:['lv-future-scene'], customContext:'x', cards:[{}], astrologyContext:{ chart:1 } });
+  check('payload 在 tarot only 時強制清空 astrologyContext', pOnly.astrologyContext === null);
+})();
 
 /* ---------- 稽核報告 ---------- */
 migrated.forEach(cat => {

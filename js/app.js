@@ -4910,19 +4910,49 @@ function copyForAI() {
   if (!state.drawn.length) return;
   var cat = CATEGORIES.find(function (x) { return x.key === state.category; });
   var focusCfg2 = topicQuestionConfig[state.category];
+
+  /* 提示詞改由 buildReadingPayload() 驅動，每一段都標明它在解讀裡的角色，
+     而不是把所有文字拼成一段問句丟過去。這樣模型知道哪個是主要回答任務、
+     哪些只是優先補充、哪些只是背景，最後才不會出現「問 A 卻大篇幅回答 B」。 */
+  var wizFocus = (state.wizFocusSel && state.wizFocusSel[state.category]) || [];
+  var taxPrimary = (typeof taxonomyActiveFor === 'function')
+    ? taxonomyActiveFor(state.category, state.subtopic) : null;
+  var payload = (typeof buildReadingPayload === 'function') ? buildReadingPayload({
+    categoryId: state.category,
+    primaryId: taxPrimary ? taxPrimary.id : null,
+    spreadId: state.spread,
+    readingMode: state.readingMode,
+    focusIds: wizFocus.map(function (label) {
+      return (typeof taxonomyFocusIdByLabel === 'function') ? taxonomyFocusIdByLabel(label) : null;
+    }).filter(Boolean),
+    customContext: state.question || '',
+    cards: state.drawn,
+    astrologyContext: state.astroResult ? { present: true } : null,
+  }) : null;
+
   var lines = [];
   lines.push('占卜類型：' + (isTarot ? '塔羅牌 Tarot' : '雷諾曼牌 Lenormand'));
-  if (cat) lines.push('占卜主題：' + cat.zh + ' (' + cat.en + ')');
+  lines.push('資料來源：' + (payload && payload.readingMode === 'tarot_and_natal'
+    ? '這次抽到的牌 ＋ 使用者的本命星盤（星盤只作輔助，不得蓋過牌面）'
+    : '只有這次抽到的牌（本次不使用任何星盤資料）'));
+  if (cat) lines.push('問題領域：' + cat.zh + ' (' + cat.en + ')');
   if (state.target) lines.push('對象：' + state.target);
-  /* Step 3 新增的可複選「想深入了解的面向」，依 state.category 各自獨立存放，
-     這裡只讀取目前分類的那一份，跟舊的單選 state.subtopic（下面已有獨立段落處理）
-     是兩組互不影響的資料。 */
-  var wizFocus = (state.wizFocusSel && state.wizFocusSel[state.category]) || [];
-  if (wizFocus.length) {
-    lines.push('想深入了解的面向：');
-    wizFocus.forEach(function (f, fi) { lines.push((fi + 1) + '. ' + f); });
+
+  /* 主要回答任務。taxonomy 有對應時附上 intent，讓模型知道這題要回答什麼型態的問題。 */
+  if (taxPrimary) {
+    lines.push('主要問題（這次最需要回答的）：' + taxPrimary.label);
+    lines.push('　問題意圖 intent：' + taxPrimary.intent);
+    var assume = Object.keys(taxPrimary.assumptions || {}).filter(function (k) { return taxPrimary.assumptions[k]; });
+    if (assume.length) lines.push('　這題的前提：' + assume.join('、') + '（不符合前提的內容不要寫）');
   }
-  if (state.question) lines.push('使用者的具體問題：' + state.question);
+  /* 優先補充內容。 */
+  if (wizFocus.length) {
+    lines.push('優先補充的面向（次於主要問題）：');
+    wizFocus.forEach(function (f, fi) { lines.push('　' + (fi + 1) + '. ' + f); });
+  }
+  /* 現實背景——只用來提高精度，不得因此自行擴充主題。 */
+  if (state.question) lines.push('使用者補充的現實背景：' + state.question);
+
   var activeSchema = readingSchemaFor(state.category, state.subtopic);
   if (activeSchema) {
     lines.push('questionId：' + activeSchema.questionId);
@@ -4932,14 +4962,31 @@ function copyForAI() {
     lines.push('允許內容型別：' + activeSchema.allowedContentTypes.join('、'));
     lines.push('排除內容型別：' + activeSchema.excludedContentTypes.join('、'));
   }
+  var safety = (typeof QUESTION_TAXONOMY !== 'undefined' && QUESTION_TAXONOMY[state.category])
+    ? (QUESTION_TAXONOMY[state.category].safetyRules || []) : [];
+  if (safety.length) {
+    lines.push('安全規則（必須遵守）：');
+    safety.forEach(function (r) { lines.push('　・' + r); });
+  }
   lines.push('牌陣：' + spreads[state.spread].zh + ' (' + spreads[state.spread].en + ')');
   /* 有具體問題或有選面向時，才附上給 AI 的解讀原則——避免每一次「未填寫、以通用方式解讀」
      的複製結果都多出一段用不到的指示。健康／財運分類另外一律附加免責聲明（riskNotice），
      不受這個條件影響，只要是這兩個分類就一定會出現。 */
+  lines.push('');
+  lines.push('【輸出優先級】');
+  lines.push('1. 先回答「主要問題」，並且要有明確結論，不能只鋪陳。');
+  lines.push('2. 再回應「優先補充的面向」，每項簡短即可，不要為了逐條回答而變成長篇清單。');
+  lines.push('3.「使用者補充的現實背景」只用來提高情境精度，不要因此自行增加沒有被問的主題。');
+  lines.push('4. 牌面是主要證據；證據不足時要說明不確定，不要硬下定論。');
+  if (payload && payload.readingMode === 'tarot_and_natal') {
+    lines.push('5. 星盤只是輔助證據，用來補充傾向；結論仍以牌面為主，不得讓星盤蓋過牌。');
+  } else {
+    lines.push('5. 本次沒有星盤資料，不要推測使用者的星座、命盤或人格分類。');
+  }
   if (wizFocus.length || state.question) {
     lines.push('');
-    lines.push('【給 AI 的解讀原則】');
-    lines.push('1. 請優先回答「使用者的具體問題」。');
+    lines.push('【其他注意事項】');
+    lines.push('1. 請優先回答「使用者補充的現實背景」中提到的實際狀況。');
     if (wizFocus.length) lines.push('2. 再依序回應「想深入了解的面向」列出的項目，不要把它們拆成互不相關的分段解讀，請整合牌面形成一個有主軸的答案。');
     if (focusCfg2 && focusCfg2.riskNotice) lines.push((wizFocus.length ? '3' : '2') + '. ' + focusCfg2.riskNotice + '請勿做出確定性的醫療診斷、投資保證或法律判斷。');
   }
