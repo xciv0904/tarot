@@ -129,6 +129,38 @@ if (loveSelf) {
   });
 }
 
+/* ---------- 5.5 第一步的牌組選擇 ----------
+   原本牌組藏在原生 <details> 裡。render() 會整段重畫 innerHTML，
+   <details> 的開合只存在 DOM，所以裡面任何會觸發 render() 的按鈕
+   一按下去就把整區收回去——看起來像跳回上一頁，要再點一次才看得到。 */
+{
+  c.state.wizardStep = 1; c.state.phase = 'setup'; c.state.category = null;
+  c.state.deck = 'tarot'; c.state.tlGuideOpen = false;
+  const step1 = c.renderReading();
+  check('第一步不再使用原生 <details>', step1.indexOf('<details') === -1);
+  check('牌組選擇常駐可見', step1.indexOf('用哪一種牌') !== -1);
+  check('兩個牌組都看得到',
+    step1.indexOf('塔羅牌') !== -1 && step1.indexOf('雷諾曼牌') !== -1);
+  check('目前選到的牌組有 aria-pressed', /aria-pressed="true"[^>]*wizSetDeck\('tarot'/.test(step1)
+    || /wizSetDeck\('tarot'\)[^>]*/.test(step1));
+  check('牌組按鈕觸控目標夠大', /min-height:56px/.test(step1));
+
+  /* 展開說明之後，牌組按鈕必須還在。 */
+  c.state.tlGuideOpen = true;
+  const opened = c.renderReading();
+  check('展開差別說明後牌組選擇仍在畫面上',
+    opened.indexOf('用哪一種牌') !== -1 && opened.indexOf('wizSetDeck') !== -1);
+  check('展開後確實看得到說明內容', opened.indexOf('雷諾曼共 36 張') !== -1);
+  check('未展開時不顯示說明內容', step1.indexOf('雷諾曼共 36 張') === -1);
+
+  /* 換牌組不會把說明或選項收起來。 */
+  c.wizSetDeck('lenormand');
+  const after = c.renderReading();
+  check('換牌組後說明仍是展開的', after.indexOf('雷諾曼共 36 張') !== -1);
+  check('換牌組後牌組選擇仍在', after.indexOf('用哪一種牌') !== -1);
+  c.wizSetDeck('tarot'); c.state.tlGuideOpen = false;
+}
+
 /* ---------- 6. 結果頁的延伸探索 ----------
    互動已改為兩階段（選題 → 明確確認），完整驗收在
    tests/followup-ux-regression.js；這裡只確認題目仍到得了結果頁。 */

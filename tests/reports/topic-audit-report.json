@@ -841,11 +841,11 @@
         "water_lunar_home：和家人之間的底線需要保護清楚的底線。",
         "tenth_house_stellium：和家人之間的底線需要保護熟悉感、歸屬感與穩定回應。",
         "twelfth_house_stellium：和家人之間的底線需要保護交流、變化與足夠的思考空間。",
-        "relationship_axis：和家人之間的底線需要保護安靜、想像空間與被理解的情感回應。",
+        "relationship_axis：和家人之間的底線需要保護安靜、想像空間與情感回應。",
         "second_eighth_resources：和家人之間的底線需要保護交流、變化與足夠的思考空間。",
         "fifth_house_creative：和家人之間的底線需要保護深度、真實與足夠的掌控感。",
         "sixth_house_routine：和家人之間的底線需要保護自主、差異性與不被僵化規則限制。",
-        "ninth_house_learning：和家人之間的底線需要保護安靜、想像空間與被理解的情感回應。",
+        "ninth_house_learning：和家人之間的底線需要保護安靜、想像空間與情感回應。",
         "fixed_tension：和家人之間的底線需要保護公平、舒適與有品質的互動。"
       ],
       "direct": true,
@@ -886,11 +886,11 @@
         "water_lunar_home：適合能提供熟悉感、歸屬感與穩定回應的居住氛圍。",
         "tenth_house_stellium：適合能提供熟悉感、歸屬感與穩定回應的居住氛圍。",
         "twelfth_house_stellium：適合能提供交流、變化與足夠的思考空間的居住氛圍。",
-        "relationship_axis：適合能提供安靜、想像空間與被理解的情感回應的居住氛圍。",
+        "relationship_axis：適合能提供安靜、想像空間與情感回應的居住氛圍。",
         "second_eighth_resources：適合能提供交流、變化與足夠的思考空間的居住氛圍。",
         "fifth_house_creative：適合能提供深度、真實與足夠的掌控感的居住氛圍。",
         "sixth_house_routine：適合能提供自主、差異性與不被僵化規則限制的居住氛圍。",
-        "ninth_house_learning：適合能提供安靜、想像空間與被理解的情感回應的居住氛圍。",
+        "ninth_house_learning：適合能提供安靜、想像空間與情感回應的居住氛圍。",
         "fixed_tension：適合能提供公平、舒適與有品質的互動的居住氛圍。"
       ],
       "direct": true,
@@ -1015,18 +1015,18 @@
         "走出適合自己的道路"
       ],
       "actualOutput": [
-        "fire_angular：壓力多半在無法建立清楚的自我定位並主動承擔時累積。",
-        "earth_saturn_career：壓力多半在無法深入核心並完成根本性的轉化時累積。",
-        "air_uranus_network：壓力多半在無法建立結構、責任與可長期維持的成果時累積。",
-        "water_lunar_home：壓力多半在無法採取行動、突破阻力並爭取目標時累積。",
-        "tenth_house_stellium：壓力多半在無法採取行動、突破阻力並爭取目標時累積。",
-        "twelfth_house_stellium：壓力多半在無法採取行動、突破阻力並爭取目標時累積。",
-        "relationship_axis：壓力多半在無法採取行動、突破阻力並爭取目標時累積。",
-        "second_eighth_resources：壓力多半在無法採取行動、突破阻力並爭取目標時累積。",
-        "fifth_house_creative：壓力多半在無法打破慣性並創造更自由的新做法時累積。",
-        "sixth_house_routine：壓力多半在無法採取行動、突破阻力並爭取目標時累積。",
-        "ninth_house_learning：壓力多半在無法採取行動、突破阻力並爭取目標時累積。",
-        "fixed_tension：壓力多半在無法建立清楚的自我定位並主動承擔時累積。"
+        "fire_angular：壓力大時的反應通常是過度把成敗綁在自我價值上。",
+        "earth_saturn_career：壓力大時的反應通常是過度控制、猜疑或長期處於高張力。",
+        "air_uranus_network：壓力大時的反應通常是過度保守、自我要求或害怕犯錯。",
+        "water_lunar_home：壓力大時的反應通常是求快、急躁或忽略他人節奏。",
+        "tenth_house_stellium：壓力大時的反應通常是求快、急躁或忽略他人節奏。",
+        "twelfth_house_stellium：壓力大時的反應通常是求快、急躁或忽略他人節奏。",
+        "relationship_axis：壓力大時的反應通常是求快、急躁或忽略他人節奏。",
+        "second_eighth_resources：壓力大時的反應通常是求快、急躁或忽略他人節奏。",
+        "fifth_house_creative：壓力大時的反應通常是突然抽離或為反對而反對。",
+        "sixth_house_routine：壓力大時的反應通常是求快、急躁或忽略他人節奏。",
+        "ninth_house_learning：壓力大時的反應通常是求快、急躁或忽略他人節奏。",
+        "fixed_tension：壓力大時的反應通常是過度把成敗綁在自我價值上。"
       ],
       "direct": true,
       "easy": true,
@@ -1198,10 +1198,10 @@
       ],
       "actualOutput": [
         "fire_angular：長期缺少交流、變化與足夠的思考空間。",
-        "earth_saturn_career：長期缺少安靜、想像空間與被理解的情感回應。",
+        "earth_saturn_career：長期缺少安靜、想像空間與情感回應。",
         "air_uranus_network：長期缺少熟悉感、歸屬感與穩定回應。",
-        "water_lunar_home：長期缺少安靜、想像空間與被理解的情感回應。",
-        "tenth_house_stellium：長期缺少安靜、想像空間與被理解的情感回應。",
+        "water_lunar_home：長期缺少安靜、想像空間與情感回應。",
+        "tenth_house_stellium：長期缺少安靜、想像空間與情感回應。",
         "twelfth_house_stellium：長期缺少被看見、被肯定並保有主體性。",
         "relationship_axis：長期缺少交流、變化與足夠的思考空間。",
         "second_eighth_resources：長期缺少挑戰、自主與可立即投入的目標，又必須面對求快。",
@@ -1788,10 +1788,10 @@
         "earth_saturn_career：適合重視自主、差異性與不被僵化規則限制。",
         "air_uranus_network：適合重視被看見、被肯定並保有主體性。",
         "water_lunar_home：適合重視公平、舒適與有品質的互動。",
-        "tenth_house_stellium：適合重視安靜、想像空間與被理解的情感回應。",
+        "tenth_house_stellium：適合重視安靜、想像空間與情感回應。",
         "twelfth_house_stellium：適合重視清楚的底線、可靠的制度與可預期的進度。",
         "relationship_axis：適合重視深度、真實與足夠的掌控感。",
-        "second_eighth_resources：適合重視安靜、想像空間與被理解的情感回應。",
+        "second_eighth_resources：適合重視安靜、想像空間與情感回應。",
         "fifth_house_creative：適合重視自由探索、意義感與更大的格局。",
         "sixth_house_routine：適合重視熟悉感、歸屬感與穩定回應。",
         "ninth_house_learning：適合重視公平、舒適與有品質的互動。",
@@ -1831,15 +1831,15 @@
       "actualOutput": [
         "fire_angular：學習時適合運用學習、表達與整理複雜資訊。",
         "earth_saturn_career：學習時適合運用共感、想像與細膩的情緒觀察。",
-        "air_uranus_network：學習時適合運用共感、想像與細膩的情緒觀察。",
+        "air_uranus_network：這題目前沒有足夠線索形成可靠答案。",
         "water_lunar_home：學習時適合運用學習、表達與整理複雜資訊。",
         "tenth_house_stellium：學習時適合運用整合、教導與看見長期機會。",
         "twelfth_house_stellium：學習時適合運用美感、協調與關係經營。",
-        "relationship_axis：學習時適合運用創新、獨立判斷與系統改革。",
+        "relationship_axis：這題目前沒有足夠線索形成可靠答案。",
         "second_eighth_resources：學習時適合運用同理、照顧與察覺氣氛。",
-        "fifth_house_creative：學習時適合運用洞察、危機處理與資源整合。",
+        "fifth_house_creative：這題目前沒有足夠線索形成可靠答案。",
         "sixth_house_routine：學習時適合運用洞察、危機處理與資源整合。",
-        "ninth_house_learning：學習時適合運用執行、競爭與快速反應。",
+        "ninth_house_learning：這題目前沒有足夠線索形成可靠答案。",
         "fixed_tension：學習時適合運用紀律、規劃與承受長期壓力。"
       ],
       "direct": true,
@@ -6957,7 +6957,7 @@
           "details": [
             {
               "label": "容易忽略的盲點",
-              "text": "觸發點是缺少安靜、想像空間與被理解的情感回應。"
+              "text": "觸發點是缺少安靜、想像空間與情感回應。"
             },
             {
               "label": "壓力下的反應",
@@ -13685,7 +13685,7 @@
       "abstractionRisk": {
         "density": 0.001,
         "longestSentence": 38,
-        "longestHeadline": 29
+        "longestHeadline": 28
       },
       "personalizationRisk": {
         "distinctPrimarySources": 12,
@@ -13833,7 +13833,7 @@
         },
         {
           "chartId": "relationship_axis",
-          "headline": "和家人之間的底線需要保護安靜、想像空間與被理解的情感回應。",
+          "headline": "和家人之間的底線需要保護安靜、想像空間與情感回應。",
           "details": [
             {
               "label": "底線被碰到時怎麼說",
@@ -13925,7 +13925,7 @@
         },
         {
           "chartId": "ninth_house_learning",
-          "headline": "和家人之間的底線需要保護安靜、想像空間與被理解的情感回應。",
+          "headline": "和家人之間的底線需要保護安靜、想像空間與情感回應。",
           "details": [
             {
               "label": "底線被碰到時怎麼說",
@@ -14336,7 +14336,7 @@
       "abstractionRisk": {
         "density": 0.007,
         "longestSentence": 26,
-        "longestHeadline": 27
+        "longestHeadline": 26
       },
       "personalizationRisk": {
         "distinctPrimarySources": 11,
@@ -14484,7 +14484,7 @@
         },
         {
           "chartId": "relationship_axis",
-          "headline": "適合能提供安靜、想像空間與被理解的情感回應的居住氛圍。",
+          "headline": "適合能提供安靜、想像空間與情感回應的居住氛圍。",
           "details": [
             {
               "label": "適合的居住條件",
@@ -14576,7 +14576,7 @@
         },
         {
           "chartId": "ninth_house_learning",
-          "headline": "適合能提供安靜、想像空間與被理解的情感回應的居住氛圍。",
+          "headline": "適合能提供安靜、想像空間與情感回應的居住氛圍。",
           "details": [
             {
               "label": "適合的居住條件",
@@ -15800,7 +15800,7 @@
           "details": [
             {
               "label": "家庭與事業的關係",
-              "text": "共同支點是安靜、想像空間與被理解的情感回應。"
+              "text": "共同支點是安靜、想像空間與情感回應。"
             },
             {
               "label": "容易失衡的方向",
@@ -16179,9 +16179,9 @@
         "crossChart": 1
       },
       "abstractionRisk": {
-        "density": 0.009,
-        "longestSentence": 39,
-        "longestHeadline": 27
+        "density": 0.01,
+        "longestSentence": 31,
+        "longestHeadline": 26
       },
       "personalizationRisk": {
         "distinctPrimarySources": 12,
@@ -16191,15 +16191,15 @@
       "outputSamples": [
         {
           "chartId": "fire_angular",
-          "headline": "壓力多半在無法建立清楚的自我定位並主動承擔時累積。",
+          "headline": "壓力大時的反應通常是過度把成敗綁在自我價值上。",
           "details": [
             {
               "label": "壓力來臨時的反應",
-              "text": "缺少被看見、被肯定並保有主體性。"
+              "text": "整體節奏會轉成主動而明確。"
             },
             {
               "label": "容易忽略的訊號",
-              "text": "反應節奏偏向直接而迅速。"
+              "text": "比較不會注意到的是挑戰、自主與可立即投入的目標已經不夠。"
             }
           ],
           "caution": "這是生活模式提醒，不是醫療診斷。",
@@ -16214,15 +16214,15 @@
         },
         {
           "chartId": "earth_saturn_career",
-          "headline": "壓力多半在無法深入核心並完成根本性的轉化時累積。",
+          "headline": "壓力大時的反應通常是過度控制、猜疑或長期處於高張力。",
           "details": [
             {
               "label": "壓力來臨時的反應",
-              "text": "缺少深度、真實與足夠的掌控感。"
+              "text": "整體節奏會轉成集中而強烈。"
             },
             {
               "label": "容易忽略的訊號",
-              "text": "反應節奏偏向直接而迅速。"
+              "text": "比較不會注意到的是挑戰、自主與可立即投入的目標已經不夠。"
             }
           ],
           "caution": "這是生活模式提醒，不是醫療診斷。",
@@ -16237,15 +16237,15 @@
         },
         {
           "chartId": "air_uranus_network",
-          "headline": "壓力多半在無法建立結構、責任與可長期維持的成果時累積。",
+          "headline": "壓力大時的反應通常是過度保守、自我要求或害怕犯錯。",
           "details": [
             {
               "label": "壓力來臨時的反應",
-              "text": "缺少清楚的底線、可靠的制度與可預期的進度。"
+              "text": "整體節奏會轉成審慎而穩定。"
             },
             {
               "label": "容易忽略的訊號",
-              "text": "反應節奏偏向跳躍而非線性。"
+              "text": "比較不會注意到的是自主、差異性與不被僵化規則限制已經不夠。"
             }
           ],
           "caution": "這是生活模式提醒，不是醫療診斷。",
@@ -16260,15 +16260,15 @@
         },
         {
           "chartId": "water_lunar_home",
-          "headline": "壓力多半在無法採取行動、突破阻力並爭取目標時累積。",
+          "headline": "壓力大時的反應通常是求快、急躁或忽略他人節奏。",
           "details": [
             {
               "label": "壓力來臨時的反應",
-              "text": "缺少挑戰、自主與可立即投入的目標。"
+              "text": "整體節奏會轉成直接而迅速。"
             },
             {
               "label": "容易忽略的訊號",
-              "text": "反應節奏偏向審慎而穩定。"
+              "text": "比較不會注意到的是清楚的底線、可靠的制度與可預期的進度已經不夠。"
             }
           ],
           "caution": "這是生活模式提醒，不是醫療診斷。",
@@ -16283,15 +16283,15 @@
         },
         {
           "chartId": "tenth_house_stellium",
-          "headline": "壓力多半在無法採取行動、突破阻力並爭取目標時累積。",
+          "headline": "壓力大時的反應通常是求快、急躁或忽略他人節奏。",
           "details": [
             {
               "label": "壓力來臨時的反應",
-              "text": "缺少挑戰、自主與可立即投入的目標。"
+              "text": "整體節奏會轉成直接而迅速。"
             },
             {
               "label": "容易忽略的訊號",
-              "text": "反應節奏偏向審慎而穩定。"
+              "text": "比較不會注意到的是清楚的底線、可靠的制度與可預期的進度已經不夠。"
             }
           ],
           "caution": "這是生活模式提醒，不是醫療診斷。",
@@ -16306,15 +16306,15 @@
         },
         {
           "chartId": "twelfth_house_stellium",
-          "headline": "壓力多半在無法採取行動、突破阻力並爭取目標時累積。",
+          "headline": "壓力大時的反應通常是求快、急躁或忽略他人節奏。",
           "details": [
             {
               "label": "壓力來臨時的反應",
-              "text": "缺少挑戰、自主與可立即投入的目標。"
+              "text": "整體節奏會轉成直接而迅速。"
             },
             {
               "label": "容易忽略的訊號",
-              "text": "反應節奏偏向審慎而穩定。"
+              "text": "比較不會注意到的是清楚的底線、可靠的制度與可預期的進度已經不夠。"
             }
           ],
           "caution": "這是生活模式提醒，不是醫療診斷。",
@@ -16329,15 +16329,15 @@
         },
         {
           "chartId": "relationship_axis",
-          "headline": "壓力多半在無法採取行動、突破阻力並爭取目標時累積。",
+          "headline": "壓力大時的反應通常是求快、急躁或忽略他人節奏。",
           "details": [
             {
               "label": "壓力來臨時的反應",
-              "text": "缺少挑戰、自主與可立即投入的目標。"
+              "text": "整體節奏會轉成直接而迅速。"
             },
             {
               "label": "容易忽略的訊號",
-              "text": "反應節奏偏向審慎而穩定。"
+              "text": "比較不會注意到的是清楚的底線、可靠的制度與可預期的進度已經不夠。"
             }
           ],
           "caution": "這是生活模式提醒，不是醫療診斷。",
@@ -16352,15 +16352,15 @@
         },
         {
           "chartId": "second_eighth_resources",
-          "headline": "壓力多半在無法採取行動、突破阻力並爭取目標時累積。",
+          "headline": "壓力大時的反應通常是求快、急躁或忽略他人節奏。",
           "details": [
             {
               "label": "壓力來臨時的反應",
-              "text": "缺少挑戰、自主與可立即投入的目標。"
+              "text": "整體節奏會轉成直接而迅速。"
             },
             {
               "label": "容易忽略的訊號",
-              "text": "反應節奏偏向審慎而穩定。"
+              "text": "比較不會注意到的是清楚的底線、可靠的制度與可預期的進度已經不夠。"
             }
           ],
           "caution": "這是生活模式提醒，不是醫療診斷。",
@@ -16375,15 +16375,15 @@
         },
         {
           "chartId": "fifth_house_creative",
-          "headline": "壓力多半在無法打破慣性並創造更自由的新做法時累積。",
+          "headline": "壓力大時的反應通常是突然抽離或為反對而反對。",
           "details": [
             {
               "label": "壓力來臨時的反應",
-              "text": "缺少自主、差異性與不被僵化規則限制。"
+              "text": "整體節奏會轉成跳躍而非線性。"
             },
             {
               "label": "容易忽略的訊號",
-              "text": "反應節奏偏向直接而迅速。"
+              "text": "比較不會注意到的是挑戰、自主與可立即投入的目標已經不夠。"
             }
           ],
           "caution": "這是生活模式提醒，不是醫療診斷。",
@@ -16398,15 +16398,15 @@
         },
         {
           "chartId": "sixth_house_routine",
-          "headline": "壓力多半在無法採取行動、突破阻力並爭取目標時累積。",
+          "headline": "壓力大時的反應通常是求快、急躁或忽略他人節奏。",
           "details": [
             {
               "label": "壓力來臨時的反應",
-              "text": "缺少挑戰、自主與可立即投入的目標。"
+              "text": "整體節奏會轉成直接而迅速。"
             },
             {
               "label": "容易忽略的訊號",
-              "text": "反應節奏偏向審慎而穩定。"
+              "text": "比較不會注意到的是清楚的底線、可靠的制度與可預期的進度已經不夠。"
             }
           ],
           "caution": "這是生活模式提醒，不是醫療診斷。",
@@ -16421,15 +16421,15 @@
         },
         {
           "chartId": "ninth_house_learning",
-          "headline": "壓力多半在無法採取行動、突破阻力並爭取目標時累積。",
+          "headline": "壓力大時的反應通常是求快、急躁或忽略他人節奏。",
           "details": [
             {
               "label": "壓力來臨時的反應",
-              "text": "缺少挑戰、自主與可立即投入的目標。"
+              "text": "整體節奏會轉成直接而迅速。"
             },
             {
               "label": "容易忽略的訊號",
-              "text": "反應節奏偏向審慎而穩定。"
+              "text": "比較不會注意到的是清楚的底線、可靠的制度與可預期的進度已經不夠。"
             }
           ],
           "caution": "這是生活模式提醒，不是醫療診斷。",
@@ -16444,15 +16444,15 @@
         },
         {
           "chartId": "fixed_tension",
-          "headline": "壓力多半在無法建立清楚的自我定位並主動承擔時累積。",
+          "headline": "壓力大時的反應通常是過度把成敗綁在自我價值上。",
           "details": [
             {
               "label": "壓力來臨時的反應",
-              "text": "缺少被看見、被肯定並保有主體性。"
+              "text": "整體節奏會轉成主動而明確。"
             },
             {
               "label": "容易忽略的訊號",
-              "text": "反應節奏偏向直接而迅速。"
+              "text": "比較不會注意到的是挑戰、自主與可立即投入的目標已經不夠。"
             }
           ],
           "caution": "這是生活模式提醒，不是醫療診斷。",
@@ -18719,7 +18719,7 @@
         },
         {
           "chartId": "earth_saturn_career",
-          "headline": "長期缺少安靜、想像空間與被理解的情感回應。",
+          "headline": "長期缺少安靜、想像空間與情感回應。",
           "details": [
             {
               "label": "容易消耗你的情境",
@@ -18765,7 +18765,7 @@
         },
         {
           "chartId": "water_lunar_home",
-          "headline": "長期缺少安靜、想像空間與被理解的情感回應。",
+          "headline": "長期缺少安靜、想像空間與情感回應。",
           "details": [
             {
               "label": "容易消耗你的情境",
@@ -18788,7 +18788,7 @@
         },
         {
           "chartId": "tenth_house_stellium",
-          "headline": "長期缺少安靜、想像空間與被理解的情感回應。",
+          "headline": "長期缺少安靜、想像空間與情感回應。",
           "details": [
             {
               "label": "容易消耗你的情境",
@@ -21914,7 +21914,7 @@
             },
             {
               "label": "合作或獨立的傾向",
-              "text": "安靜、想像空間與被理解的情感回應。"
+              "text": "安靜、想像空間與情感回應。"
             }
           ],
           "caution": "合作前需用明確權責降低過度承接他人的情緒。",
@@ -22052,7 +22052,7 @@
             },
             {
               "label": "合作或獨立的傾向",
-              "text": "安靜、想像空間與被理解的情感回應。"
+              "text": "安靜、想像空間與情感回應。"
             }
           ],
           "caution": "合作前需用明確權責降低想得太多或注意力分散。",
@@ -26228,7 +26228,7 @@
           "details": [
             {
               "label": "面對衝突的反應",
-              "text": "觸發點是缺少安靜、想像空間與被理解的情感回應。"
+              "text": "觸發點是缺少安靜、想像空間與情感回應。"
             },
             {
               "label": "容易被跨過的底線",
@@ -26717,7 +26717,7 @@
         },
         {
           "chartId": "tenth_house_stellium",
-          "headline": "適合重視安靜、想像空間與被理解的情感回應。",
+          "headline": "適合重視安靜、想像空間與情感回應。",
           "details": [
             {
               "label": "適合的社交圈類型",
@@ -26786,7 +26786,7 @@
         },
         {
           "chartId": "second_eighth_resources",
-          "headline": "適合重視安靜、想像空間與被理解的情感回應。",
+          "headline": "適合重視安靜、想像空間與情感回應。",
           "details": [
             {
               "label": "適合的社交圈類型",
@@ -27216,13 +27216,13 @@
         "crossChart": 1
       },
       "abstractionRisk": {
-        "density": 0.005,
-        "longestSentence": 27,
+        "density": 0.001,
+        "longestSentence": 48,
         "longestHeadline": 21
       },
       "personalizationRisk": {
         "distinctPrimarySources": 12,
-        "distinctHeadlines": 9,
+        "distinctHeadlines": 8,
         "fallbackRatio": 0.417
       },
       "outputSamples": [
@@ -27236,7 +27236,7 @@
             },
             {
               "label": "容易吸收的節奏",
-              "text": "學習節奏偏向靈活而快速。"
+              "text": "吸收得最順的推進方式是靈活而快速。"
             }
           ],
           "caution": "",
@@ -27274,26 +27274,16 @@
         },
         {
           "chartId": "air_uranus_network",
-          "headline": "學習時適合運用共感、想像與細膩的情緒觀察。",
-          "details": [
-            {
-              "label": "適合的學習方式",
-              "text": "會先找雙方都能接受的做法，並留意互動是否公平、得體。"
-            },
-            {
-              "label": "容易吸收的節奏",
-              "text": "學習節奏偏向直接而迅速。"
-            }
-          ],
+          "headline": "這題目前沒有足夠線索形成可靠答案。",
+          "details": [],
           "caution": "",
           "primary": "planet|Neptune|6|3|",
           "answerTarget": "learning_style",
-          "contractStatus": "pass",
-          "contractErrors": [],
-          "sectionKeys": [
-            "learning_style_1",
-            "learning_style_2"
-          ]
+          "contractStatus": "insufficient",
+          "contractErrors": [
+            "missing_required_term_group_1"
+          ],
+          "sectionKeys": []
         },
         {
           "chartId": "water_lunar_home",
@@ -27305,7 +27295,7 @@
             },
             {
               "label": "容易吸收的節奏",
-              "text": "學習節奏偏向開放而擴張。"
+              "text": "吸收得最順的推進方式是開放而擴張。"
             }
           ],
           "caution": "",
@@ -27328,7 +27318,7 @@
             },
             {
               "label": "容易吸收的節奏",
-              "text": "學習節奏偏向靈活而快速。"
+              "text": "吸收得最順的推進方式是靈活而快速。"
             }
           ],
           "caution": "",
@@ -27351,7 +27341,7 @@
             },
             {
               "label": "容易吸收的節奏",
-              "text": "學習節奏偏向靈活而快速。"
+              "text": "吸收得最順的推進方式是靈活而快速。"
             }
           ],
           "caution": "",
@@ -27366,26 +27356,16 @@
         },
         {
           "chartId": "relationship_axis",
-          "headline": "學習時適合運用創新、獨立判斷與系統改革。",
-          "details": [
-            {
-              "label": "適合的學習方式",
-              "text": "會主動接觸新題目、新圈子或不同做法，從變化中找到動力。"
-            },
-            {
-              "label": "容易吸收的節奏",
-              "text": "學習節奏偏向緩慢而流動。"
-            }
-          ],
+          "headline": "這題目前沒有足夠線索形成可靠答案。",
+          "details": [],
           "caution": "",
           "primary": "planet|Uranus|6|3|",
           "answerTarget": "learning_style",
-          "contractStatus": "pass",
-          "contractErrors": [],
-          "sectionKeys": [
-            "learning_style_1",
-            "learning_style_2"
-          ]
+          "contractStatus": "insufficient",
+          "contractErrors": [
+            "missing_required_term_group_1"
+          ],
+          "sectionKeys": []
         },
         {
           "chartId": "second_eighth_resources",
@@ -27397,7 +27377,7 @@
             },
             {
               "label": "容易吸收的節奏",
-              "text": "學習節奏偏向靈活而快速。"
+              "text": "吸收得最順的推進方式是靈活而快速。"
             }
           ],
           "caution": "",
@@ -27412,26 +27392,16 @@
         },
         {
           "chartId": "fifth_house_creative",
-          "headline": "學習時適合運用洞察、危機處理與資源整合。",
-          "details": [
-            {
-              "label": "適合的學習方式",
-              "text": "會先找雙方都能接受的做法，並留意互動是否公平、得體。"
-            },
-            {
-              "label": "容易吸收的節奏",
-              "text": "學習節奏偏向講究平衡與感受。"
-            }
-          ],
+          "headline": "這題目前沒有足夠線索形成可靠答案。",
+          "details": [],
           "caution": "",
           "primary": "planet|Pluto|10|3|",
           "answerTarget": "learning_style",
-          "contractStatus": "pass",
-          "contractErrors": [],
-          "sectionKeys": [
-            "learning_style_1",
-            "learning_style_2"
-          ]
+          "contractStatus": "insufficient",
+          "contractErrors": [
+            "missing_required_term_group_1"
+          ],
+          "sectionKeys": []
         },
         {
           "chartId": "sixth_house_routine",
@@ -27443,7 +27413,7 @@
             },
             {
               "label": "容易吸收的節奏",
-              "text": "學習節奏偏向靈活而快速。"
+              "text": "吸收得最順的推進方式是靈活而快速。"
             }
           ],
           "caution": "",
@@ -27458,26 +27428,16 @@
         },
         {
           "chartId": "ninth_house_learning",
-          "headline": "學習時適合運用執行、競爭與快速反應。",
-          "details": [
-            {
-              "label": "適合的學習方式",
-              "text": "會保留自己的時間與方法，不喜歡每一步都被規定。"
-            },
-            {
-              "label": "容易吸收的節奏",
-              "text": "學習節奏偏向跳躍而非線性。"
-            }
-          ],
+          "headline": "這題目前沒有足夠線索形成可靠答案。",
+          "details": [],
           "caution": "",
           "primary": "planet|Mars|4|3|",
           "answerTarget": "learning_style",
-          "contractStatus": "pass",
-          "contractErrors": [],
-          "sectionKeys": [
-            "learning_style_1",
-            "learning_style_2"
-          ]
+          "contractStatus": "insufficient",
+          "contractErrors": [
+            "missing_required_term_group_1"
+          ],
+          "sectionKeys": []
         },
         {
           "chartId": "fixed_tension",
@@ -27505,7 +27465,8 @@
       ],
       "warnings": [
         "其中兩張測試盤的主結論較接近，原因是主導語義或落座相同",
-        "部分測試盤由空宮改採可追溯的宮主星資料"
+        "部分測試盤由空宮改採可追溯的宮主星資料",
+        "4/12 份答案未通過契約，已阻擋原文並顯示資料不足"
       ],
       "failures": [],
       "result": "WARNING"
@@ -28394,7 +28355,7 @@
       },
       "abstractionRisk": {
         "density": 0,
-        "longestSentence": 32,
+        "longestSentence": 29,
         "longestHeadline": 30
       },
       "personalizationRisk": {
@@ -29079,7 +29040,7 @@
           "details": [
             {
               "label": "適合的知識類型",
-              "text": "需要的模式是安靜、想像空間與被理解的情感回應。"
+              "text": "需要的模式是安靜、想像空間與情感回應。"
             },
             {
               "label": "容易發揮實力的形式",
@@ -29622,7 +29583,7 @@
             },
             {
               "label": "現實條件要先確認",
-              "text": "安靜、想像空間與被理解的情感回應。"
+              "text": "安靜、想像空間與情感回應。"
             }
           ],
           "caution": "仍需評估語言、預算、資格與生活安排。",
@@ -35964,7 +35925,7 @@
           "details": [
             {
               "label": "做決定時先確認什麼",
-              "text": "判斷原則是是否支持安靜、想像空間與被理解的情感回應。"
+              "text": "判斷原則是是否支持安靜、想像空間與情感回應。"
             },
             {
               "label": "方向適合你的具體訊號",

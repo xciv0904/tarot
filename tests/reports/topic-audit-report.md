@@ -492,7 +492,7 @@
 - semanticKeys：learning_style:visibility@planet|Mercury|4|3|+dialogue、learning_style:consistency@planet|Neptune|1|12|、learning_style:harmony@planet|Neptune|6|3|+freedom、learning_style:depthTrust@planet|Mercury|7|12|+consistency、learning_style:visibility@planet|Jupiter|4|8|+novelty、learning_style:harmony@planet|Venus|5|8|+structure、learning_style:novelty@planet|Neptune|8|4|、learning_style:emotionalResponse@planet|Moon|3|3|、learning_style:harmony@planet|Venus|6|5|+freedom、learning_style:depthTrust@planet|Pluto|11|6|+emotionalResponse、learning_style:freedom@planet|Uranus|10|9|+novelty、learning_style:freedom@planet|Saturn|10|7|+structure
 - fallback：42%
 - 重複風險：title/detail 0；headline/detail 0；跨命盤 1
-- WARNING：其中兩張測試盤的主結論較接近，原因是主導語義或落座相同；部分測試盤由空宮改採可追溯的宮主星資料
+- WARNING：其中兩張測試盤的主結論較接近，原因是主導語義或落座相同；部分測試盤由空宮改採可追溯的宮主星資料；4/12 份答案未通過契約，已阻擋原文並顯示資料不足
 
 ### 我的資訊理解與記憶模式（study-memory-mode）— WARNING
 

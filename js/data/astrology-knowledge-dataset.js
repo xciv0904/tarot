@@ -13,7 +13,7 @@ var ASTRO_PLANET_SEMANTIC_DATASET = {
   Jupiter: { drive: '擴大視野、可能性與成長空間', gift: '整合、教導與看見長期機會', need: '自由探索、意義感與更大的格局', risk: '承諾過多或高估可用資源', pace: '開放而擴張', social: '以樂觀與分享帶動群體' },
   Saturn:  { drive: '建立結構、責任與可長期維持的成果', gift: '紀律、規劃與承受長期壓力', need: '清楚的底線、可靠的制度與可預期的進度', risk: '過度保守、自我要求或害怕犯錯', pace: '審慎而穩定', social: '以可靠與負責建立信任' },
   Uranus:  { drive: '打破慣性並創造更自由的新做法', gift: '創新、獨立判斷與系統改革', need: '自主、差異性與不被僵化規則限制', risk: '突然抽離或為反對而反對', pace: '跳躍而非線性', social: '以獨特觀點吸引同好' },
-  Neptune: { drive: '感受氣氛並用創作或同理回應', gift: '共感、想像與細膩的情緒觀察', need: '安靜、想像空間與被理解的情感回應', risk: '把猜測當成事實或過度承接他人情緒', pace: '緩慢而流動', social: '以同理與溫和回應建立連結' },
+  Neptune: { drive: '感受氣氛並用創作或同理回應', gift: '共感、想像與細膩的情緒觀察', need: '安靜、想像空間與情感回應', risk: '把猜測當成事實或過度承接他人情緒', pace: '緩慢而流動', social: '以同理與溫和回應建立連結' },
   Pluto:   { drive: '深入核心並完成根本性的轉化', gift: '洞察、危機處理與資源整合', need: '深度、真實與足夠的掌控感', risk: '過度控制、猜疑或長期處於高張力', pace: '集中而強烈', social: '以深度與強烈存在感建立連結' },
 };
 
@@ -370,7 +370,8 @@ var ASTRO_TOPIC_SEMANTIC_DATASET = {
   family_living: { family:'family', phrase:'適合能提供{need}的居住氛圍', summary:'環境穩定時較能發揮{gift}', detail:'居住條件是{need}；日常氣氛偏向{pace}', caution:'', keys:['livingCondition','homeAtmosphere'] },
   family_safety: { family:'family', phrase:'內在安全感來自重新取得{need}', summary:'能讓你{drive}的做法比一味壓抑更有效', detail:'安定條件是{need}；可練習{gift}', caution:'', keys:['safetyNeed','selfSupport'] },
   family_balance: { family:'family', phrase:'家庭與事業的平衡需要同時保留{need}與{drive}', summary:'關鍵是讓{gift}在兩個領域都能被合理使用', detail:'共同支點是{need}；分配原則是{pace}', caution:'留意{risk}', keys:['balanceAnchor','allocationRule'] },
-  health_stress: { family: 'health', phrase: '壓力多半在無法{drive}時累積', summary: '當{need}長期不足，容易出現{risk}的反應', detail: '壓力來源是缺少{need}；反應節奏偏向{pace}', caution: '這是生活模式提醒，不是醫療診斷', keys: ['stressSource', 'stressResponse'] },
+  /* 題目問的是「壓力大時我會出現哪些反應」，答案就要從反應講起。原本的 phrase 從「壓力來源」切入（壓力多半在無法⋯時累積），detail 的標籤是「壓力來臨時的反應」，內容卻是「壓力來源是缺少⋯」——答非所問，讀起來也不像人在講話。 */
+  health_stress: { family: 'health', phrase: '壓力大時的反應通常是{risk}', summary: '這通常發生在{need}長期不足的時候', detail: '整體節奏會轉成{pace}；比較不會注意到的是{need}已經不夠', caution: '這是生活模式提醒，不是醫療診斷', keys: ['stressSource', 'stressResponse'] },
   health_lifestyle: { family: 'health', phrase: '適合能維持{need}、節奏{pace}的生活安排', summary: '保留{drive}的空間有助於維持穩定感', detail: '日常需要{need}；安排方式宜{pace}', caution: '持續不適仍應尋求合格醫療專業協助', keys: ['lifestyleCondition', 'dailyPace'] },
   health_boundary: { family: 'health', phrase: '較容易忽略的底線是{risk}', summary: '你可能為了維持{need}而延後回應自己的負荷', detail: '底線被跨過的警訊是{risk}；可用{gift}重新安排負荷', caution: '不以星盤取代醫療判斷', keys: ['boundarySignal', 'loadManagement'] },
   health_emotion: { family: 'health', phrase: '情緒在缺少{need}時較容易累積', summary: '若長期不能{drive}，壓力可能透過日常狀態被感覺到', detail: '情緒需求是{need}；失衡模式是{risk}', caution: '不推論疾病或特定身體部位', keys: ['emotionNeed', 'accumulationPattern'] },
@@ -391,7 +392,7 @@ var ASTRO_TOPIC_SEMANTIC_DATASET = {
   social_strength: { family: 'social', phrase: '人際優勢是{gift}，能讓人感到{social}', summary: '這項能力有助於你{drive}', detail: '可持續發揮{gift}；他人感受到{social}', caution: '', keys: ['socialGift', 'relationalImpact'] },
   social_boundary: { family: 'social', phrase: '人際衝突較容易由{risk}引發', summary: '通常是{need}沒有被說清楚時出現', detail: '觸發點是缺少{need}；常見反應是{risk}', caution: '先明確說出自己的底線，再處理立場', keys: ['boundaryTrigger', 'conflictResponse'] },
   social_circle: { family: 'social', phrase: '適合重視{need}、並容許你{drive}的人際圈', summary: '這種圈子能讓{gift}成為穩定貢獻', detail: '圈層價值是{need}；你能提供{gift}', caution: '', keys: ['circleValue', 'belongingCondition'] },
-  study_learning: { family: 'study', phrase: '學習時適合運用{gift}，並採取{pace}的節奏', summary: '能讓你{drive}的方式最容易維持投入', detail: '有效方法是{gift}；學習節奏偏向{pace}', caution: '', keys: ['learningMethod', 'learningPace'] },
+  study_learning: { family: 'study', phrase: '學習時適合運用{gift}，並採取{pace}的節奏', summary: '能讓你{drive}的方式最容易維持投入', detail: '有效方法是{gift}；吸收得最順的推進方式是{pace}', caution: '', keys: ['learningMethod', 'learningPace'] },
   study_memory: { family: 'study', phrase: '較容易透過{gift}建立理解與記憶', summary: '內容能連回{need}時，知識較容易留下', detail: '記憶線索是{gift}；理解條件是{need}', caution: '', keys: ['memoryCue', 'understandingCondition'] },
   study_block: { family: 'study', phrase: '學習卡住時常與{risk}有關', summary: '表面是拖延，底層可能是{need}沒有被滿足', detail: '觸發點是{risk}；可借助{gift}重新啟動', caution: '把任務縮小成能立即開始的下一步', keys: ['procrastinationTrigger', 'restartMethod'] },
   study_mode: { family: 'study', phrase: '適合能保有{need}、並發揮{gift}的學習模式', summary: '環境能支持你{drive}時，效率較穩定', detail: '需要的模式是{need}；可運用{gift}', caution: '', keys: ['studyFormat', 'environmentNeed'] },

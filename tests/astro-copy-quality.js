@@ -139,14 +139,23 @@ answers.forEach(a => {
 if (natalStyleFailures.length) fail(`星盤主題分析仍有去 AI 文風問題：${natalStyleFailures.slice(0, 3).join(' / ')}`);
 
 // 1. 分項重述自己的標籤
-const ECHO_RE = /^(.{2,7}?)(是|宜|為|需要|在於)/;
+// ECHO_RE 只認得「X是／宜／為⋯」這種句型。「壓力來臨時的反應會偏向⋯」用的是
+// 「會」，整句把標籤原封不動抄一遍卻抓不到，所以另外直接比對開頭與標籤的重疊。
+const ECHO_RE = /^(.{2,7}?)(是|宜|為|需要|在於|會|偏向|通常)/;
 let echo = 0;
 const echoSamples = [];
 answers.forEach(a => (a.details || []).forEach(d => {
-  const m = ECHO_RE.exec(d.text || '');
-  if (!m) return;
-  const shared = new Set([...m[1]].filter(ch => (d.label || '').includes(ch))).size;
-  if (shared >= 2) { echo++; if (echoSamples.length < 3) echoSamples.push(`[${d.label}] ${d.text}`); }
+  const text = d.text || '', label = d.label || '';
+  let hit = false;
+  const m = ECHO_RE.exec(text);
+  if (m) {
+    const shared = new Set([...m[1]].filter(ch => label.includes(ch))).size;
+    if (shared >= 2) hit = true;
+  }
+  // 開頭四個字有三個以上出現在標籤裡，等於把標籤再唸一次。
+  const head = text.slice(0, 4);
+  if (head.length === 4 && [...new Set(head)].filter(ch => label.includes(ch)).length >= 3) hit = true;
+  if (hit) { echo++; if (echoSamples.length < 3) echoSamples.push(`[${label}] ${text}`); }
 }));
 const ECHO_BUDGET = Math.ceil(allDetails * 0.03); // 容許 3%，模板組合難免有殘留
 if (echo > ECHO_BUDGET) {

@@ -2853,11 +2853,24 @@ function renderWizard(spreads, isTarot) {
     if (!state.category) {
       h += '<div role="status" style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:8px;text-align:right">請先選擇一個想詢問的面向，才能繼續下一步</div>';
     }
-    h += '<details style="margin-top:14px;border-top:1px solid rgba(201,169,110,.16);padding-top:10px"><summary style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);cursor:pointer;min-height:36px;display:flex;align-items:center">想自己選牌組？目前使用' + (isTarot ? '塔羅牌' : '雷諾曼牌') + '</summary>';
-    h += '<div style="display:flex;gap:8px;margin-top:8px">';
-    h += '<button type="button" onclick="wizSetDeck(\'tarot\')" style="min-height:44px;flex:1;text-align:center;background:' + (isTarot ? 'rgba(201,169,110,.15)' : 'rgba(255,255,255,.02)') + ';border:1px solid ' + (isTarot ? '#c9a96e' : 'rgba(201,169,110,.25)') + ';border-radius:10px;padding:9px;cursor:pointer;font:500 12px \'Noto Sans TC\',sans-serif;color:' + (isTarot ? '#f0e9d8' : 'rgba(240,233,216,.6)') + '">塔羅牌</button>';
-    h += '<button type="button" onclick="wizSetDeck(\'lenormand\')" style="min-height:44px;flex:1;text-align:center;background:' + (!isTarot ? 'rgba(201,169,110,.15)' : 'rgba(255,255,255,.02)') + ';border:1px solid ' + (!isTarot ? '#c9a96e' : 'rgba(201,169,110,.25)') + ';border-radius:10px;padding:9px;cursor:pointer;font:500 12px \'Noto Sans TC\',sans-serif;color:' + (!isTarot ? '#f0e9d8' : 'rgba(240,233,216,.6)') + '">雷諾曼牌</button>';
-    h += '</div>' + renderTarotLenormandGuide() + '</details>';
+    /* 這裡原本是原生 <details>，收合狀態只存在 DOM 裡。render() 會整段重畫
+       innerHTML，所以裡面任何會觸發 render() 的控制項（換牌組、展開說明）
+       一按下去，<details> 就被重建成關閉狀態——畫面看起來像跳回上一頁，
+       要再點一次才看得到結果。牌組選擇本來也藏在那個 11px 的灰字摘要裡。
+
+       改成常駐顯示：只有兩個選項，值得直接看到；說明另外用 state 控制展開。 */
+    h += '<div style="margin-top:16px;border-top:1px solid rgba(201,169,110,.16);padding-top:12px">';
+    h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72)">用哪一種牌</div>';
+    h += '<div role="group" aria-label="牌組" style="display:flex;gap:8px;margin-top:8px">';
+    h += '<button type="button" aria-pressed="' + isTarot + '" onclick="wizSetDeck(\'tarot\')" style="min-height:56px;flex:1;text-align:center;background:' + (isTarot ? 'rgba(201,169,110,.15)' : 'rgba(255,255,255,.02)') + ';border:1px solid ' + (isTarot ? '#c9a96e' : 'rgba(201,169,110,.25)') + ';border-radius:10px;padding:9px;cursor:pointer">'
+      + '<span style="display:block;font:500 13px \'Noto Sans TC\',sans-serif;color:' + (isTarot ? '#f0e9d8' : 'rgba(240,233,216,.7)') + '">' + (isTarot ? '✓ ' : '') + '塔羅牌</span>'
+      + '<span style="display:block;font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:2px">78 張・分正逆位</span></button>';
+    h += '<button type="button" aria-pressed="' + !isTarot + '" onclick="wizSetDeck(\'lenormand\')" style="min-height:56px;flex:1;text-align:center;background:' + (!isTarot ? 'rgba(201,169,110,.15)' : 'rgba(255,255,255,.02)') + ';border:1px solid ' + (!isTarot ? '#c9a96e' : 'rgba(201,169,110,.25)') + ';border-radius:10px;padding:9px;cursor:pointer">'
+      + '<span style="display:block;font:500 13px \'Noto Sans TC\',sans-serif;color:' + (!isTarot ? '#f0e9d8' : 'rgba(240,233,216,.7)') + '">' + (!isTarot ? '✓ ' : '') + '雷諾曼牌</span>'
+      + '<span style="display:block;font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:2px">36 張・直接明確</span></button>';
+    h += '</div>';
+    h += renderTarotLenormandGuide();
+    h += '</div>';
     h += wizBtns(false, !!state.category, '下一步', 'wizNext()');
 
   } else if (state.wizardStep === 2) {

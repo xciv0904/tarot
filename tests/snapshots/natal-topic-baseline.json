@@ -432,16 +432,16 @@
       "chartId": "fire_angular",
       "topicId": "health",
       "questionId": "health-stress-pattern",
-      "headline": "壓力多半在無法建立清楚的自我定位並主動承擔時累積。",
-      "summary": "當挑戰、自主與可立即投入的目標長期不足，容易出現求快、急躁或忽略他人節奏的反應。",
+      "headline": "壓力大時的反應通常是過度把成敗綁在自我價值上。",
+      "summary": "這通常發生在挑戰、自主與可立即投入的目標長期不足的時候。",
       "details": [
         {
           "label": "壓力來臨時的反應",
-          "text": "缺少被看見、被肯定並保有主體性。"
+          "text": "整體節奏會轉成主動而明確。"
         },
         {
           "label": "容易忽略的訊號",
-          "text": "反應節奏偏向直接而迅速。"
+          "text": "比較不會注意到的是挑戰、自主與可立即投入的目標已經不夠。"
         }
       ],
       "caution": "這是生活模式提醒，不是醫療診斷。",
@@ -805,7 +805,7 @@
         },
         {
           "label": "容易吸收的節奏",
-          "text": "學習節奏偏向靈活而快速。"
+          "text": "吸收得最順的推進方式是靈活而快速。"
         }
       ],
       "caution": "",
@@ -885,7 +885,7 @@
         },
         {
           "label": "現實條件要先確認",
-          "text": "安靜、想像空間與被理解的情感回應。"
+          "text": "安靜、想像空間與情感回應。"
         }
       ],
       "caution": "仍需評估語言、預算、資格與生活安排。",
@@ -1524,16 +1524,16 @@
       "chartId": "earth_saturn_career",
       "topicId": "health",
       "questionId": "health-stress-pattern",
-      "headline": "壓力多半在無法深入核心並完成根本性的轉化時累積。",
-      "summary": "當挑戰、自主與可立即投入的目標長期不足，容易出現求快、急躁或忽略他人節奏的反應。",
+      "headline": "壓力大時的反應通常是過度控制、猜疑或長期處於高張力。",
+      "summary": "這通常發生在挑戰、自主與可立即投入的目標長期不足的時候。",
       "details": [
         {
           "label": "壓力來臨時的反應",
-          "text": "缺少深度、真實與足夠的掌控感。"
+          "text": "整體節奏會轉成集中而強烈。"
         },
         {
           "label": "容易忽略的訊號",
-          "text": "反應節奏偏向直接而迅速。"
+          "text": "比較不會注意到的是挑戰、自主與可立即投入的目標已經不夠。"
         }
       ],
       "caution": "這是生活模式提醒，不是醫療診斷。",
@@ -1608,7 +1608,7 @@
       "chartId": "earth_saturn_career",
       "topicId": "health",
       "questionId": "health-energy-drain",
-      "headline": "長期缺少安靜、想像空間與被理解的情感回應。",
+      "headline": "長期缺少安靜、想像空間與情感回應。",
       "summary": "消耗來源通常重點不在單一事件，真正要看的是環境持續阻礙你創造價值、和諧與彼此欣賞。",
       "details": [
         {
@@ -1929,7 +1929,7 @@
       "topicId": "study",
       "questionId": "study-procrastination",
       "headline": "拖延通常發生在承諾與實際行動出現落差時。",
-      "summary": "表面是拖延，底層可能是安靜、想像空間與被理解的情感回應沒有被滿足。",
+      "summary": "表面是拖延，底層可能是安靜、想像空間與情感回應沒有被滿足。",
       "details": [
         {
           "label": "拖延的根本原因",
@@ -2616,16 +2616,16 @@
       "chartId": "air_uranus_network",
       "topicId": "health",
       "questionId": "health-stress-pattern",
-      "headline": "壓力多半在無法建立結構、責任與可長期維持的成果時累積。",
-      "summary": "當自主、差異性與不被僵化規則限制長期不足，容易出現突然抽離或為反對而反對的反應。",
+      "headline": "壓力大時的反應通常是過度保守、自我要求或害怕犯錯。",
+      "summary": "這通常發生在自主、差異性與不被僵化規則限制長期不足的時候。",
       "details": [
         {
           "label": "壓力來臨時的反應",
-          "text": "缺少清楚的底線、可靠的制度與可預期的進度。"
+          "text": "整體節奏會轉成審慎而穩定。"
         },
         {
           "label": "容易忽略的訊號",
-          "text": "反應節奏偏向跳躍而非線性。"
+          "text": "比較不會注意到的是自主、差異性與不被僵化規則限制已經不夠。"
         }
       ],
       "caution": "這是生活模式提醒，不是醫療診斷。",
@@ -2809,7 +2809,7 @@
         },
         {
           "label": "合作或獨立的傾向",
-          "text": "安靜、想像空間與被理解的情感回應。"
+          "text": "安靜、想像空間與情感回應。"
         }
       ],
       "caution": "合作前需用明確權責降低過度承接他人的情緒。",
@@ -2980,21 +2980,18 @@
       "chartId": "air_uranus_network",
       "topicId": "study",
       "questionId": "study-learning-style",
-      "headline": "學習時適合運用共感、想像與細膩的情緒觀察。",
-      "summary": "能讓你採取行動、突破阻力並爭取目標的方式最容易維持投入。",
-      "details": [
-        {
-          "label": "適合的學習方式",
-          "text": "會先找雙方都能接受的做法，並留意互動是否公平、得體。"
-        },
-        {
-          "label": "容易吸收的節奏",
-          "text": "學習節奏偏向直接而迅速。"
-        }
-      ],
+      "headline": "這題目前沒有足夠線索形成可靠答案。",
+      "summary": "現有星盤資料無法同時支持「適合的學習方式」與「容易吸收的教學節奏」，因此不借用其他題目的結論補上。",
+      "details": [],
       "caution": "",
       "primary": "planet|Neptune|6|3|",
-      "qualityFlags": []
+      "qualityFlags": [
+        {
+          "check": "question_contract",
+          "passed": false,
+          "note": "study-learning-style 未通過題目契約，已阻擋原答案：missing_required_term_group_1；原文：學習時適合運用共感、想像與細膩的情緒觀察。。能讓你採取行動、突破阻力並爭取目標的方式最容易維持投入。。會先找雙方都能接受的做法，並留意互動是否公平、得體。。吸收得最順的推進方式是直接而迅速。。"
+        }
+      ]
     },
     {
       "chartId": "air_uranus_network",
@@ -3021,7 +3018,7 @@
       "topicId": "study",
       "questionId": "study-procrastination",
       "headline": "拖延通常發生在被要求照固定方式行動、沒有調整空間時。",
-      "summary": "表面是拖延，底層可能是安靜、想像空間與被理解的情感回應沒有被滿足。",
+      "summary": "表面是拖延，底層可能是安靜、想像空間與情感回應沒有被滿足。",
       "details": [
         {
           "label": "拖延的根本原因",
@@ -3708,16 +3705,16 @@
       "chartId": "water_lunar_home",
       "topicId": "health",
       "questionId": "health-stress-pattern",
-      "headline": "壓力多半在無法採取行動、突破阻力並爭取目標時累積。",
-      "summary": "當清楚的底線、可靠的制度與可預期的進度長期不足。你容易出現過度保守、自我要求或害怕犯錯的反應。",
+      "headline": "壓力大時的反應通常是求快、急躁或忽略他人節奏。",
+      "summary": "這通常發生在清楚的底線、可靠的制度與可預期的進度長期不足的時候。",
       "details": [
         {
           "label": "壓力來臨時的反應",
-          "text": "缺少挑戰、自主與可立即投入的目標。"
+          "text": "整體節奏會轉成直接而迅速。"
         },
         {
           "label": "容易忽略的訊號",
-          "text": "反應節奏偏向審慎而穩定。"
+          "text": "比較不會注意到的是清楚的底線、可靠的制度與可預期的進度已經不夠。"
         }
       ],
       "caution": "這是生活模式提醒，不是醫療診斷。",
@@ -3792,7 +3789,7 @@
       "chartId": "water_lunar_home",
       "topicId": "health",
       "questionId": "health-energy-drain",
-      "headline": "長期缺少安靜、想像空間與被理解的情感回應。",
+      "headline": "長期缺少安靜、想像空間與情感回應。",
       "summary": "消耗來源通常重點不在單一事件，真正要看的是環境持續阻礙你理解資訊並建立清楚的連結。",
       "details": [
         {
@@ -4081,7 +4078,7 @@
         },
         {
           "label": "容易吸收的節奏",
-          "text": "學習節奏偏向開放而擴張。"
+          "text": "吸收得最順的推進方式是開放而擴張。"
         }
       ],
       "caution": "",
@@ -4137,7 +4134,7 @@
       "details": [
         {
           "label": "適合的知識類型",
-          "text": "需要的模式是安靜、想像空間與被理解的情感回應。"
+          "text": "需要的模式是安靜、想像空間與情感回應。"
         },
         {
           "label": "容易發揮實力的形式",
@@ -4800,16 +4797,16 @@
       "chartId": "tenth_house_stellium",
       "topicId": "health",
       "questionId": "health-stress-pattern",
-      "headline": "壓力多半在無法採取行動、突破阻力並爭取目標時累積。",
-      "summary": "當清楚的底線、可靠的制度與可預期的進度長期不足。你容易出現過度保守、自我要求或害怕犯錯的反應。",
+      "headline": "壓力大時的反應通常是求快、急躁或忽略他人節奏。",
+      "summary": "這通常發生在清楚的底線、可靠的制度與可預期的進度長期不足的時候。",
       "details": [
         {
           "label": "壓力來臨時的反應",
-          "text": "缺少挑戰、自主與可立即投入的目標。"
+          "text": "整體節奏會轉成直接而迅速。"
         },
         {
           "label": "容易忽略的訊號",
-          "text": "反應節奏偏向審慎而穩定。"
+          "text": "比較不會注意到的是清楚的底線、可靠的制度與可預期的進度已經不夠。"
         }
       ],
       "caution": "這是生活模式提醒，不是醫療診斷。",
@@ -4884,7 +4881,7 @@
       "chartId": "tenth_house_stellium",
       "topicId": "health",
       "questionId": "health-energy-drain",
-      "headline": "長期缺少安靜、想像空間與被理解的情感回應。",
+      "headline": "長期缺少安靜、想像空間與情感回應。",
       "summary": "消耗來源通常重點不在單一事件，真正要看的是環境持續阻礙你深入核心並完成根本性的轉化。",
       "details": [
         {
@@ -5144,7 +5141,7 @@
       "chartId": "tenth_house_stellium",
       "topicId": "social",
       "questionId": "social-circle-fit",
-      "headline": "適合重視安靜、想像空間與被理解的情感回應。",
+      "headline": "適合重視安靜、想像空間與情感回應。",
       "summary": "這種圈子能讓主導、決策與凝聚注意力成為穩定貢獻。",
       "details": [
         {
@@ -5173,7 +5170,7 @@
         },
         {
           "label": "容易吸收的節奏",
-          "text": "學習節奏偏向靈活而快速。"
+          "text": "吸收得最順的推進方式是靈活而快速。"
         }
       ],
       "caution": "",
@@ -5205,7 +5202,7 @@
       "topicId": "study",
       "questionId": "study-procrastination",
       "headline": "拖延通常發生在流程長期重複、看不到學習或擴展空間時。",
-      "summary": "表面是拖延，底層可能是安靜、想像空間與被理解的情感回應沒有被滿足。",
+      "summary": "表面是拖延，底層可能是安靜、想像空間與情感回應沒有被滿足。",
       "details": [
         {
           "label": "拖延的根本原因",
@@ -5892,16 +5889,16 @@
       "chartId": "twelfth_house_stellium",
       "topicId": "health",
       "questionId": "health-stress-pattern",
-      "headline": "壓力多半在無法採取行動、突破阻力並爭取目標時累積。",
-      "summary": "當清楚的底線、可靠的制度與可預期的進度長期不足。你容易出現過度保守、自我要求或害怕犯錯的反應。",
+      "headline": "壓力大時的反應通常是求快、急躁或忽略他人節奏。",
+      "summary": "這通常發生在清楚的底線、可靠的制度與可預期的進度長期不足的時候。",
       "details": [
         {
           "label": "壓力來臨時的反應",
-          "text": "缺少挑戰、自主與可立即投入的目標。"
+          "text": "整體節奏會轉成直接而迅速。"
         },
         {
           "label": "容易忽略的訊號",
-          "text": "反應節奏偏向審慎而穩定。"
+          "text": "比較不會注意到的是清楚的底線、可靠的制度與可預期的進度已經不夠。"
         }
       ],
       "caution": "這是生活模式提醒，不是醫療診斷。",
@@ -6265,7 +6262,7 @@
         },
         {
           "label": "容易吸收的節奏",
-          "text": "學習節奏偏向靈活而快速。"
+          "text": "吸收得最順的推進方式是靈活而快速。"
         }
       ],
       "caution": "",
@@ -6297,7 +6294,7 @@
       "topicId": "study",
       "questionId": "study-procrastination",
       "headline": "拖延通常發生在回覆忽冷忽熱、熟悉節奏突然改變時。",
-      "summary": "表面是拖延，底層可能是安靜、想像空間與被理解的情感回應沒有被滿足。",
+      "summary": "表面是拖延，底層可能是安靜、想像空間與情感回應沒有被滿足。",
       "details": [
         {
           "label": "拖延的根本原因",
@@ -6545,7 +6542,7 @@
       "details": [
         {
           "label": "做決定時先確認什麼",
-          "text": "判斷原則是是否支持安靜、想像空間與被理解的情感回應。"
+          "text": "判斷原則是是否支持安靜、想像空間與情感回應。"
         },
         {
           "label": "方向適合你的具體訊號",
@@ -6924,7 +6921,7 @@
       "chartId": "relationship_axis",
       "topicId": "family",
       "questionId": "family-living-env",
-      "headline": "適合能提供安靜、想像空間與被理解的情感回應的居住氛圍。",
+      "headline": "適合能提供安靜、想像空間與情感回應的居住氛圍。",
       "summary": "環境穩定時較能發揮執行、競爭與快速反應。",
       "details": [
         {
@@ -6984,16 +6981,16 @@
       "chartId": "relationship_axis",
       "topicId": "health",
       "questionId": "health-stress-pattern",
-      "headline": "壓力多半在無法採取行動、突破阻力並爭取目標時累積。",
-      "summary": "當清楚的底線、可靠的制度與可預期的進度長期不足。你容易出現過度保守、自我要求或害怕犯錯的反應。",
+      "headline": "壓力大時的反應通常是求快、急躁或忽略他人節奏。",
+      "summary": "這通常發生在清楚的底線、可靠的制度與可預期的進度長期不足的時候。",
       "details": [
         {
           "label": "壓力來臨時的反應",
-          "text": "缺少挑戰、自主與可立即投入的目標。"
+          "text": "整體節奏會轉成直接而迅速。"
         },
         {
           "label": "容易忽略的訊號",
-          "text": "反應節奏偏向審慎而穩定。"
+          "text": "比較不會注意到的是清楚的底線、可靠的制度與可預期的進度已經不夠。"
         }
       ],
       "caution": "這是生活模式提醒，不是醫療診斷。",
@@ -7348,21 +7345,18 @@
       "chartId": "relationship_axis",
       "topicId": "study",
       "questionId": "study-learning-style",
-      "headline": "學習時適合運用創新、獨立判斷與系統改革。",
-      "summary": "能讓你感受氣氛並用創作或同理回應的方式最容易維持投入。",
-      "details": [
-        {
-          "label": "適合的學習方式",
-          "text": "會主動接觸新題目、新圈子或不同做法，從變化中找到動力。"
-        },
-        {
-          "label": "容易吸收的節奏",
-          "text": "學習節奏偏向緩慢而流動。"
-        }
-      ],
+      "headline": "這題目前沒有足夠線索形成可靠答案。",
+      "summary": "現有星盤資料無法同時支持「適合的學習方式」與「容易吸收的教學節奏」，因此不借用其他題目的結論補上。",
+      "details": [],
       "caution": "",
       "primary": "planet|Uranus|6|3|",
-      "qualityFlags": []
+      "qualityFlags": [
+        {
+          "check": "question_contract",
+          "passed": false,
+          "note": "study-learning-style 未通過題目契約，已阻擋原答案：missing_required_term_group_1；原文：學習時適合運用創新、獨立判斷與系統改革。。能讓你感受氣氛並用創作或同理回應的方式最容易維持投入。。會主動接觸新題目、新圈子或不同做法，從變化中找到動力。。吸收得最順的推進方式是緩慢而流動。。"
+        }
+      ]
     },
     {
       "chartId": "relationship_axis",
@@ -7389,7 +7383,7 @@
       "topicId": "study",
       "questionId": "study-procrastination",
       "headline": "拖延通常發生在流程長期重複、看不到學習或擴展空間時。",
-      "summary": "表面是拖延，底層可能是安靜、想像空間與被理解的情感回應沒有被滿足。",
+      "summary": "表面是拖延，底層可能是安靜、想像空間與情感回應沒有被滿足。",
       "details": [
         {
           "label": "拖延的根本原因",
@@ -8076,16 +8070,16 @@
       "chartId": "second_eighth_resources",
       "topicId": "health",
       "questionId": "health-stress-pattern",
-      "headline": "壓力多半在無法採取行動、突破阻力並爭取目標時累積。",
-      "summary": "當清楚的底線、可靠的制度與可預期的進度長期不足。你容易出現過度保守、自我要求或害怕犯錯的反應。",
+      "headline": "壓力大時的反應通常是求快、急躁或忽略他人節奏。",
+      "summary": "這通常發生在清楚的底線、可靠的制度與可預期的進度長期不足的時候。",
       "details": [
         {
           "label": "壓力來臨時的反應",
-          "text": "缺少挑戰、自主與可立即投入的目標。"
+          "text": "整體節奏會轉成直接而迅速。"
         },
         {
           "label": "容易忽略的訊號",
-          "text": "反應節奏偏向審慎而穩定。"
+          "text": "比較不會注意到的是清楚的底線、可靠的制度與可預期的進度已經不夠。"
         }
       ],
       "caution": "這是生活模式提醒，不是醫療診斷。",
@@ -8420,7 +8414,7 @@
       "chartId": "second_eighth_resources",
       "topicId": "social",
       "questionId": "social-circle-fit",
-      "headline": "適合重視安靜、想像空間與被理解的情感回應。",
+      "headline": "適合重視安靜、想像空間與情感回應。",
       "summary": "這種圈子能讓美感、協調與關係經營成為穩定貢獻。",
       "details": [
         {
@@ -8449,7 +8443,7 @@
         },
         {
           "label": "容易吸收的節奏",
-          "text": "學習節奏偏向靈活而快速。"
+          "text": "吸收得最順的推進方式是靈活而快速。"
         }
       ],
       "caution": "",
@@ -8481,7 +8475,7 @@
       "topicId": "study",
       "questionId": "study-procrastination",
       "headline": "拖延通常發生在責任不清、標準反覆改變或他人沒有按約定交付時。",
-      "summary": "表面是拖延，底層可能是安靜、想像空間與被理解的情感回應沒有被滿足。",
+      "summary": "表面是拖延，底層可能是安靜、想像空間與情感回應沒有被滿足。",
       "details": [
         {
           "label": "拖延的根本原因",
@@ -9168,16 +9162,16 @@
       "chartId": "fifth_house_creative",
       "topicId": "health",
       "questionId": "health-stress-pattern",
-      "headline": "壓力多半在無法打破慣性並創造更自由的新做法時累積。",
-      "summary": "當挑戰、自主與可立即投入的目標長期不足，容易出現求快、急躁或忽略他人節奏的反應。",
+      "headline": "壓力大時的反應通常是突然抽離或為反對而反對。",
+      "summary": "這通常發生在挑戰、自主與可立即投入的目標長期不足的時候。",
       "details": [
         {
           "label": "壓力來臨時的反應",
-          "text": "缺少自主、差異性與不被僵化規則限制。"
+          "text": "整體節奏會轉成跳躍而非線性。"
         },
         {
           "label": "容易忽略的訊號",
-          "text": "反應節奏偏向直接而迅速。"
+          "text": "比較不會注意到的是挑戰、自主與可立即投入的目標已經不夠。"
         }
       ],
       "caution": "這是生活模式提醒，不是醫療診斷。",
@@ -9361,7 +9355,7 @@
         },
         {
           "label": "合作或獨立的傾向",
-          "text": "安靜、想像空間與被理解的情感回應。"
+          "text": "安靜、想像空間與情感回應。"
         }
       ],
       "caution": "合作前需用明確權責降低想得太多或注意力分散。",
@@ -9373,7 +9367,7 @@
       "topicId": "wealth",
       "questionId": "wealth-blindspot",
       "headline": "財務上較容易因想得太多或注意力分散而偏離計畫。",
-      "summary": "這通常發生在急著取得安靜、想像空間與被理解的情感回應時。",
+      "summary": "這通常發生在急著取得安靜、想像空間與情感回應時。",
       "details": [
         {
           "label": "容易忽略的風險",
@@ -9532,21 +9526,18 @@
       "chartId": "fifth_house_creative",
       "topicId": "study",
       "questionId": "study-learning-style",
-      "headline": "學習時適合運用洞察、危機處理與資源整合。",
-      "summary": "能讓你創造價值、和諧與彼此欣賞的方式最容易維持投入。",
-      "details": [
-        {
-          "label": "適合的學習方式",
-          "text": "會先找雙方都能接受的做法，並留意互動是否公平、得體。"
-        },
-        {
-          "label": "容易吸收的節奏",
-          "text": "學習節奏偏向講究平衡與感受。"
-        }
-      ],
+      "headline": "這題目前沒有足夠線索形成可靠答案。",
+      "summary": "現有星盤資料無法同時支持「適合的學習方式」與「容易吸收的教學節奏」，因此不借用其他題目的結論補上。",
+      "details": [],
       "caution": "",
       "primary": "planet|Pluto|10|3|",
-      "qualityFlags": []
+      "qualityFlags": [
+        {
+          "check": "question_contract",
+          "passed": false,
+          "note": "study-learning-style 未通過題目契約，已阻擋原答案：missing_required_term_group_1；原文：學習時適合運用洞察、危機處理與資源整合。。能讓你創造價值、和諧與彼此欣賞的方式最容易維持投入。。會先找雙方都能接受的做法，並留意互動是否公平、得體。。吸收得最順的推進方式是講究平衡與感受。。"
+        }
+      ]
     },
     {
       "chartId": "fifth_house_creative",
@@ -9573,7 +9564,7 @@
       "topicId": "study",
       "questionId": "study-procrastination",
       "headline": "拖延通常發生在氣氛緊張、有人可能失望或關係失去對等時。",
-      "summary": "表面是拖延，底層可能是安靜、想像空間與被理解的情感回應沒有被滿足。",
+      "summary": "表面是拖延，底層可能是安靜、想像空間與情感回應沒有被滿足。",
       "details": [
         {
           "label": "拖延的根本原因",
@@ -9965,7 +9956,7 @@
       "details": [
         {
           "label": "容易忽略的盲點",
-          "text": "觸發點是缺少安靜、想像空間與被理解的情感回應。"
+          "text": "觸發點是缺少安靜、想像空間與情感回應。"
         },
         {
           "label": "壓力下的反應",
@@ -10260,16 +10251,16 @@
       "chartId": "sixth_house_routine",
       "topicId": "health",
       "questionId": "health-stress-pattern",
-      "headline": "壓力多半在無法採取行動、突破阻力並爭取目標時累積。",
-      "summary": "當清楚的底線、可靠的制度與可預期的進度長期不足。你容易出現過度保守、自我要求或害怕犯錯的反應。",
+      "headline": "壓力大時的反應通常是求快、急躁或忽略他人節奏。",
+      "summary": "這通常發生在清楚的底線、可靠的制度與可預期的進度長期不足的時候。",
       "details": [
         {
           "label": "壓力來臨時的反應",
-          "text": "缺少挑戰、自主與可立即投入的目標。"
+          "text": "整體節奏會轉成直接而迅速。"
         },
         {
           "label": "容易忽略的訊號",
-          "text": "反應節奏偏向審慎而穩定。"
+          "text": "比較不會注意到的是清楚的底線、可靠的制度與可預期的進度已經不夠。"
         }
       ],
       "caution": "這是生活模式提醒，不是醫療診斷。",
@@ -10589,7 +10580,7 @@
       "details": [
         {
           "label": "面對衝突的反應",
-          "text": "觸發點是缺少安靜、想像空間與被理解的情感回應。"
+          "text": "觸發點是缺少安靜、想像空間與情感回應。"
         },
         {
           "label": "容易被跨過的底線",
@@ -10633,7 +10624,7 @@
         },
         {
           "label": "容易吸收的節奏",
-          "text": "學習節奏偏向靈活而快速。"
+          "text": "吸收得最順的推進方式是靈活而快速。"
         }
       ],
       "caution": "",
@@ -10665,7 +10656,7 @@
       "topicId": "study",
       "questionId": "study-procrastination",
       "headline": "拖延通常發生在承諾與實際行動出現落差時。",
-      "summary": "表面是拖延，底層可能是安靜、想像空間與被理解的情感回應沒有被滿足。",
+      "summary": "表面是拖延，底層可能是安靜、想像空間與情感回應沒有被滿足。",
       "details": [
         {
           "label": "拖延的根本原因",
@@ -11272,7 +11263,7 @@
       "chartId": "ninth_house_learning",
       "topicId": "family",
       "questionId": "family-boundary",
-      "headline": "和家人之間的底線需要保護安靜、想像空間與被理解的情感回應。",
+      "headline": "和家人之間的底線需要保護安靜、想像空間與情感回應。",
       "summary": "劃出底線重點不在疏遠，真正要看的是讓你能持續建立結構、責任與可長期維持的成果。",
       "details": [
         {
@@ -11292,7 +11283,7 @@
       "chartId": "ninth_house_learning",
       "topicId": "family",
       "questionId": "family-living-env",
-      "headline": "適合能提供安靜、想像空間與被理解的情感回應的居住氛圍。",
+      "headline": "適合能提供安靜、想像空間與情感回應的居住氛圍。",
       "summary": "環境穩定時較能發揮同理、照顧與察覺氣氛。",
       "details": [
         {
@@ -11337,7 +11328,7 @@
       "details": [
         {
           "label": "家庭與事業的關係",
-          "text": "共同支點是安靜、想像空間與被理解的情感回應。"
+          "text": "共同支點是安靜、想像空間與情感回應。"
         },
         {
           "label": "容易失衡的方向",
@@ -11352,16 +11343,16 @@
       "chartId": "ninth_house_learning",
       "topicId": "health",
       "questionId": "health-stress-pattern",
-      "headline": "壓力多半在無法採取行動、突破阻力並爭取目標時累積。",
-      "summary": "當清楚的底線、可靠的制度與可預期的進度長期不足。你容易出現過度保守、自我要求或害怕犯錯的反應。",
+      "headline": "壓力大時的反應通常是求快、急躁或忽略他人節奏。",
+      "summary": "這通常發生在清楚的底線、可靠的制度與可預期的進度長期不足的時候。",
       "details": [
         {
           "label": "壓力來臨時的反應",
-          "text": "缺少挑戰、自主與可立即投入的目標。"
+          "text": "整體節奏會轉成直接而迅速。"
         },
         {
           "label": "容易忽略的訊號",
-          "text": "反應節奏偏向審慎而穩定。"
+          "text": "比較不會注意到的是清楚的底線、可靠的制度與可預期的進度已經不夠。"
         }
       ],
       "caution": "這是生活模式提醒，不是醫療診斷。",
@@ -11716,21 +11707,18 @@
       "chartId": "ninth_house_learning",
       "topicId": "study",
       "questionId": "study-learning-style",
-      "headline": "學習時適合運用執行、競爭與快速反應。",
-      "summary": "能讓你打破慣性並創造更自由的新做法的方式最容易維持投入。",
-      "details": [
-        {
-          "label": "適合的學習方式",
-          "text": "會保留自己的時間與方法，不喜歡每一步都被規定。"
-        },
-        {
-          "label": "容易吸收的節奏",
-          "text": "學習節奏偏向跳躍而非線性。"
-        }
-      ],
+      "headline": "這題目前沒有足夠線索形成可靠答案。",
+      "summary": "現有星盤資料無法同時支持「適合的學習方式」與「容易吸收的教學節奏」，因此不借用其他題目的結論補上。",
+      "details": [],
       "caution": "",
       "primary": "planet|Mars|4|3|",
-      "qualityFlags": []
+      "qualityFlags": [
+        {
+          "check": "question_contract",
+          "passed": false,
+          "note": "study-learning-style 未通過題目契約，已阻擋原答案：missing_required_term_group_1；原文：學習時適合運用執行、競爭與快速反應。。能讓你打破慣性並創造更自由的新做法的方式最容易維持投入。。會保留自己的時間與方法，不喜歡每一步都被規定。。吸收得最順的推進方式是跳躍而非線性。。"
+        }
+      ]
     },
     {
       "chartId": "ninth_house_learning",
@@ -11757,7 +11745,7 @@
       "topicId": "study",
       "questionId": "study-procrastination",
       "headline": "拖延通常發生在流程長期重複、看不到學習或擴展空間時。",
-      "summary": "表面是拖延，底層可能是安靜、想像空間與被理解的情感回應沒有被滿足。",
+      "summary": "表面是拖延，底層可能是安靜、想像空間與情感回應沒有被滿足。",
       "details": [
         {
           "label": "拖延的根本原因",
@@ -12444,16 +12432,16 @@
       "chartId": "fixed_tension",
       "topicId": "health",
       "questionId": "health-stress-pattern",
-      "headline": "壓力多半在無法建立清楚的自我定位並主動承擔時累積。",
-      "summary": "當挑戰、自主與可立即投入的目標長期不足，容易出現求快、急躁或忽略他人節奏的反應。",
+      "headline": "壓力大時的反應通常是過度把成敗綁在自我價值上。",
+      "summary": "這通常發生在挑戰、自主與可立即投入的目標長期不足的時候。",
       "details": [
         {
           "label": "壓力來臨時的反應",
-          "text": "缺少被看見、被肯定並保有主體性。"
+          "text": "整體節奏會轉成主動而明確。"
         },
         {
           "label": "容易忽略的訊號",
-          "text": "反應節奏偏向直接而迅速。"
+          "text": "比較不會注意到的是挑戰、自主與可立即投入的目標已經不夠。"
         }
       ],
       "caution": "這是生活模式提醒，不是醫療診斷。",
