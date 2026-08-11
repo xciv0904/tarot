@@ -83,7 +83,7 @@
 - detailLabels：你在感情裡的優勢、別人會感受到的部分
 - semanticKeys：strength:harmony@planet|Venus|6|4|、strength:emotionalResponse@planet|Moon|11|5|、strength:visibility@planet|Moon|4|8|+freedom、strength:emotionalResponse@planet|Saturn|3|4|、strength:selfDirection@planet|Mars|0|10|+emotionalResponse、strength:freedom@planet|Mercury|10|12|+selfDirection、strength:visibility@planet|Moon|4|7|+harmony、strength:depthTrust@planet|Pluto|7|8|+emotionalResponse、strength:harmony@planet|Uranus|6|1|、strength:emotionalResponse@planet|Moon|7|10|+harmony、strength:dialogue@planet|Mercury|2|9|、strength:consistency@planet|Venus|1|4|
 - fallback：0%
-- 重複風險：title/detail 0；headline/detail 0.36；跨命盤 1
+- 重複風險：title/detail 0；headline/detail 0.06；跨命盤 1
 - WARNING：其中兩張測試盤的主結論較接近，原因是主導語義或落座相同
 
 ### 我的感情盲點（love-blindspot）— WARNING
@@ -143,7 +143,7 @@
 - detailLabels：最拿手的職場能力、別人會倚賴你的部分
 - semanticKeys：strength:selfDirection@planet|Mars|0|10|、strength:structure@planet|Saturn|9|10|、strength:freedom@planet|Uranus|10|1|+novelty、strength:emotionalResponse@planet|Moon|3|4|、strength:emotionalResponse@planet|Neptune|11|12|+selfDirection、strength:visibility@planet|Saturn|4|2|+selfDirection、strength:consistency@planet|Venus|1|2|、strength:selfDirection@planet|Mars|0|5|+visibility、strength:structure@planet|Mars|9|6|、strength:novelty@planet|Jupiter|8|9|、strength:depthTrust@planet|Mars|7|10|+visibility
 - fallback：0%
-- 重複風險：title/detail 0.33；headline/detail 0.33；跨命盤 1
+- 重複風險：title/detail 0.33；headline/detail 0.06；跨命盤 1
 - WARNING：其中兩張測試盤的主結論較接近，原因是主導語義或落座相同
 
 ### 適合穩定就業、自由工作或創業（career-work-mode）— WARNING
@@ -395,7 +395,7 @@
 - detailLabels：容易忽略的風險、壓力下的財務反應
 - semanticKeys：blindspot:harmony@planet|Venus|6|4|、blindspot:structure@planet|Sun|9|10|、blindspot:dialogue@planet|Mercury|2|11|、blindspot:emotionalResponse@planet|Sun|11|4|+visibility、blindspot:selfDirection@planet|Pluto|0|12|+harmony、blindspot:depthTrust@planet|Mars|7|9|+harmony、blindspot:visibility@planet|Sun|4|8|、blindspot:novelty@planet|Jupiter|8|8|、blindspot:novelty@planet|Mercury|8|8|+emotionalResponse、blindspot:structure@planet|Mars|9|6|+consistency、blindspot:novelty@planet|Saturn|8|5|+freedom、blindspot:novelty@planet|Jupiter|5|5|+structure
 - fallback：0%
-- 重複風險：title/detail 0.25；headline/detail 0.42；跨命盤 1
+- 重複風險：title/detail 0.25；headline/detail 0；跨命盤 1
 - WARNING：其中兩張測試盤的主結論較接近，原因是主導語義或落座相同
 
 ### 如何建立更穩定的財務結構（wealth-stable-structure）— WARNING
@@ -407,7 +407,7 @@
 - detailLabels：值得投入的方向、長期穩定的做法
 - semanticKeys：stable_financial_structure:structure@angle|mc|9||+harmony、stable_financial_structure:harmony@angle|mc|6||、stable_financial_structure:depthTrust@angle|mc|7||+harmony、stable_financial_structure:selfDirection@angle|mc|0||+emotionalResponse、stable_financial_structure:emotionalResponse@angle|mc|3||+selfDirection、stable_financial_structure:novelty@angle|mc|8||+depthTrust、stable_financial_structure:harmony@angle|mc|6||+visibility、stable_financial_structure:consistency@planet|Sun|1|2|+structure、stable_financial_structure:consistency@angle|mc|1||+novelty、stable_financial_structure:emotionalResponse@planet|Jupiter|3|2|+dialogue、stable_financial_structure:novelty@planet|Saturn|8|5|+structure、stable_financial_structure:visibility@angle|mc|4||
 - fallback：0%
-- 重複風險：title/detail 0.2；headline/detail 0.36；跨命盤 1
+- 重複風險：title/detail 0.2；headline/detail 0；跨命盤 1
 - WARNING：其中兩張測試盤的主結論較接近，原因是主導語義或落座相同
 
 ### 我給人的第一印象（social-first-impression）— WARNING
@@ -443,7 +443,7 @@
 - detailLabels：你在群體中的角色、別人會找你做的事
 - semanticKeys：role:dialogue@planet|Uranus|2|8|+novelty、role:emotionalResponse@planet|Pluto|3|1|、role:dialogue@planet|Mercury|2|11|+novelty、role:depthTrust@planet|Venus|7|7|+harmony、role:freedom@planet|Neptune|10|11|+structure、role:structure@planet|Saturn|11|11|+emotionalResponse、role:freedom@planet|Pluto|10|5|+depthTrust、role:structure@planet|Neptune|5|10|+emotionalResponse、role:novelty@planet|Mercury|8|8|+dialogue、role:depthTrust@planet|Moon|7|10|+emotionalResponse、role:dialogue@planet|Venus|2|2|+harmony、role:dialogue@planet|Mercury|11|2|+emotionalResponse
 - fallback：58%
-- 重複風險：title/detail 0.33；headline/detail 0.4；跨命盤 1
+- 重複風險：title/detail 0.33；headline/detail 0；跨命盤 1
 - WARNING：其中兩張測試盤的主結論較接近，原因是主導語義或落座相同；部分測試盤由空宮改採可追溯的宮主星資料
 
 ### 我的人際優勢（social-strength）— WARNING
@@ -467,7 +467,7 @@
 - detailLabels：面對衝突的反應、容易被跨過的底線
 - semanticKeys：boundary_conflict_pattern:harmony@planet|Venus|6|4|、boundary_conflict_pattern:emotionalResponse@planet|Moon|11|5|、boundary_conflict_pattern:visibility@planet|Sun|10|11|+freedom、boundary_conflict_pattern:emotionalResponse@planet|Saturn|3|4|、boundary_conflict_pattern:selfDirection@planet|Mars|0|10|、boundary_conflict_pattern:freedom@planet|Mercury|10|12|+dialogue、boundary_conflict_pattern:visibility@planet|Moon|4|7|+emotionalResponse、boundary_conflict_pattern:depthTrust@planet|Pluto|7|8|、boundary_conflict_pattern:harmony@planet|Uranus|6|1|、boundary_conflict_pattern:structure@planet|Neptune|9|5|+emotionalResponse、boundary_conflict_pattern:dialogue@planet|Mercury|2|9|、boundary_conflict_pattern:consistency@planet|Venus|1|4|
 - fallback：0%
-- 重複風險：title/detail 0.6；headline/detail 0；跨命盤 1
+- 重複風險：title/detail 0.6；headline/detail 0.33；跨命盤 1
 - WARNING：其中兩張測試盤的主結論較接近，原因是主導語義或落座相同
 
 ### 什麼樣的朋友圈最適合我？（social-circle-fit）— WARNING
@@ -491,7 +491,7 @@
 - detailLabels：適合的學習方式、容易吸收的節奏
 - semanticKeys：learning_style:visibility@planet|Mercury|4|3|+dialogue、learning_style:consistency@planet|Neptune|1|12|、learning_style:harmony@planet|Neptune|6|3|+freedom、learning_style:depthTrust@planet|Mercury|7|12|+consistency、learning_style:visibility@planet|Jupiter|4|8|+novelty、learning_style:harmony@planet|Venus|5|8|+structure、learning_style:novelty@planet|Neptune|8|4|、learning_style:emotionalResponse@planet|Moon|3|3|、learning_style:harmony@planet|Venus|6|5|+freedom、learning_style:depthTrust@planet|Pluto|11|6|+emotionalResponse、learning_style:freedom@planet|Uranus|10|9|+novelty、learning_style:freedom@planet|Saturn|10|7|+structure
 - fallback：42%
-- 重複風險：title/detail 0；headline/detail 0.36；跨命盤 1
+- 重複風險：title/detail 0；headline/detail 0；跨命盤 1
 - WARNING：其中兩張測試盤的主結論較接近，原因是主導語義或落座相同；部分測試盤由空宮改採可追溯的宮主星資料
 
 ### 我的資訊理解與記憶模式（study-memory-mode）— WARNING
@@ -563,7 +563,7 @@
 - detailLabels：學習上的優勢、需要留意的盲點
 - semanticKeys：blindspot:visibility@planet|Mercury|4|3|、blindspot:consistency@planet|Neptune|1|12|、blindspot:novelty@planet|Mars|10|11|+dialogue、blindspot:depthTrust@planet|Mercury|7|12|+dialogue、blindspot:visibility@planet|Jupiter|4|8|+novelty、blindspot:structure@planet|Venus|5|8|+harmony、blindspot:novelty@planet|Neptune|8|4|、blindspot:emotionalResponse@planet|Moon|3|3|、blindspot:harmony@planet|Venus|6|5|+novelty、blindspot:emotionalResponse@planet|Pluto|11|6|+depthTrust、blindspot:novelty@planet|Uranus|10|9|+freedom、blindspot:structure@planet|Saturn|10|7|+freedom
 - fallback：0%
-- 重複風險：title/detail 0；headline/detail 0.44；跨命盤 1
+- 重複風險：title/detail 0；headline/detail 0；跨命盤 1
 - WARNING：其中兩張測試盤的主結論較接近，原因是主導語義或落座相同
 
 ### 我適合用什麼成果證明自己學會了？（study-mastery-evidence）— WARNING
@@ -611,7 +611,7 @@
 - detailLabels：命盤中最核心的優勢、這股優勢展現的方式
 - semanticKeys：strength:selfDirection@planet|Mars|0|10|、strength:structure@planet|Saturn|9|10|、strength:freedom@planet|Uranus|10|1|、strength:emotionalResponse@planet|Moon|3|4|、strength:harmony@planet|Venus|11|10|+emotionalResponse、strength:emotionalResponse@planet|Neptune|11|12|、strength:visibility@planet|Saturn|4|2|、strength:consistency@planet|Venus|1|2|、strength:visibility@planet|Sun|4|5|、strength:structure@planet|Mercury|5|6|+dialogue、strength:novelty@planet|Jupiter|8|9|、strength:consistency@planet|Pluto|1|9|+depthTrust
 - fallback：0%
-- 重複風險：title/detail 0；headline/detail 0.24；跨命盤 1
+- 重複風險：title/detail 0；headline/detail 0.05；跨命盤 1
 - WARNING：其中兩張測試盤的主結論較接近，原因是主導語義或落座相同
 
 ### 最容易反覆出現的課題（general-recurring-issue）— PASS
@@ -634,7 +634,7 @@
 - detailLabels：值得優先投入的方向、成熟後的樣子
 - semanticKeys：priority_direction:selfDirection@planet|Mars|0|10|、priority_direction:structure@planet|Saturn|9|10|、priority_direction:freedom@planet|Uranus|10|1|+novelty、priority_direction:emotionalResponse@planet|Moon|3|4|、priority_direction:harmony@planet|Venus|11|10|+visibility、priority_direction:emotionalResponse@planet|Neptune|11|12|、priority_direction:visibility@planet|Saturn|4|2|、priority_direction:consistency@planet|Venus|1|2|、priority_direction:visibility@planet|Sun|4|5|、priority_direction:practicalCare@planet|Mercury|5|6|+structure、priority_direction:novelty@planet|Jupiter|8|9|、priority_direction:consistency@planet|Pluto|1|9|+visibility
 - fallback：0%
-- 重複風險：title/detail 0.14；headline/detail 0.31；跨命盤 1
+- 重複風險：title/detail 0.14；headline/detail 0.05；跨命盤 1
 - WARNING：其中兩張測試盤的主結論較接近，原因是主導語義或落座相同
 
 ### 如何平衡目前的內在矛盾（general-inner-tension）— WARNING

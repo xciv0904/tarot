@@ -4071,6 +4071,48 @@ function natalDropDanglingQuote(text) {
   if (at <= 0) return text.replace(/[「」]/g, '');
   return text.slice(0, at).replace(/[，、；和與及]+$/, '');
 }
+/* 縮短標題時最容易犯的錯：切在一個「成對框架」的中間。
+   「壓力多半在無法⋯時累積」的框架是「在⋯時」——切掉「時累積」之後剩下
+   「壓力多半在無法先感受氣氛」，每個字都還在，句子卻沒有謂語了。
+   單看字尾看不出來（結尾是「氛」，不是連接詞），所以字尾檢查擋不住。
+
+   規則：如果切點前面出現了某個框架的開頭、而它的結尾只存在於被切掉的部分，
+   這個切點就是壞的。寧可換一個切點或不切，也不要留下半個框架。 */
+var NATAL_SENTENCE_FRAMES = [
+  ['在', '時'], ['因', '而'], ['為了', '而'], ['把', '當成'],
+  ['從', '到'], ['雖然', '但'], ['如果', '就'], ['一旦', '就'],
+];
+function natalCutKeepsFrame(head, full) {
+  var tail = String(full || '').slice(String(head || '').length);
+  if (!tail) return true;
+  for (var i = 0; i < NATAL_SENTENCE_FRAMES.length; i++) {
+    var open = NATAL_SENTENCE_FRAMES[i][0], close = NATAL_SENTENCE_FRAMES[i][1];
+    if (head.indexOf(open) !== -1 && head.indexOf(close) === -1 && tail.indexOf(close) !== -1) return false;
+  }
+  return true;
+}
+/* 另一種切壞的方式：切點剛好落在「前置狀語」的結尾。
+   「大額或不確定的選擇中，容易為了證明能力而追加投入」切在第一個逗號，
+   會留下「大額或不確定的選擇中。」——那是一個狀語，不是句子。
+
+   判準用位置而不是字尾黑名單：這些方位／時間詞只有在「後面緊接逗號」時才是
+   狀語標記。「注意力集中。」句末沒有逗號，不受影響。 */
+var NATAL_ADVERBIAL_TAIL = /(中|時|裡|內|上|下|前|後|之間|之後|之前)$/;
+function natalCutIsFrontedAdverbial(head, full) {
+  var next = String(full || '').charAt(String(head || '').length);
+  return (next === '，' || next === '、') && NATAL_ADVERBIAL_TAIL.test(head);
+}
+/* 一個切點要能用，必須同時通過：不以連接詞收尾、引號成對、不切開成對框架、
+   不是前置狀語。集中在這裡，避免四個切點路徑各自漏掉其中一項。 */
+var NATAL_DANGLING_TAIL = /(且|與|並|或|的|是|在|為|需要|容易|可能|先)$/;
+function natalCutUsable(head, full) {
+  if (!head) return false;
+  if (NATAL_DANGLING_TAIL.test(head)) return false;
+  if (!natalQuotesBalanced(head)) return false;
+  if (!natalCutKeepsFrame(head, full)) return false;
+  if (natalCutIsFrontedAdverbial(head, full)) return false;
+  return true;
+}
 function compactNatalHeadline(text, questionFocus, answer) {
   var raw = String(text || '');
   var dominantDef = answer && answer.semanticProfile && natalSemanticDefinition(answer.semanticProfile.dominant);
@@ -4117,7 +4159,10 @@ function compactNatalHeadline(text, questionFocus, answer) {
     .replace(/^你的拉扯較可能發生在/, '主要拉扯在')
     .replace(/^重大選擇時，最可靠的原則是/, '重大選擇時，先');
   var clearBoundary = first.search(/，再|、並|，並/);
-  if (clearBoundary >= 9 && clearBoundary <= NATAL_HEADLINE_MAX_LENGTH - 2) first = first.slice(0, clearBoundary);
+  if (clearBoundary >= 9 && clearBoundary <= NATAL_HEADLINE_MAX_LENGTH - 2
+      && natalCutUsable(first.slice(0, clearBoundary), first)) {
+    first = first.slice(0, clearBoundary);
+  }
   if (questionFocus === 'overseas_cross_domain_fit' && first.length > NATAL_HEADLINE_MAX_LENGTH) {
     var finalAnd = first.lastIndexOf('與');
     if (finalAnd >= 12) first = first.slice(0, finalAnd);
@@ -4140,8 +4185,7 @@ function compactNatalHeadline(text, questionFocus, answer) {
     var isCloseQuote = chAt === '」';
     if ((!isPunct && !isCloseQuote) || i < 9 || i > NATAL_HEADLINE_MAX_LENGTH - 2) continue;
     var candidate = first.slice(0, isCloseQuote ? i + 1 : i);
-    if (/(且|與|並|或|的|是|在|為|需要|容易|可能|先)$/.test(candidate)) continue;
-    if (!natalQuotesBalanced(candidate)) continue;
+    if (!natalCutUsable(candidate, first)) continue;
     cuts.push(candidate);
   }
   /* 取最後一個（也就是在長度上限內最長的那個）候選；先前只有標點切點時，
@@ -4155,7 +4199,7 @@ function compactNatalHeadline(text, questionFocus, answer) {
     var at = first.indexOf(joins[j], 10);
     if (at > 0 && at <= NATAL_HEADLINE_MAX_LENGTH - 2) {
       var shorter = first.slice(0, at);
-      if (!/(且|與|並|或|的|是|在|為|需要|容易|可能|先)$/.test(shorter) && natalQuotesBalanced(shorter)) return shorter + '。';
+      if (natalCutUsable(shorter, first)) return shorter + '。';
     }
   }
 
@@ -4167,8 +4211,18 @@ function compactNatalHeadline(text, questionFocus, answer) {
     if (afterCut >= 6) afterColon = afterColon.slice(0, afterCut);
     if (afterColon.length + 1 <= NATAL_HEADLINE_MAX_LENGTH && natalQuotesBalanced(afterColon)) return afterColon + '。';
   }
-  var hardCut = first.slice(0, NATAL_HEADLINE_MAX_LENGTH - 2).replace(/(且|與|並|或|的|是|在|為|需要|容易|可能|先)+$/, '');
-  return natalDropDanglingQuote(hardCut) + '。';
+  /* 全部切點都不可用時，先從長度上限往回找最後一個可用的位置；再找不到，
+     就把完整句子原樣留著。30 字是顯示上的軟上限，句子完整是硬要求——
+     「大額或不確定的選擇中，容易為了證明能力、維持體面或讓成果。」這種
+     硬切出來的殘句，比一行超出四個字要糟得多。 */
+  for (var k = NATAL_HEADLINE_MAX_LENGTH - 2; k >= 9; k--) {
+    /* 只在標點邊界回退。從任意字元切會切進詞裡（「⋯選擇中，容。」），
+       那比留一句過長的完整話更難看懂。 */
+    if ('，、；'.indexOf(first.charAt(k)) === -1) continue;
+    var back = first.slice(0, k);
+    if (natalCutUsable(back, first)) return natalDropDanglingQuote(back) + '。';
+  }
+  return natalDropDanglingQuote(first) + '。';
 }
 function natalVisibleSimilarity(a, b) {
   var left = natalTextKey(a), right = natalTextKey(b);

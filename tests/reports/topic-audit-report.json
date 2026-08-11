@@ -302,7 +302,7 @@
         "relationship_axis：關係中的優勢是同理、照顧與察覺氣氛。",
         "second_eighth_resources：關係中的優勢是洞察、危機處理與資源整合。",
         "fifth_house_creative：關係中的優勢是創新、獨立判斷與系統改革。",
-        "sixth_house_routine：關係中的優勢是觀察細微情緒。",
+        "sixth_house_routine：關係中的優勢是共感、想像與細膩的情緒觀察。",
         "ninth_house_learning：關係中的優勢是學習、表達與整理複雜資訊。",
         "fixed_tension：關係中的優勢是美感、協調與關係經營。"
       ],
@@ -347,7 +347,7 @@
         "relationship_axis：感情裡較容易卡在過度承接他人的情緒。",
         "second_eighth_resources：感情裡較容易卡在過度控制、猜疑或長期處於高張力。",
         "fifth_house_creative：感情裡較容易卡在突然抽離或為反對而反對。",
-        "sixth_house_routine：感情裡較容易卡在把猜測當成事實，或替別人承擔過多情緒。",
+        "sixth_house_routine：感情裡較容易卡在把猜測當成事實或過度承接他人情緒。",
         "ninth_house_learning：感情裡較容易卡在想得太多或注意力分散。",
         "fixed_tension：感情裡較容易卡在為維持和諧而壓下真實立場。"
       ],
@@ -525,7 +525,7 @@
         "air_uranus_network：核心職場競爭力是創新、獨立判斷與系統改革。",
         "water_lunar_home：核心職場競爭力是同理、照顧與察覺氣氛。",
         "tenth_house_stellium：核心職場競爭力是美感、協調與關係經營。",
-        "twelfth_house_stellium：核心職場競爭力是觀察細微情緒。",
+        "twelfth_house_stellium：核心職場競爭力是共感、想像與細膩的情緒觀察。",
         "relationship_axis：核心職場競爭力是紀律、規劃與承受長期壓力。",
         "second_eighth_resources：核心職場競爭力是美感、協調與關係經營。",
         "fifth_house_creative：核心職場競爭力是主導、決策與凝聚注意力。",
@@ -841,11 +841,11 @@
         "water_lunar_home：和家人之間的底線需要保護清楚的底線。",
         "tenth_house_stellium：和家人之間的底線需要保護熟悉感、歸屬感與穩定回應。",
         "twelfth_house_stellium：和家人之間的底線需要保護交流、變化與足夠的思考空間。",
-        "relationship_axis：和家人之間的底線需要保護安靜思考、保留想像空間。",
+        "relationship_axis：和家人之間的底線需要保護安靜、想像空間與被理解的情感回應。",
         "second_eighth_resources：和家人之間的底線需要保護交流、變化與足夠的思考空間。",
         "fifth_house_creative：和家人之間的底線需要保護深度、真實與足夠的掌控感。",
         "sixth_house_routine：和家人之間的底線需要保護自主、差異性與不被僵化規則限制。",
-        "ninth_house_learning：和家人之間的底線需要保護安靜思考、保留想像空間。",
+        "ninth_house_learning：和家人之間的底線需要保護安靜、想像空間與被理解的情感回應。",
         "fixed_tension：和家人之間的底線需要保護公平、舒適與有品質的互動。"
       ],
       "direct": true,
@@ -886,11 +886,11 @@
         "water_lunar_home：適合能提供熟悉感、歸屬感與穩定回應的居住氛圍。",
         "tenth_house_stellium：適合能提供熟悉感、歸屬感與穩定回應的居住氛圍。",
         "twelfth_house_stellium：適合能提供交流、變化與足夠的思考空間的居住氛圍。",
-        "relationship_axis：適合能提供安靜思考、保留想像空間，也獲得情感回應的居住氛圍。",
+        "relationship_axis：適合能提供安靜、想像空間與被理解的情感回應的居住氛圍。",
         "second_eighth_resources：適合能提供交流、變化與足夠的思考空間的居住氛圍。",
         "fifth_house_creative：適合能提供深度、真實與足夠的掌控感的居住氛圍。",
         "sixth_house_routine：適合能提供自主、差異性與不被僵化規則限制的居住氛圍。",
-        "ninth_house_learning：適合能提供安靜思考、保留想像空間，也獲得情感回應的居住氛圍。",
+        "ninth_house_learning：適合能提供安靜、想像空間與被理解的情感回應的居住氛圍。",
         "fixed_tension：適合能提供公平、舒適與有品質的互動的居住氛圍。"
       ],
       "direct": true,
@@ -1064,7 +1064,7 @@
         "earth_saturn_career：較適合你的，是在舒服整潔的環境中維持不過度緊繃的固定節奏。",
         "air_uranus_network：較適合你的，是規律吃飯、睡眠時間穩定。",
         "water_lunar_home：較適合你的，是保留變化與戶外活動。",
-        "tenth_house_stellium：較適合你的，是減少過度刺激，在行程之間留白。",
+        "tenth_house_stellium：較適合你的，是減少過度刺激。",
         "twelfth_house_stellium：較適合你的，是每天保留一段能自主安排、完成明確目標的時間。",
         "relationship_axis：較適合你的，是採用短時間專注、穿插走動或切換任務的彈性節奏。",
         "second_eighth_resources：較適合你的，是動靜交替，白天安排能消耗體力或快速完成的任務。",
@@ -1198,10 +1198,10 @@
       ],
       "actualOutput": [
         "fire_angular：長期缺少交流、變化與足夠的思考空間。",
-        "earth_saturn_career：長期缺少安靜思考、保留想像空間，也獲得情感回應。",
+        "earth_saturn_career：長期缺少安靜、想像空間與被理解的情感回應。",
         "air_uranus_network：長期缺少熟悉感、歸屬感與穩定回應。",
-        "water_lunar_home：長期缺少安靜思考、保留想像空間，也獲得情感回應。",
-        "tenth_house_stellium：長期缺少安靜思考、保留想像空間，也獲得情感回應。",
+        "water_lunar_home：長期缺少安靜、想像空間與被理解的情感回應。",
+        "tenth_house_stellium：長期缺少安靜、想像空間與被理解的情感回應。",
         "twelfth_house_stellium：長期缺少被看見、被肯定並保有主體性。",
         "relationship_axis：長期缺少交流、變化與足夠的思考空間。",
         "second_eighth_resources：長期缺少挑戰、自主與可立即投入的目標，又必須面對求快。",
@@ -1385,7 +1385,7 @@
         "water_lunar_home：大額或不確定的選擇中，容易同時投入太多新興趣。",
         "tenth_house_stellium：大額或不確定的選擇中，容易為了不讓人失望而請客。",
         "twelfth_house_stellium：大額或不確定的選擇中，容易把預算訂得過緊。",
-        "relationship_axis：大額或不確定的選擇中，容易為了證明能力。",
+        "relationship_axis：大額或不確定的選擇中，容易為了證明能力或維持體面而超出預算。",
         "second_eighth_resources：大額或不確定的選擇中，容易同時投入太多新興趣。",
         "fifth_house_creative：大額或不確定的選擇中，容易情緒不安時用消費安撫自己。",
         "sixth_house_routine：大額或不確定的選擇中，容易把預算訂得過緊。",
@@ -1471,7 +1471,7 @@
       "actualOutput": [
         "fire_angular：財務上較容易因為維持和諧而壓下真實立場而偏離計畫。",
         "earth_saturn_career：財務上較容易因突然抽離或為反對而反對而偏離計畫。",
-        "air_uranus_network：財務上較容易因把猜測當成事實。",
+        "air_uranus_network：財務上較容易因把猜測當成事實或過度承接他人情緒而偏離計畫。",
         "water_lunar_home：財務上較容易因過度把成敗綁在自我價值上而偏離計畫。",
         "tenth_house_stellium：財務上較容易因過度控制、猜疑或長期處於高張力而偏離計畫。",
         "twelfth_house_stellium：財務上較容易因求快、急躁或忽略他人節奏而偏離計畫。",
@@ -1516,7 +1516,7 @@
       "actualOutput": [
         "fire_angular：財務結構應先用美感、協調與關係經營建立可持續的收入。",
         "earth_saturn_career：財務結構應先用創新、獨立判斷與系統改革建立可持續的收入。",
-        "air_uranus_network：財務結構應先用觀察細微情緒。",
+        "air_uranus_network：財務結構應先用共感、想像與細膩的情緒觀察建立可持續的收入。",
         "water_lunar_home：財務結構應先用執行、競爭與快速反應建立可持續的收入。",
         "tenth_house_stellium：財務結構應先用洞察、危機處理與資源整合建立可持續的收入。",
         "twelfth_house_stellium：財務結構應先用執行、競爭與快速反應建立可持續的收入。",
@@ -1653,10 +1653,10 @@
         "earth_saturn_career：團隊裡容易以創新、獨立判斷與系統改革承擔關鍵功能。",
         "air_uranus_network：團隊裡容易以主導、決策與凝聚注意力承擔關鍵功能。",
         "water_lunar_home：團隊裡容易以美感、協調與關係經營承擔關鍵功能。",
-        "tenth_house_stellium：團隊裡容易以觀察細微情緒。",
+        "tenth_house_stellium：團隊裡容易以共感、想像與細膩的情緒觀察承擔關鍵功能。",
         "twelfth_house_stellium：團隊裡容易以紀律、規劃與承受長期壓力承擔關鍵功能。",
         "relationship_axis：團隊裡容易以洞察、危機處理與資源整合承擔關鍵功能。",
-        "second_eighth_resources：團隊裡容易以觀察細微情緒。",
+        "second_eighth_resources：團隊裡容易以共感、想像與細膩的情緒觀察承擔關鍵功能。",
         "fifth_house_creative：團隊裡容易以整合、教導與看見長期機會承擔關鍵功能。",
         "sixth_house_routine：團隊裡容易以同理、照顧與察覺氣氛承擔關鍵功能。",
         "ninth_house_learning：團隊裡容易以美感、協調與關係經營承擔關鍵功能。",
@@ -1748,7 +1748,7 @@
         "relationship_axis：人際衝突較容易由過度承接他人的情緒引發。",
         "second_eighth_resources：人際衝突較容易由過度控制、猜疑或長期處於高張力引發。",
         "fifth_house_creative：人際衝突較容易由突然抽離或為反對而反對引發。",
-        "sixth_house_routine：人際衝突較容易由把猜測當成事實，或替別人承擔過多情緒引發。",
+        "sixth_house_routine：人際衝突較容易由把猜測當成事實或過度承接他人情緒引發。",
         "ninth_house_learning：人際衝突較容易由想得太多或注意力分散引發。",
         "fixed_tension：人際衝突較容易由為維持和諧而壓下真實立場引發。"
       ],
@@ -1788,10 +1788,10 @@
         "earth_saturn_career：適合重視自主、差異性與不被僵化規則限制。",
         "air_uranus_network：適合重視被看見、被肯定並保有主體性。",
         "water_lunar_home：適合重視公平、舒適與有品質的互動。",
-        "tenth_house_stellium：適合重視安靜思考、保留想像空間，也獲得情感回應。",
+        "tenth_house_stellium：適合重視安靜、想像空間與被理解的情感回應。",
         "twelfth_house_stellium：適合重視清楚的底線、可靠的制度與可預期的進度。",
         "relationship_axis：適合重視深度、真實與足夠的掌控感。",
-        "second_eighth_resources：適合重視安靜思考、保留想像空間，也獲得情感回應。",
+        "second_eighth_resources：適合重視安靜、想像空間與被理解的情感回應。",
         "fifth_house_creative：適合重視自由探索、意義感與更大的格局。",
         "sixth_house_routine：適合重視熟悉感、歸屬感與穩定回應。",
         "ninth_house_learning：適合重視公平、舒適與有品質的互動。",
@@ -1830,8 +1830,8 @@
       ],
       "actualOutput": [
         "fire_angular：學習時適合運用學習、表達與整理複雜資訊。",
-        "earth_saturn_career：學習時適合運用觀察細微情緒。",
-        "air_uranus_network：學習時適合運用觀察細微情緒。",
+        "earth_saturn_career：學習時適合運用共感、想像與細膩的情緒觀察。",
+        "air_uranus_network：學習時適合運用共感、想像與細膩的情緒觀察。",
         "water_lunar_home：學習時適合運用學習、表達與整理複雜資訊。",
         "tenth_house_stellium：學習時適合運用整合、教導與看見長期機會。",
         "twelfth_house_stellium：學習時適合運用美感、協調與關係經營。",
@@ -2100,12 +2100,12 @@
       ],
       "actualOutput": [
         "fire_angular：思考優勢是學習、表達與整理複雜資訊。",
-        "earth_saturn_career：思考優勢是觀察細微情緒。",
+        "earth_saturn_career：思考優勢是共感、想像與細膩的情緒觀察。",
         "air_uranus_network：思考優勢是執行、競爭與快速反應，但也要留意求快。",
         "water_lunar_home：思考優勢是學習、表達與整理複雜資訊。",
         "tenth_house_stellium：思考優勢是整合、教導與看見長期機會。",
         "twelfth_house_stellium：思考優勢是美感、協調與關係經營。",
-        "relationship_axis：思考優勢是觀察細微情緒。",
+        "relationship_axis：思考優勢是共感、想像與細膩的情緒觀察。",
         "second_eighth_resources：思考優勢是同理、照顧與察覺氣氛。",
         "fifth_house_creative：思考優勢是美感、協調與關係經營。",
         "sixth_house_routine：思考優勢是洞察、危機處理與資源整合，但也要留意過度控制。",
@@ -2286,7 +2286,7 @@
         "air_uranus_network：最值得持續發揮的核心能力是創新、獨立判斷與系統改革。",
         "water_lunar_home：最值得持續發揮的核心能力是同理、照顧與察覺氣氛。",
         "tenth_house_stellium：最值得持續發揮的核心能力是美感、協調與關係經營。",
-        "twelfth_house_stellium：最值得持續發揮的核心能力是觀察細微情緒。",
+        "twelfth_house_stellium：最值得持續發揮的核心能力是共感、想像與細膩的情緒觀察。",
         "relationship_axis：最值得持續發揮的核心能力是紀律、規劃與承受長期壓力。",
         "second_eighth_resources：最值得持續發揮的核心能力是美感、協調與關係經營。",
         "fifth_house_creative：最值得持續發揮的核心能力是主導、決策與凝聚注意力。",
@@ -2376,7 +2376,7 @@
         "air_uranus_network：現階段值得優先累積創新、獨立判斷與系統改革。",
         "water_lunar_home：現階段值得優先累積同理、照顧與察覺氣氛。",
         "tenth_house_stellium：現階段值得優先累積美感、協調與關係經營。",
-        "twelfth_house_stellium：現階段值得優先累積觀察細微情緒。",
+        "twelfth_house_stellium：現階段值得優先累積共感、想像與細膩的情緒觀察。",
         "relationship_axis：現階段值得優先累積紀律、規劃與承受長期壓力。",
         "second_eighth_resources：現階段值得優先累積美感、協調與關係經營。",
         "fifth_house_creative：現階段值得優先累積主導、決策與凝聚注意力。",
@@ -6123,13 +6123,13 @@
       ],
       "duplicateRisk": {
         "titleDetail": 0,
-        "headlineDetail": 0.36,
+        "headlineDetail": 0.06,
         "crossChart": 1
       },
       "abstractionRisk": {
         "density": 0.015,
         "longestSentence": 25,
-        "longestHeadline": 20
+        "longestHeadline": 21
       },
       "personalizationRisk": {
         "distinctPrimarySources": 12,
@@ -6346,11 +6346,11 @@
         },
         {
           "chartId": "sixth_house_routine",
-          "headline": "關係中的優勢是觀察細微情緒。",
+          "headline": "關係中的優勢是共感、想像與細膩的情緒觀察。",
           "details": [
             {
               "label": "你在感情裡的優勢",
-              "text": "可發揮觀察細微情緒，並把感受轉成文字或作品。"
+              "text": "會先讀取對方的情緒，再決定自己要靠近還是退開。"
             },
             {
               "label": "別人會感受到的部分",
@@ -6736,7 +6736,7 @@
       "abstractionRisk": {
         "density": 0.021,
         "longestSentence": 33,
-        "longestHeadline": 27
+        "longestHeadline": 25
       },
       "personalizationRisk": {
         "distinctPrimarySources": 12,
@@ -6953,11 +6953,11 @@
         },
         {
           "chartId": "sixth_house_routine",
-          "headline": "感情裡較容易卡在把猜測當成事實，或替別人承擔過多情緒。",
+          "headline": "感情裡較容易卡在把猜測當成事實或過度承接他人情緒。",
           "details": [
             {
               "label": "容易忽略的盲點",
-              "text": "觸發點是缺少安靜思考、保留想像空間，也獲得情感回應。"
+              "text": "觸發點是缺少安靜、想像空間與被理解的情感回應。"
             },
             {
               "label": "壓力下的反應",
@@ -9305,13 +9305,13 @@
       ],
       "duplicateRisk": {
         "titleDetail": 0.33,
-        "headlineDetail": 0.33,
+        "headlineDetail": 0.06,
         "crossChart": 1
       },
       "abstractionRisk": {
         "density": 0.008,
         "longestSentence": 27,
-        "longestHeadline": 21
+        "longestHeadline": 22
       },
       "personalizationRisk": {
         "distinctPrimarySources": 12,
@@ -9436,18 +9436,18 @@
         },
         {
           "chartId": "twelfth_house_stellium",
-          "headline": "核心職場競爭力是觀察細微情緒。",
+          "headline": "核心職場競爭力是共感、想像與細膩的情緒觀察。",
           "details": [
             {
               "label": "最拿手的職場能力",
-              "text": "觀察細微情緒，並把感受轉成文字或作品。"
+              "text": "會先讀取對方的情緒，再決定自己要靠近還是退開。"
             },
             {
               "label": "別人會倚賴你的部分",
               "text": "穩定表現需要被看見、被肯定並保有主體性。"
             }
           ],
-          "caution": "留意把猜測當成事實，或替別人承擔過多情緒。",
+          "caution": "留意把猜測當成事實或過度承接他人情緒。",
           "primary": "planet|Neptune|11|12|",
           "answerTarget": "workplace_advantages",
           "contractStatus": "pass",
@@ -12592,7 +12592,7 @@
           "details": [
             {
               "label": "家人通常找你做什麼",
-              "text": "主要角色是先聽懂對方的感受，再用溫和方式回應。"
+              "text": "主要角色是以同理與溫和回應建立連結。"
             },
             {
               "label": "你實際承擔的部分",
@@ -12684,7 +12684,7 @@
           "details": [
             {
               "label": "家人通常找你做什麼",
-              "text": "主要角色是先聽懂對方的感受，再用溫和方式回應。"
+              "text": "主要角色是以同理與溫和回應建立連結。"
             },
             {
               "label": "你實際承擔的部分",
@@ -13685,7 +13685,7 @@
       "abstractionRisk": {
         "density": 0.001,
         "longestSentence": 38,
-        "longestHeadline": 28
+        "longestHeadline": 29
       },
       "personalizationRisk": {
         "distinctPrimarySources": 12,
@@ -13833,7 +13833,7 @@
         },
         {
           "chartId": "relationship_axis",
-          "headline": "和家人之間的底線需要保護安靜思考、保留想像空間。",
+          "headline": "和家人之間的底線需要保護安靜、想像空間與被理解的情感回應。",
           "details": [
             {
               "label": "底線被碰到時怎麼說",
@@ -13844,7 +13844,7 @@
               "text": "可運用執行、競爭與快速反應協調。"
             }
           ],
-          "caution": "別讓把猜測當成事實，或替別人承擔過多情緒取代明確溝通。",
+          "caution": "別讓把猜測當成事實或過度承接他人情緒取代明確溝通。",
           "primary": "planet|Neptune|8|4|",
           "answerTarget": "family_boundary_setting",
           "contractStatus": "pass",
@@ -13925,7 +13925,7 @@
         },
         {
           "chartId": "ninth_house_learning",
-          "headline": "和家人之間的底線需要保護安靜思考、保留想像空間。",
+          "headline": "和家人之間的底線需要保護安靜、想像空間與被理解的情感回應。",
           "details": [
             {
               "label": "底線被碰到時怎麼說",
@@ -13936,7 +13936,7 @@
               "text": "可運用紀律、規劃與承受長期壓力協調。"
             }
           ],
-          "caution": "別讓把猜測當成事實，或替別人承擔過多情緒取代明確溝通。",
+          "caution": "別讓把猜測當成事實或過度承接他人情緒取代明確溝通。",
           "primary": "planet|Neptune|0|7|",
           "answerTarget": "family_boundary_setting",
           "contractStatus": "pass",
@@ -14335,8 +14335,8 @@
       },
       "abstractionRisk": {
         "density": 0.007,
-        "longestSentence": 29,
-        "longestHeadline": 30
+        "longestSentence": 26,
+        "longestHeadline": 27
       },
       "personalizationRisk": {
         "distinctPrimarySources": 11,
@@ -14484,7 +14484,7 @@
         },
         {
           "chartId": "relationship_axis",
-          "headline": "適合能提供安靜思考、保留想像空間，也獲得情感回應的居住氛圍。",
+          "headline": "適合能提供安靜、想像空間與被理解的情感回應的居住氛圍。",
           "details": [
             {
               "label": "適合的居住條件",
@@ -14576,7 +14576,7 @@
         },
         {
           "chartId": "ninth_house_learning",
-          "headline": "適合能提供安靜思考、保留想像空間，也獲得情感回應的居住氛圍。",
+          "headline": "適合能提供安靜、想像空間與被理解的情感回應的居住氛圍。",
           "details": [
             {
               "label": "適合的居住條件",
@@ -15554,8 +15554,8 @@
         "crossChart": 1
       },
       "abstractionRisk": {
-        "density": 0.015,
-        "longestSentence": 34,
+        "density": 0.016,
+        "longestSentence": 29,
         "longestHeadline": 22
       },
       "personalizationRisk": {
@@ -15800,14 +15800,14 @@
           "details": [
             {
               "label": "家庭與事業的關係",
-              "text": "共同支點是安靜思考、保留想像空間，也獲得情感回應。"
+              "text": "共同支點是安靜、想像空間與被理解的情感回應。"
             },
             {
               "label": "容易失衡的方向",
-              "text": "分配原則是先觀察氣氛，再慢慢整理成話。"
+              "text": "分配原則是緩慢而流動。"
             }
           ],
-          "caution": "留意把猜測當成事實，或替別人承擔過多情緒。",
+          "caution": "留意把猜測當成事實或過度承接他人情緒。",
           "primary": "angle|ic|11||",
           "answerTarget": "family_career_balance",
           "contractStatus": "pass",
@@ -16923,7 +16923,7 @@
         },
         {
           "chartId": "tenth_house_stellium",
-          "headline": "較適合你的，是減少過度刺激，在行程之間留白。",
+          "headline": "較適合你的，是減少過度刺激。",
           "details": [
             {
               "label": "先怎麼試行",
@@ -18719,7 +18719,7 @@
         },
         {
           "chartId": "earth_saturn_career",
-          "headline": "長期缺少安靜思考、保留想像空間，也獲得情感回應。",
+          "headline": "長期缺少安靜、想像空間與被理解的情感回應。",
           "details": [
             {
               "label": "容易消耗你的情境",
@@ -18765,7 +18765,7 @@
         },
         {
           "chartId": "water_lunar_home",
-          "headline": "長期缺少安靜思考、保留想像空間，也獲得情感回應。",
+          "headline": "長期缺少安靜、想像空間與被理解的情感回應。",
           "details": [
             {
               "label": "容易消耗你的情境",
@@ -18788,7 +18788,7 @@
         },
         {
           "chartId": "tenth_house_stellium",
-          "headline": "長期缺少安靜思考、保留想像空間，也獲得情感回應。",
+          "headline": "長期缺少安靜、想像空間與被理解的情感回應。",
           "details": [
             {
               "label": "容易消耗你的情境",
@@ -18819,7 +18819,7 @@
             },
             {
               "label": "需要降低的負荷",
-              "text": "把猜測當成事實，或替別人承擔過多情緒。"
+              "text": "把猜測當成事實或過度承接他人情緒。"
             }
           ],
           "caution": "若疲憊或不適持續，仍應尋求合格醫療專業協助。",
@@ -19350,7 +19350,7 @@
       },
       "abstractionRisk": {
         "density": 0.017,
-        "longestSentence": 30,
+        "longestSentence": 28,
         "longestHeadline": 17
       },
       "personalizationRisk": {
@@ -19411,14 +19411,14 @@
           "details": [
             {
               "label": "主要的賺錢方式",
-              "text": "核心收入能力是觀察細微情緒，並把感受轉成文字或作品。"
+              "text": "核心收入能力是共感、想像與細膩的情緒觀察。"
             },
             {
               "label": "容易發揮的行動",
               "text": "累積方式偏向開放而擴張。"
             }
           ],
-          "caution": "避免因把猜測當成事實，或替別人承擔過多情緒讓收入結構失去穩定。",
+          "caution": "避免因把猜測當成事實或過度承接他人情緒讓收入結構失去穩定。",
           "primary": "angle|mc|7||",
           "answerTarget": "money_source",
           "contractStatus": "pass",
@@ -21236,8 +21236,8 @@
       },
       "abstractionRisk": {
         "density": 0,
-        "longestSentence": 27,
-        "longestHeadline": 27
+        "longestSentence": 29,
+        "longestHeadline": 30
       },
       "personalizationRisk": {
         "distinctPrimarySources": 12,
@@ -21385,7 +21385,7 @@
         },
         {
           "chartId": "relationship_axis",
-          "headline": "大額或不確定的選擇中，容易為了證明能力。",
+          "headline": "大額或不確定的選擇中，容易為了證明能力或維持體面而超出預算。",
           "details": [
             {
               "label": "下決定前要核對什麼",
@@ -21849,7 +21849,7 @@
       },
       "abstractionRisk": {
         "density": 0.018,
-        "longestSentence": 29,
+        "longestSentence": 28,
         "longestHeadline": 23
       },
       "personalizationRisk": {
@@ -21914,7 +21914,7 @@
             },
             {
               "label": "合作或獨立的傾向",
-              "text": "安靜思考、保留想像空間，也獲得情感回應。"
+              "text": "安靜、想像空間與被理解的情感回應。"
             }
           ],
           "caution": "合作前需用明確權責降低過度承接他人的情緒。",
@@ -22052,7 +22052,7 @@
             },
             {
               "label": "合作或獨立的傾向",
-              "text": "安靜思考、保留想像空間，也獲得情感回應。"
+              "text": "安靜、想像空間與被理解的情感回應。"
             }
           ],
           "caution": "合作前需用明確權責降低想得太多或注意力分散。",
@@ -22463,13 +22463,13 @@
       ],
       "duplicateRisk": {
         "titleDetail": 0.25,
-        "headlineDetail": 0.42,
+        "headlineDetail": 0,
         "crossChart": 1
       },
       "abstractionRisk": {
         "density": 0.017,
-        "longestSentence": 30,
-        "longestHeadline": 28
+        "longestSentence": 28,
+        "longestHeadline": 29
       },
       "personalizationRisk": {
         "distinctPrimarySources": 12,
@@ -22525,11 +22525,11 @@
         },
         {
           "chartId": "air_uranus_network",
-          "headline": "財務上較容易因把猜測當成事實。",
+          "headline": "財務上較容易因把猜測當成事實或過度承接他人情緒而偏離計畫。",
           "details": [
             {
               "label": "容易忽略的風險",
-              "text": "常見盲點是把猜測當成事實，或替別人承擔過多情緒。"
+              "text": "會用提問、比較資訊和來回討論確認彼此是否理解一致。"
             },
             {
               "label": "壓力下的財務反應",
@@ -22671,7 +22671,7 @@
             },
             {
               "label": "壓力下的財務反應",
-              "text": "修正資源是觀察細微情緒，並把感受轉成文字或作品。"
+              "text": "修正資源是共感、想像與細膩的情緒觀察。"
             }
           ],
           "caution": "先寫清楚預算與退出條件。",
@@ -23126,13 +23126,13 @@
       ],
       "duplicateRisk": {
         "titleDetail": 0.2,
-        "headlineDetail": 0.36,
+        "headlineDetail": 0,
         "crossChart": 1
       },
       "abstractionRisk": {
         "density": 0.004,
-        "longestSentence": 43,
-        "longestHeadline": 28
+        "longestSentence": 41,
+        "longestHeadline": 29
       },
       "personalizationRisk": {
         "distinctPrimarySources": 12,
@@ -23188,18 +23188,18 @@
         },
         {
           "chartId": "air_uranus_network",
-          "headline": "財務結構應先用觀察細微情緒。",
+          "headline": "財務結構應先用共感、想像與細膩的情緒觀察建立可持續的收入。",
           "details": [
             {
               "label": "值得投入的方向",
-              "text": "收入基礎是觀察細微情緒，並把感受轉成文字或作品。"
+              "text": "會追問表面說法背後的動機，重要事情不接受含糊帶過。"
             },
             {
               "label": "長期穩定的做法",
               "text": "每月先固定儲蓄，再安排生活與彈性支出。"
             }
           ],
-          "caution": "若把猜測當成事實，或替別人承擔過多情緒讓預算反覆失守，就縮小單筆支出上限並每週核對一次。",
+          "caution": "若把猜測當成事實或過度承接他人情緒讓預算反覆失守，就縮小單筆支出上限並每週核對一次。",
           "primary": "angle|mc|7||",
           "answerTarget": "financial_priority",
           "contractStatus": "pass",
@@ -24834,13 +24834,13 @@
       ],
       "duplicateRisk": {
         "titleDetail": 0.33,
-        "headlineDetail": 0.4,
+        "headlineDetail": 0,
         "crossChart": 1
       },
       "abstractionRisk": {
         "density": 0.005,
         "longestSentence": 26,
-        "longestHeadline": 25
+        "longestHeadline": 26
       },
       "personalizationRisk": {
         "distinctPrimarySources": 12,
@@ -24942,18 +24942,18 @@
         },
         {
           "chartId": "tenth_house_stellium",
-          "headline": "團隊裡容易以觀察細微情緒。",
+          "headline": "團隊裡容易以共感、想像與細膩的情緒觀察承擔關鍵功能。",
           "details": [
             {
               "label": "你在群體中的角色",
-              "text": "團隊貢獻是觀察細微情緒，並把感受轉成文字或作品。"
+              "text": "會保留自己的時間與方法，不喜歡每一步都被規定。"
             },
             {
               "label": "別人會找你做的事",
               "text": "常呈現自然成為焦點或代表人物。"
             }
           ],
-          "caution": "別讓把猜測當成事實，或替別人承擔過多情緒破壞分工。",
+          "caution": "別讓把猜測當成事實或過度承接他人情緒破壞分工。",
           "primary": "planet|Neptune|10|11|",
           "answerTarget": "group_role",
           "contractStatus": "pass",
@@ -25011,18 +25011,18 @@
         },
         {
           "chartId": "second_eighth_resources",
-          "headline": "團隊裡容易以觀察細微情緒。",
+          "headline": "團隊裡容易以共感、想像與細膩的情緒觀察承擔關鍵功能。",
           "details": [
             {
               "label": "你在群體中的角色",
-              "text": "團隊貢獻是觀察細微情緒，並把感受轉成文字或作品。"
+              "text": "會先確認規則、期限和誰負責哪一段，再放心投入。"
             },
             {
               "label": "別人會找你做的事",
-              "text": "常呈現先聽懂對方的感受，再用溫和方式回應。"
+              "text": "常呈現以同理與溫和回應建立連結。"
             }
           ],
-          "caution": "別讓把猜測當成事實，或替別人承擔過多情緒破壞分工。",
+          "caution": "別讓把猜測當成事實或過度承接他人情緒破壞分工。",
           "primary": "planet|Neptune|5|10|",
           "answerTarget": "group_role",
           "contractStatus": "pass",
@@ -26001,13 +26001,13 @@
       ],
       "duplicateRisk": {
         "titleDetail": 0.6,
-        "headlineDetail": 0,
+        "headlineDetail": 0.33,
         "crossChart": 1
       },
       "abstractionRisk": {
         "density": 0.001,
-        "longestSentence": 28,
-        "longestHeadline": 29
+        "longestSentence": 26,
+        "longestHeadline": 27
       },
       "personalizationRisk": {
         "distinctPrimarySources": 12,
@@ -26224,11 +26224,11 @@
         },
         {
           "chartId": "sixth_house_routine",
-          "headline": "人際衝突較容易由把猜測當成事實，或替別人承擔過多情緒引發。",
+          "headline": "人際衝突較容易由把猜測當成事實或過度承接他人情緒引發。",
           "details": [
             {
               "label": "面對衝突的反應",
-              "text": "觸發點是缺少安靜思考、保留想像空間，也獲得情感回應。"
+              "text": "觸發點是缺少安靜、想像空間與被理解的情感回應。"
             },
             {
               "label": "容易被跨過的底線",
@@ -26615,7 +26615,7 @@
       "abstractionRisk": {
         "density": 0.004,
         "longestSentence": 26,
-        "longestHeadline": 24
+        "longestHeadline": 23
       },
       "personalizationRisk": {
         "distinctPrimarySources": 12,
@@ -26717,7 +26717,7 @@
         },
         {
           "chartId": "tenth_house_stellium",
-          "headline": "適合重視安靜思考、保留想像空間，也獲得情感回應。",
+          "headline": "適合重視安靜、想像空間與被理解的情感回應。",
           "details": [
             {
               "label": "適合的社交圈類型",
@@ -26786,7 +26786,7 @@
         },
         {
           "chartId": "second_eighth_resources",
-          "headline": "適合重視安靜思考、保留想像空間，也獲得情感回應。",
+          "headline": "適合重視安靜、想像空間與被理解的情感回應。",
           "details": [
             {
               "label": "適合的社交圈類型",
@@ -27212,13 +27212,13 @@
       ],
       "duplicateRisk": {
         "titleDetail": 0,
-        "headlineDetail": 0.36,
+        "headlineDetail": 0,
         "crossChart": 1
       },
       "abstractionRisk": {
         "density": 0.005,
-        "longestSentence": 28,
-        "longestHeadline": 20
+        "longestSentence": 27,
+        "longestHeadline": 21
       },
       "personalizationRisk": {
         "distinctPrimarySources": 12,
@@ -27251,11 +27251,11 @@
         },
         {
           "chartId": "earth_saturn_career",
-          "headline": "學習時適合運用觀察細微情緒。",
+          "headline": "學習時適合運用共感、想像與細膩的情緒觀察。",
           "details": [
             {
               "label": "適合的學習方式",
-              "text": "有效方法是觀察細微情緒，並把感受轉成文字或作品。"
+              "text": "會觀察一個人是否長期說到做到，而不是只看當下熱度。"
             },
             {
               "label": "容易吸收的節奏",
@@ -27274,11 +27274,11 @@
         },
         {
           "chartId": "air_uranus_network",
-          "headline": "學習時適合運用觀察細微情緒。",
+          "headline": "學習時適合運用共感、想像與細膩的情緒觀察。",
           "details": [
             {
               "label": "適合的學習方式",
-              "text": "有效方法是觀察細微情緒，並把感受轉成文字或作品。"
+              "text": "會先找雙方都能接受的做法，並留意互動是否公平、得體。"
             },
             {
               "label": "容易吸收的節奏",
@@ -27374,7 +27374,7 @@
             },
             {
               "label": "容易吸收的節奏",
-              "text": "學習節奏偏向先觀察氣氛，再慢慢整理成話。"
+              "text": "學習節奏偏向緩慢而流動。"
             }
           ],
           "caution": "",
@@ -28394,7 +28394,7 @@
       },
       "abstractionRisk": {
         "density": 0,
-        "longestSentence": 35,
+        "longestSentence": 32,
         "longestHeadline": 30
       },
       "personalizationRisk": {
@@ -28413,7 +28413,7 @@
             },
             {
               "label": "分心的常見觸發點",
-              "text": "可借助觀察細微情緒，並把感受轉成文字或作品重新啟動。"
+              "text": "可借助共感、想像與細膩的情緒觀察重新啟動。"
             }
           ],
           "caution": "把任務縮小成能立即開始的下一步。",
@@ -28436,7 +28436,7 @@
             },
             {
               "label": "分心的常見觸發點",
-              "text": "可借助觀察細微情緒，並把感受轉成文字或作品重新啟動。"
+              "text": "可借助共感、想像與細膩的情緒觀察重新啟動。"
             }
           ],
           "caution": "把任務縮小成能立即開始的下一步。",
@@ -28459,7 +28459,7 @@
             },
             {
               "label": "分心的常見觸發點",
-              "text": "可借助觀察細微情緒，並把感受轉成文字或作品重新啟動。"
+              "text": "可借助共感、想像與細膩的情緒觀察重新啟動。"
             }
           ],
           "caution": "把任務縮小成能立即開始的下一步。",
@@ -28482,7 +28482,7 @@
             },
             {
               "label": "分心的常見觸發點",
-              "text": "可借助觀察細微情緒，並把感受轉成文字或作品重新啟動。"
+              "text": "可借助共感、想像與細膩的情緒觀察重新啟動。"
             }
           ],
           "caution": "把任務縮小成能立即開始的下一步。",
@@ -28505,7 +28505,7 @@
             },
             {
               "label": "分心的常見觸發點",
-              "text": "可借助觀察細微情緒，並把感受轉成文字或作品重新啟動。"
+              "text": "可借助共感、想像與細膩的情緒觀察重新啟動。"
             }
           ],
           "caution": "把任務縮小成能立即開始的下一步。",
@@ -28528,7 +28528,7 @@
             },
             {
               "label": "分心的常見觸發點",
-              "text": "可借助觀察細微情緒，並把感受轉成文字或作品重新啟動。"
+              "text": "可借助共感、想像與細膩的情緒觀察重新啟動。"
             }
           ],
           "caution": "把任務縮小成能立即開始的下一步。",
@@ -28551,7 +28551,7 @@
             },
             {
               "label": "分心的常見觸發點",
-              "text": "可借助觀察細微情緒，並把感受轉成文字或作品重新啟動。"
+              "text": "可借助共感、想像與細膩的情緒觀察重新啟動。"
             }
           ],
           "caution": "把任務縮小成能立即開始的下一步。",
@@ -28574,7 +28574,7 @@
             },
             {
               "label": "分心的常見觸發點",
-              "text": "可借助觀察細微情緒，並把感受轉成文字或作品重新啟動。"
+              "text": "可借助共感、想像與細膩的情緒觀察重新啟動。"
             }
           ],
           "caution": "把任務縮小成能立即開始的下一步。",
@@ -28597,7 +28597,7 @@
             },
             {
               "label": "分心的常見觸發點",
-              "text": "可借助觀察細微情緒，並把感受轉成文字或作品重新啟動。"
+              "text": "可借助共感、想像與細膩的情緒觀察重新啟動。"
             }
           ],
           "caution": "把任務縮小成能立即開始的下一步。",
@@ -28620,7 +28620,7 @@
             },
             {
               "label": "分心的常見觸發點",
-              "text": "可借助觀察細微情緒，並把感受轉成文字或作品重新啟動。"
+              "text": "可借助共感、想像與細膩的情緒觀察重新啟動。"
             }
           ],
           "caution": "把任務縮小成能立即開始的下一步。",
@@ -28643,7 +28643,7 @@
             },
             {
               "label": "分心的常見觸發點",
-              "text": "可借助觀察細微情緒，並把感受轉成文字或作品重新啟動。"
+              "text": "可借助共感、想像與細膩的情緒觀察重新啟動。"
             }
           ],
           "caution": "把任務縮小成能立即開始的下一步。",
@@ -28666,7 +28666,7 @@
             },
             {
               "label": "分心的常見觸發點",
-              "text": "可借助觀察細微情緒，並把感受轉成文字或作品重新啟動。"
+              "text": "可借助共感、想像與細膩的情緒觀察重新啟動。"
             }
           ],
           "caution": "把任務縮小成能立即開始的下一步。",
@@ -29079,7 +29079,7 @@
           "details": [
             {
               "label": "適合的知識類型",
-              "text": "需要的模式是安靜思考、保留想像空間，也獲得情感回應。"
+              "text": "需要的模式是安靜、想像空間與被理解的情感回應。"
             },
             {
               "label": "容易發揮實力的形式",
@@ -29603,7 +29603,7 @@
       },
       "abstractionRisk": {
         "density": 0.013,
-        "longestSentence": 31,
+        "longestSentence": 26,
         "longestHeadline": 19
       },
       "personalizationRisk": {
@@ -29622,7 +29622,7 @@
             },
             {
               "label": "現實條件要先確認",
-              "text": "安靜思考、保留想像空間，也獲得情感回應。"
+              "text": "安靜、想像空間與被理解的情感回應。"
             }
           ],
           "caution": "仍需評估語言、預算、資格與生活安排。",
@@ -29687,7 +29687,7 @@
           "details": [
             {
               "label": "適合拓展的能力",
-              "text": "適合拓展觀察細微情緒，並把感受轉成文字或作品。"
+              "text": "適合拓展共感、想像與細膩的情緒觀察。"
             },
             {
               "label": "現實條件要先確認",
@@ -30795,11 +30795,11 @@
       ],
       "duplicateRisk": {
         "titleDetail": 0,
-        "headlineDetail": 0.44,
+        "headlineDetail": 0,
         "crossChart": 1
       },
       "abstractionRisk": {
-        "density": 0.005,
+        "density": 0.006,
         "longestSentence": 27,
         "longestHeadline": 28
       },
@@ -30834,11 +30834,11 @@
         },
         {
           "chartId": "earth_saturn_career",
-          "headline": "思考優勢是觀察細微情緒。",
+          "headline": "思考優勢是共感、想像與細膩的情緒觀察。",
           "details": [
             {
               "label": "學習上的優勢",
-              "text": "可發揮觀察細微情緒，並把感受轉成文字或作品。"
+              "text": "會觀察一個人是否長期說到做到，而不是只看當下熱度。"
             },
             {
               "label": "需要留意的盲點",
@@ -30949,11 +30949,11 @@
         },
         {
           "chartId": "relationship_axis",
-          "headline": "思考優勢是觀察細微情緒。",
+          "headline": "思考優勢是共感、想像與細膩的情緒觀察。",
           "details": [
             {
               "label": "學習上的優勢",
-              "text": "可發揮觀察細微情緒，並把感受轉成文字或作品。"
+              "text": "會主動接觸新題目、新圈子或不同做法，從變化中找到動力。"
             },
             {
               "label": "需要留意的盲點",
@@ -31426,7 +31426,7 @@
       },
       "abstractionRisk": {
         "density": 0.006,
-        "longestSentence": 32,
+        "longestSentence": 31,
         "longestHeadline": 22
       },
       "personalizationRisk": {
@@ -31468,7 +31468,7 @@
             },
             {
               "label": "真正學會的判斷標準",
-              "text": "能獨立先感受氣氛，再用創作或同理回應。"
+              "text": "能獨立感受氣氛並用創作或同理回應。"
             }
           ],
           "caution": "不要只用閱讀時間或熟悉感代替實際驗證。",
@@ -31514,7 +31514,7 @@
             },
             {
               "label": "真正學會的判斷標準",
-              "text": "能獨立先感受氣氛，再用創作或同理回應。"
+              "text": "能獨立感受氣氛並用創作或同理回應。"
             }
           ],
           "caution": "不要只用閱讀時間或熟悉感代替實際驗證。",
@@ -31583,7 +31583,7 @@
             },
             {
               "label": "真正學會的判斷標準",
-              "text": "能獨立先感受氣氛，再用創作或同理回應。"
+              "text": "能獨立感受氣氛並用創作或同理回應。"
             }
           ],
           "caution": "不要只用閱讀時間或熟悉感代替實際驗證。",
@@ -32052,7 +32052,7 @@
       },
       "abstractionRisk": {
         "density": 0.005,
-        "longestSentence": 44,
+        "longestSentence": 38,
         "longestHeadline": 23
       },
       "personalizationRisk": {
@@ -32094,7 +32094,7 @@
             },
             {
               "label": "適合的輸出形式",
-              "text": "先觀察氣氛，再慢慢整理成話。"
+              "text": "輸出形式宜緩慢而流動。"
             }
           ],
           "caution": "避免因想得太多或注意力分散而一直準備、卻沒有實際產出。",
@@ -32209,7 +32209,7 @@
             },
             {
               "label": "適合的輸出形式",
-              "text": "先觀察氣氛，再慢慢整理成話。"
+              "text": "輸出形式宜緩慢而流動。"
             }
           ],
           "caution": "避免因想得太多或注意力分散而一直準備、卻沒有實際產出。",
@@ -33354,13 +33354,13 @@
       ],
       "duplicateRisk": {
         "titleDetail": 0,
-        "headlineDetail": 0.24,
+        "headlineDetail": 0.05,
         "crossChart": 1
       },
       "abstractionRisk": {
         "density": 0.015,
         "longestSentence": 26,
-        "longestHeadline": 26
+        "longestHeadline": 27
       },
       "personalizationRisk": {
         "distinctPrimarySources": 12,
@@ -33485,11 +33485,11 @@
         },
         {
           "chartId": "twelfth_house_stellium",
-          "headline": "最值得持續發揮的核心能力是觀察細微情緒。",
+          "headline": "最值得持續發揮的核心能力是共感、想像與細膩的情緒觀察。",
           "details": [
             {
               "label": "命盤中最核心的優勢",
-              "text": "優勢表現在觀察細微情緒，並把感受轉成文字或作品。"
+              "text": "會先讀取對方的情緒，再決定自己要靠近還是退開。"
             },
             {
               "label": "這股優勢展現的方式",
@@ -34591,13 +34591,13 @@
       ],
       "duplicateRisk": {
         "titleDetail": 0.14,
-        "headlineDetail": 0.31,
+        "headlineDetail": 0.05,
         "crossChart": 1
       },
       "abstractionRisk": {
         "density": 0.012,
         "longestSentence": 30,
-        "longestHeadline": 22
+        "longestHeadline": 23
       },
       "personalizationRisk": {
         "distinctPrimarySources": 12,
@@ -34722,11 +34722,11 @@
         },
         {
           "chartId": "twelfth_house_stellium",
-          "headline": "現階段值得優先累積觀察細微情緒。",
+          "headline": "現階段值得優先累積共感、想像與細膩的情緒觀察。",
           "details": [
             {
               "label": "值得優先投入的方向",
-              "text": "觀察細微情緒，並把感受轉成文字或作品。"
+              "text": "會先讀取對方的情緒，再決定自己要靠近還是退開。"
             },
             {
               "label": "成熟後的樣子",
@@ -35964,14 +35964,14 @@
           "details": [
             {
               "label": "做決定時先確認什麼",
-              "text": "判斷原則是是否支持安靜思考、保留想像空間，也獲得情感回應。"
+              "text": "判斷原則是是否支持安靜、想像空間與被理解的情感回應。"
             },
             {
               "label": "方向適合你的具體訊號",
               "text": "能穩定運用主導、決策與凝聚注意力。"
             }
           ],
-          "caution": "別讓把猜測當成事實，或替別人承擔過多情緒成為唯一的決策理由。",
+          "caution": "別讓把猜測當成事實或過度承接他人情緒成為唯一的決策理由。",
           "primary": "planet|Neptune|11|12|",
           "answerTarget": "major_decision_basis",
           "contractStatus": "pass",
