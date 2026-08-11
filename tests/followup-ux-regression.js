@@ -51,8 +51,10 @@ const firstQuestionId = (html) => {
 
 /* ---------- 兩區分離 ---------- */
 const html = setupResult('love', 'partner-type', { love: ['對方可能的個性'] });
-check('A 區：想再看懂這次的牌', html.indexOf('想再看懂這次的牌') !== -1);
-check('A 區明講不需要重新抽牌', html.indexOf('不需要重新抽牌') !== -1);
+/* 「想再看懂這次的牌」已移除：結果頁上方本來就有直接回答、牌與牌怎麼互相影響、
+   下一步、每張牌的牌位解讀與整副牌的走向。同一頁再展開一次一模一樣的長段落，
+   是使用者實際回報的「太多了，而且同一頁面出現兩次」。 */
+check('不再有重複上方內容的 A 區', html.indexOf('想再看懂這次的牌') === -1);
 check('B 區：想換一個問題繼續', html.indexOf('想換一個問題繼續') !== -1);
 check('B 區明講需要重新抽牌', html.indexOf('下面都是新的問題，需要重新抽牌') !== -1);
 check('B 區說明目前解讀會保留', html.indexOf('不會被覆蓋') !== -1);
@@ -107,19 +109,20 @@ check('CASE4 返回後牌面完整', c.state.drawn.length === 3);
 check('CASE4 返回後主問題恢復', c.state.subtopic === 'partner-type');
 check('CASE4 返回後面向恢復', (c.state.wizFocusSel.love || []).length === 1);
 
-/* ---------- CASE 6：A 類可直接查看 ---------- */
-setupResult('love', 'partner-type', {});
-const details = c.readingDetailQuestions();
-check('CASE6 A 類都不需要重新抽牌', details.every(d => d.requiresNewDraw === false));
-check('CASE6 A 類有內容可展開', details.length >= 2);
-details.forEach(d => {
-  check('CASE6 A 類「' + d.label + '」能從現有牌面產生答案',
-    typeof d.answer === 'function' && String(d.answer()).length > 5);
-});
-c.toggleReadingDetail(details[0].id);
-const detailOpen = c.renderReadingFollowUp();
-check('CASE6 展開後直接看到答案', detailOpen.length > html.length - 2000);
-check('CASE6 展開細節不會離開結果頁', c.state.phase === 'result' && c.state.drawn.length === 3);
+/* ---------- CASE 6：不需要重新抽牌的內容，本來就在頁面上 ---------- */
+{
+  const app6 = read('js/app.js');
+  check('CASE6 A 區的產生器已整個移除',
+    app6.indexOf('readingDetailQuestions') === -1 && app6.indexOf('toggleReadingDetail') === -1);
+  /* 這些區塊仍然存在，才代表「不需要重新抽牌的內容」沒有跟著被刪掉。 */
+  ['牌與牌怎麼互相影響', '下一步可以做什麼', '整副牌的走向', '為什麼這樣判斷'].forEach(label => {
+    check('CASE6 結果頁仍提供「' + label + '」', app6.indexOf(label) !== -1);
+  });
+  /* 整副牌的走向與直接回答面板是同一批內容的兩種寫法，不得同時攤開。 */
+  check('CASE6 有直接回答時整副牌的走向預設收合',
+    /hasTyped \? !!state\.overallOpen : true/.test(app6));
+  check('CASE6 收合後仍可展開讀完整敘述', app6.indexOf('toggleOverallReading') !== -1);
+}
 
 /* ---------- CASE 8：語意去重 ---------- */
 setupResult('love', 'partner-type', { love: ['我該怎麼守住自己的底線'] });
@@ -135,7 +138,7 @@ G.CATEGORIES.forEach(cat => {
   const sub = subs.length ? subs[0].key : '';
   const h = setupResult(cat.key, sub, {});
   const news = c.readingNewQuestions();
-  check(cat.key + '：A 區存在', h.indexOf('想再看懂這次的牌') !== -1);
+  check(cat.key + '：沒有重複上方內容的 A 區', h.indexOf('想再看懂這次的牌') === -1);
   if (news.length) {
     check(cat.key + '：B 區標示新問題', h.indexOf('新問題・需要重新抽牌') !== -1);
     check(cat.key + '：B 區未展開時沒有 confirm 入口', h.indexOf('confirmFollowUpQuestion') === -1);

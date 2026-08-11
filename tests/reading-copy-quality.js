@@ -201,6 +201,43 @@ const leaks = corpus.filter(o => /\{kw\}|\{meaning\}|undefined|NaN|\[object Obje
 if (leaks.length) fail(`輸出含未替換樣板或空值：${leaks.length} 筆，例如「${leaks[0].text.slice(0, 50)}」`);
 
 /* ---------- 結果 ---------- */
+/* ---------- 牌位名稱與「的」 ----------
+   牌位名稱多半自己帶「的」（過去的影響、發展的結果），舊寫法一律再串一個
+   「的」，於是輸出「過去的影響的『戒指』」。 */
+const G = vm.runInContext('({TAROT, CATEGORIES, spreads: currentSpreads()})', c);
+let identityDupes = 0;
+const POS_NAMES = new Set();
+Object.keys(G.spreads || {}).forEach(k => (G.spreads[k].positions || []).forEach(pos => POS_NAMES.add(pos.zh)));
+[...POS_NAMES].forEach(zh => {
+  const d = { card: G.TAROT[0], pos: { zh, en: 'x' }, reversed: false };
+  const text = c.readingCardIdentity(d, true);
+  if (text.indexOf(zh + '的「') !== -1 && zh.indexOf('的') !== -1) identityDupes++;
+});
+if (identityDupes) fail(`牌位名稱已含「的」卻仍再串一個「的」：${identityDupes} 個牌位`);
+
+/* ---------- 同一段裡語氣不得講兩次 ----------
+   directQuestionLead 沒有可直接回答的題型時會退回「這件事＋語氣」，
+   開頭再寫一次「這組牌＋同一個語氣」就成了
+   「直接回答：這件事整體看起來偏順利。在事業上，這組牌整體看起來偏順利。」 */
+const TONES = ['整體看起來偏順利', '有好的部分，也有需要注意的地方', '提醒的成分比較多，適合先穩住再往前'];
+let toneDupes = 0;
+const toneSamples = [];
+(G.CATEGORIES || []).forEach(cat => {
+  ['接下來的發展', '我該怎麼做', ''].forEach(q => {
+    c.state.category = cat.key; c.state.subtopic = ''; c.state.question = q;
+    c.state.deck = 'tarot'; c.state.spread = 'three-time'; c.state.phase = 'result';
+    [[0, 5, 9], [3, 12, 20], [7, 15, 21]].forEach(idx => {
+      c.state.drawn = idx.map((n, i) => ({ card: G.TAROT[n], pos: { zh: ['過去的影響', '核心主題', '發展的結果'][i], en: 'p' + i }, reversed: false }));
+      const text = c.overallReading();
+      TONES.forEach(t => {
+        const n = text.split(t).length - 1;
+        if (n > 1) { toneDupes++; if (toneSamples.length < 2) toneSamples.push(text.slice(0, 60)); }
+      });
+    });
+  });
+});
+if (toneDupes) fail(`整副牌的走向把同一句語氣講了兩次：${toneDupes} 例，例如 ${toneSamples.join(' / ')}`);
+
 if (failures.length) {
   console.error('Reading copy quality FAILED:');
   failures.forEach(f => console.error('  - ' + f));
@@ -208,4 +245,4 @@ if (failures.length) {
 }
 console.log(`Reading copy quality passed: ${corpus.length} 段解讀輸出，` +
   `半形逗號 0、缺句尾標點 0、標點錯誤 0、填充語 ${fillerTotal}/${FILLER_BUDGET}、行話 0、` +
-  `結尾句最高占比 ${(topTail[1] / tailTotal * 100).toFixed(0)}%。`);
+  `結尾句最高占比 ${(topTail[1] / tailTotal * 100).toFixed(0)}%、牌位疊「的」0、語氣重複 0。`);

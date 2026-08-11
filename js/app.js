@@ -26,7 +26,7 @@ var state = {
   /* Step 3 的兩個選填 disclosure */
   wizFocusOpen: false, wizContextOpen: false,
   /* 結果頁延伸區塊：展開中的細節題、選取中的新問題、更多方向、上一個解讀的快照 */
-  readingDetailOpen: '', followUpSelected: '', followUpMoreOpen: false, previousReading: null,   // 選滿 3 項後又點擊第 4 項時，記錄是哪個分類觸發，顯示提示用
+  followUpSelected: '', followUpMoreOpen: false, previousReading: null, overallOpen: false,   // 選滿 3 項後又點擊第 4 項時，記錄是哪個分類觸發，顯示提示用
   drawn: [],
   phase: 'setup',      // setup | shuffling | picking | result
   pickOrder: [],       // shuffled indices of the full deck (picking pool)
@@ -2562,41 +2562,14 @@ function focusFollowUpOptions(catKey) {
    從 affordance 看它完全像「展開看內容」，實際卻是離開目前解讀並要求重新抽牌——
    誤觸成本高到只是想看看題目的人會突然掉進新的占卜流程。
 
-   現在分成兩區，依「需不需要重新抽牌」決定互動：
-     A. 想再看懂這次的牌（same_reading_detail）——用現有牌面回答，直接展開。
-     B. 想換一個問題繼續（new_reading）——是新問題，必須先選題再明確確認。
+   現在只留「想換一個問題繼續」：是新問題、需要重新抽牌，所以必須先選題再明確
+   確認。至於「想再看懂這次的牌」，答案本來就在同一頁的上方。
    ========================================================================== */
 
-/* A 類：完全從這次的牌面推導，不需要任何新資料。 */
-function readingDetailQuestions() {
-  if (!state.drawn.length) return [];
-  var isTarot = state.deck === 'tarot';
-  var out = [];
-  out.push({ id: 'detail-core', label: '這組牌最重要的訊息是什麼', requiresNewDraw: false,
-    answer: function () { return overallReading(); } });
-  var analysis = analyzeSpread(state.drawn, isTarot);
-  if (analysis && analysis.length) {
-    out.push({ id: 'detail-pattern', label: '這組牌整體透露了什麼', requiresNewDraw: false,
-      answer: function () { return analysis.join('\n'); } });
-  }
-  out.push({ id: 'detail-positions', label: '每張牌在它的牌位代表什麼', requiresNewDraw: false,
-    answer: function () {
-      return state.drawn.map(function (d) {
-        return d.pos.zh + '：' + d.card.nameZh + (isTarot ? (d.reversed ? '（逆位）' : '（正位）') : '')
-          + '——' + cardPosText(d, isTarot);
-      }).join('\n');
-    } });
-  var insights = drawInsights(state.drawn, isTarot);
-  if (insights && insights.length) {
-    out.push({ id: 'detail-tension', label: '這組牌裡最需要留意的地方', requiresNewDraw: false,
-      answer: function () { return insights.join('\n'); } });
-  }
-  return out;
-}
-function toggleReadingDetail(id) {
-  state.readingDetailOpen = (state.readingDetailOpen === id) ? '' : id;
-  render();
-}
+/* A 類（想再看懂這次的牌）已移除。結果頁上方本來就有「直接回答」、
+   「牌與牌怎麼互相影響」、「下一步可以做什麼」、每張牌的牌位解讀與
+   「整副牌的走向」；A 區把同樣的函式輸出再展開一次，同一頁出現兩份一模一樣
+   的長段落。要看懂這次的牌，答案已經在上面了。 */
 
 /* B 類：語意去重。本次的主問題與已選面向都算「已經回答過」，
    不能再推薦同一件事——用語意 key 比對，不只比字串。 */
@@ -2628,6 +2601,7 @@ function selectFollowUpQuestion(id) {
   state.followUpSelected = (state.followUpSelected === id) ? '' : id;
   render();
 }
+function toggleOverallReading() { state.overallOpen = !state.overallOpen; render(); }
 function toggleFollowUpMore() { state.followUpMoreOpen = !state.followUpMoreOpen; render(); }
 
 /* 確認之後才真的開始新的一輪。目前這份解讀會先被完整快照起來，
@@ -2655,7 +2629,6 @@ function confirmFollowUpQuestion(id) {
   state.phase = 'setup';
   state.wizardStep = 3;
   state.followUpSelected = '';
-  state.readingDetailOpen = '';
   render();
   window.scrollTo(0, 0);
 }
@@ -2681,35 +2654,14 @@ function renderReturnToPreviousBar() {
 
 var FOLLOWUP_PREVIEW = 3;
 function renderReadingFollowUp() {
-  var details = readingDetailQuestions();
   var news = readingNewQuestions();
-  if (!details.length && !news.length) return '';
+  if (!news.length) return '';
   var h = '';
 
-  /* ---- A 區：用現有牌面就能回答，直接展開 ---- */
-  if (details.length) {
-    h += '<section style="margin-top:22px;border-top:1px solid rgba(201,169,110,.2);padding-top:16px">';
-    h += '<h3 class="md-h3" style="font-size:14px">想再看懂這次的牌？</h3>';
-    h += '<p class="md-note" style="margin:4px 0 0">不需要重新抽牌，點開就看得到。</p>';
-    h += '<div style="display:flex;flex-direction:column;gap:7px;margin-top:10px">';
-    details.forEach(function (d) {
-      var open = state.readingDetailOpen === d.id;
-      h += '<div style="border:1px solid rgba(201,169,110,.25);border-radius:12px;background:rgba(255,255,255,.02);overflow:hidden">';
-      h += '<button type="button" aria-expanded="' + open + '" onclick="toggleReadingDetail(\'' + esc(d.id) + '\')" style="width:100%;min-height:44px;background:none;border:none;padding:11px 13px;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:8px">'
-        + '<span style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.85);line-height:1.5">' + esc(d.label) + '</span>'
-        + '<span aria-hidden="true" style="flex:none;color:#c9a96e;font-size:11px">' + (open ? '▴ 收起' : '▾ 展開') + '</span></button>';
-      if (open) {
-        h += '<div style="padding:0 13px 12px;font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);line-height:1.9;white-space:pre-wrap">' + esc(d.answer()) + '</div>';
-      }
-      h += '</div>';
-    });
-    h += '</div></section>';
-  }
-
   /* ---- B 區：新問題，必須選題再確認 ---- */
-  if (news.length) {
+  {
     var shown = state.followUpMoreOpen ? news : news.slice(0, FOLLOWUP_PREVIEW);
-    h += '<section style="margin-top:20px;border-top:1px solid rgba(201,169,110,.2);padding-top:16px">';
+    h += '<section style="margin-top:22px;border-top:1px solid rgba(201,169,110,.2);padding-top:16px">';
     h += '<h3 class="md-h3" style="font-size:14px">想換一個問題繼續？</h3>';
     h += '<p class="md-note" style="margin:4px 0 0">下面都是新的問題，需要重新抽牌。</p>';
     h += '<p class="md-note" style="margin:2px 0 0;color:rgba(240,233,216,.62)">目前這次的解讀會保留，不會被覆蓋。</p>';
@@ -3243,9 +3195,21 @@ function renderReading() {
     if (activeSubDef && activeCardResult && activeCardResult.available) {
       h += renderSubtopicResultPanel(activeSubDef, activeCardResult, '直接回答這個問題');
     }
+    /* 上面的「直接回答」面板已經把結論、牌與牌的互相影響、下一步逐項列出來了。
+       整副牌的走向是同一批內容的連續敘述版本——兩個都攤開會讓同一頁出現兩份
+       幾乎一樣的長段落。有直接回答時預設收合，想讀完整敘述再展開。 */
+    var hasTyped = !!(activeSubDef && activeCardResult && activeCardResult.available && activeCardResult.typed);
+    var overallOpen = hasTyped ? !!state.overallOpen : true;
     h += '<div style="border:1px solid rgba(201,169,110,.4);border-radius:10px;padding:15px 17px;background:rgba(201,169,110,.09);margin-top:16px">';
-    h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:#e6cd9a;text-transform:uppercase">✦ 整副牌的走向 Overall Reading</div>';
-    h += '<div style="font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:8px;line-height:1.9;text-align:justify">' + esc(overallReading()) + '</div>';
+    if (hasTyped) {
+      h += '<button type="button" aria-expanded="' + overallOpen + '" onclick="toggleOverallReading()" style="width:100%;min-height:44px;display:flex;justify-content:space-between;align-items:center;gap:10px;background:none;border:none;padding:0;cursor:pointer;text-align:left">'
+        + '<span style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:#e6cd9a;text-transform:uppercase">✦ 整副牌的走向 Overall Reading</span>'
+        + '<span style="flex:none;color:#c9a96e;font:500 11px \'Noto Sans TC\',sans-serif;white-space:nowrap">' + (overallOpen ? '▴ 收起' : '▾ 讀完整敘述') + '</span></button>';
+      if (!overallOpen) h += '<div style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:4px;line-height:1.7">跟上面同一批內容，換成連續的敘述寫法。</div>';
+    } else {
+      h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:#e6cd9a;text-transform:uppercase">✦ 整副牌的走向 Overall Reading</div>';
+    }
+    if (overallOpen) h += '<div style="font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:8px;line-height:1.9;text-align:justify">' + esc(overallReading()) + '</div>';
     h += '</div>';
     if (state.category === 'love' && state.subtopic) {
       var loveSubDef = (SUBTOPICS.love || []).filter(function (s) { return s.key === state.subtopic; })[0];
@@ -4329,8 +4293,12 @@ function readingSchemaFor(catKey, subtopicKey) {
   return READING_QUESTION_SCHEMAS[catKey] && READING_QUESTION_SCHEMAS[catKey][subtopicKey];
 }
 
+/* 牌位名稱多半自己就帶「的」（過去的影響、發展的結果），再串一個「的」會變成
+   「過去的影響的『戒指』」。名稱裡已經有「的」時改用「在」。 */
 function readingCardIdentity(d, isTarot) {
-  return d.pos.zh + '的「' + d.card.nameZh + '」' + (isTarot ? (d.reversed ? '逆位' : '正位') : '');
+  var pos = d.pos.zh;
+  var name = '「' + d.card.nameZh + '」' + (isTarot ? (d.reversed ? '逆位' : '正位') : '');
+  return pos.indexOf('的') !== -1 ? (name + '在' + pos) : (pos + '的' + name);
 }
 
 function readingEvidence(d, isTarot) {
@@ -4704,8 +4672,14 @@ function overallReading() {
   var toneTxt = ['整體看起來偏順利', '有好的部分，也有需要注意的地方', '提醒的成分比較多，適合先穩住再往前'][toneIdx];
   var insights = drawInsights(drawn, isTarot);
 
+  /* 牌位名稱本身常常已經帶「的」（「過去的影響」「發展的結果」），再接一個
+     「的」就變成「過去的影響的『戒指』」。名稱有「的」時改用「在」。 */
   function cardClause(d) {
-    return d.pos.zh + '的' + cardLabel(d, isTarot) + '——' + roleLead(posRole(d.pos.zh), cardKw(d, isTarot, 2), d);
+    var pos = d.pos.zh;
+    var head = pos.indexOf('的') !== -1
+      ? (cardLabel(d, isTarot) + '在' + pos)
+      : (pos + '的' + cardLabel(d, isTarot));
+    return head + '——' + roleLead(posRole(pos), cardKw(d, isTarot, 2), d);
   }
   var parts = [];
   var tail = '';
@@ -4734,11 +4708,18 @@ function overallReading() {
   var relationship = drawn.length > 1 ? buildCardRelationship(drawn, isTarot) : '';
   var directLead = directQuestionLead(state.question, toneIdx, toneTxt);
 
+  /* directQuestionLead 沒有題目可直接回答時會退回「這件事＋語氣」，
+     開頭再寫一次「這組牌＋同一個語氣」就變成同一句話連講兩遍：
+     「直接回答：這件事整體看起來偏順利。在事業上，這組牌整體看起來偏順利。」
+     前面已經講過語氣時，開頭就只留領域。 */
+  var leadHasTone = directLead.indexOf(toneTxt) !== -1;
   function assemble(ins, withTail, nCards) {
     var ps = parts.slice(0, nCards);
     if (withTail && tail) ps = ps.concat([tail]);
-    return refineReadingCopy(directLead + CAT_OPENERS[state.category] + '，這組牌' + toneTxt +
-      (ins.length ? '；' + ins.join('；') : '') + '。' +
+    var head;
+    if (leadHasTone) head = CAT_OPENERS[state.category] + '，' + (ins.length ? ins.join('；') + '。' : '');
+    else head = CAT_OPENERS[state.category] + '，這組牌' + toneTxt + (ins.length ? '；' + ins.join('；') : '') + '。';
+    return refineReadingCopy(directLead + head +
       ps.join('；') + '。' + (relationship ? relationship : '') + '下一步：' + advice + '。');
   }
   var cap = drawn.length >= 5 ? 320 : 200;
