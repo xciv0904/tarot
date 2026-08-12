@@ -158,6 +158,37 @@ G.CATEGORIES.forEach(cat => {
 check('不同分類的推薦不相同', new Set(Object.values(sets)).size >= 6,
   '只有 ' + new Set(Object.values(sets)).size + ' 種');
 
+/* ---------- 位置：整份解讀讀完才問要不要換題 ----------
+   原本它緊接在牌卡下方，使用者還沒看到任何解讀就先被問「要不要換一個問題」，
+   而且那一區把真正的解讀往下推。 */
+{
+  c.state.tab = 'reading'; c.state.deck = 'tarot';
+  c.state.category = 'love'; c.state.spread = 'three-time';
+  c.state.subtopic = 'partner-type'; c.state.question = '';
+  c.state.wizFocusSel = {}; c.state.phase = 'result';
+  c.state.followUpSelected = ''; c.state.followUpMoreOpen = false;
+  c.state.previousReading = null; c.state.overallOpen = false;
+  c.state.drawn = [0, 1, 2].map(i => ({
+    card: G.TAROT[i], pos: { zh: '位置' + i, en: 'P' + i }, reversed: false, flipped: true,
+  }));
+  const page = c.renderReading();
+  const at = (needle) => page.indexOf(needle);
+  const follow = at('想換一個問題繼續');
+  check('結果頁確實有延伸問題區', follow !== -1);
+  [
+    ['牌卡本身的意義', '在牌典查看這張牌'],
+    ['整副牌的走向', '整副牌的走向'],
+    ['解讀語氣選擇', '解讀語氣'],
+  ].forEach(([label, needle]) => {
+    const pos = at(needle);
+    if (pos === -1) return;
+    check('延伸問題排在「' + label + '」之後', pos < follow,
+      needle + ' @' + pos + ' vs 延伸問題 @' + follow);
+  });
+  const restart = at('重新提問，再抽一次');
+  if (restart !== -1) check('延伸問題排在「重新提問」之前', follow < restart);
+}
+
 console.log('# 結果頁延伸互動回歸測試');
 console.log('');
 console.log('- 檢查項目：' + checks.length);

@@ -3173,7 +3173,6 @@ function renderReading() {
 
     }
 
-    h += renderReadingFollowUp();
     h += renderPersonaPicker();
     h += '<div style="display:flex;justify-content:center;gap:10px;margin-top:22px;flex-wrap:wrap">';
     h += '<button onclick="flipAll()" style="font:400 12px \'Noto Sans TC\',sans-serif;background:none;border:1px solid rgba(201,169,110,.4);color:#c9a96e;padding:8px 18px;border-radius:20px;cursor:pointer">全部翻牌 Reveal All</button>';
@@ -3344,6 +3343,10 @@ function renderReading() {
     h += '</div>';
     }
     h += '</div>';
+    /* 延伸問題放在整份解讀的最後。它原本緊接在牌卡下方，也就是使用者還沒讀到
+       任何解讀內容之前，就先被問「要不要換一個問題」——順序上說不通，而且
+       那一區的按鈕會把真正的解讀往下推。 */
+    h += renderReadingFollowUp();
     h += '<div style="text-align:center;margin-top:26px"><button onclick="wizRestart()" style="background:none;border:none;color:rgba(240,233,216,.5);font:400 12px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.4);padding:0 0 2px">← 重新提問，再抽一次</button></div>';
   }
   h += '</div>';
