@@ -2578,19 +2578,10 @@ function astroCategoryReadingLove(catKey, subtopicKey, chart, unknownTime) {
   return out;
 }
 
-/* Phase 1C：combinedReading() 一致／分歧措辭池。
-   agree：牌卡「目前狀態」與星盤「長期傾向」語氣相同時的共同主題導語（依 tone 分三組）。
-   differ：語氣不同時的導語，明確講清楚這是時間尺度不同，不是誰對誰錯，不可硬湊成一致。 */
-var COMBINED_AGREE_LEAD_POOL = {
-  positive: ['牌卡與星盤在這個面向上方向一致，都偏向正向', '牌卡（目前狀態）與星盤（長期傾向）呈現相同的樂觀訊號', '兩邊都指向積極的方向，是一致且穩固的訊號'],
-  neutral: ['牌卡與星盤在這個面向上都偏向中性、還在觀察階段', '牌卡（目前狀態）與星盤（長期傾向）呈現相近、尚未明朗的訊號', '兩邊都沒有特別強烈的傾向，方向一致地保持中性'],
-  challenging: ['牌卡與星盤在這個面向上都指出需要留意的課題', '牌卡（目前狀態）與星盤（長期傾向）呈現相同的挑戰訊號', '兩邊都提醒這個面向目前需要多一點耐心'],
-};
-var COMBINED_DIFFER_LEAD_POOL = [
-  '牌卡與星盤的時間尺度不同，兩者呈現的訊號並不一致——這不代表矛盾，只是分別反映「當下」與「長期」',
-  '牌卡反映的是目前的情境，星盤反映的是長期的需求與慣性，兩者出現落差是正常的，不需要硬湊成同一個答案',
-  '牌卡看見的是這段時間的樣貌，星盤看見的是更長期的模式，兩者不同時，代表值得多留意「現在」跟「一貫」之間的落差',
-];
+/* Phase 1C 的一致／分歧措辭池已移除：那兩組導語只是在說「兩個來源合不合」，
+   而面板標題（COMBINED_AGREEMENT_LABEL）已經講過同一件事，結論再講第三次就把
+   真正的答案擠到後面去了。取而代之的是結論末尾那一句「這兩層要怎麼用」。 */
+
 /* combinedReading(cardResult, astroResult, catKey, subtopicKey)
    支援 catKey==='love' 與 catKey==='career'（Phase 2B 起）。cardResult 應為
    cardSubtopicReading() 的回傳值，astroResult 應為 astroCategoryReading() 的回傳值；
@@ -2644,16 +2635,23 @@ function combinedReading(cardResult, astroResult, catKey, subtopicKey) {
     return '';
   }
 
-  var leadSentence = '';
+  /* 核心結論原本以「兩邊都沒有特別強烈的傾向，方向一致地保持中性」開頭。
+     那是在講兩個來源合不合，不是在回答使用者的問題——而且面板標題那一行
+    （renderCombinedPanel 的 COMBINED_AGREEMENT_LABEL）已經把同一件事說過一次了。
+     使用者看完整段仍然不知道該怎麼辦。
+
+     現在改成：先給兩邊各自的實質內容（牌卡那句本來就是直接回答），最後補一句
+     「這兩層要怎麼用」。一致與否只影響這句怎麼寫，不再佔住結論的開頭。 */
+  var howToRead = '';
   if (out.agreement === 'agree') {
-    leadSentence = astroSeededPick(seed + '|lead', COMBINED_AGREE_LEAD_POOL[out.cardTone] || COMBINED_AGREE_LEAD_POOL.neutral);
+    howToRead = '兩邊指向同一個方向，可以直接照「目前狀態」那一句安排眼前，長期傾向會支持它。';
   } else if (out.agreement === 'differ') {
-    leadSentence = astroSeededPick(seed + '|lead', COMBINED_DIFFER_LEAD_POOL);
+    howToRead = '兩邊不一致：眼前照「目前狀態」那一句安排，「長期傾向」那一句留給更長的規劃，現在不需要硬統一。';
   }
   SUBTOPIC_FIELD_ORDER.forEach(function (f) {
     if (fields.indexOf(f) === -1 || f === 'caveat') return;
     var layered = twoLayer(cardResult[f], astroResult[f]);
-    out[f] = (f === 'conclusion' && leadSentence) ? (leadSentence + '。' + layered) : layered;
+    out[f] = (f === 'conclusion' && layered && howToRead) ? (layered + '　' + howToRead) : layered;
   });
   if (fields.indexOf('caveat') !== -1) {
     out.caveat = [cardResult.caveat, astroResult.caveat].filter(Boolean).join(' ');

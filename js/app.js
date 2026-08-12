@@ -181,10 +181,19 @@ function doFlip(id, flipped) {
    需要讓圖片填滿容器的版面請從這個比例推導高度，不要各自寫死。 */
 var CARD_ART_RATIO = 0.6;
 
+/* 圖片載入失敗時換成牌名方塊，而不是留一個破圖。
+   來源可能是網路不穩、Service Worker 清過快取、或擋圖擴充套件——不管哪一種，
+   畫面上都不該出現破圖，alt 已經帶著牌名了。 */
+function cardImgFallback(img) {
+  if (!img || !img.parentNode) return;
+  var alt = img.getAttribute('alt') || '';
+  img.parentNode.innerHTML = '<div style="flex:1;display:flex;align-items:center;justify-content:center;'
+    + 'font:600 13px \'Noto Serif TC\',serif;color:#a9784f;padding:6px;text-align:center">' + esc(alt) + '</div>';
+}
 function cardImgHtml(src, alt, useThumb) {
   if (!src) return '<div style="flex:1;display:flex;align-items:center;justify-content:center;font:600 13px \'Noto Serif TC\',serif;color:#a9784f;padding:6px;text-align:center">' + esc(alt) + '</div>';
   var finalSrc = useThumb ? cardThumbSrc(src) : src;
-  return '<div style="flex:1;min-height:0;display:flex;align-items:stretch;justify-content:center;overflow:hidden"><img src="' + finalSrc + '" alt="' + esc(alt) + '" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:contain;display:block"></div>';
+  return '<div style="flex:1;min-height:0;display:flex;align-items:stretch;justify-content:center;overflow:hidden"><img src="' + finalSrc + '" alt="' + esc(alt) + '" loading="lazy" decoding="async" onerror="cardImgFallback(this)" style="width:100%;height:100%;object-fit:contain;display:block"></div>';
 }
 function cardThumbSrc(src) {
   return src ? src.replace('assets/cards/', 'assets/cards/thumbs/') : '';
@@ -1510,22 +1519,9 @@ function shareResultImage() {
   } catch (e) { try { alert('無法產生圖片：' + e.message); } catch (e2) {} }
 }
 
-/* ================= image lazy attach (split-asset build) ================= */
-function reassignImages() {
-  if (typeof IMG === 'undefined' || !IMG || !Object.keys(IMG).length) return;
-  var L = { wands: 'W', cups: 'C', swords: 'S', pentacles: 'P' };
-  var CODE = { A: '0A', '2': '02', '3': '03', '4': '04', '5': '05', '6': '06', '7': '07', '8': '08', '9': '09', '10': '10', Page: 'J1', Knight: 'J2', Queen: 'QU', King: 'KI' };
-  TAROT.forEach(function (c) {
-    if (c.arcana === 'major') {
-      var n2 = parseInt(c.id.slice(1), 10);
-      c.img = IMG['RWSa-T-' + String(n2).padStart(2, '0')] || null;
-    } else {
-      var l2 = L[c.suit], cd = CODE[c.num];
-      c.img = (l2 && cd) ? (IMG['RWSa-' + l2 + '-' + cd] || null) : null;
-    }
-  });
-  LENORMAND.forEach(function (c) { c.img = IMG['LEN-' + String(c.n).padStart(2, '0')] || null; });
-}
+/* reassignImages() 已移除：那是 split-asset build 時期的殘留，整個專案沒有任何
+   呼叫點（git grep 只找得到定義本身）。牌面圖片實際上是 reading-data.js 載入時
+   就依 IMG 指派好的，這支函式從來沒有參與過。 */
 
 /* ================= 學習系統:易混淆對比 / 抽認卡測驗 / 22天計畫 ================= */
 

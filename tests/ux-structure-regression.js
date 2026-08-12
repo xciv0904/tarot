@@ -257,6 +257,32 @@ check('不同命盤產生不同的 chartFingerprint', idA.fingerprint !== idC.fi
 
 /* ---------- 輸出 ---------- */
 const passed = checks.filter(x => x.ok).length;
+/* ---------- Service Worker 快取分層 ----------
+   牌圖曾經跟程式共用同一個版本化快取，而 activate 會刪掉所有非當前版本的快取——
+   等於每次改程式就把 228 張圖全部清掉。清空後整批重抓時，assets 分支又沒有
+   catch，任何一張逾時就直接變成網路錯誤破圖。 */
+{
+  const sw = read('sw.js');
+  check('圖片使用獨立、不隨版本改動的快取', /ASSET_CACHE\s*=\s*'mystic-assets-/.test(sw));
+  check('改版時不刪圖片快取', sw.indexOf("k !== CACHE && k !== ASSET_CACHE") !== -1);
+  check('assets 分支從 ASSET_CACHE 讀', /caches\.open\(ASSET_CACHE\)/.test(sw));
+  check('assets 抓取失敗有 catch，不會直接變成網路錯誤',
+    /pull\(\)[\s\S]{0,200}\.catch\(/.test(sw));
+  const app = read('js/app.js');
+  check('牌圖破圖時退回牌名方塊', app.indexOf('onerror="cardImgFallback(this)"') !== -1);
+  check('cardImgFallback 有定義', /function cardImgFallback\(/.test(app));
+  check('沒有呼叫點的 reassignImages 已移除', app.indexOf('function reassignImages') === -1);
+}
+
+/* ---------- 綜合觀察的核心結論要給得出答案 ---------- */
+{
+  const adv = read('js/data/astro-advanced.js');
+  check('結論不再以「兩個來源合不合」開頭', adv.indexOf('COMBINED_AGREE_LEAD_POOL = {') === -1);
+  check('結論末尾說明這兩層怎麼用',
+    adv.indexOf('可以直接照「目前狀態」那一句安排眼前') !== -1
+    && adv.indexOf('留給更長的規劃') !== -1);
+}
+
 console.log('# UX 結構回歸測試');
 console.log('');
 console.log('- 檢查項目：' + checks.length);

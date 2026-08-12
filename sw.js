@@ -1,5 +1,10 @@
 /* Mystic Deck service worker — 卡牌圖片快取優先,頁面網路優先 */
-const CACHE = 'mystic-v66';
+const CACHE = 'mystic-v67';
+/* 牌面圖片放在獨立的、不隨版本更動的快取。
+   原本圖片跟程式共用一個版本化快取，而 activate 會刪掉所有非當前版本的快取——
+   等於每改一次程式就把 228 張牌圖全部清空，使用者下次開啟時要重抓一整批。
+   圖片檔名本身就是內容（RWSa-S-0A.webp 永遠是同一張），沒有理由跟著程式改版失效。 */
+const ASSET_CACHE = 'mystic-assets-v1';
 /* astrology-*.js 現在改成使用者切到「星盤」分頁時才動態載入（見 index.html 的
    ensureAstrologyDataLoaded），但還是放進 CORE 一起預先快取——這樣使用者第一次
    點進星盤分頁時，資料是從快取秒讀，不需要額外等網路。 */
@@ -19,7 +24,7 @@ self.addEventListener('install', function (e) {
 });
 self.addEventListener('activate', function (e) {
   e.waitUntil(caches.keys().then(function (keys) {
-    return Promise.all(keys.filter(function (k) { return k !== CACHE; }).map(function (k) { return caches.delete(k); }));
+    return Promise.all(keys.filter(function (k) { return k !== CACHE && k !== ASSET_CACHE; }).map(function (k) { return caches.delete(k); }));
   }));
   self.clients.claim();
 });
@@ -29,12 +34,22 @@ self.addEventListener('fetch', function (e) {
   if (url.origin !== location.origin) return;
   if (url.pathname.indexOf('/assets/') !== -1) {
     // 靜態資產:快取優先,背景補快取
-    e.respondWith(caches.open(CACHE).then(function (c) {
+    /* 這裡原本沒有 catch——網路一失敗，respondWith 就收到 rejected promise，
+       瀏覽器直接當成網路錯誤，圖片破圖。清空快取後整批重抓時只要有幾張逾時，
+       那幾張就永久破在畫面上。現在失敗會先重試一次，再退回任何一份舊快取。 */
+    e.respondWith(caches.open(ASSET_CACHE).then(function (c) {
       return c.match(e.request).then(function (r) {
-        return r || fetch(e.request).then(function (res) {
-          if (res.ok) c.put(e.request, res.clone());
-          return res;
-        });
+        if (r) return r;
+        function pull() {
+          return fetch(e.request).then(function (res) {
+            if (res && res.ok) c.put(e.request, res.clone());
+            return res;
+          });
+        }
+        return pull()
+          .catch(function () { return pull(); })
+          .catch(function () { return caches.match(e.request); })
+          .then(function (res) { return res || Response.error(); });
       });
     }));
   } else {
