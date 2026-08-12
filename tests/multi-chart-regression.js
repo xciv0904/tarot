@@ -111,10 +111,17 @@ async function generate(c, y, cityIdx, houseSystem) {
   await c.astroChartSwitch(c.state.astroCharts[1].id);
   check('切換命盤會清空主題分析，不留殘影', c.state.natalTopicResult === null);
 
-  /* --- 7. 刪除 --- */
+  /* --- 7. 刪除 ---
+     刪除是兩段式的：第一次點擊只把這張盤「上膛」，畫面上長出確認區塊，
+     第二次點擊才真的刪。單次點擊不得刪掉任何東西。 */
   const deletedId = c.state.astroActiveId;
+  const beforeCount = c.state.astroCharts.length;
+  await c.astroChartDelete(deletedId);
+  check('第一次點刪除不會真的刪掉', c.state.astroCharts.length === beforeCount);
+  check('第一次點刪除會顯示確認區塊', c.state.armedAction === 'chart:' + deletedId);
   await c.astroChartDelete(deletedId);
   check('刪除後不在清單中', !c.state.astroCharts.some(x => x.id === deletedId));
+  check('刪除後解除上膛', !c.state.armedAction);
   check('刪掉使用中的盤後會自動接手另一張',
     !!c.state.astroActiveId && !!c.state.astroResult);
 

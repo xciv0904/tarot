@@ -283,6 +283,44 @@ const passed = checks.filter(x => x.ok).length;
     && adv.indexOf('留給更長的規劃') !== -1);
 }
 
+/* ---------- 上架前審查：破壞性操作、資料保全、錯誤邊界 ---------- */
+{
+  const app = read('js/app.js');
+  const adv = read('js/data/astro-advanced.js');
+  const html = read('index.html');
+
+  /* browser confirm() 一旦被抑制或丟例外，原本的 try/catch 會吞掉它，
+     程式繼續往下走——確認框沒出現，資料照樣被刪。 */
+  /* 註解裡會提到 confirm()（正是在解釋為什麼不用它），先把註解拿掉再數。 */
+  const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const realConfirm = (src) => (stripComments(src).match(/[^a-zA-Z_.]confirm\(/g) || []).length;
+  check('js 不再使用 browser confirm()', realConfirm(app) === 0 && realConfirm(adv) === 0,
+    'app ' + realConfirm(app) + ' / adv ' + realConfirm(adv));
+  ['astroChartDelete', 'astroReset', 'xiuDeleteSavedPartner'].forEach(fn => {
+    const at = adv.indexOf('function ' + fn);
+    check(fn + ' 第一次點擊只上膛不執行',
+      at !== -1 && /isArmed\(/.test(adv.slice(at, at + 400)));
+  });
+  check('清除所有紀錄改為畫面內兩段式確認',
+    app.indexOf('function askClearAllData') !== -1 && app.indexOf('renderClearDataBlock') !== -1);
+
+  /* 沒有帳號、沒有伺服器，localStorage 是唯一的家。 */
+  check('提供匯出備份', app.indexOf('function exportAllData') !== -1);
+  check('提供從備份還原', app.indexOf('function importAllData') !== -1);
+  check('匯入只接受白名單內的 key',
+    /APP_STORAGE_KEYS\.indexOf\(k\) === -1/.test(app));
+  check('匯入會檢查檔案格式', app.indexOf("parsed.format !== 'mystic-deck-backup'") !== -1);
+
+  /* 畫面是 innerHTML 一次寫進去的，render 丟例外＝空白畫面且毫無訊息。 */
+  check('有全域錯誤邊界', /addEventListener\('error'/.test(html) && /unhandledrejection/.test(html));
+  check('錯誤邊界提供重新載入', html.indexOf('fatal-reload') !== -1);
+  check('錯誤邊界不攔資源載入失敗', /if \(!e \|\| !e\.error\) return;/.test(html));
+
+  check('有 Content-Security-Policy', html.indexOf('Content-Security-Policy') !== -1);
+  check('CSP 禁止 object 與 frame 嵌入',
+    /object-src 'none'/.test(html) && /frame-ancestors 'none'/.test(html));
+}
+
 console.log('# UX 結構回歸測試');
 console.log('');
 console.log('- 檢查項目：' + checks.length);

@@ -2,6 +2,11 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
+<!-- 這是純靜態站，沒有後端可以送 header，所以用 meta 版 CSP。
+     連線目的地只有 Google Fonts；沒有任何第三方腳本、沒有分析、沒有廣告。
+     script-src 必須含 'unsafe-inline'，因為整站的互動是用 onclick 屬性寫的；
+     真正的防線是所有插入畫面的字串都經過 esc()。 -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#14111a">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -364,6 +369,44 @@ window.addEventListener('load', function () {
 <script defer src="js/data/reading-interpretation.js"></script>
 <script defer src="js/app.js"></script>
 <script>
+/* 錯誤邊界。整個畫面是 view.innerHTML = render() 一次寫進去的，所以 render 途中
+   丟出例外＝畫面停在上一個狀態或直接空白，而且完全沒有訊息。使用者只會看到
+   「壞掉了」，也不知道能做什麼。至少要說清楚發生什麼、給一個重新載入的按鈕，
+   並且明講資料還在——本站沒有伺服器，出錯不會弄丟任何東西。 */
+(function () {
+  var shown = false;
+  function showFatal(detail) {
+    if (shown) return;
+    shown = true;
+    var box = document.createElement('div');
+    box.setAttribute('role', 'alert');
+    box.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:9999;background:#241c22;border-top:1px solid #d99b5f;padding:14px 16px calc(14px + env(safe-area-inset-bottom));font:400 12px "Noto Sans TC",sans-serif;color:#f0e9d8;line-height:1.8';
+    box.innerHTML = '<div style="font:500 13px \'Noto Sans TC\',sans-serif;color:#e6cd9a">這個畫面出了點問題</div>'
+      + '<div style="margin-top:5px;color:rgba(240,233,216,.8)">你的抽牌歷史與星盤資料都還在這台裝置上，沒有被影響。重新載入通常就會恢復。</div>'
+      + '<div style="display:flex;gap:9px;margin-top:11px;flex-wrap:wrap">'
+      + '<button type="button" id="fatal-reload" style="flex:1 1 auto;min-height:44px;background:rgba(201,169,110,.16);border:1px solid #c9a96e;color:#f0e9d8;font:500 12px \'Noto Sans TC\',sans-serif;border-radius:10px;cursor:pointer">重新載入</button>'
+      + '<button type="button" id="fatal-dismiss" style="flex:0 0 auto;min-height:44px;padding:0 16px;background:none;border:1px solid rgba(201,169,110,.35);color:rgba(240,233,216,.75);font:400 12px \'Noto Sans TC\',sans-serif;border-radius:10px;cursor:pointer">先關掉</button>'
+      + '</div>'
+      + '<details style="margin-top:9px"><summary style="min-height:32px;display:flex;align-items:center;cursor:pointer;color:rgba(240,233,216,.55);font-size:11px">技術細節</summary>'
+      + '<div style="color:rgba(240,233,216,.55);font-size:11px;word-break:break-all;margin-top:4px"></div></details>';
+    var d = box.querySelector('details div');
+    if (d) d.textContent = String(detail || '').slice(0, 400);
+    document.body.appendChild(box);
+    var r = document.getElementById('fatal-reload');
+    if (r) r.onclick = function () { location.reload(); };
+    var x = document.getElementById('fatal-dismiss');
+    if (x) x.onclick = function () { box.remove(); shown = false; };
+  }
+  window.addEventListener('error', function (e) {
+    /* 圖片、樣式等資源載入失敗會冒泡成 error 事件但沒有 e.error——
+       那些各自有自己的降級處理（例如牌圖的 onerror），不該跳全站錯誤。 */
+    if (!e || !e.error) return;
+    showFatal(e.message + ' @ ' + (e.filename || '') + ':' + (e.lineno || ''));
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    showFatal((e && e.reason && (e.reason.stack || e.reason.message)) || 'unhandled rejection');
+  });
+})();
 if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
 </script>
 </body>

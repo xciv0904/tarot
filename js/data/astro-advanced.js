@@ -1272,12 +1272,34 @@ function astroChartRenameFromInput(id) {
   var el = document.getElementById('astro-chart-name-' + id);
   if (el) astroChartRename(id, el.value);
 }
+/* ---------- 破壞性操作的行內兩段式確認 ----------
+   這裡原本三個地方都是 try { if (!confirm(...)) return; } catch (e) {}。
+   兩個問題：confirm() 的對話框跟網站毫無關係、文字不能排版；更嚴重的是
+   confirm 一旦丟出例外（被瀏覽器抑制、跨 origin iframe 等），catch 會把它吞掉，
+   程式繼續往下走——確認框沒出現，資料照樣被刪。
+
+   改成第一次點擊只「上膛」，畫面上長出一段說明與兩個按鈕，第二次點擊才執行。
+   沒有任何路徑會在使用者只點一次的情況下刪掉東西。 */
+function armDestructive(id) {
+  state.armedAction = (state.armedAction === id) ? '' : id;
+  render();
+}
+function isArmed(id) { return state.armedAction === id; }
+function renderArmedConfirm(id, message, confirmLabel, confirmCall) {
+  if (!isArmed(id)) return '';
+  return '<div role="alert" style="margin-top:8px;border:1px solid #d99b5f;border-radius:10px;padding:10px 12px;background:rgba(217,155,95,.08)">'
+    + '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.85);line-height:1.8">' + esc(message) + '</div>'
+    + '<div style="display:flex;gap:8px;margin-top:9px;flex-wrap:wrap">'
+    + '<button type="button" onclick="' + confirmCall + '" style="flex:1 1 auto;min-height:44px;background:rgba(217,155,95,.18);border:1px solid #d99b5f;color:#f0e9d8;font:500 12px \'Noto Sans TC\',sans-serif;border-radius:9px;cursor:pointer">' + esc(confirmLabel) + '</button>'
+    + '<button type="button" onclick="armDestructive(\'\')" style="flex:0 0 auto;min-height:44px;padding:0 16px;background:none;border:1px solid rgba(201,169,110,.35);color:rgba(240,233,216,.75);font:400 12px \'Noto Sans TC\',sans-serif;border-radius:9px;cursor:pointer">取消</button>'
+    + '</div></div>';
+}
+
 async function astroChartDelete(id) {
   var rec = (state.astroCharts || []).filter(function (c) { return c.id === id; })[0];
   if (!rec) return;
-  try {
-    if (!confirm('確定要刪除「' + rec.name + '」嗎？\n這張盤的出生資料會從這台裝置移除，無法復原。\n（已存的歷史紀錄不受影響）')) return;
-  } catch (e) {}
+  if (!isArmed('chart:' + id)) { armDestructive('chart:' + id); return; }
+  state.armedAction = '';
   state.astroCharts = state.astroCharts.filter(function (c) { return c.id !== id; });
   if (state.astroActiveId === id) {
     state.astroActiveId = state.astroCharts.length ? state.astroCharts[0].id : null;
@@ -1504,9 +1526,8 @@ function astroRegisterGeneratedChart() {
 }
 
 function astroReset() {
-  try {
-    if (!confirm('確定要重新輸入嗎？\n目前算好的星盤解讀會被清除（出生日期／時間／地點資料還在，可以直接修改後重新生成）。')) return;
-  } catch (e) {}
+  if (!isArmed('astro-reset')) { armDestructive('astro-reset'); return; }
+  state.armedAction = '';
   state.astroResult = null;
   resetNatalTopicAnalysisForChartChange();
   state.astroHouseSystem = 'placidus';
@@ -5058,6 +5079,7 @@ function renderChartSwitcher() {
     else h += '<button type="button" onclick="astroChartSwitch(\'' + esc(rec.id) + '\')" style="min-height:36px;font:500 11px var(--font-sans);background:rgba(201,169,110,.10);border:1px solid var(--border);color:var(--brand);border-radius:16px;padding:7px 14px;cursor:pointer;white-space:nowrap">切換</button>';
     h += '<button type="button" onclick="astroChartDelete(\'' + esc(rec.id) + '\')" aria-label="刪除命盤 ' + esc(rec.name) + '" style="min-height:36px;min-width:36px;background:none;border:1px solid rgba(214,120,120,.4);color:var(--danger);border-radius:16px;padding:6px 11px;font:400 11px var(--font-sans);cursor:pointer">刪除</button>';
     h += '</div>';
+    h += renderArmedConfirm('chart:' + rec.id, '刪除「' + rec.name + '」？這張盤的出生資料會從這台裝置移除，無法復原。已存的歷史紀錄不受影響。', '確定刪除這張命盤', 'astroChartDelete(\'' + esc(rec.id) + '\')');
     h += '<div style="font:400 10px var(--font-sans);color:var(--text-muted);margin-top:5px">'
       + esc(rec.y + '/' + rec.m + '/' + rec.d) + '　' + (rec.unknownTime ? '時間未知' : esc(pad2(rec.h) + ':' + pad2(rec.min)))
       + '　' + esc(city ? city.zh : '出生地資料遺失') + '</div>';
@@ -5667,6 +5689,7 @@ function renderAstro() {
     h += '<button id="astro-copy-btn" onclick="astroCopyForAI()" style="width:100%;margin-top:24px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製給 AI 解讀 Copy for AI</button>';
     h += renderAiPasteHint();
     h += '<button onclick="astroReset()" style="width:100%;margin-top:10px;padding:12px;border-radius:12px;border:1px solid rgba(201,169,110,.3);background:rgba(255,255,255,.02);color:rgba(240,233,216,.6);font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">重新輸入 ↺</button>';
+  h += renderArmedConfirm('astro-reset', '重新輸入？目前算好的星盤解讀會被清除。出生日期／時間／地點資料還在，可以直接修改後重新生成。', '確定重新輸入', 'astroReset()');
     h += '<div style="text-align:center;margin-top:10px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap">';
     h += '<button onclick="astroExportProfile()" style="background:none;border:none;color:rgba(240,233,216,.62);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">匯出星盤資料備份</button>';
     h += '<button onclick="astroForget()" style="background:none;border:none;color:rgba(240,233,216,.62);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.3);padding:0 0 1px">清除已儲存的星盤資料</button>';
@@ -6463,7 +6486,8 @@ function xiuSelectSavedPartner(idx) {
 }
 function xiuDeleteSavedPartner(idx, ev) {
   if (ev && ev.stopPropagation) ev.stopPropagation();
-  try { if (!confirm('刪除這位朋友的存檔？')) return; } catch (e) {}
+  if (!isArmed('partner:' + idx)) { armDestructive('partner:' + idx); return; }
+  state.armedAction = '';
   state.xiuSavedPartners.splice(idx, 1);
   xiuSaveSavedPartnersToStorage();
   render();
@@ -6475,6 +6499,7 @@ function renderXiuSavedPartnerPicker() {
     h += '<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.03);border:1px solid rgba(201,169,110,.3);border-radius:14px;padding:4px 5px 4px 11px">';
     h += '<button onclick="xiuSelectSavedPartner(' + idx + ')" style="background:none;border:none;color:rgba(240,233,216,.75);font:400 11px \'Noto Sans TC\',sans-serif;cursor:pointer;padding:0">' + esc(p.name) + '</button>';
     h += '<button onclick="xiuDeleteSavedPartner(' + idx + ',event)" aria-label="刪除存檔" style="background:none;border:none;color:rgba(240,233,216,.62);font:400 13px sans-serif;cursor:pointer;padding:0 4px;line-height:1">×</button>';
+    h += renderArmedConfirm('partner:' + idx, '刪除這位朋友的存檔？無法復原。', '確定刪除', 'xiuDeleteSavedPartner(' + idx + ',event)');
     h += '</span>';
   });
   h += '</div></div>';

@@ -51,7 +51,7 @@ var state = {
   copied: false,
   tlGuideOpen: false,
   homeMoreOpen: false,
-  homeTourDismissed: false,
+  homeTourDismissed: false, clearDataArmed: false, dataNotice: '', armedAction: '',
   homeTourIdx: 0,
   moreTourOpen: false,   // 「更多 → 新手使用指南」是否就地展開中
   astroY: '', astroM: '', astroD: '', astroH: '', astroMin: '',
@@ -2116,10 +2116,76 @@ var APP_STORAGE_KEYS = [
   'tl_astro_charts',
   'tl_astro_copy_mode',
 ];
-function clearAllData() {
+/* 這裡本來用 browser confirm()。那個對話框長得跟網站沒有關係、文字不能排版，
+   而且在部分瀏覽器會被當成彈出視窗抑制掉——真的被抑制時 confirm() 直接回傳
+   false，使用者按了沒反應也不知道為什麼。改成畫面內的兩段式確認。 */
+function askClearAllData() { state.clearDataArmed = !state.clearDataArmed; render(); }
+function renderClearDataBlock() {
+  if (!state.clearDataArmed) {
+    return '<button type="button" onclick="askClearAllData()" style="min-height:44px;background:none;border:1px solid rgba(217,155,95,.5);color:#d99b5f;font:400 11px \'Noto Sans TC\',sans-serif;padding:9px 20px;border-radius:18px;cursor:pointer">清除所有紀錄</button>';
+  }
+  var h = '<div role="alert" style="border:1px solid #d99b5f;border-radius:12px;padding:13px 15px;background:rgba(217,155,95,.08);text-align:left">';
+  h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;color:#f0e9d8">這個動作無法復原</div>';
+  h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.78);margin-top:6px;line-height:1.8">會刪除抽牌歷史、學習進度、22 天計畫、已儲存的星盤出生資料與配對對象。建議先「匯出備份」再清除。</div>';
+  h += '<div style="display:flex;gap:9px;margin-top:11px;flex-wrap:wrap">';
+  h += '<button type="button" onclick="clearAllData()" style="flex:1 1 auto;min-height:44px;background:rgba(217,155,95,.18);border:1px solid #d99b5f;color:#f0e9d8;font:500 12px \'Noto Sans TC\',sans-serif;border-radius:10px;cursor:pointer">確定清除全部紀錄</button>';
+  h += '<button type="button" onclick="askClearAllData()" style="flex:0 0 auto;min-height:44px;background:none;border:1px solid rgba(201,169,110,.35);color:rgba(240,233,216,.75);font:400 12px \'Noto Sans TC\',sans-serif;border-radius:10px;padding:0 18px;cursor:pointer">取消</button>';
+  h += '</div></div>';
+  return h;
+}
+
+/* 資料只存在這台裝置的 localStorage：沒有帳號、清快取或換裝置就沒了。
+   匯出／匯入是唯一的保命索，也是「確定清除」之前應該先做的事。 */
+function exportAllData() {
+  var payload = { format: 'mystic-deck-backup', version: 1, exportedAt: new Date().toISOString(), data: {} };
   try {
-    if (!confirm('確定要清除所有紀錄嗎？\n（抽牌歷史、學習進度、22 天計畫、已儲存的星盤出生資料、已儲存的配對對象都會刪除，且無法復原）')) return;
+    APP_STORAGE_KEYS.forEach(function (k) {
+      var v = localStorage.getItem(k);
+      if (v != null) payload.data[k] = v;
+    });
   } catch (e) {}
+  try {
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'mystic-deck-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    state.dataNotice = '已匯出備份檔。';
+  } catch (e) { state.dataNotice = '匯出失敗：' + (e && e.message ? e.message : '未知錯誤'); }
+  render();
+}
+function importAllData(input) {
+  var file = input && input.files && input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function () {
+    try {
+      var parsed = JSON.parse(String(reader.result));
+      if (!parsed || parsed.format !== 'mystic-deck-backup' || !parsed.data) {
+        throw new Error('這不是本站的備份檔');
+      }
+      /* 只接受白名單內的 key，避免備份檔被改過之後往 localStorage 塞任意內容。 */
+      var restored = 0;
+      Object.keys(parsed.data).forEach(function (k) {
+        if (APP_STORAGE_KEYS.indexOf(k) === -1) return;
+        if (typeof parsed.data[k] !== 'string') return;
+        localStorage.setItem(k, parsed.data[k]);
+        restored++;
+      });
+      state.dataNotice = '已還原 ' + restored + ' 項資料，重新整理後生效。';
+    } catch (e) {
+      state.dataNotice = '匯入失敗：' + (e && e.message ? e.message : '檔案格式不正確');
+    }
+    render();
+  };
+  reader.onerror = function () { state.dataNotice = '讀取檔案失敗。'; render(); };
+  reader.readAsText(file);
+}
+
+function clearAllData() {
+  state.clearDataArmed = false;
   try {
     APP_STORAGE_KEYS.forEach(function (k) { localStorage.removeItem(k); });
   } catch (e) {}
@@ -2150,7 +2216,21 @@ function renderAbout() {
     h += sec('娛樂性質聲明', '占卜結果由固定牌義與程式邏輯組合而成，僅供娛樂與自我反思參考，不構成任何醫療、法律、財務或心理專業建議。重大決定請諮詢專業人士。');
     h += sec('隱私', '本站沒有伺服器、不收集任何個人資料。你的抽牌歷史、學習進度、以及星盤功能使用的出生日期／時間／地點，全部只儲存在你自己裝置的瀏覽器裡，不會上傳或傳送到任何地方。清除瀏覽器資料或按下方按鈕即可完全刪除。（若使用「複製給 AI 解讀」功能，貼到外部 AI 工具後，資料就會離開本站，請自行留意。）');
     h += sec('牌圖版權', '塔羅牌面採用 1909 年出版的 Rider–Waite–Smith 牌（Pamela Colman Smith 繪），已屬公有領域（Public Domain）。雷諾曼牌面則是本站依據傳統 36 張雷諾曼牌的經典象徵（如騎士、房子、心等）重新繪製的原創插畫，非取自任何現有商業牌卡。');
-    h += '<div style="text-align:center;margin-top:14px"><button onclick="clearAllData()" style="background:none;border:1px solid rgba(217,155,95,.5);color:#d99b5f;font:400 11px \'Noto Sans TC\',sans-serif;padding:7px 18px;border-radius:14px;cursor:pointer">清除我的所有紀錄</button></div>';
+    /* 資料只存在這台裝置：沒有帳號，清瀏覽器資料或換手機就沒了。
+       匯出／匯入放在清除按鈕的正上方——要刪之前先看到怎麼備份。 */
+    h += '<div style="margin-top:16px;border-top:1px solid rgba(201,169,110,.15);padding-top:14px">';
+    h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;color:#c9a96e">你的資料</div>';
+    h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:5px;line-height:1.8">全部只存在這台裝置的瀏覽器裡。清除瀏覽器資料、換裝置或換瀏覽器都會消失，本站沒有伺服器可以幫你找回來。</div>';
+    if (state.dataNotice) {
+      h += '<div role="status" style="margin-top:9px;font:400 11px \'Noto Sans TC\',sans-serif;color:#e6cd9a;border-left:2px solid #c9a96e;padding-left:9px;line-height:1.8">' + esc(state.dataNotice) + '</div>';
+    }
+    h += '<div style="display:flex;gap:9px;margin-top:11px;flex-wrap:wrap">';
+    h += '<button type="button" onclick="exportAllData()" style="flex:1 1 140px;min-height:44px;background:rgba(201,169,110,.12);border:1px solid rgba(201,169,110,.45);color:#f0e9d8;font:500 12px \'Noto Sans TC\',sans-serif;border-radius:10px;cursor:pointer">匯出備份檔</button>';
+    h += '<label style="flex:1 1 140px;min-height:44px;display:flex;align-items:center;justify-content:center;background:none;border:1px solid rgba(201,169,110,.35);color:rgba(240,233,216,.8);font:400 12px \'Noto Sans TC\',sans-serif;border-radius:10px;cursor:pointer">從備份檔還原'
+      + '<input type="file" accept="application/json,.json" onchange="importAllData(this)" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none"></label>';
+    h += '</div>';
+    h += '<div style="text-align:center;margin-top:14px">' + renderClearDataBlock() + '</div>';
+    h += '</div>';
     h += '</div>';
   }
   return h;
