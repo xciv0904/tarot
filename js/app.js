@@ -2830,9 +2830,18 @@ function focusOptionsForCurrent(catKey, cfg) {
       options: taxonomyAllowedFocusIds(catKey, taxPrimary.id).map(taxonomyFocusLabel),
     };
   }
-  /* 已遷移的分類但還沒選主問題：只給不需要前提的面向，不要退回舊清單。 */
+  /* 已遷移的分類但還沒選主問題：把目前牌陣帶的前提也算進去。選了暗戀牌陣就
+     等於說了「有一個特定對象」，那些面向本來就該出現。牌陣沒有前提時，
+     結果與過去相同——只給不需要任何前提的面向。 */
   if (taxonomyHasCategory(catKey)) {
-    return { source: 'neutral', primary: null, options: taxonomyNeutralFocusIds(catKey).map(taxonomyFocusLabel) };
+    var spreadAssumptions = (typeof taxonomySpreadAssumptions === 'function')
+      ? taxonomySpreadAssumptions(state.spread) : {};
+    return {
+      source: Object.keys(spreadAssumptions).length ? 'spread' : 'neutral',
+      primary: null,
+      spreadAssumptions: spreadAssumptions,
+      options: taxonomyNeutralFocusIds(catKey, spreadAssumptions).map(taxonomyFocusLabel),
+    };
   }
   if (!cfg) return { source: 'none', primary: null, options: [] };
   var groups = focusGroupsForNow(catKey, cfg);
@@ -2892,6 +2901,10 @@ function renderFocusAreaPicker() {
     var pickedDef = (SUBTOPICS[catKey] || []).filter(function (x) { return x.key === state.subtopic; })[0];
     var pickedLabel = pickedDef ? pickedDef.zh : src.primary.label;
     h += '<div style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:5px;line-height:1.6;border-left:2px solid rgba(201,169,110,.4);padding-left:8px">已依你選的「' + esc(pickedLabel) + '」整理相關面向。</div>';
+  } else if (src.source === 'spread') {
+    var spName = (currentSpreads()[state.spread] || {}).zh || '這個牌陣';
+    h += '<div style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:5px;line-height:1.6;border-left:2px solid rgba(201,169,110,.4);padding-left:8px">已依「'
+      + esc(spName) + '」的前提整理。選了上面的主問題會再更精準。</div>';
   } else if (src.source === 'neutral') {
     h += '<div style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:5px;line-height:1.6;border-left:2px solid rgba(201,169,110,.25);padding-left:8px">還沒選主問題，這裡先只列出任何狀況都適用的面向。選了上面的問題之後，會換成真正相關的那幾個。</div>';
   }

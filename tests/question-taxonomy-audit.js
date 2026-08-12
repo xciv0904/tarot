@@ -457,6 +457,46 @@ pending.forEach(cat => {
 const cnt = { PASS: 0, WARNING: 0, FAIL: 0 };
 audit.forEach(a => { cnt[a.result]++; });
 
+/* ---------- 牌陣本身帶的前提 ----------
+   「暗戀牌陣」的整個前提就是有一個特定對象。以前只有 primary 會過濾面向，
+   所以選了暗戀牌陣卻還沒選主問題的人，看到的是一整排「任何狀況都適用」的
+   中性面向，裡面沒有一個跟暗戀有關——跟選單身牌陣看到的一模一樣。 */
+{
+  const SPREAD_A = vm.runInContext('SPREAD_ASSUMPTIONS', c);
+  const cfg = vm.runInContext('topicQuestionConfig', c);
+  const optionsFor = (cat, spread) => {
+    c.state.deck = 'tarot'; c.state.category = cat; c.state.spread = spread;
+    c.state.subtopic = ''; c.state.wizFocusSel = {};
+    return c.focusOptionsForCurrent(cat, cfg[cat]);
+  };
+  check('牌陣前提表存在', !!SPREAD_A && !!SPREAD_A.crush);
+  check('暗戀牌陣帶「有特定對象」', SPREAD_A.crush.specificPerson === true);
+  check('單身桃花牌陣帶「還沒有對象」', SPREAD_A.peach.futurePerson === true);
+
+  const crush = optionsFor('love', 'crush');
+  const peach = optionsFor('love', 'peach');
+  const plain = optionsFor('love', 'three-time');
+  check('暗戀牌陣的面向來自牌陣前提', crush.source === 'spread', crush.source);
+  check('單身桃花牌陣的面向來自牌陣前提', peach.source === 'spread', peach.source);
+  check('暗戀與單身桃花給出不同的面向', crush.options.join('|') !== peach.options.join('|'));
+  check('暗戀牌陣有跟特定對象有關的面向',
+    crush.options.some(o => /對方/.test(o)), crush.options.slice(0, 3).join('/'));
+  check('單身桃花牌陣沒有「對方目前對我的感受」這種需要既有對象的面向',
+    peach.options.indexOf('對方目前對我的感受') === -1);
+  /* 只預覽前幾個，所以牌陣帶出來的必須排在通用面向前面。 */
+  check('暗戀牌陣第一個就是牌陣帶出來的，不是通用面向',
+    plain.options.indexOf(crush.options[0]) === -1, crush.options[0]);
+  check('通用牌陣不憑空假設處境', plain.source === 'neutral', plain.source);
+  check('通用牌陣的面向是暗戀牌陣的子集合',
+    plain.options.every(o => crush.options.indexOf(o) !== -1));
+
+  /* 選了主問題之後，主問題說了算——牌陣不得覆蓋它。 */
+  c.state.spread = 'peach'; c.state.subtopic = 'crush';
+  const withPrimary = c.focusOptionsForCurrent('love', cfg.love);
+  check('選了主問題後由主問題決定面向', withPrimary.source === 'taxonomy', withPrimary.source);
+  c.state.subtopic = ''; c.state.spread = 'three-time';
+}
+
 console.log('# Question Taxonomy 稽核');
 console.log('');
 console.log('- 檢查項目：' + checks.length);

@@ -1294,19 +1294,50 @@ function taxonomyAllowedFocusIds(catId, primaryId) {
 /* 還沒選主問題時的面向。不能退回舊清單——那會把「對方遲遲不表態的原因」這類
    預設已有特定對象的題目丟給單身的人看。這裡只保留完全不需要前提的面向，
    也就是不論使用者處在什麼狀態都問得成立的那些。 */
-function taxonomyNeutralFocusIds(catId) {
-  var seen = {}, out = [];
+/* 牌陣自己也帶前提。「暗戀牌陣」的整個前提就是有一個特定對象，「單身桃花牌陣」
+   的前提是還沒有對象——這跟 primary 的 assumptions 是同一種東西，只是來源不同。
+
+   以前只有 primary 會過濾面向，所以選了暗戀牌陣卻還沒選主問題的人，看到的是
+   一整排「任何狀況都適用」的中性面向，裡面沒有一個跟暗戀有關。使用者回報
+   「選擇暗戀牌陣之後跟單身牌陣一樣」，說的就是這件事。
+
+   只列那些前提明確的牌陣。三張牌・時間流、凱爾特十字這類通用版面不帶任何前提，
+   不該憑空幫使用者假設處境。 */
+var SPREAD_ASSUMPTIONS = {
+  crush: { specificPerson: true },
+  peach: { futurePerson: true },
+  relationship: { specificPerson: true, existingRelationship: true },
+  crosslove: { specificPerson: true },
+  fork: { twoOptions: true },
+  yesno: { twoOptions: true },
+};
+function taxonomySpreadAssumptions(spreadId) {
+  var a = SPREAD_ASSUMPTIONS[spreadId];
+  if (!a) return {};
+  var out = {};
+  Object.keys(a).forEach(function (k) { out[k] = a[k]; });
+  return out;
+}
+/* 還沒選主問題時可以列出來的面向：沒有任何前提的，加上目前牌陣的前提能滿足的。 */
+function taxonomyNeutralFocusIds(catId, assumptions) {
+  var has = assumptions || {};
+  var seen = {}, specific = [], generic = [];
   taxonomyPrimaries(catId).forEach(function (p) {
     (p.focus || []).forEach(function (id) {
       if (seen[id]) return;
       var area = FOCUS_AREA_REGISTRY[id];
       if (!area) return;
-      if (Object.keys(area.requires || {}).length) return;
+      var need = area.requires || {};
+      var ok = Object.keys(need).every(function (k) { return has[k] === need[k]; });
+      if (!ok) return;
+      if (area.excludes && Object.keys(area.excludes).some(function (k) { return has[k] === area.excludes[k]; })) return;
       seen[id] = true;
-      out.push(id);
+      /* 只預覽前幾個，所以「因為這個牌陣才出現的」必須排在「任何狀況都適用的」
+         前面——不然選了暗戀牌陣，第一眼看到的仍然是通用面向。 */
+      (Object.keys(need).length ? specific : generic).push(id);
     });
   });
-  return out;
+  return specific.concat(generic);
 }
 function taxonomyFocusLabel(focusId) {
   var a = FOCUS_AREA_REGISTRY[focusId];
