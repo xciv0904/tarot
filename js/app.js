@@ -2499,18 +2499,25 @@ function renderPrimaryQuestionBlock() {
    taxonomy 的 spreads 是照塔羅牌陣命名的。 */
 function wizSpreadRecommendations() {
   var all = currentSpreads();
+  var recSrc = state.deck === 'lenormand' ? LEN_RECOMMENDATIONS : RECOMMENDATIONS;
+  var byCat = ((recSrc && recSrc[state.category]) || []).filter(function (k) { return !!all[k]; });
+
+  var byPrimary = [];
   if (state.deck !== 'lenormand' && state.subtopic && typeof taxonomyPrimaryForSubtopic === 'function') {
     var primary = taxonomyPrimaryForSubtopic(state.category, state.subtopic);
     if (primary && typeof taxonomyRecommendedSpreads === 'function') {
-      var byPrimary = taxonomyRecommendedSpreads(state.category, primary.id)
+      byPrimary = taxonomyRecommendedSpreads(state.category, primary.id)
         .filter(function (k) { return !!all[k]; });
-      if (byPrimary.length) return { source: 'primary', list: byPrimary };
     }
   }
-  var recSrc = state.deck === 'lenormand' ? LEN_RECOMMENDATIONS : RECOMMENDATIONS;
-  var byCat = ((recSrc && recSrc[state.category]) || []).filter(function (k) { return !!all[k]; });
-  if (byCat.length) return { source: 'category', list: byCat };
-  return { source: 'all', list: Object.keys(all) };
+  /* 「更貼近這題」不等於「其餘都不能用」。第一版只回傳主問題的清單，結果
+     單身桃花、暗戀、三張牌・解析、時間軸這些牌陣在某些分類整個從畫面上消失了——
+     推薦變成了篩選。現在分兩組：主問題那組排在前面，這個領域其他常用的排後面，
+     一個都不會被拿掉。 */
+  var rest = byCat.filter(function (k) { return byPrimary.indexOf(k) === -1; });
+  if (!byPrimary.length && !rest.length) return { top: [], rest: Object.keys(all), source: 'all' };
+  if (!byPrimary.length) return { top: rest, rest: [], source: 'category' };
+  return { top: byPrimary, rest: rest, source: 'primary' };
 }
 function renderSubtopicPicker() {
   var preset = getSpreadQuestionPreset();
@@ -2950,15 +2957,19 @@ function renderWizard(spreads, isTarot) {
     h += renderPrimaryQuestionBlock();
 
     var rec = wizSpreadRecommendations();
-    var recs = rec.list;
-    h += '<div style="font:600 15px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:22px;border-top:1px solid rgba(201,169,110,.18);padding-top:16px">推薦適合這題的牌陣</div>';
+    var recs = rec.top.concat(rec.rest);
+    h += '<div style="font:600 15px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:22px;border-top:1px solid rgba(201,169,110,.18);padding-top:16px">選一個牌陣</div>';
     h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:5px;line-height:1.7">'
       + (rec.source === 'primary'
-        ? '依你上面選的問題挑出來的。換一個問題，這裡就會換。'
-        : '先選上面的問題，這裡會換成更貼近那一題的牌陣。')
+        ? '排在前面的是比較貼近你上面那一題的。換一個問題，排序就會換。'
+        : '先選上面的問題，這裡會把更貼近那一題的排到前面。')
       + '</div>';
     h += '<div style="display:flex;flex-direction:column;gap:9px;margin-top:14px">';
-    recs.forEach(function (key) {
+    recs.forEach(function (key, ri) {
+      if (rec.source === 'primary' && rec.rest.length) {
+        if (ri === 0) h += '<div style="font:500 10.5px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;color:#c9a96e">更貼近這一題</div>';
+        if (ri === rec.top.length) h += '<div style="font:500 10.5px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;color:rgba(240,233,216,.5);margin-top:6px">這個領域也常用</div>';
+      }
       var sp = spreads[key];
       var active = key === state.spread;
       h += '<button onclick="wizSetSpread(\'' + key + '\')" style="text-align:left;background:' + (active ? 'rgba(201,169,110,.15)' : 'rgba(255,255,255,.02)') + ';border:1px solid ' + (active ? '#c9a96e' : 'rgba(201,169,110,.25)') + ';border-radius:10px;padding:12px 14px;cursor:pointer">';

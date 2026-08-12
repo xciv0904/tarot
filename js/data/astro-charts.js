@@ -1011,11 +1011,20 @@ function renderPlanetaryDayRow(date, city, chart, unknownTime) {
 
   var hours = city ? planetaryHoursFor(date, city.lat, city.lon, city.tz, dayRulerKey, rulerKey) : [];
 
+  /* 顏色與數字曾經掛在當日主星上（全球共通，換命盤不變），被回報「不管哪張星盤
+     都一樣」；改掛到命主星之後變成換一天也不變，被回報「每天都一樣」。兩次都對，
+     因為那是兩件不同的事被塞進同一格。
+
+     沒有「個人專屬又每天不同」的古典幸運色這種東西。與其編一個，不如把兩件事
+     各自標清楚：命主星是你的、不隨日期變；今日主星是曆法事實、每天變、全世界
+     一樣。顏色與數字跟著今日主星走，時段才是兩者交會的地方——它算的是你的
+     命主星今天主管哪幾個小時，換人、換日、換城市都會不同。 */
   var cells = [
     renderRhythmCell('<div style="font-size:19px;color:#c9a96e">' + esc(info.sym) + '</div>', info.zh, '你的命主星'),
-    renderRhythmCell('<div style="width:22px;height:22px;border-radius:50%;background:' + info.color.hex
-      + ';border:1px solid rgba(255,255,255,.3)"></div>', info.color.zh, '幸運色'),
-    renderRhythmCell('<div style="font-size:17px;color:rgba(240,233,216,.62)">#</div>', String(info.num), '幸運數字'),
+    renderRhythmCell('<div style="font-size:19px;color:#c9a96e">' + esc(dayInfo.sym) + '</div>', dayInfo.zh, '今天的主星'),
+    renderRhythmCell('<div style="width:22px;height:22px;border-radius:50%;background:' + dayInfo.color.hex
+      + ';border:1px solid rgba(255,255,255,.3)"></div>', dayInfo.color.zh, '今日幸運色'),
+    renderRhythmCell('<div style="font-size:17px;color:rgba(240,233,216,.62)">#</div>', String(dayInfo.num), '今日幸運數字'),
   ];
   /* 極區的永晝永夜算不出日出日落，這一格就不顯示，不用「全天」之類的話矇混 */
   if (hours.length) {
@@ -1031,14 +1040,14 @@ function renderPlanetaryDayRow(date, city, chart, unknownTime) {
   h += renderRhythmGrid(cells, 'border-top:1px solid rgba(201,169,110,.15)');
   h += '<div style="font:400 11.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.8;margin-top:8px;padding:0 2px">'
     + '你的命主星是' + esc(info.zh) + '（' + esc(rulerBasis) + '），' + esc(info.tone) + '。'
-    + '今天整體則是' + esc(dayInfo.zh) + '日'
-    + (rulerKey === dayRulerKey ? '——剛好跟你的命主星同一顆，這種日子一年約有五十多天，你會比平常更容易進入狀況。' : '。')
+    + '今天由' + esc(dayInfo.zh) + '主管，' + esc(dayInfo.tone) + '——顏色與數字跟著它走，每天不同。'
+    + (rulerKey === dayRulerKey ? '今天剛好跟你的命主星同一顆，這種日子一年約有五十多天，你會比平常更容易進入狀況。' : '')
     + '</div>';
   h += '<details style="margin-top:6px"><summary style="font:500 10.5px \'Noto Sans TC\',sans-serif;color:#c9a96e;cursor:pointer">'
-    + (hours.length ? '這四項' : '這三項') + '是怎麼算出來的？</summary>'
+    + (hours.length ? '這五項' : '這四項') + '是怎麼算出來的？</summary>'
     + '<div style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);line-height:1.85;margin-top:6px">'
     + '<strong style="color:#c9a96e">命主星</strong>：傳統占星以上升星座的守護星代表本人。你的'
-    + esc(rulerBasis) + '，守護星是' + esc(info.zh) + '；顏色與數字沿用這顆行星的傳統對應，不是隨機挑的。'
+    + esc(rulerBasis) + '，守護星是' + esc(info.zh) + '。這一項是你的，不隨日期改變。'
     + (unknownTime || !chart || chart.ascSign == null
         ? '（因為沒有出生時間，無法定出上升，這裡改用太陽星座的守護星——這是替代做法，準確度低於有出生時間的情況。）'
         : '')
@@ -1047,8 +1056,9 @@ function renderPlanetaryDayRow(date, city, chart, unknownTime) {
           + esc(dayInfo.zh) + '）主管，之後依迦勒底次序輪流；上面列出的是輪到你的命主星'
           + esc(info.zh) + '的那幾段。日出日落用你出生地的經緯度實際計算，換城市、換日期都會不同。'
         : '<br><strong style="color:#c9a96e">幸運時段</strong>：你所在的緯度今天算不出日出或日落（永晝或永夜），因此不顯示時段。')
-    + '<br><strong style="color:#c9a96e">今天是什麼日</strong>：星期天到星期六依序由日、月、火、水、木、金、土主管，'
-    + '這也是英文星期名稱的由來。這一項是全球共通的曆法事實，不隨個人星盤改變，所以只放在敘述句裡當背景。'
+    + '<br><strong style="color:#c9a96e">今日主星、顏色與數字</strong>：星期天到星期六依序由日、月、火、水、木、金、土主管，'
+    + '這也是英文星期名稱的由來；顏色與數字沿用該行星的傳統對應，不是隨機挑的。這三項每天都會換，'
+    + '但同一天全球共通——它是曆法事實，不隨個人星盤改變，所以標成「今日」而不是「你的」。'
     + '</div></details>';
   h += '</div>';
   return h;

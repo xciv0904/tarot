@@ -288,8 +288,8 @@ c.state.astroUnknownTime = false;
   /* 字級必須隨視窗縮放，否則 320px 上四欄放不下 11 個字的時間字串。 */
   if (!/font-size:clamp\(/.test(html)) fail('節奏資訊列', '幸運時段字級沒有使用 clamp()，320px 會溢出欄寬');
   /* 摺疊標題的項數要跟實際格數一致。 */
-  const foldTitle = (html.match(/>(這[三四]項)是怎麼算出來的？</) || [])[1];
-  const expected = n === 4 ? '這四項' : '這三項';
+  const foldTitle = (html.match(/>(這[三四五]項)是怎麼算出來的？</) || [])[1];
+  const expected = n === 5 ? '這五項' : '這四項';
   if (foldTitle !== expected) fail('節奏資訊列', `摺疊標題寫「${foldTitle}」但實際有 ${n} 格`);
   /* renderRhythmCell 現在回傳物件，任何漏改的呼叫端都會把 [object Object] 印到畫面上。 */
   if (html.includes('[object Object]')) fail('節奏資訊列', '有呼叫端仍把 renderRhythmCell() 當字串串接');

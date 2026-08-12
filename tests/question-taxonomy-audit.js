@@ -273,20 +273,28 @@ check('主問題出現在第二步而不是第三步',
    但第二步過去只讀 RECOMMENDATIONS[category]——同一分類底下所有問題拿到
    完全相同的清單，而第一步明講「系統會依照內容推薦合適的牌陣」。 */
 {
+  const SPREADS = vm.runInContext('currentSpreads()', c);
+  const RECS = vm.runInContext('RECOMMENDATIONS', c);
   let differing = 0, total = 0;
   const baselineOf = {};
   Object.keys(G.QUESTION_TAXONOMY).forEach(cat => {
     c.state.deck = 'tarot'; c.state.category = cat; c.state.subtopic = '';
-    baselineOf[cat] = c.wizSpreadRecommendations().list.join(',');
+    baselineOf[cat] = c.wizSpreadRecommendations().top.join(',');
     (G.QUESTION_TAXONOMY[cat].primaries || []).forEach(p => {
       total++;
       c.state.subtopic = p.legacyKey || p.id;
       const r = c.wizSpreadRecommendations();
-      check(cat + '/' + p.id + ' 的牌陣推薦來自主問題', r.source === 'primary', r.source);
-      if (r.list.join(',') !== baselineOf[cat]) differing++;
+      check(cat + '/' + p.id + ' 的牌陣排序來自主問題', r.source === 'primary', r.source);
+      /* 推薦不等於篩選。第一版只回傳主問題那組，結果單身桃花、暗戀、
+         三張牌・解析、時間軸在某些分類整個從畫面上消失。 */
+      const shown = r.top.concat(r.rest);
+      const lost = (RECS[cat] || [])
+        .filter(k => SPREADS[k] && shown.indexOf(k) === -1);
+      check(cat + '/' + p.id + ' 沒有讓任何牌陣消失', lost.length === 0, lost.join(','));
+      if (r.top.join(',') !== baselineOf[cat]) differing++;
     });
   });
-  check('大多數主問題拿到跟分類預設不同的牌陣清單', differing >= total * 0.6,
+  check('大多數主問題拿到跟分類預設不同的優先順序', differing >= total * 0.6,
     differing + '/' + total);
   c.state.category = 'love'; c.state.subtopic = '';
   check('沒選主問題時退回分類推薦', c.wizSpreadRecommendations().source === 'category');

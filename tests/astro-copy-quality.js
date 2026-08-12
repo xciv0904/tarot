@@ -90,17 +90,26 @@ const taipei = { lat: 25.033, lon: 121.5654, tz: 'Asia/Taipei' };
 const leoChart = c.GOLDEN_TEST_CHARTS.find(ch => (ch.chart || ch).ascSign === 4) || c.GOLDEN_TEST_CHARTS[0];
 const fridayRow = c.renderPlanetaryDayRow(new Date(2026, 6, 31, 12, 0, 0), taipei, leoChart.chart || leoChart, false);
 const saturdayRow = c.renderPlanetaryDayRow(selectedDailyDate, taipei, leoChart.chart || leoChart, false);
+/* 命主星是這個人的，不隨日期改變；顏色與數字跟著當日主星走，每天不同。
+   兩者曾經被塞進同一格：先掛在當日主星上（換命盤不變，被回報「不管哪張星盤
+   都一樣」），改掛到命主星之後又變成換一天也不變（被回報「每天都一樣」）。 */
 [fridayRow, saturdayRow].forEach(row => {
-  ['太陽', '金黃', '>1<'].forEach(value => {
-    if (!row.includes(value)) throw new Error(`命主星欄位缺少預期值：${value}`);
+  ['太陽', '你的命主星', '今天的主星', '今日幸運色', '幸運時段'].forEach(value => {
+    if (!row.includes(value)) throw new Error(`每日節奏欄位缺少：${value}`);
   });
-  if (!row.includes('幸運時段')) throw new Error('沒有產生幸運時段。');
 });
-/* 當日主星只出現在敘述句，且兩天不同 */
-if (!fridayRow.includes('今天整體則是金星日') || !saturdayRow.includes('今天整體則是土星日')) {
+/* 2026-07-31 是星期五（金星日），selectedDailyDate 是星期六（土星日）。 */
+if (!fridayRow.includes('金星') || !fridayRow.includes('青綠') || !fridayRow.includes('>6<')) {
+  throw new Error('星期五應該顯示金星／青綠／6。');
+}
+if (!saturdayRow.includes('土星') || !saturdayRow.includes('深褐') || !saturdayRow.includes('>8<')) {
+  throw new Error('星期六應該顯示土星／深褐／8。');
+}
+if (fridayRow === saturdayRow) throw new Error('換一天之後每日節奏完全沒變。');
+/* 敘述句要說清楚今天由誰主管，兩天不同 */
+if (!fridayRow.includes('今天由金星主管') || !saturdayRow.includes('今天由土星主管')) {
   throw new Error('敘述句沒有正確帶出當日的行星日。');
 }
-if (fridayRow === saturdayRow) throw new Error('相鄰兩天的幸運時段完全相同。');
 /* 同一天、不同命盤必須產生不同結果——這正是使用者回報的問題。 */
 const otherChart = c.GOLDEN_TEST_CHARTS.find(ch => (ch.chart || ch).ascSign !== 4);
 if (otherChart) {

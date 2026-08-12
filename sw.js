@@ -1,5 +1,5 @@
 /* Mystic Deck service worker — 卡牌圖片快取優先,頁面網路優先 */
-const CACHE = 'mystic-v70';
+const CACHE = 'mystic-v71';
 /* 牌面圖片放在獨立的、不隨版本更動的快取。
    原本圖片跟程式共用一個版本化快取，而 activate 會刪掉所有非當前版本的快取——
    等於每改一次程式就把 228 張牌圖全部清空，使用者下次開啟時要重抓一整批。
