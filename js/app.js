@@ -2401,7 +2401,7 @@ function renderHome() {
     h += '<button onclick="go(\'history\')" style="font:500 14px \'Noto Sans TC\',sans-serif;background:rgba(255,255,255,.02);color:#f0e9d8;border:1px solid rgba(201,169,110,.3);padding:13px 16px;border-radius:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"><span>查看占卜紀錄</span><span>›</span></button>';
     h += '</div>';
     h += renderStudyWidget();
-    h += '<div style="text-align:center;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:18px;line-height:1.8;padding:0 10px">初次接觸塔羅嗎？建議先到底部導覽列的「牌典」認識大阿爾克那 22 張牌，<br>再回來開始占卜，解讀會更容易上手。</div>';
+    h += '<div style="text-align:center;font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:18px;line-height:1.8;padding:0 10px">不用先懂牌義也可以開始，解讀會逐張說明。<br>抽完想深入了解某一張，每張牌下面都有「在牌典查看這張牌」。</div>';
     h += renderAbout();
   }
   h += '</div>';
@@ -2472,6 +2472,46 @@ function renderTaxonomyPrimaryPicker(catKey) {
   return h + '</div>';
 }
 
+/* 主問題（＋解讀來源）。原本住在第三步，也就是使用者選完牌陣之後——先挑工具、
+   再說要做什麼，順序是反的，而且牌陣推薦因此只能看分類。移到第二步之後，
+   換一個主問題，下面的牌陣清單會當場跟著換，因果在同一屏看得到。 */
+function renderPrimaryQuestionBlock() {
+  var h = '';
+  if (['love', 'career', 'family', 'wealth', 'health', 'social', 'study', 'general'].indexOf(state.category) !== -1) {
+    h += renderModePicker();
+    h += renderSubtopicPicker();
+  } else if (!SUBTOPICS[state.category] && taxonomyHasCategory(state.category)) {
+    /* 決策類：沒有舊題庫，主問題直接來自 taxonomy。 */
+    h += renderTaxonomyPrimaryPicker(state.category);
+  } else if (SUBTOPICS[state.category]) {
+    /* 其他有 SUBTOPICS 定義但尚未做星盤引擎的分類：只顯示子問題選擇器，
+       沒有模式切換 UI，renderSubtopicPicker() 依 state.readingMode（此時恆為 'cards'）
+       過濾，astro-only 的子問題自然不會出現。 */
+    h += renderSubtopicPicker();
+  }
+  return h;
+}
+
+/* 牌陣推薦。taxonomy 的 44 個 primary 每一個都寫好了 spreads，但第二步一直只讀
+   RECOMMENDATIONS[category]——所以「未來可能會遇到什麼類型的人」跟「怎麼經營
+   目前這段關係」拿到一模一樣的清單，而第一步明講「系統會依照內容推薦合適的牌陣」。
+   有主問題就用主問題的，沒有才退回分類清單；雷諾曼維持自己的對照表，因為
+   taxonomy 的 spreads 是照塔羅牌陣命名的。 */
+function wizSpreadRecommendations() {
+  var all = currentSpreads();
+  if (state.deck !== 'lenormand' && state.subtopic && typeof taxonomyPrimaryForSubtopic === 'function') {
+    var primary = taxonomyPrimaryForSubtopic(state.category, state.subtopic);
+    if (primary && typeof taxonomyRecommendedSpreads === 'function') {
+      var byPrimary = taxonomyRecommendedSpreads(state.category, primary.id)
+        .filter(function (k) { return !!all[k]; });
+      if (byPrimary.length) return { source: 'primary', list: byPrimary };
+    }
+  }
+  var recSrc = state.deck === 'lenormand' ? LEN_RECOMMENDATIONS : RECOMMENDATIONS;
+  var byCat = ((recSrc && recSrc[state.category]) || []).filter(function (k) { return !!all[k]; });
+  if (byCat.length) return { source: 'category', list: byCat };
+  return { source: 'all', list: Object.keys(all) };
+}
 function renderSubtopicPicker() {
   var preset = getSpreadQuestionPreset();
   var allowed = preset.subtopics || [];
@@ -2902,10 +2942,21 @@ function renderWizard(spreads, isTarot) {
     h += wizBtns(false, !!state.category, '下一步', 'wizNext()');
 
   } else if (state.wizardStep === 2) {
-    h += '<div style="font:600 15px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:6px">推薦適合這類問題的牌陣</div>';
-    var recSrc = state.deck === 'lenormand' ? LEN_RECOMMENDATIONS : RECOMMENDATIONS;
-    var recs = (recSrc[state.category] || []).filter(function (k) { return !!spreads[k]; });
-    if (!recs.length) recs = Object.keys(spreads);
+    var focusCfg2 = topicQuestionConfig[state.category];
+    h += '<div style="font:600 15px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:6px">這次你最想問什麼？</div>';
+    if (focusCfg2 && focusCfg2.riskNotice) {
+      h += '<div style="margin-top:10px;border:1px solid rgba(214,120,120,.35);border-radius:10px;padding:10px 13px;background:rgba(214,120,120,.06);font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.7">⚠ ' + esc(focusCfg2.riskNotice) + '</div>';
+    }
+    h += renderPrimaryQuestionBlock();
+
+    var rec = wizSpreadRecommendations();
+    var recs = rec.list;
+    h += '<div style="font:600 15px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:22px;border-top:1px solid rgba(201,169,110,.18);padding-top:16px">推薦適合這題的牌陣</div>';
+    h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:5px;line-height:1.7">'
+      + (rec.source === 'primary'
+        ? '依你上面選的問題挑出來的。換一個問題，這裡就會換。'
+        : '先選上面的問題，這裡會換成更貼近那一題的牌陣。')
+      + '</div>';
     h += '<div style="display:flex;flex-direction:column;gap:9px;margin-top:14px">';
     recs.forEach(function (key) {
       var sp = spreads[key];
@@ -2932,25 +2983,9 @@ function renderWizard(spreads, isTarot) {
     /* Step 3 標題／說明文字依 Step 1 選擇的主題動態變化（topicQuestionConfig[category].label／hint），
        沒有對應設定時退回原本固定文案，不會出現 undefined。 */
     h += '<div style="font:600 15px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:6px">再告訴我一點你的情況</div>';
-    if (focusCfg) {
-      h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:5px;line-height:1.6">' + esc(focusCfg.hint) + '</div>';
-    }
-    if (focusCfg && focusCfg.riskNotice) {
-      h += '<div style="margin-top:10px;border:1px solid rgba(214,120,120,.35);border-radius:10px;padding:10px 13px;background:rgba(214,120,120,.06);font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.75);line-height:1.7">⚠ ' + esc(focusCfg.riskNotice) + '</div>';
-    }
-    if (['love', 'career', 'family', 'wealth', 'health', 'social', 'study', 'general'].indexOf(state.category) !== -1) {
-      /* 已完成牌卡＋星盤引擎的分類皆顯示解讀來源選擇器。 */
-      h += renderModePicker();
-      h += renderSubtopicPicker();
-    } else if (!SUBTOPICS[state.category] && taxonomyHasCategory(state.category)) {
-      /* 決策類：沒有舊題庫，主問題直接來自 taxonomy。 */
-      h += renderTaxonomyPrimaryPicker(state.category);
-    } else if (SUBTOPICS[state.category]) {
-      /* 其他有 SUBTOPICS 定義但尚未做星盤引擎的分類：只顯示子問題選擇器，
-         沒有模式切換 UI，renderSubtopicPicker() 依 state.readingMode（此時恆為 'cards'）
-         過濾，astro-only 的子問題自然不會出現。 */
-      h += renderSubtopicPicker();
-    }
+    /* riskNotice 跟著主問題移到第二步了——警語要跟它在說的那個問題在同一屏。 */
+    h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:5px;line-height:1.6">'
+      + (focusCfg ? esc(focusCfg.hint) : '這一步全部選填，直接按下面的按鈕也可以開始。') + '</div>';
     /* 「想深入了解的面向」複選器：copyForAI() 組裝 AI 提示詞時會讀 state.wizFocusSel
        （見 var wizFocus = ...），少了這段渲染，使用者就沒有任何地方可以選面向，
        那段提示詞永遠是空的。這裡把它接回問題輸入框的正上方——先選面向、再寫問題。 */
@@ -3253,14 +3288,14 @@ function renderReading() {
 
     }
 
-    h += renderPersonaPicker();
+
+    /* 翻牌與顯示牌義必須留在牌卡旁邊——它們是「還沒讀到解讀」時要用的。
+       語氣選擇與複製／分享則移到整份解讀之後：那是讀完才會做的事，擺在
+       前面只會把「直接回答」往下推。 */
     h += '<div style="display:flex;justify-content:center;gap:10px;margin-top:22px;flex-wrap:wrap">';
     h += '<button onclick="flipAll()" style="font:400 12px \'Noto Sans TC\',sans-serif;background:none;border:1px solid rgba(201,169,110,.4);color:#c9a96e;padding:8px 18px;border-radius:20px;cursor:pointer">全部翻牌 Reveal All</button>';
     h += '<button onclick="revealMeanings()" style="font:500 12px \'Noto Sans TC\',sans-serif;background:linear-gradient(120deg,#c9a96e,#e6cd9a);border:none;color:#1a1622;padding:8px 18px;border-radius:20px;cursor:pointer">直接看牌義 View Meanings</button>';
-    h += '<button id="copy-btn" onclick="copyForAI()" style="font:400 12px \'Noto Sans TC\',sans-serif;background:none;border:1px solid rgba(201,169,110,.4);color:#c9a96e;padding:8px 18px;border-radius:20px;cursor:pointer">' + (state.copied ? '已複製！Copied' : '複製給 AI 解讀 Copy for AI') + '</button>';
-    h += '<button onclick="shareResultImage()" style="font:400 12px \'Noto Sans TC\',sans-serif;background:none;border:1px solid rgba(201,169,110,.4);color:#c9a96e;padding:8px 18px;border-radius:20px;cursor:pointer">分享結果圖 Share</button>';
     h += '</div>';
-    h += renderAiPasteHint();
 
     // summary panel
     h += '<div id="summary-panel" style="margin-top:28px;border-top:1px solid rgba(201,169,110,.2);padding-top:20px;display:' + (allFlipped() ? 'block' : 'none') + '">';
@@ -3426,6 +3461,14 @@ function renderReading() {
     /* 延伸問題放在整份解讀的最後。它原本緊接在牌卡下方，也就是使用者還沒讀到
        任何解讀內容之前，就先被問「要不要換一個問題」——順序上說不通，而且
        那一區的按鈕會把真正的解讀往下推。 */
+
+    /* 讀完解讀才會用到的：語氣、複製給 AI、分享圖。 */
+    h += renderPersonaPicker();
+    h += '<div style="display:flex;justify-content:center;gap:10px;margin-top:20px;flex-wrap:wrap">';
+    h += '<button id="copy-btn" onclick="copyForAI()" style="font:400 12px \'Noto Sans TC\',sans-serif;background:none;border:1px solid rgba(201,169,110,.4);color:#c9a96e;padding:8px 18px;border-radius:20px;cursor:pointer">' + (state.copied ? '已複製！Copied' : '複製給 AI 解讀 Copy for AI') + '</button>';
+    h += '<button onclick="shareResultImage()" style="font:400 12px \'Noto Sans TC\',sans-serif;background:none;border:1px solid rgba(201,169,110,.4);color:#c9a96e;padding:8px 18px;border-radius:20px;cursor:pointer">分享結果圖 Share</button>';
+    h += '</div>';
+    h += renderAiPasteHint();
     h += renderReadingFollowUp();
     h += '<div style="text-align:center;margin-top:26px"><button onclick="wizRestart()" style="background:none;border:none;color:rgba(240,233,216,.5);font:400 12px \'Noto Sans TC\',sans-serif;cursor:pointer;border-bottom:1px dotted rgba(240,233,216,.4);padding:0 0 2px">← 重新提問，再抽一次</button></div>';
   }

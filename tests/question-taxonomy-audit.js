@@ -257,7 +257,43 @@ check('決策類支援 A/B 以外的決策型態', (function () {
   return ['binary_choice','act_or_not','timing_choice','stay_or_leave','accept_or_decline','undecided_direction']
     .every(i => intents.indexOf(i) !== -1);
 })());
-check('決策類在畫面上有主問題可選', step3('decision', '').indexOf('這次你最想問什麼') !== -1);
+/* 主問題已從第三步移到第二步（先決定問什麼，牌陣才推薦得出來）。 */
+function step2(cat, sub) {
+  c.state.tab = 'reading'; c.state.deck = 'tarot';
+  c.state.category = cat; c.state.spread = 'three-time'; c.state.wizardStep = 2;
+  c.state.subtopic = sub || ''; c.state.wizFocusSel = {}; c.state.question = '';
+  return c.renderReading();
+}
+check('決策類在畫面上有主問題可選', step2('decision', '').indexOf('這次你最想問什麼') !== -1);
+check('主問題出現在第二步而不是第三步',
+  step2('love', '').indexOf('這次你最想問什麼') !== -1
+  && step3('love', '').indexOf('這次你最想問什麼') === -1);
+
+/* 牌陣推薦必須跟著主問題變。taxonomy 的 44 個 primary 都寫好了 spreads，
+   但第二步過去只讀 RECOMMENDATIONS[category]——同一分類底下所有問題拿到
+   完全相同的清單，而第一步明講「系統會依照內容推薦合適的牌陣」。 */
+{
+  let differing = 0, total = 0;
+  const baselineOf = {};
+  Object.keys(G.QUESTION_TAXONOMY).forEach(cat => {
+    c.state.deck = 'tarot'; c.state.category = cat; c.state.subtopic = '';
+    baselineOf[cat] = c.wizSpreadRecommendations().list.join(',');
+    (G.QUESTION_TAXONOMY[cat].primaries || []).forEach(p => {
+      total++;
+      c.state.subtopic = p.legacyKey || p.id;
+      const r = c.wizSpreadRecommendations();
+      check(cat + '/' + p.id + ' 的牌陣推薦來自主問題', r.source === 'primary', r.source);
+      if (r.list.join(',') !== baselineOf[cat]) differing++;
+    });
+  });
+  check('大多數主問題拿到跟分類預設不同的牌陣清單', differing >= total * 0.6,
+    differing + '/' + total);
+  c.state.category = 'love'; c.state.subtopic = '';
+  check('沒選主問題時退回分類推薦', c.wizSpreadRecommendations().source === 'category');
+  c.state.deck = 'lenormand';
+  check('雷諾曼維持自己的推薦表', c.wizSpreadRecommendations().source === 'category');
+  c.state.deck = 'tarot';
+}
 G.taxonomyPrimaries('decision').forEach(p => {
   check('決策／' + p.id + ' 在畫面上有面向可選', focusOf(step3('decision', p.id)).length > 0);
 });

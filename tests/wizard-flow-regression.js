@@ -161,6 +161,41 @@ if (loveSelf) {
   c.wizSetDeck('tarot'); c.state.tlGuideOpen = false;
 }
 
+/* ---------- 5.7 結果頁的閱讀順序 ----------
+   「直接回答」原本被語氣選擇與按鈕列擋在後面，第一次用的人得從上往下讀完
+   才發現結論在中間。翻牌／顯示牌義留在牌卡旁（那是讀解讀之前要用的），
+   語氣與複製／分享移到整份解讀之後。 */
+{
+  c.state.wizardStep = 4; c.state.phase = 'result';
+  c.state.category = 'love'; c.state.subtopic = 'partner-type';
+  c.state.deck = 'tarot'; c.state.spread = 'three-time';
+  c.state.wizFocusSel = {}; c.state.question = '';
+  c.state.followUpSelected = ''; c.state.followUpMoreOpen = false;
+  c.state.previousReading = null; c.state.overallOpen = false;
+  c.state.drawn = [0, 1, 2].map(i => ({
+    card: vm.runInContext('TAROT', c)[i], pos: { zh: '位置' + i, en: 'P' + i },
+    reversed: false, flipped: true,
+  }));
+  const page = c.renderReading();
+  const at = (n) => page.indexOf(n);
+  const answer = at('解讀摘要');
+  const flip = at('onclick="flipAll()"');
+  const persona = at('解讀語氣');
+  const copy = at('id="copy-btn"');
+  check('結果頁有解讀摘要', answer !== -1);
+  check('翻牌按鈕留在解讀摘要之前', flip !== -1 && flip < answer);
+  if (persona !== -1) check('語氣選擇移到解讀摘要之後', persona > answer, '語氣 @' + persona + ' vs 摘要 @' + answer);
+  if (copy !== -1) check('複製給 AI 移到解讀摘要之後', copy > answer, '複製 @' + copy + ' vs 摘要 @' + answer);
+}
+
+/* ---------- 5.8 首頁不再要求新手先讀完牌典 ---------- */
+{
+  const app = read('js/app.js');
+  check('首頁移除「先去牌典再回來」的勸退句',
+    app.indexOf('再回來開始占卜') === -1);
+  check('首頁改成可以直接開始', app.indexOf('不用先懂牌義也可以開始') !== -1);
+}
+
 /* ---------- 6. 結果頁的延伸探索 ----------
    互動已改為兩階段（選題 → 明確確認），完整驗收在
    tests/followup-ux-regression.js；這裡只確認題目仍到得了結果頁。 */
