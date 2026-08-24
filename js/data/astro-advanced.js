@@ -6334,6 +6334,24 @@ function progressionAspectPlain(a, usedSet) {
     practice: d.practice,
   };
 }
+/* 推運年度卡需要顯示「本命端 × 推運端」的專業相位資料。
+   這不能借用合盤 renderer 的固定「本人／對方」標籤；也不能依賴已被合盤聚合改版
+   移除的 crossAspectText()。這裡直接把 computeCrossChartAspects() 的既有契約
+   （aKey、bKey、type、orb）轉成推運專用文字，不重算任何星體位置或相位。 */
+function progressionAspectTechnicalText(asp) {
+  if (!asp || typeof asp.orb !== 'number' || !isFinite(asp.orb)) return '';
+  var natalDef = findAnyPointDef(asp.aKey);
+  var progressedDef = findAnyPointDef(asp.bKey);
+  var aspectDef = ASPECT_DEFS[asp.type];
+  if (!natalDef || !progressedDef || !aspectDef) return '';
+  var body = aspectDef.tpl
+    .replace('{A}', '本命' + natalDef.zh)
+    .replace('{B}', '推運' + progressedDef.zh)
+    .replace('{ak}', natalDef.kw)
+    .replace('{bk}', progressedDef.kw);
+  return '本命' + natalDef.zh + aspectDef.zh + '推運' + progressedDef.zh
+    + '（誤差 ' + asp.orb.toFixed(1) + '°）：' + body + '。';
+}
 function renderProgressionYearCard(row, natal, usedSet) {
   var p = row.prog, moon = ZODIAC_SIGNS[p.planets.Moon.sign], sun = ZODIAC_SIGNS[p.planets.Sun.sign];
   var open = state.progExpandedYear === row.index;
@@ -6354,7 +6372,7 @@ function renderProgressionYearCard(row, natal, usedSet) {
        把全貌講完，再細講最緊密的三組。 */
     if (typeof renderProgressionYearAspects === 'function') h += renderProgressionYearAspects(row);
     var expandedUsedSet = {};
-    row.aspects.slice(0, 3).forEach(function (a) { var d=progressionAspectPlain(a, expandedUsedSet); h += '<div style="border-top:1px solid rgba(201,169,110,.12);padding:9px 0"><div style="font:600 11px \'Noto Sans TC\',sans-serif;color:#f0e9d8">'+esc(d.title)+'</div><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.7;margin-top:4px">'+esc(d.text)+'</div><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:#e6cd9a;line-height:1.65;margin-top:4px">建議：'+esc(d.practice)+'</div><details style="margin-top:6px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);cursor:pointer">查看推運相位、容許度與專業解讀</summary><div style="margin-top:5px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.52);line-height:1.65">'+esc(crossAspectText(a,'本命','推運'))+'</div></details></div>'; });
+    row.aspects.slice(0, 3).forEach(function (a) { var d=progressionAspectPlain(a, expandedUsedSet), technical=progressionAspectTechnicalText(a); h += '<div style="border-top:1px solid rgba(201,169,110,.12);padding:9px 0"><div style="font:600 11px \'Noto Sans TC\',sans-serif;color:#f0e9d8">'+esc(d.title)+'</div><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.72);line-height:1.7;margin-top:4px">'+esc(d.text)+'</div><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:#e6cd9a;line-height:1.65;margin-top:4px">建議：'+esc(d.practice)+'</div>'+(technical?'<details style="margin-top:6px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);cursor:pointer">查看推運相位、容許度與專業解讀</summary><div style="margin-top:5px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.52);line-height:1.65">'+esc(technical)+'</div></details>':'')+'</div>'; });
     h += '<details style="margin-top:8px"><summary style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);cursor:pointer">查看推運太陽、月亮精確位置</summary><div style="margin-top:5px;font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.55);line-height:1.7">推運月亮：'+moon.zh+' '+p.planets.Moon.deg.toFixed(1)+'°；推運太陽：'+sun.zh+' '+p.planets.Sun.deg.toFixed(1)+'°。</div></details>';
     if (!row.aspects.length) h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);line-height:1.7">這一年沒有容許度內特別緊密的主要相位，適合延續既有節奏。</div>';
     h += '</div>';

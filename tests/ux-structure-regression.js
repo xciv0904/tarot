@@ -315,6 +315,8 @@ const passed = checks.filter(x => x.ok).length;
   check('有全域錯誤邊界', /addEventListener\('error'/.test(html) && /unhandledrejection/.test(html));
   check('錯誤邊界提供重新載入', html.indexOf('fatal-reload') !== -1);
   check('錯誤邊界不攔資源載入失敗', /if \(!e \|\| !e\.error\) return;/.test(html));
+  check('錯誤邊界把 exception 與 stack 保留在 console',
+    /console\.error\(error\)/.test(html) && /console\.error\(error\.stack\)/.test(html));
 
   check('有 Content-Security-Policy', html.indexOf('Content-Security-Policy') !== -1);
   check('CSP 禁止 object 與 frame 嵌入',

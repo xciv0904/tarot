@@ -375,6 +375,12 @@ window.addEventListener('load', function () {
    並且明講資料還在——本站沒有伺服器，出錯不會弄丟任何東西。 */
 (function () {
   var shown = false;
+  function logFatal(error) {
+    try {
+      console.error(error);
+      if (error && error.stack) console.error(error.stack);
+    } catch (logError) {}
+  }
   function showFatal(detail) {
     if (shown) return;
     shown = true;
@@ -401,10 +407,13 @@ window.addEventListener('load', function () {
     /* 圖片、樣式等資源載入失敗會冒泡成 error 事件但沒有 e.error——
        那些各自有自己的降級處理（例如牌圖的 onerror），不該跳全站錯誤。 */
     if (!e || !e.error) return;
+    logFatal(e.error);
     showFatal(e.message + ' @ ' + (e.filename || '') + ':' + (e.lineno || ''));
   });
   window.addEventListener('unhandledrejection', function (e) {
-    showFatal((e && e.reason && (e.reason.stack || e.reason.message)) || 'unhandled rejection');
+    var reason = e && e.reason;
+    logFatal(reason);
+    showFatal((reason && (reason.stack || reason.message)) || 'unhandled rejection');
   });
 })();
 if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
