@@ -210,11 +210,15 @@ check('渲染層不再逐一相位輸出卡片',
   !/listed\.slice\(0, 10\)\.forEach/.test(advanced));
 check('舊的「一相位一卡」渲染器已移除',
   !/^function renderCrossAspectBeginnerCard/m.test(advanced));
-check('不再把單一相性指數當成頁面的第一個結論',
-  !/renderOverallScoreBlock\(score, synRelationshipLabel/.test(advanced));
+check('第一屏顯示現有相性總分與證據式結論',
+  /function renderSynastryScoreHero/.test(advanced) && /你們的關係相性/.test(advanced)
+  && /relationshipVerdict/.test(advanced));
+check('總分、renderer 與 AI 共用 state result model',
+  /function synEnsureAnalysis/.test(advanced) && /state\.synAnalysis/.test(advanced)
+  && /buildSynastryAiText\(model/.test(advanced));
 check('專業依據預設收合', /aria-expanded="' \+ open \+ '" onclick="toggleSynPattern/.test(advanced));
 check('提供一般／專業閱讀深度切換', /function toggleSynProfessional/.test(advanced));
-check('其他互動預設收合並可展開', /function toggleSynMorePatterns/.test(advanced) && /其他值得注意的互動/.test(advanced));
+check('完整雙人連線圖降到可展開的第二層', /<details style="margin-top:15px/.test(advanced) && /查看完整雙人行星連線圖/.test(advanced));
 check('展開控制達到 44px 觸控目標', /min-height:var\(--control-h\);width:100%;margin-top:10px;text-align:left/.test(advanced));
 check('語氣標籤不只靠顏色，帶有文字', /function synastryToneLabel/.test(advanced) && /張力較明顯/.test(advanced));
 
@@ -235,26 +239,32 @@ check('專業模式是在一般內容之上疊加，不是換一組答案',
   proHtml.indexOf(sample.title) !== -1 && proHtml.indexOf(sample.action) !== -1
   && proHtml.length > generalHtml.length);
 
-/* ---------- 面向分數的位置 ----------
-   分數不能被連線圖推出第一屏。使用者回報「分數不見了」，實際上是排序問題：
-   連線圖在手機上很高，夾在結論與數字之間就會讓人以為數字被刪掉。 */
+/* ---------- 四個 deterministic 分項 ---------- */
 {
   const advSrc = fs.readFileSync(path.join(ROOT, 'js/data/astro-advanced.js'), 'utf8');
   const body = advSrc.slice(advSrc.indexOf('function renderSynastry()'));
   const iBars = body.indexOf('renderSynastryFacetBars(aspects');
   const iLink = body.indexOf('renderSynastryLinkChart(chartA');
-  check('合盤仍然渲染五個面向的分數', iBars !== -1);
+  const iModelBars = body.indexOf('renderSynastryFacetBars(model.aspects');
+  check('合盤渲染四個分項分數', iModelBars !== -1);
   check('合盤仍然渲染雙人連線圖', iLink !== -1);
-  check('面向分數排在連線圖之前', iBars !== -1 && iLink !== -1 && iBars < iLink);
+  check('分項分數排在連線圖之前', iModelBars !== -1 && iLink !== -1 && iModelBars < iLink);
 
   Object.keys(results).forEach(name => {
     const rows = c.synastryFacetScores(results[name].aspects);
-    check(name + '：面向分數回傳五個面向', rows.length === 5);
+    check(name + '：面向分數回傳四個正式面向',
+      rows.length === 4 && rows.map(r => r.key).join(',') === 'attraction,communication,emotion,stability');
     check(name + '：沒有相位的面向誠實回報 null 而不是 50 分',
       rows.every(r => r.score === null ? r.count === 0 : (r.score >= 15 && r.score <= 95)));
+    rows.forEach(row => {
+      const def = c.SYNASTRY_FACETS.filter(f => f.key === row.key)[0];
+      check(name + '／' + row.key + '：每筆計分證據都符合 pair mapping',
+        row.evidence.every(e => c.synastryFacetMatches(def, e.aspect)));
+      check(name + '／' + row.key + '：最多只取六組最重要證據', row.evidence.length <= 6);
+    });
     const bars = c.renderSynastryFacetBars(results[name].aspects, '');
     check(name + '：有分數時長條圖確實渲染',
-      !rows.some(r => r.score !== null) || bars.indexOf('五個面向') !== -1);
+      !rows.some(r => r.score !== null) || (bars.indexOf('四個面向') !== -1 && /\/ 100/.test(bars)));
   });
 }
 

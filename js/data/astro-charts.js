@@ -15,9 +15,8 @@
    跟看圖的人一樣的資訊，而不是被跳過。
    ============================================================================ */
 
-/* 合盤相性的五個面向，以及各自由哪些行星決定。
-   一個相位只要任一端落在該面向的行星清單裡就會計入，所以同一組相位可能同時
-   影響多個面向——這是刻意的，月亮金星的相位本來就同時牽動情感與吸引力。 */
+/* 合盤關係模式與四項 deterministic 分數都只整理已算好的交叉相位；
+   本檔不計算天體位置，也不改動原始相位。 */
 /* ============================================================================
    合盤：關係模式聚合（Relationship Patterns）
 
@@ -400,32 +399,64 @@ function pickTopSynastryPatterns(patterns, n) {
   return out;
 }
 
-var SYNASTRY_FACETS = [
-  { key: 'emotion', zh: '情感共鳴', planets: ['Moon', 'Venus'], hint: '感受能不能被接住、相處起來舒不舒服' },
-  { key: 'talk', zh: '溝通理解', planets: ['Mercury'], hint: '講話合不合拍、容不容易誤會' },
-  { key: 'spark', zh: '吸引與行動', planets: ['Sun', 'Mars'], hint: '有沒有火花、推不推得動彼此' },
-  { key: 'commit', zh: '穩定與承諾', planets: ['Saturn', 'Jupiter'], hint: '走得久不久、能不能一起扛事' },
-  { key: 'change', zh: '刺激與變化', planets: ['Uranus', 'Neptune', 'Pluto'], hint: '會不會互相改變、有沒有戲劇性' },
-];
+/* 四個分項只採用「兩端組合」明確落在 mapping 裡的相位，不再像舊版只要任一端
+   出現某顆星就計分。第三欄是 relationship relevance：同樣緊密的相位，
+   Venus–Mars 對吸引力的解釋力高於 Mars–Mars，所以權重不同。
 
-/* 把交叉相位換算成每個面向的分數。
-   回傳 score=null 代表這個面向完全沒有相位——這種情況要老實說「沒有明顯訊號」，
-   而不是給一個看起來像中間值的 50 分，那會讓人以為「普通」而不是「沒資料」。 */
+   公式固定為：55 + Σ(aspect base × orb strength × pair relevance)，取絕對貢獻
+   最大的前 6 組後 clamp 15–95。沒有命中的面向回傳 null，不用假 50 分補洞。 */
+var SYNASTRY_SCORE_ASPECT_POINTS = {
+  conjunction: 9, sextile: 12, square: -16, trine: 18, opposition: -18,
+};
+var SYNASTRY_FACETS = [
+  { key:'attraction', zh:'心動與吸引', hint:'靠近彼此的動力、火花與吸引能不能持續', pairs:[
+    ['Sun','Moon',1.2], ['Venus','Mars',1.5], ['Venus','Venus',1.1], ['Mars','Sun',1.2],
+    ['Venus','Uranus',0.9], ['Venus','Pluto',1.0], ['Moon','Pluto',0.9],
+    ['Sun','Venus',1.2], ['Mars','Mars',0.8]
+  ]},
+  { key:'communication', zh:'溝通默契', hint:'能不能聽懂彼此、一起把事情談清楚', pairs:[
+    ['Mercury','Sun',1.2], ['Mercury','Moon',1.25], ['Mercury','Mercury',1.5],
+    ['Mercury','Jupiter',1.0], ['Mercury','Saturn',1.2], ['Mercury','Pluto',1.1],
+    ['Mercury','Uranus',0.9]
+  ]},
+  { key:'emotion', zh:'情緒相處', hint:'感受能不能被接住、壓力來時怎麼互相反應', pairs:[
+    ['Moon','Moon',1.5], ['Moon','Venus',1.4], ['Moon','Saturn',1.35],
+    ['Moon','Uranus',1.0], ['Moon','Pluto',1.2], ['Moon','Neptune',1.1], ['Moon','Sun',1.25]
+  ]},
+  { key:'stability', zh:'長期穩定', hint:'承諾、現實壓力與反覆問題能不能一起承擔', pairs:[
+    ['Saturn','Sun',1.35], ['Saturn','Moon',1.4], ['Saturn','Venus',1.5],
+    ['Saturn','Mars',1.2], ['Saturn','Saturn',1.1], ['Sun','Moon',1.15],
+    ['Moon','Venus',1.1], ['Jupiter','Saturn',0.85]
+  ]},
+];
+function synastryFacetPair(facet, asp) {
+  var found = null;
+  facet.pairs.some(function (pair) {
+    if ((pair[0] === asp.aKey && pair[1] === asp.bKey)
+      || (pair[1] === asp.aKey && pair[0] === asp.bKey)) { found = pair; return true; }
+    return false;
+  });
+  return found;
+}
+function synastryFacetMatches(facet, asp) { return !!synastryFacetPair(facet, asp); }
 function synastryFacetScores(aspects) {
   return SYNASTRY_FACETS.map(function (facet) {
-    var hits = (aspects || []).filter(function (asp) {
-      return facet.planets.indexOf(asp.aKey) !== -1 || facet.planets.indexOf(asp.bKey) !== -1;
-    });
-    if (!hits.length) return { key: facet.key, zh: facet.zh, hint: facet.hint, score: null, count: 0 };
-    var score = 55;
-    hits.forEach(function (asp) {
+    var evidence = [];
+    (aspects || []).forEach(function (asp) {
+      var pair = synastryFacetPair(facet, asp);
+      if (!pair) return;
       var orbLimit = (typeof CROSS_ASPECT_ORB !== 'undefined' && CROSS_ASPECT_ORB[asp.type]) || 6;
-      var strength = 1 - Math.min(1, asp.orb / orbLimit);
-      score += astroAspectPoints(asp.type, asp.aKey) * strength * 0.5;
+      var strength = Math.max(0, 1 - Math.min(1, asp.orb / orbLimit));
+      var contribution = SYNASTRY_SCORE_ASPECT_POINTS[asp.type] * strength * pair[2];
+      evidence.push({ aspect:asp, pairWeight:pair[2], strength:strength, contribution:contribution });
     });
+    evidence.sort(function (a, b) { return Math.abs(b.contribution) - Math.abs(a.contribution); });
+    if (!evidence.length) return { key:facet.key, zh:facet.zh, hint:facet.hint, score:null, count:0, evidence:[] };
+    var used = evidence.slice(0, 6);
+    var score = 55 + used.reduce(function (sum, row) { return sum + row.contribution; }, 0);
     return {
-      key: facet.key, zh: facet.zh, hint: facet.hint, count: hits.length,
-      score: Math.max(15, Math.min(95, Math.round(score))),
+      key:facet.key, zh:facet.zh, hint:facet.hint, count:evidence.length,
+      score:Math.max(15, Math.min(95, Math.round(score))), evidence:used,
     };
   });
 }
@@ -452,7 +483,7 @@ function renderSynastryFacetBars(aspects, activeFacet) {
   if (!withData.length) return '';
 
   var h = '<div style="margin-top:18px">';
-  h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.08em;color:rgba(240,233,216,.55);text-align:center">五個面向各自的默契程度</div>';
+  h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.08em;color:rgba(240,233,216,.55);text-align:center">四個面向各自的相處狀況</div>';
   h += '<div style="font:400 10.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);text-align:center;margin-top:4px;line-height:1.6">點任何一條，下方只顯示跟它有關的解讀</div>';
   h += '<div style="margin-top:12px;display:flex;flex-direction:column;gap:9px">';
 
@@ -472,7 +503,7 @@ function renderSynastryFacetBars(aspects, activeFacet) {
       + ';border:1px solid ' + (on ? '#c9a96e' : 'rgba(201,169,110,.18)') + ';border-radius:10px;padding:9px 11px;cursor:pointer">';
     h += '<div style="display:flex;justify-content:space-between;align-items:baseline">';
     h += '<span style="font:500 12px \'Noto Sans TC\',sans-serif;color:#f0e9d8">' + (on ? '✓ ' : '') + esc(r.zh) + '</span>';
-    h += '<span style="font:400 10px \'Noto Sans TC\',sans-serif;color:' + color + '">' + esc(synastryBandLabel(r.score)) + '　' + r.count + ' 組</span>';
+    h += '<span style="font:600 13px \'Noto Sans TC\',sans-serif;color:' + color + '">' + r.score + ' <span style="font-size:10px;font-weight:400">/ 100　' + esc(synastryBandLabel(r.score)) + '</span></span>';
     h += '</div>';
     /* 長條本身：底槽 + 依分數填色。用 div 而不是 SVG，讓它自然跟著容器寬度縮放。 */
     h += '<div aria-hidden="true" style="margin-top:6px;height:7px;border-radius:4px;background:rgba(255,255,255,.06);overflow:hidden">';
@@ -507,7 +538,7 @@ function renderSynastryLinkChart(chartA, chartB, aspects, activeFacet) {
 
   var shown = (aspects || []).filter(function (asp) {
     if (!facet) return true;
-    return facet.planets.indexOf(asp.aKey) !== -1 || facet.planets.indexOf(asp.bKey) !== -1;
+    return synastryFacetMatches(facet, asp);
   });
 
   var harmony = shown.filter(function (a) { return a.type === 'trine' || a.type === 'sextile'; }).length;
@@ -548,7 +579,7 @@ function renderSynastryLinkChart(chartA, chartB, aspects, activeFacet) {
       var p = chart.planets[k];
       if (!p) return;
       var def = PLANET_DEFS.filter(function (x) { return x.key === k; })[0];
-      var dim = facet && facet.planets.indexOf(k) === -1;
+      var dim = facet && !facet.pairs.some(function (pair) { return pair[0] === k || pair[1] === k; });
       var pos = posOf(p.lon, r);
       svg += '<circle cx="' + pos.x.toFixed(1) + '" cy="' + pos.y.toFixed(1) + '" r="9" fill="#1a1622" stroke="' + ringColor
         + '" stroke-width="0.9" opacity="' + (dim ? 0.35 : 1) + '"/>';

@@ -60,6 +60,16 @@ general-mode conclusions, that weights never leak into general mode, and that th
 copy-for-AI payload is byte-identical in both modes — simplifying the screen must
 never simplify the export.
 
+## Synastry relationship regression
+
+`synastry-pattern-regression.js` verifies that cross-aspects are clustered into
+distinct relationship patterns and that the four subscores use explicit planet-pair
+mappings, orb strength, and deterministic weights. `synastry-relationship-golden.js`
+locks the requested 52-point relationship case, its seven-section plain-language
+schema, unknown-birth-time exclusions, and transit-backed 3-month / 3–12-month
+windows. The timeline test uses a fixed date and rejects invented dates or unknown-
+time Moon evidence.
+
 ## Protected files
 
 - `golden-charts.js`: synthetic chart structures
@@ -76,4 +86,3 @@ The existing fixtures test interpretation structures, not astronomical accuracy.
 Add a separate calculation suite before changing chart math. It should use
 privacy-safe inputs, record timezone/location, library version, house/orb
 conventions, and compare key chart facts with an independent trusted reference.
-

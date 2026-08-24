@@ -5876,18 +5876,20 @@ async function synGenerate() {
     var mm = state.synUnknownTime ? 0 : (parseInt(state.synMin, 10) || 0);
     state.synResult = computeNatalChart(parseInt(state.synY, 10), parseInt(state.synM, 10), parseInt(state.synD, 10), hh, mm, city.lat, city.lon, city.tz, state.astroHouseSystem);
     state.synCityUsed = city;
+    state.synAnalysis = null; state.synTimeline = null; state.synTimelineTab = 'base';
     state.synGenerating = false;
     render();
     window.scrollTo(0, 0);
   }, 30);
 }
-function synReset() { state.synResult = null; state.synFacet = null; render(); window.scrollTo(0, 0); }
+function synReset() { state.synResult = null; state.synFacet = null; state.synAnalysis = null; state.synTimeline = null; state.synTimelineTab = 'base'; render(); window.scrollTo(0, 0); }
 function synSetFacet(key) {
   state.synFacet = (key && state.synFacet !== key) ? key : null;
   render();
 }
-function synSetRelationship(k) { state.synRelationship = k; render(); }
-function synRelationshipLabel() { return ({love:'戀愛／伴侶',family:'親子／家人',friend:'朋友',work:'工作夥伴'})[state.synRelationship] || '戀愛／伴侶'; }
+function synSetRelationship(k) { state.synRelationship = k; state.synAnalysis = null; state.synTimeline = null; render(); }
+function synRelationshipLabelFor(k) { return ({love:'戀愛／伴侶',family:'親子／家人',friend:'朋友',work:'工作夥伴'})[k] || '戀愛／伴侶'; }
+function synRelationshipLabel() { return synRelationshipLabelFor(state.synRelationship); }
 
 /* 兩張星盤之間的交叉相位——合盤與推運都能共用這個比對邏輯 */
 var CROSS_ASPECT_ORB = { conjunction: 7, sextile: 4, square: 5, trine: 6, opposition: 7 };
@@ -6039,6 +6041,376 @@ function renderSynastryOverview(overview) {
   return h;
 }
 
+/* ---------- 合盤結果模型 ----------
+   總分仍由既有 computeSynastryScore() 產生；這一層只把同一份分數、四項分數、
+   關係模式與可追溯相位組成一個 state model，避免 renderer 與 AI payload 各算各的。 */
+var SYNASTRY_CONFLICT_CYCLES = {
+  empathy: '當其中一人察覺氣氛不對時，容易先猜對方在想什麼；另一人感到被誤解後會少說一點，前者便更相信自己的猜測。',
+  attraction: '當一方想立刻靠近或確認關係時，另一方更在意氣氛與步調；前者把遲疑讀成冷淡，後者則把追問讀成壓迫。',
+  talk: '意見不同時，一方會補更多理由證明自己，另一方卻容易聽成否定；解釋越多，防衛也越強，最後兩人開始爭誰沒聽懂。',
+  security: '壓力來時，一方想靠近確認感情，另一方先去處理事情；前者覺得被冷落而追問，後者覺得被打斷而更沉默。',
+  commit: '談到進度或責任時，一方想先確認承諾，另一方先檢查現實風險；前者覺得對方退縮，後者覺得自己被催，於是越談越像考核。',
+  freedom: '一方臨時需要空間或改變計畫時，另一方容易先解讀成關係降溫；追問會讓前者更想退開，退開又讓後者更不安。',
+  trust: '不安出現時，一方會想知道更多、確認更多，另一方則用保留或沉默保護自己；越想掌握，對方越不願意說。',
+  growth: '面對機會時，一方先談可能性，另一方先談風險；前者覺得被潑冷水，後者覺得自己不被當回事，最後善意變成互相否定。',
+  drive: '衝突發生時，一方想當場解決，另一方需要先冷靜；前者追得越緊，後者退得越遠，原本的問題反而沒被處理。',
+};
+function synastryModelFingerprint(chartA, chartB, unknownA, unknownB, relationshipType) {
+  function chartPart(chart) {
+    if (!chart || !chart.planets) return 'none';
+    return ASTRO_PLANET_BODY_KEYS.map(function (key) {
+      return key + ':' + Number(chart.planets[key] && chart.planets[key].lon).toFixed(3);
+    }).join('|');
+  }
+  return [relationshipType, !!unknownA, !!unknownB, chartPart(chartA), chartPart(chartB)].join('::');
+}
+function synastryPatternByKeys(patterns, keys, preferTension) {
+  var rows = (patterns || []).filter(function (p) { return !keys || keys.indexOf(p.key) !== -1; });
+  rows.sort(function (a, b) {
+    var av = preferTension ? (a.tenseWeight * 2 + a.importance) : (a.harmoniousWeight * 2 + a.importance);
+    var bv = preferTension ? (b.tenseWeight * 2 + b.importance) : (b.harmoniousWeight * 2 + b.importance);
+    return bv - av;
+  });
+  return rows[0] || null;
+}
+function synastrySectionEvidence(patterns, max) {
+  var rows = [], seen = {};
+  (patterns || []).forEach(function (pattern) {
+    if (!pattern) return;
+    pattern.aspects.forEach(function (asp) {
+      var id = asp.aKey + '|' + asp.bKey + '|' + asp.type;
+      if (seen[id]) return;
+      seen[id] = true;
+      rows.push(asp);
+    });
+  });
+  return rows.sort(function (a, b) {
+    return synastryAspectWeight(b) - synastryAspectWeight(a);
+  }).slice(0, max || 3);
+}
+function synastryRelationshipTitles(relationshipType) {
+  if (relationshipType === 'family') return { attraction:'你們為什麼會彼此牽掛？', longTerm:'長期相處最需要處理什麼？' };
+  if (relationshipType === 'friend') return { attraction:'你們為什麼會成為朋友？', longTerm:'這段友情容易維持嗎？' };
+  if (relationshipType === 'work') return { attraction:'你們為什麼能一起做事？', longTerm:'長期合作容易嗎？' };
+  return { attraction:'你們為什麼會互相吸引？', longTerm:'如果真的交往，走長久容易嗎？' };
+}
+function buildSynastryRelationshipAnalysis(aspects, score, relationshipType) {
+  var patterns = buildSynastryPatterns(aspects);
+  var facets = synastryFacetScores(aspects);
+  var top = patterns[0] || null;
+  var supportive = synastryPatternByKeys(patterns, null, false) || top;
+  var challenging = synastryPatternByKeys(patterns, null, true) || top;
+  var attraction = synastryPatternByKeys(patterns, ['attraction','empathy','freedom','trust'], false) || supportive;
+  var works = supportive;
+  var longTerm = synastryPatternByKeys(patterns, ['commit','security','trust','drive'], false) || supportive;
+  var longRisk = synastryPatternByKeys(patterns, ['commit','security','trust','freedom','drive'], true) || challenging;
+  var titles = synastryRelationshipTitles(relationshipType);
+  var scoreLead = score >= 72
+    ? '整體相性偏高，很多互動不用反覆解釋就能接上。'
+    : (score <= 45
+      ? '整體相性偏低，吸引或在意仍可能存在，但日常磨合會比較費力。'
+      : '整體相性落在中間：有明確的靠近理由，也有幾個會反覆卡住的地方。');
+  var verdict = scoreLead;
+  if (supportive) verdict += '最能把你們拉近的是：' + supportive.strength;
+  if (challenging) verdict += '真正會消耗關係的則是：' + challenging.friction;
+
+  var attractionBody = attraction
+    ? [attraction.lead, '這份吸引能否維持，關鍵在於：' + attraction.action]
+    : ['目前沒有足夠集中的相位，無法指出單一主要吸引模式。'];
+  var worksBody = works
+    ? [works.strength, works.lead]
+    : ['目前沒有足夠集中的相位，無法判斷最順的互動。'];
+  var conflictBody = challenging
+    ? [SYNASTRY_CONFLICT_CYCLES[challenging.key] || challenging.friction, '這個循環最早可以在這裡截斷：' + challenging.action]
+    : ['目前沒有形成足夠明顯的主要衝突循環。'];
+  var risks = [challenging, longRisk].filter(function (p, i, arr) { return p && arr.indexOf(p) === i; }).slice(0, 2);
+  var hiddenRiskBody = risks.length
+    ? risks.map(function (p) { return p.friction; })
+    : ['目前沒有足夠集中的張力證據，無法指定一個最大的隱患。'];
+  var stability = facets.filter(function (f) { return f.key === 'stability'; })[0];
+  var cost = stability && stability.score != null
+    ? (stability.score >= 68 ? '維持成本偏低，但仍需要把承諾落到日常安排。' : (stability.score <= 45 ? '維持成本偏高，反覆問題若沒有明確做法會持續消耗。' : '維持成本中等，關係能不能走久主要看兩人是否真的採取修正。'))
+    : '目前缺少足夠的長期結構相位，不能只靠分數判斷能走多久。';
+  var longTermBody = [];
+  if (longTerm) longTermBody.push('能把兩人留在關係裡的支點是：' + longTerm.strength);
+  if (longRisk) longTermBody.push('最容易重複的問題是：' + longRisk.friction);
+  longTermBody.push(cost);
+  if (longRisk) longTermBody.push('比較容易走長久的條件是：' + longRisk.action);
+  var actionAdvice = [];
+  [challenging, longRisk, attraction].forEach(function (p) {
+    if (p && actionAdvice.indexOf(p.action) === -1 && actionAdvice.length < 3) actionAdvice.push(p.action);
+  });
+
+  return {
+    relationshipVerdict: { title:'你們的關係相性', body:[verdict], evidence:synastrySectionEvidence([supportive, challenging], 4) },
+    attraction: { title:titles.attraction, body:attractionBody, evidence:synastrySectionEvidence([attraction], 3) },
+    whatWorks: { title:'相處起來最順的地方', body:worksBody, evidence:synastrySectionEvidence([works], 3) },
+    conflictPattern: { title:'最容易吵起來的地方', body:conflictBody, evidence:synastrySectionEvidence([challenging], 3) },
+    hiddenRisk: { title:'這段關係最大的隱患', body:hiddenRiskBody, evidence:synastrySectionEvidence(risks, 3) },
+    longTermPotential: { title:titles.longTerm, body:longTermBody, evidence:synastrySectionEvidence([longTerm, longRisk], 4) },
+    actionAdvice: { title:'如果想讓關係更順', body:actionAdvice.length ? actionAdvice : ['先從一件可以觀察的具體行為開始，不替對方猜答案。'], evidence:synastrySectionEvidence([challenging, longRisk], 3) },
+    patterns:patterns, facets:facets,
+  };
+}
+function synastryReliableAspects(aspects, unknownA, unknownB) {
+  return (aspects || []).filter(function (asp) {
+    if (unknownA && asp.aKey === 'Moon') return false;
+    if (unknownB && asp.bKey === 'Moon') return false;
+    return true;
+  });
+}
+function buildSynastryResultModel(chartA, chartB, unknownA, unknownB, relationshipType) {
+  var rawAspects = computeCrossChartAspects(chartA, chartB).sort(function (a, b) { return a.orb - b.orb; });
+  var aspects = synastryReliableAspects(rawAspects, unknownA, unknownB);
+  var score = computeSynastryScore(aspects);
+  return {
+    fingerprint:synastryModelFingerprint(chartA, chartB, unknownA, unknownB, relationshipType),
+    relationshipType:relationshipType, score:score, aspects:aspects, rawAspects:rawAspects,
+    subscores:synastryFacetScores(aspects),
+    reliability:{
+      personATimeKnown:!unknownA, personBTimeKnown:!unknownB,
+      excluded:(!unknownA && !unknownB) ? [] : ['上升 ASC','天頂 MC／天底 IC','宮位','出生時間未知一方的月亮精確相位','其他時間敏感點'],
+      note:(!unknownA && !unknownB)
+        ? '兩人的出生時間皆已提供；本頁分數仍只使用雙方行星間的交叉相位。'
+        : ((unknownA && unknownB ? '雙方' : (unknownA ? '本人' : '對方')) + '出生時間未知，因此不使用' + ((!unknownA && unknownB) ? '對方' : (unknownA && !unknownB ? '本人' : '雙方')) + '上升、宮位、月亮精確相位與其他高度依賴出生時間的資訊。其餘行星間互動仍可分析。'),
+    },
+    analysis:buildSynastryRelationshipAnalysis(aspects, score, relationshipType),
+  };
+}
+function synEnsureAnalysis() {
+  var chartA = state.astroResult, chartB = state.synResult;
+  if (!chartA || !chartB) return null;
+  var fingerprint = synastryModelFingerprint(chartA, chartB, !!state.astroUnknownTime, !!state.synUnknownTime, state.synRelationship);
+  if (!state.synAnalysis || state.synAnalysis.fingerprint !== fingerprint) {
+    state.synAnalysis = buildSynastryResultModel(chartA, chartB, !!state.astroUnknownTime, !!state.synUnknownTime, state.synRelationship);
+    state.synTimeline = null;
+  }
+  return state.synAnalysis;
+}
+
+/* ---------- 關係時間線 ----------
+   基本關係只看 Synastry；近期與 3–12 個月則另外掃描實際行運，找同一時間對 A/B
+   關係敏感行星的啟動。未知出生時間者不使用其月亮，也從未使用 ASC、MC 或宮位。 */
+var SYNASTRY_TIMELINE_TRANSITS = [
+  { key:'Mercury', orb:1.5, weight:0.8 }, { key:'Venus', orb:2, weight:1.0 },
+  { key:'Mars', orb:2, weight:1.0 }, { key:'Jupiter', orb:2.5, weight:1.15 },
+  { key:'Saturn', orb:2.5, weight:1.35 }, { key:'Uranus', orb:1.8, weight:1.25 },
+  { key:'Neptune', orb:1.6, weight:1.1 }, { key:'Pluto', orb:1.6, weight:1.3 },
+];
+var SYNASTRY_TIMELINE_TARGETS = {
+  Sun:{ weight:1.0, theme:'關係定位與彼此期待' },
+  Moon:{ weight:1.15, theme:'情緒需求與安全感' },
+  Mercury:{ weight:1.0, theme:'溝通與重要對話' },
+  Venus:{ weight:1.25, theme:'靠近、喜歡與關係價值' },
+  Mars:{ weight:1.1, theme:'推進速度與衝突反應' },
+  Saturn:{ weight:1.2, theme:'承諾、責任與現實安排' },
+};
+function synastryTransitAspect(transitLon, natalLon, orbLimit) {
+  var diff = astroAngleDiff(transitLon, natalLon), best = null;
+  HOROSCOPE_ASPECT_ANGLES.forEach(function (pair) {
+    var orb = Math.abs(diff - pair[1]);
+    if (orb <= orbLimit && (!best || orb < best.orb)) best = { type:pair[0], orb:orb };
+  });
+  return best;
+}
+function synastryTimelineInteraction(hit) {
+  var hard = hit.aspect.type === 'square' || hit.aspect.type === 'opposition';
+  var owner = hit.owner === 'A' ? '本人' : '對方';
+  var possible = {
+    Sun: hard ? owner + '會更在意這段關係到底算什麼，模糊回應容易被聽成退縮。' : owner + '比較願意把這段關係放到檯面上，適合確認彼此期待。',
+    Moon: hard ? owner + '的情緒需求會變得明顯，小事也可能被感覺成沒有被接住。' : owner + '比較容易說出真正需要的陪伴，互動也較容易有安定感。',
+    Mercury: hard ? owner + '會急著把話說清楚，但語氣或細節容易蓋過真正要談的事。' : owner + '比較願意開口，原本卡住的話題較容易找到具體說法。',
+    Venus: hard ? owner + '會更在意喜歡有沒有被回應，試探與比較容易增加。' : owner + '更願意靠近、安排見面或把好感表達出來。',
+    Mars: hard ? owner + '的推進速度變快，若另一方還沒跟上，容易從催促變成爭執。' : owner + '比較有動力採取行動，適合一起完成一件具體的事。',
+    Saturn: hard ? owner + '會更在意承諾與現實限制，沒有談清楚的責任容易變成壓力。' : owner + '比較願意把承諾落到時間、分工與實際安排。',
+  }[hit.targetKey];
+  var attention = {
+    Sun:'先把「希望這段關係往哪裡走」說成可回答的問題。',
+    Moon:'先說需要陪伴、安靜或確認，不用冷淡或追問測試對方。',
+    Mercury:'重要對話先確認彼此要決定什麼，再交換理由。',
+    Venus:'把想見面或想被回應說清楚，不用試探對方會不會主動。',
+    Mars:'行動前先確認兩人的速度，不用臨時決定逼對方跟上。',
+    Saturn:'把責任拆成時間、金錢或分工，不用只談應不應該。',
+  }[hit.targetKey];
+  return { possible:possible, attention:attention };
+}
+function synastryTimelineWindows(chartA, chartB, unknownA, unknownB, startDate, endDate, stepDays, maxWindows) {
+  var hitsByMonth = {}, cursor = new Date(startDate.getTime());
+  while (cursor <= endDate) {
+    var transits = computeTransitPlanets(cursor);
+    SYNASTRY_TIMELINE_TRANSITS.forEach(function (transitCfg) {
+      [['A', chartA, unknownA], ['B', chartB, unknownB]].forEach(function (person) {
+        Object.keys(SYNASTRY_TIMELINE_TARGETS).forEach(function (targetKey) {
+          if (person[2] && targetKey === 'Moon') return;
+          var natal = person[1] && person[1].planets && person[1].planets[targetKey];
+          if (!natal || typeof natal.lon !== 'number') return;
+          var aspect = synastryTransitAspect(transits[transitCfg.key], natal.lon, transitCfg.orb);
+          if (!aspect) return;
+          var strength = 1 - aspect.orb / transitCfg.orb;
+          var importance = strength * transitCfg.weight * SYNASTRY_TIMELINE_TARGETS[targetKey].weight
+            * ((aspect.type === 'square' || aspect.type === 'opposition') ? 1.08 : 1);
+          var monthKey = cursor.getUTCFullYear() + '-' + pad2(cursor.getUTCMonth() + 1);
+          var hit = { date:new Date(cursor.getTime()), owner:person[0], transitKey:transitCfg.key,
+            targetKey:targetKey, aspect:aspect, importance:importance };
+          hitsByMonth[monthKey] = hitsByMonth[monthKey] || [];
+          hitsByMonth[monthKey].push(hit);
+        });
+      });
+    });
+    cursor = new Date(cursor.getTime() + stepDays * 86400000);
+  }
+  return Object.keys(hitsByMonth).sort().map(function (monthKey) {
+    var rows = hitsByMonth[monthKey].sort(function (a, b) { return b.importance - a.importance; });
+    var primary = rows[0], copy = synastryTimelineInteraction(primary);
+    var parts = monthKey.split('-');
+    return {
+      month:monthKey, label:Number(parts[0]) + ' 年 ' + Number(parts[1]) + ' 月',
+      theme:SYNASTRY_TIMELINE_TARGETS[primary.targetKey].theme,
+      possible:copy.possible, attention:copy.attention,
+      evidence:rows.slice(0, 2), importance:primary.importance,
+    };
+  }).sort(function (a, b) { return b.importance - a.importance; }).slice(0, maxWindows)
+    .sort(function (a, b) { return a.month < b.month ? -1 : 1; });
+}
+function buildSynastryTimeline(chartA, chartB, unknownA, unknownB, now) {
+  var start = new Date(now.getTime());
+  var recentEnd = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 3, start.getUTCDate()));
+  var midStart = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 3, start.getUTCDate()));
+  var midEnd = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 12, start.getUTCDate()));
+  return {
+    generatedFor:start.toISOString().slice(0, 10),
+    recent:synastryTimelineWindows(chartA, chartB, unknownA, unknownB, start, recentEnd, 7, 3),
+    mid:synastryTimelineWindows(chartA, chartB, unknownA, unknownB, midStart, midEnd, 12, 5),
+    reliability:'時間線只使用實際行運對雙方行星的啟動；不使用上升、宮位或 AI 自行推測的日期。出生時間未知者的月亮也不納入時間線。',
+  };
+}
+function synEnsureTimeline() {
+  var model = synEnsureAnalysis();
+  if (!model) return null;
+  var today = new Date(), dayKey = today.toISOString().slice(0, 10);
+  var fingerprint = model.fingerprint + '::' + dayKey;
+  if (!state.synTimeline || state.synTimeline.fingerprint !== fingerprint) {
+    state.synTimeline = buildSynastryTimeline(state.astroResult, state.synResult, !!state.astroUnknownTime, !!state.synUnknownTime, today);
+    state.synTimeline.fingerprint = fingerprint;
+  }
+  return state.synTimeline;
+}
+
+function renderSynastryEvidenceDetails(section) {
+  if (!section || !section.evidence || !section.evidence.length) return '';
+  var h = '<details style="margin-top:11px;border-top:1px solid var(--border);padding-top:9px">';
+  h += '<summary style="min-height:36px;display:flex;align-items:center;cursor:pointer;font:500 11px var(--font-sans);color:var(--brand)">為什麼這樣判斷？</summary>';
+  h += '<div style="font:400 10.5px/1.75 var(--font-sans);color:var(--text-muted);padding-top:4px">';
+  section.evidence.forEach(function (asp) { h += '<div>・' + esc(synastryAspectLine(asp)) + '</div>'; });
+  h += '</div></details>';
+  return h;
+}
+function renderSynastryDecisionSection(section, numbered) {
+  if (!section) return '';
+  var h = '<section style="margin-top:14px;border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;background:var(--surface)">';
+  h += '<h3 class="md-h3" style="font-size:15px">' + esc(section.title) + '</h3>';
+  if (numbered) {
+    h += '<ol style="margin:10px 0 0;padding-left:21px;color:var(--text-secondary)">';
+    section.body.forEach(function (line) { h += '<li style="font:400 12.5px/1.85 var(--font-sans);margin-top:6px;padding-left:3px">' + esc(line) + '</li>'; });
+    h += '</ol>';
+  } else {
+    section.body.forEach(function (line) { h += '<p class="md-prose" style="font:400 12.5px/1.85 var(--font-sans);color:var(--text-secondary);margin:8px 0 0">' + esc(line) + '</p>'; });
+  }
+  h += renderSynastryEvidenceDetails(section);
+  return h + '</section>';
+}
+function renderSynastryScoreHero(model) {
+  var h = '<section style="margin-top:16px;border:1px solid var(--border-strong);border-radius:var(--radius-lg);padding:18px;background:rgba(201,169,110,.08);text-align:center">';
+  h += '<h2 style="font:600 17px var(--font-serif);color:var(--text);margin:0">你們的關係相性</h2>';
+  h += '<div style="font:700 46px/1.15 var(--font-serif);color:var(--brand-bright);margin-top:8px">' + model.score + '<span style="font:400 15px var(--font-sans);color:var(--text-muted)"> / 100</span></div>';
+  h += '<p style="font:400 13px/1.9 var(--font-sans);color:var(--text-secondary);margin:10px 0 0;text-align:left">' + esc(model.analysis.relationshipVerdict.body[0]) + '</p>';
+  h += '</section>';
+  return h;
+}
+function renderSynastryReliability(model) {
+  var limited = model.reliability.excluded.length > 0;
+  return '<div class="md-status ' + (limited ? 'md-status--info' : 'md-status--success') + '" role="status">'
+    + '<span class="md-status__icon" aria-hidden="true">' + (limited ? 'ⓘ' : '✓') + '</span><div><b>'
+    + (limited ? '出生時間可靠度限制' : '出生時間資料完整') + '</b><br>' + esc(model.reliability.note) + '</div></div>';
+}
+function synSetTimelineTab(key) {
+  if (['base','recent','mid','long'].indexOf(key) === -1 || state.synTimelineTab === key) return;
+  state.synTimelineTab = key;
+  render(); window.scrollTo(0, 0);
+}
+function renderSynastryTimelineTabs(active) {
+  var rows = [['base','基本關係'],['recent','近期 3 個月'],['mid','未來 3–12 個月'],['long','長期發展']];
+  var h = '<div role="tablist" aria-label="關係分析時間範圍" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:15px">';
+  rows.forEach(function (row) {
+    var on = row[0] === active;
+    h += '<button type="button" role="tab" aria-selected="' + on + '" onclick="synSetTimelineTab(\'' + row[0] + '\')" style="min-height:42px;border:1px solid ' + (on ? 'var(--brand-bright)' : 'var(--border)') + ';border-radius:11px;background:' + (on ? 'rgba(201,169,110,.16)' : 'var(--surface)') + ';color:' + (on ? 'var(--text)' : 'var(--text-muted)') + ';font:500 11.5px var(--font-sans);cursor:pointer">' + row[1] + '</button>';
+  });
+  return h + '</div>';
+}
+function renderSynastryTimelineEvidence(hit) {
+  var transitDef = findAnyPointDef(hit.transitKey), targetDef = findAnyPointDef(hit.targetKey);
+  return '行運' + (transitDef ? transitDef.zh : hit.transitKey) + ASPECT_DEFS[hit.aspect.type].zh
+    + (hit.owner === 'A' ? '本人' : '對方') + (targetDef ? targetDef.zh : hit.targetKey)
+    + '（誤差 ' + hit.aspect.orb.toFixed(1) + '°）';
+}
+function renderSynastryTimelineWindows(windows, emptyText) {
+  if (!windows || !windows.length) return '<div class="md-status md-status--info" role="status"><span class="md-status__icon">ⓘ</span><div>' + esc(emptyText) + '</div></div>';
+  var h = '<div style="margin-top:14px">';
+  windows.forEach(function (windowRow) {
+    h += '<article style="margin-top:10px;border:1px solid var(--border);border-radius:var(--radius-lg);padding:15px 16px;background:var(--surface)">';
+    h += '<div style="font:600 12px var(--font-sans);color:var(--brand-bright)">' + esc(windowRow.label) + '｜' + esc(windowRow.theme) + '</div>';
+    h += '<div style="margin-top:9px"><span style="font:500 10.5px var(--font-sans);color:var(--success)">可能表現</span><p style="font:400 12px/1.8 var(--font-sans);color:var(--text-secondary);margin:3px 0 0">' + esc(windowRow.possible) + '</p></div>';
+    h += '<div style="margin-top:8px"><span style="font:500 10.5px var(--font-sans);color:var(--warning)">需要注意</span><p style="font:400 12px/1.8 var(--font-sans);color:var(--text-secondary);margin:3px 0 0">' + esc(windowRow.attention) + '</p></div>';
+    h += '<details style="margin-top:9px;border-top:1px solid var(--border);padding-top:8px"><summary style="cursor:pointer;font:500 11px var(--font-sans);color:var(--brand)">占星依據</summary><div style="font:400 10.5px/1.7 var(--font-sans);color:var(--text-muted);margin-top:5px">';
+    windowRow.evidence.forEach(function (hit) { h += '<div>・' + esc(renderSynastryTimelineEvidence(hit)) + '</div>'; });
+    h += '</div></details></article>';
+  });
+  return h + '</div>';
+}
+function buildSynastryAiText(model, timeline) {
+  var L = [], a = model.analysis;
+  L.push('SYSTEM INSTRUCTION｜兩人關係判讀');
+  L.push('你不是在替占星師寫合盤報告。讀者是不懂占星的一般使用者，真正想知道的是「我們兩個相處到底會怎樣？」');
+  L.push('先回答關係問題，再用占星證據解釋。禁止從星體名稱開始、逐條解釋所有相位、把 hard aspect 直接翻成負面事件、使用模糊心理套話或重複同一意思。');
+  L.push('所有分數、相位、orb 與時間窗口都是 deterministic engine 的事實；不得修改、重算或創造日期。');
+  L.push('');
+  L.push('RELATIONSHIP FACTS');
+  L.push('- 關係類型：' + synRelationshipLabelFor(model.relationshipType));
+  L.push('- compatibilityScore：' + model.score + '/100');
+  model.subscores.forEach(function (row) { L.push('- ' + row.key + '（' + row.zh + '）：' + (row.score == null ? 'insufficient evidence' : row.score + '/100')); });
+  L.push('- 出生時間可靠度：' + model.reliability.note);
+  if (model.reliability.excluded.length) L.push('- 禁止使用：' + model.reliability.excluded.join('、'));
+  L.push('');
+  L.push('SELECTED EVIDENCE CLUSTERS');
+  ['attraction','whatWorks','conflictPattern','hiddenRisk','longTermPotential'].forEach(function (key) {
+    var section = a[key];
+    L.push('[' + key + '] ' + section.body.join(' '));
+    section.evidence.forEach(function (asp) { L.push('- ' + synastryAspectLine(asp)); });
+  });
+  if (timeline) {
+    L.push(''); L.push('TIME-DEPENDENT EVIDENCE（只能使用以下窗口）');
+    timeline.recent.concat(timeline.mid).forEach(function (row) {
+      L.push('- ' + row.label + '｜' + row.theme + '｜' + row.possible);
+    });
+  }
+  L.push('');
+  L.push('ANALYSIS ORDER');
+  L.push('1 relationship type → 2 compatibility score → 3 strongest supportive evidence → 4 strongest challenging evidence → 5 relationship themes → 6 attraction pattern → 7 conflict cycle → 8 long-term stabilizer → 9 long-term destabilizer → 10 natural language.');
+  L.push('');
+  L.push('OUTPUT SCHEMA（只輸出以下 7 欄）');
+  L.push('relationshipVerdict：2–3 句，直接判斷這大致是什麼關係。');
+  L.push('attraction：最多 2–3 個核心原因，說明吸引類型與能否持續。');
+  L.push('whatWorks：描述實際互動如何順。');
+  L.push('conflictPattern：必須寫 trigger → A 反應 → B 反應 → 循環。');
+  L.push('hiddenRisk：只選 1–2 個最重要問題。');
+  L.push('longTermPotential：支點、反覆問題、維持成本、較容易長久的條件；不得預言結婚或分手。');
+  L.push('actionAdvice：1–3 個可執行動作，禁止只寫「多溝通／互相理解／給彼此空間」。');
+  L.push('');
+  L.push('ANTI-VAGUENESS：若使用「需要彼此理解、彼此互補、既有挑戰也有機會、存在成長空間、需要找到平衡、容易產生摩擦、價值觀不同、關係具有潛力」，同一句後面必須說清楚哪件事、誰怎麼反應、另一人怎麼回應、日常如何發生。');
+  L.push(personaInstructionLine());
+  return L.join('\n');
+}
+
 function synastryFlashCopied() {
   var btn = document.getElementById('syn-copy-btn');
   if (btn) btn.textContent = '已複製！Copied';
@@ -6049,127 +6421,65 @@ function synastryFlashCopied() {
   }, 2000);
 }
 function synastryCopyForAI() {
-  var chartA = state.astroResult, chartB = state.synResult;
-  if (!chartA || !chartB) return;
-  var aspects = computeCrossChartAspects(chartA, chartB).sort(function (a, b) { return a.orb - b.orb; });
-  var score = computeSynastryScore(aspects);
-  var lines = [];
-  lines.push('合盤資料 Synastry Data');
-  lines.push('關係類型：' + synRelationshipLabel());
-  lines.push('本人：' + (state.astroUnknownTime ? '出生時間未知、' : ZODIAC_SIGNS[chartA.ascSign].zh + '上升、') + ZODIAC_SIGNS[chartA.planets.Sun.sign].zh + '太陽、' + ZODIAC_SIGNS[chartA.planets.Moon.sign].zh + '月亮');
-  lines.push('對方：' + (state.synUnknownTime ? '出生時間未知、' : ZODIAC_SIGNS[chartB.ascSign].zh + '上升、') + ZODIAC_SIGNS[chartB.planets.Sun.sign].zh + '太陽、' + ZODIAC_SIGNS[chartB.planets.Moon.sign].zh + '月亮');
-  lines.push('合盤相性指數：' + score + ' 分');
-  lines.push('');
-  lines.push('交叉相位 Cross-aspects：');
-  aspects.forEach(function (asp) {
-    var aDef = PLANET_DEFS.find(function (x) { return x.key === asp.aKey; });
-    var bDef = PLANET_DEFS.find(function (x) { return x.key === asp.bKey; });
-    lines.push('- 本人' + aDef.zh + ' ' + ASPECT_DEFS[asp.type].zh + ' 對方' + bDef.zh + '（誤差 ' + asp.orb.toFixed(2) + '°）');
-  });
-  lines.push('');
-  lines.push('請根據以上兩人的合盤交叉相位，針對「' + synRelationshipLabel() + '」分析彼此的默契、互動優勢與需要磨合的課題。');
-  lines.push(personaInstructionLine());
-  var text = lines.join('\n');
+  var model = synEnsureAnalysis();
+  if (!model) return;
+  var text = buildSynastryAiText(model, synEnsureTimeline());
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(synastryFlashCopied).catch(function () { fallbackCopy(text, synastryFlashCopied); });
   } else {
     fallbackCopy(text, synastryFlashCopied);
   }
 }
+
+/* 合盤結果頁先回答關係問題，再讓使用者展開占星依據。 */
 function renderSynastry() {
-  var h = '<div style="font:600 16px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:6px;text-align:center">合盤 Synastry</div>';
-  h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:13px">這段關係的類型</div><div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:7px">';
-  [['love','戀愛／伴侶'],['family','親子／家人'],['friend','朋友'],['work','工作夥伴']].forEach(function(r){var on=state.synRelationship===r[0];h+='<button aria-pressed="'+on+'" onclick="synSetRelationship(\''+r[0]+'\')" style="background:'+(on?'rgba(201,169,110,.18)':'rgba(255,255,255,.02)')+';border:1px solid '+(on?'#c9a96e':'rgba(201,169,110,.3)')+';color:'+(on?'#f0e9d8':'rgba(240,233,216,.6)')+';padding:7px 11px;border-radius:15px;cursor:pointer">'+r[1]+'</button>';});
+  var h = '<div style="font:600 16px var(--font-serif);color:var(--text);margin-top:6px;text-align:center">兩人關係／合盤</div>';
+  h += '<div style="font:500 11px var(--font-sans);color:var(--text-muted);margin-top:13px">這段關係的類型</div><div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:7px">';
+  [['love','戀愛／伴侶'],['family','親子／家人'],['friend','朋友'],['work','工作夥伴']].forEach(function (row) {
+    var on = state.synRelationship === row[0];
+    h += '<button type="button" aria-pressed="' + on + '" onclick="synSetRelationship(\'' + row[0] + '\')" style="min-height:38px;background:' + (on ? 'rgba(201,169,110,.18)' : 'var(--surface)') + ';border:1px solid ' + (on ? 'var(--brand-bright)' : 'var(--border)') + ';color:' + (on ? 'var(--text)' : 'var(--text-muted)') + ';padding:7px 11px;border-radius:15px;cursor:pointer">' + row[1] + '</button>';
+  });
   h += '</div>';
   if (!state.synResult) {
-    h += renderBirthInputForm('syn', '輸入對方的出生資料，看看兩人的星盤如何互動——合盤會比對雙方的行星關係，適合用來理解一段感情或關係的默契與課題。兩人都有出生時間時比對最完整；如果對方不確定時間，下面一樣可以勾選「不確定時間」繼續。', 'synGenerate');
+    h += renderBirthInputForm('syn', '輸入對方的出生資料。基本關係會比對雙方行星互動；近期與中期頁籤只會在實際行運資料足夠時顯示時間窗口。若出生時間未知，仍可分析行星互動，但不會使用上升、宮位與其他時間敏感點。', 'synGenerate');
     return h;
   }
-  var chartA = state.astroResult, chartB = state.synResult;
-  var aspects = computeCrossChartAspects(chartA, chartB).sort(function (a, b) { return a.orb - b.orb; });
-  var score = computeSynastryScore(aspects);
-  /* 原本這裡是一個 20–95 的「相性指數」大分數。合盤不該被壓成單一數字——
-     使用者要的是「哪裡自然、哪裡要磨合」，而不是一句你們很合／不合。
-     分數仍然算（下面的敘述與 AI 複製會用到），但不再當成頁面的第一個結論。 */
+
+  var chartA = state.astroResult, chartB = state.synResult, model = synEnsureAnalysis();
+  var tab = state.synTimelineTab || 'base';
+  if (tab === 'base') h += renderSynastryScoreHero(model);
+
   h += '<div style="display:flex;gap:10px;margin-top:14px;text-align:center">';
-  h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62)">本人</div><div style="font:600 13px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + (state.astroUnknownTime ? '出生時間未知' : ZODIAC_SIGNS[chartA.ascSign].sym + ' ' + ZODIAC_SIGNS[chartA.ascSign].zh + '上升') + '</div><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:2px">' + ZODIAC_SIGNS[chartA.planets.Sun.sign].zh + '太陽　' + ZODIAC_SIGNS[chartA.planets.Moon.sign].zh + '月亮</div></div>';
-  h += '<div style="flex:1;border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:10px"><div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62)">對方</div><div style="font:600 13px \'Noto Serif TC\',serif;color:#e6cd9a;margin-top:3px">' + (state.synUnknownTime ? '出生時間未知' : ZODIAC_SIGNS[chartB.ascSign].sym + ' ' + ZODIAC_SIGNS[chartB.ascSign].zh + '上升') + '</div><div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:2px">' + ZODIAC_SIGNS[chartB.planets.Sun.sign].zh + '太陽　' + ZODIAC_SIGNS[chartB.planets.Moon.sign].zh + '月亮</div></div>';
+  h += '<div style="flex:1;border:1px solid var(--border);border-radius:10px;padding:10px;background:var(--surface)"><div style="font:400 10px var(--font-sans);color:var(--text-muted)">本人</div><div style="font:600 13px var(--font-serif);color:var(--brand-bright);margin-top:3px">' + (state.astroUnknownTime ? '出生時間未知' : ZODIAC_SIGNS[chartA.ascSign].sym + ' ' + ZODIAC_SIGNS[chartA.ascSign].zh + '上升') + '</div><div style="font:400 11px var(--font-sans);color:var(--text-muted);margin-top:2px">' + ZODIAC_SIGNS[chartA.planets.Sun.sign].zh + '太陽　' + ZODIAC_SIGNS[chartA.planets.Moon.sign].zh + '月亮' + (state.astroUnknownTime ? '（僅日期估算）' : '') + '</div></div>';
+  h += '<div style="flex:1;border:1px solid var(--border);border-radius:10px;padding:10px;background:var(--surface)"><div style="font:400 10px var(--font-sans);color:var(--text-muted)">對方</div><div style="font:600 13px var(--font-serif);color:var(--brand-bright);margin-top:3px">' + (state.synUnknownTime ? '出生時間未知' : ZODIAC_SIGNS[chartB.ascSign].sym + ' ' + ZODIAC_SIGNS[chartB.ascSign].zh + '上升') + '</div><div style="font:400 11px var(--font-sans);color:var(--text-muted);margin-top:2px">' + ZODIAC_SIGNS[chartB.planets.Sun.sign].zh + '太陽　' + ZODIAC_SIGNS[chartB.planets.Moon.sign].zh + '月亮' + (state.synUnknownTime ? '（僅日期估算）' : '') + '</div></div>';
   h += '</div>';
+  h += renderSynastryReliability(model);
+  h += renderSynastryTimelineTabs(tab);
 
-  var harmonious = aspects.filter(function (a) { return a.type === 'trine' || a.type === 'sextile'; }).length;
-  var challenging = aspects.filter(function (a) { return a.type === 'square' || a.type === 'opposition'; }).length;
-  var summaryTxt = '這份「' + synRelationshipLabel() + '」合盤裡，兩人的星盤有 ' + aspects.length + ' 組明顯的互相牽動（占星上叫「相位」），其中 ' + harmonious + ' 組是彼此加分的、' + challenging + ' 組是需要磨合的。' +
-    (score >= 72 ? '整體默契不錯，彼此的能量容易自然地互相支援。' : score <= 45 ? '相處上需要多一點耐心磨合，摩擦也是認識彼此的機會。' : '有順也有磨，是需要花時間慢慢培養默契的一段關係。');
-  h += '<div style="margin-top:16px;border-top:1px solid rgba(201,169,110,.15);border-bottom:1px solid rgba(201,169,110,.15);padding:14px 0;font:400 13px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.8);line-height:1.9">' + esc(summaryTxt) + '</div>';
-
-  /* 相性指數、和諧與挑戰的組數、每組相位的緊密程度本來就都算好了，
-     以前只是整包用文字列出來，讓人自己在腦中組裝。這兩張圖用的是同一份
-     aspects，不另外計算，所以圖跟下面的文字一定一致。 */
-  /* 30 秒摘要放在最前面：先給結論，再看最重要的模式，其餘漸進展開。 */
-  h += renderSynastryOverview(buildSynastryOverview(buildSynastryPatterns(aspects)));
-
-  /* 五個面向的分數排在連線圖之前。連線圖在手機上很高，夾在中間會把數字整個推出
-     第一屏，讀者滑到一半只看得到一張圖，會以為分數不見了。先給可讀的數字，
-     再給需要細看的圖。兩者用的是同一份 aspects，順序調換不影響任何計算。 */
-  if (typeof renderSynastryFacetBars === 'function') {
-    h += renderSynastryFacetBars(aspects, state.synFacet);
-  }
-  if (typeof renderSynastryLinkChart === 'function') {
-    h += renderSynastryLinkChart(chartA, chartB, aspects, state.synFacet);
-  }
-
-  /* 點了某個面向之後，下面的相位卡片跟著只顯示相關的那幾組——
-     這同時解決「畫面太多字」與「圖跟文字各說各話」兩個問題。 */
-  /* 閱讀深度切換：一般模式只看得懂就好，專業模式在同樣的內容之上疊加技術依據。
-     兩者的結論完全相同——專業模式不會換一組答案，只是多列可追查的相位。 */
-  var synPro = !!state.synProfessional;
-  h += '<div role="group" aria-label="閱讀深度" style="display:flex;justify-content:flex-end;align-items:center;gap:6px;margin-top:14px;flex-wrap:wrap">';
-  h += '<span style="font:400 10.5px var(--font-sans);color:var(--text-muted);padding:6px 2px">閱讀深度</span>';
-  h += '<button type="button" aria-pressed="' + (!synPro) + '" onclick="toggleSynProfessional(false)" style="min-height:36px;font:500 10.5px var(--font-sans);border:1px solid ' + (!synPro ? 'var(--brand-bright)' : 'var(--border-strong)') + ';border-radius:12px;padding:5px 9px;background:' + (!synPro ? 'rgba(201,169,110,.18)' : 'transparent') + ';color:' + (!synPro ? 'var(--text)' : 'var(--brand)') + ';cursor:pointer">' + (!synPro ? '✓ ' : '') + '一般</button>';
-  h += '<button type="button" aria-pressed="' + synPro + '" onclick="toggleSynProfessional(true)" style="min-height:36px;font:500 10.5px var(--font-sans);border:1px solid ' + (synPro ? 'var(--brand-bright)' : 'var(--border-strong)') + ';border-radius:12px;padding:5px 9px;background:' + (synPro ? 'rgba(201,169,110,.18)' : 'transparent') + ';color:' + (synPro ? 'var(--text)' : 'var(--brand)') + ';cursor:pointer">' + (synPro ? '✓ ' : '') + '專業</button>';
-  h += '</div>';
-  h += '<div role="status" style="text-align:right;font:400 10px var(--font-sans);color:var(--text-muted);margin-top:3px">目前：' + (synPro ? '專業模式（展開「為什麼這樣說？」後會額外列出支持相位、容許度與權重）' : '一般模式（只顯示白話結論與做法）') + '　結論本身不會因模式而改變。</div>';
-
-  var activeFacetDef = state.synFacet && typeof SYNASTRY_FACETS !== 'undefined'
-    ? SYNASTRY_FACETS.filter(function (f) { return f.key === state.synFacet; })[0] : null;
-  var listed = activeFacetDef ? aspects.filter(function (asp) {
-    return activeFacetDef.planets.indexOf(asp.aKey) !== -1 || activeFacetDef.planets.indexOf(asp.bKey) !== -1;
-  }) : aspects;
-
-  h += '<div style="margin-top:18px;display:flex;justify-content:space-between;align-items:baseline;gap:10px">';
-  h += '<span style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5)">'
-    + (activeFacetDef ? esc(activeFacetDef.zh) + '　相關的互動' : '你們最值得注意的 3 個互動') + '</span>';
-  if (activeFacetDef) {
-    h += '<button type="button" onclick="synSetFacet(\'\')" style="flex:none;background:none;border:1px solid rgba(201,169,110,.35);color:#c9a96e;font:400 10.5px \'Noto Sans TC\',sans-serif;padding:5px 10px;border-radius:14px;cursor:pointer">看全部 ✕</button>';
-  }
-  h += '</div>';
-  if (!listed.length) {
-    h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:10px;line-height:1.8">這個面向沒有明顯的交叉相位，代表兩人在這一塊沒有特別強的互相牽動——不是好或壞，就是比較平淡。</div>';
-  }
-  /* 原本這裡是 listed.slice(0,10).forEach(renderCrossAspectBeginnerCard)——
-     一個相位一張完整卡片，而卡片文案只由相位「類型」決定，所以十張讀起來像同一張。
-     現在先把相位聚合成關係模式，預設只展開前三個語義不同的模式，其餘收合。 */
-  var synPatterns = buildSynastryPatterns(listed);
-  var topPatterns = pickTopSynastryPatterns(synPatterns, 3);
-  var restPatterns = synPatterns.slice(topPatterns.length);
-  if (!synPatterns.length) {
-    h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:10px;line-height:1.8">這個範圍內沒有形成明顯的關係模式。可以取消面向篩選，看兩人整體的互動。</div>';
-  }
-  topPatterns.forEach(function (pat, i) { h += renderSynastryPatternCard(pat, i); });
-
-  if (restPatterns.length) {
-    h += '<button type="button" aria-expanded="' + (!!state.synMoreOpen) + '" onclick="toggleSynMorePatterns()" style="width:100%;min-height:var(--control-h);margin-top:14px;background:none;border:1px dashed var(--border-strong);color:var(--brand);border-radius:var(--radius-md);padding:12px;font:500 12px var(--font-sans);cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:8px">'
-      + '<span>其他值得注意的互動 · ' + restPatterns.length + '<span style="display:block;font:400 10.5px var(--font-sans);color:var(--text-muted);margin-top:3px">想研究得更完整，可以繼續看。</span></span>'
-      + '<span aria-hidden="true">' + (state.synMoreOpen ? '▴' : '▾') + '</span></button>';
-    if (state.synMoreOpen) {
-      restPatterns.forEach(function (pat) { h += renderSynastryPatternCard(pat, null); });
-    }
+  if (tab === 'base') {
+    h += renderSynastryFacetBars(model.aspects, state.synFacet);
+    h += renderSynastryDecisionSection(model.analysis.attraction, false);
+    h += renderSynastryDecisionSection(model.analysis.whatWorks, false);
+    h += renderSynastryDecisionSection(model.analysis.conflictPattern, false);
+    h += renderSynastryDecisionSection(model.analysis.hiddenRisk, false);
+    h += renderSynastryDecisionSection(model.analysis.longTermPotential, false);
+    h += renderSynastryDecisionSection(model.analysis.actionAdvice, true);
+    h += '<details style="margin-top:15px;border:1px dashed var(--border-strong);border-radius:var(--radius-lg);padding:12px 14px"><summary style="cursor:pointer;font:500 11.5px var(--font-sans);color:var(--brand)">查看完整雙人行星連線圖</summary><div style="margin-top:12px">' + renderSynastryLinkChart(chartA, chartB, model.aspects, state.synFacet) + '</div></details>';
+  } else if (tab === 'recent' || tab === 'mid') {
+    var timeline = synEnsureTimeline();
+    h += '<div class="md-status md-status--info" role="status"><span class="md-status__icon" aria-hidden="true">ⓘ</span><div>' + esc(timeline.reliability) + '</div></div>';
+    h += renderSynastryTimelineWindows(tab === 'recent' ? timeline.recent : timeline.mid,
+      '目前計算範圍內沒有達到門檻的行運啟動，因此不根據基本合盤編造近期發展。');
+  } else {
+    h += '<div class="md-status md-status--info" role="status"><span class="md-status__icon" aria-hidden="true">ⓘ</span><div>長期發展回答的是這段關係能否維持、什麼問題會反覆，以及維持成本；這不是結婚或分手的時間預言。目前只使用 Synastry，未假裝已有 Composite、Davison 或長期推運資料。</div></div>';
+    h += renderSynastryDecisionSection(model.analysis.longTermPotential, false);
+    h += renderSynastryDecisionSection(model.analysis.actionAdvice, true);
   }
 
   h += renderPersonaPicker();
-  h += '<button id="syn-copy-btn" onclick="synastryCopyForAI()" style="width:100%;margin-top:22px;padding:12px;border-radius:12px;border:1px solid #c9a96e;background:rgba(201,169,110,.12);color:#e6cd9a;font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">複製給 AI 解讀 Copy for AI</button>';
+  h += '<button id="syn-copy-btn" onclick="synastryCopyForAI()" style="width:100%;margin-top:22px;padding:12px;border-radius:12px;border:1px solid var(--brand);background:rgba(201,169,110,.12);color:var(--brand-bright);font:500 13px var(--font-sans);cursor:pointer">複製給 AI 解讀 Copy for AI</button>';
   h += renderAiPasteHint();
-  h += '<button onclick="synReset()" style="width:100%;margin-top:10px;padding:12px;border-radius:12px;border:1px solid rgba(201,169,110,.3);background:rgba(255,255,255,.02);color:rgba(240,233,216,.6);font:500 13px \'Noto Sans TC\',sans-serif;cursor:pointer">重新輸入對方資料 ↺</button>';
+  h += '<button onclick="synReset()" style="width:100%;margin-top:10px;padding:12px;border-radius:12px;border:1px solid var(--border-strong);background:var(--surface);color:var(--text-muted);font:500 13px var(--font-sans);cursor:pointer">重新輸入對方資料 ↺</button>';
   return h;
 }
 

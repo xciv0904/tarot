@@ -85,7 +85,10 @@ var state = {
   synUnknownTime: false, synResult: null,
   synFacet: null,
   /* 合盤：關係模式的展開狀態、專業模式、其他互動是否展開 */
-  synPatternOpen: {}, synProfessional: false, synMoreOpen: false,       // 合盤：目前只看哪一個相性面向（null＝全部）
+  synPatternOpen: {}, synProfessional: false, synMoreOpen: false,
+  /* 合盤結果模型由同一份交叉相位建立，供畫面與 AI 複製共用；fingerprint 變動時重算。
+     timeline 另行快取，避免每次 render 都重跑數個月的行運取樣。 */
+  synAnalysis: null, synTimeline: null, synTimelineTab: 'base',
   xiuMode: 'personal', xiuY: '', xiuM: '', xiuD: '',
   xiuPartnerY: '', xiuPartnerM: '', xiuPartnerD: '',
   xiuDayAnchor: null, xiuWikiOpen: null, xiuSavedPartners: [],
