@@ -67,6 +67,23 @@ check('Shared Activation multiplier 提高事件強度', sharedStrength > baseSt
 
 const allShared = engine._test.sharedActivations(saturnEvents);
 check('同時命中 A/B 敏感點形成 Shared Activation', allShared.length>0 && allShared.every(x=>x.personAEvents.length&&x.personBEvents.length));
+function sharedFixture(person, startDate, peakDate, endDate, point) {
+  return {id:'fixture-'+person, natalPerson:person, coreEligible:true, strength:80,
+    startDate,peakDate,endDate,transitPlanet:'Saturn',natalPoint:point,aspect:'conjunction',
+    speedClass:'medium',category:'commitment',themes:['commitment','definition'],
+    themeScores:{commitment:1,definition:.9},relationshipRelevance:1.2,
+    relatedSynastryEvidence:[],confidence:'HIGH'};
+}
+const boundedShared = engine._test.sharedActivations([
+  sharedFixture('A','2026-08-01T00:00:00.000Z','2026-09-15T00:00:00.000Z','2027-03-01T00:00:00.000Z','Venus'),
+  sharedFixture('B','2026-09-01T00:00:00.000Z','2026-09-20T00:00:00.000Z','2026-10-01T00:00:00.000Z','Saturn'),
+])[0];
+check('共同窗口取雙方實際重疊，不取兩段行運聯集', boundedShared
+  && Date.parse(boundedShared.startDate) >= Date.parse('2026-09-01T00:00:00.000Z')
+  && Date.parse(boundedShared.endDate) <= Date.parse('2026-10-01T00:00:00.000Z'),
+  boundedShared && boundedShared.startDate+'–'+boundedShared.endDate);
+check('單一共同窗口不會被拉成半年', boundedShared
+  && (Date.parse(boundedShared.endDate)-Date.parse(boundedShared.startDate))/86400000 <= 60);
 check('事件 schema 完整', hits.every(e=>['id','startDate','peakDate','endDate','transitPlanet','natalPerson','natalPoint','aspect','exactOrb','applying','separating','category','strength','relationshipRelevance','cycleId','evidence','confidence'].every(k=>Object.prototype.hasOwnProperty.call(e,k))));
 check('timing evidence 不含 ASC／宮位／角度', saturnEvents.every(e=>!/(ASC|DSC|MC|IC|house|angle)/.test(JSON.stringify(e))));
 

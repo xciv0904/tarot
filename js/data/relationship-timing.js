@@ -1,4 +1,4 @@
-/* Relationship Timing Engine V1
+/* Relationship Timing Engine V2
  *
  * Pure deterministic layer: transits -> individual natal activations -> shared
  * activations -> relationship phases.  This file intentionally knows nothing
@@ -8,7 +8,7 @@
   'use strict';
 
   var DAY_MS = 86400000;
-  var SCHEMA_VERSION = 1;
+  var SCHEMA_VERSION = 2;
   var CONFIDENCE_ORDER = { UNAVAILABLE:0, LOW:1, MEDIUM:2, HIGH:3 };
   var ASPECTS = [
     { key:'conjunction', angle:0, weight:1.00 },
@@ -297,6 +297,31 @@
     return gap <= Math.max(TRANSITS[a.transitPlanet].sharedDays, TRANSITS[b.transitPlanet].sharedDays);
   }
   function compatibleThemes(a, b) { return a.themes.some(function (theme) { return b.themes.indexOf(theme) >= 0; }); }
+  function boundedDateWindow(rawStart, rawEnd, peak, limitDays) {
+    var rawStartMs = Date.parse(rawStart), rawEndMs = Date.parse(rawEnd);
+    var start = rawStartMs, end = rawEndMs, center = clamp(Date.parse(peak), rawStartMs, rawEndMs);
+    var half = Math.max(1, limitDays / 2) * DAY_MS;
+    start = Math.max(start, center - half);
+    end = Math.min(end, center + half);
+    if (end < start) start = end = center;
+    return { startDate:new Date(start).toISOString(), endDate:new Date(end).toISOString() };
+  }
+  function sharedDateWindow(a, b, peak) {
+    var overlapStart = Math.max(Date.parse(a.startDate), Date.parse(b.startDate));
+    var overlapEnd = Math.min(Date.parse(a.endDate), Date.parse(b.endDate));
+    var rawStart, rawEnd;
+    if (overlapStart <= overlapEnd) {
+      rawStart = new Date(overlapStart).toISOString();
+      rawEnd = new Date(overlapEnd).toISOString();
+    } else {
+      rawStart = new Date(Math.min(Date.parse(a.peakDate), Date.parse(b.peakDate))).toISOString();
+      rawEnd = new Date(Math.max(Date.parse(a.peakDate), Date.parse(b.peakDate))).toISOString();
+    }
+    var limitDays = Math.min(60, Math.max(TRANSITS[a.transitPlanet].sharedDays, TRANSITS[b.transitPlanet].sharedDays) * 2);
+    var window = boundedDateWindow(rawStart, rawEnd, peak, limitDays);
+    window.limitDays = limitDays;
+    return window;
+  }
   function sharedActivations(events) {
     var aEvents = events.filter(function (e) { return e.natalPerson === 'A' && e.coreEligible && e.strength >= 24; });
     var bEvents = events.filter(function (e) { return e.natalPerson === 'B' && e.coreEligible && e.strength >= 24; });
@@ -305,18 +330,23 @@
       bEvents.forEach(function (b) {
         if (!overlapOrNear(a, b) || !compatibleThemes(a, b)) return;
         var common = a.themes.filter(function (t) { return b.themes.indexOf(t) >= 0; });
-        var category = common[0] || a.category;
         var rel = Math.max(a.relationshipRelevance, b.relationshipRelevance);
         var sharedStrength = Math.round(clamp(((a.strength + b.strength) / 2) * 1.25 * (1 + (rel - 1) * .25), 0, 100));
+        var sharedThemeScores = {};
+        (common.length ? common : [a.category]).forEach(function (theme) {
+          sharedThemeScores[theme] = (((a.themeScores && a.themeScores[theme]) || 0) + ((b.themeScores && b.themeScores[theme]) || 0)) / 2;
+        });
+        var category = Object.keys(sharedThemeScores).sort(function (x, y) { return sharedThemeScores[y] - sharedThemeScores[x]; })[0] || a.category;
         var evidence = a.relatedSynastryEvidence.concat(b.relatedSynastryEvidence);
         var seen = {};
         evidence = evidence.filter(function (e) { var k = [e.aKey,e.bKey,e.type].join('|'); if (seen[k]) return false; seen[k] = true; return true; }).slice(0, 5);
         var peak = new Date((Date.parse(a.peakDate) + Date.parse(b.peakDate)) / 2);
+        var window = sharedDateWindow(a, b, peak);
         out.push({ id:'rts-' + a.id.slice(3) + '-' + b.id.slice(3),
-          startDate:new Date(Math.min(Date.parse(a.startDate), Date.parse(b.startDate))).toISOString(),
-          peakDate:peak.toISOString(), endDate:new Date(Math.max(Date.parse(a.endDate), Date.parse(b.endDate))).toISOString(),
+          startDate:window.startDate, peakDate:peak.toISOString(), endDate:window.endDate,
           category:category, themes:common.length ? common : [category], personAEvents:[a], personBEvents:[b],
-          sharedStrength:sharedStrength, relatedSynastryEvidence:evidence,
+          themeScores:sharedThemeScores, sharedStrength:sharedStrength, relatedSynastryEvidence:evidence,
+          windowLimitDays:window.limitDays,
           confidence:minConfidence(a.confidence, b.confidence) });
       });
     });
@@ -330,10 +360,19 @@
       var close = previous && previous.category === row.category
         && Math.abs(Date.parse(row.peakDate) - Date.parse(previous.peakDate)) / DAY_MS <= 12;
       if (!close) { collapsed.push(row); return; }
-      previous.startDate = new Date(Math.min(Date.parse(previous.startDate), Date.parse(row.startDate))).toISOString();
-      previous.endDate = new Date(Math.max(Date.parse(previous.endDate), Date.parse(row.endDate))).toISOString();
+      var strongerPeak = row.sharedStrength > previous.sharedStrength ? row.peakDate : previous.peakDate;
+      var mergedWindow = boundedDateWindow(
+        new Date(Math.min(Date.parse(previous.startDate), Date.parse(row.startDate))).toISOString(),
+        new Date(Math.max(Date.parse(previous.endDate), Date.parse(row.endDate))).toISOString(),
+        strongerPeak, Math.min(60, Math.max(previous.windowLimitDays || 60, row.windowLimitDays || 60)));
+      previous.startDate = mergedWindow.startDate;
+      previous.endDate = mergedWindow.endDate;
+      previous.peakDate = strongerPeak;
       previous.personAEvents = previous.personAEvents.concat(row.personAEvents);
       previous.personBEvents = previous.personBEvents.concat(row.personBEvents);
+      Object.keys(row.themeScores || {}).forEach(function (theme) {
+        previous.themeScores[theme] = Math.max(previous.themeScores[theme] || 0, row.themeScores[theme]);
+      });
       previous.sharedStrength = Math.max(previous.sharedStrength, row.sharedStrength);
       previous.relatedSynastryEvidence = previous.relatedSynastryEvidence.concat(row.relatedSynastryEvidence).slice(0, 5);
       previous.confidence = minConfidence(previous.confidence, row.confidence);
@@ -364,6 +403,47 @@
     return { title:copy[0], meaning:copy[1], action:copy[2], caution:copy[3] };
   }
 
+  var TARGET_NEEDS = {
+    Sun:'關係定位與被重視的感受', Moon:'回應速度與安全感', Mercury:'話有沒有說清楚',
+    Venus:'喜歡與投入有沒有被回應', Mars:'誰主動、關係進展多快', Jupiter:'能不能一起往前',
+    Saturn:'承諾與現實安排', Uranus:'自由空間與變動', Neptune:'期待和事實的落差', Pluto:'信任、控制與深層改變',
+  };
+  var SECONDARY_COPY = {
+    attraction:{ title:'靠近的感覺變強，也更在意回應', meaning:'有好感或想靠近的訊號變明顯，但真正的重點是雙方回應是否對得上。', action:'直接提出一次見面或一個具體邀請，用實際回應判斷投入。', caution:'互動升溫不等於關係已經確認。' },
+    connection:{ title:'互動是否有來有往變得更重要', meaning:'聯絡、陪伴與主動程度會更容易被拿來衡量這段關係。', action:'觀察一件事：提出需要後，雙方是否都願意回應與調整。', caution:'覺得有連結，不等於兩人對關係有相同打算。' },
+    communication:{ title:'互動方式需要說得更清楚', meaning:'差別容易出現在回覆方式、說話節奏，以及重要問題有沒有真正講明。', action:'選一個最近反覆猜測的問題，用一句明確問題確認，不用暗示。', caution:'訊息變多不代表核心問題已經談開。' },
+    emotional_closeness:{ title:'安全感與陪伴需求變得明顯', meaning:'誰需要更多回應、誰需要先消化情緒，會比平常更影響相處。', action:'各自說明現在需要陪伴、確認或安靜，不用冷淡測試對方。', caution:'情緒變強不代表最擔心的事已經發生。' },
+    commitment:{ title:'確認彼此願意投入多少', meaning:'焦點會落在願不願意排出時間、承擔責任，而不只是口頭感受。', action:'確認下一次見面、聯絡頻率或一項分工，看看承諾能否落到行動。', caution:'談到未來不等於已經作出承諾。' },
+    definition:{ title:'需要說清楚彼此怎麼看這段關係', meaning:'沒講明的期待與界線較難繼續靠默契帶過。', action:'各自回答希望維持、改變或停止的是什麼，再找出一項共識。', caution:'需要定義不代表答案一定是更靠近。' },
+    pressure:{ title:'現實安排正在測試相處方式', meaning:'時間、責任或生活限制會讓原本可忽略的差異更難跳過。', action:'先分清楚外在限制與彼此態度，再談一項現在能調整的安排。', caution:'一時卡住不等於關係注定失敗。' },
+    distance:{ title:'靠近與保留空間需要重新協調', meaning:'聯絡頻率、距離或自主需求較容易不同步。', action:'說清楚可接受的聯絡頻率與需要暫停時的做法，避免突然消失。', caution:'需要空間不等於不在意。' },
+    change:{ title:'原本的相處節奏需要調整', meaning:'過去有效的聯絡或相處方式可能不再適合現在。', action:'指出一個已經行不通的做法，先試一項小幅、可回頭檢查的改變。', caution:'改變不等於必然分開，也不保證自然升級。' },
+    intensity:{ title:'吸引與拉扯同時變強', meaning:'靠近、吃醋、控制感或衝突反應可能同時被放大。', action:'反應很大時先停一下，再說真正想確認或保護的是什麼。', caution:'感受強烈不是事件必然發生的證明。' },
+    healing:{ title:'舊問題適合用新的方式處理', meaning:'過去沒處理完的感受較容易再出現，也比較看得出能不能換一種回應。', action:'只挑一件可驗證的舊問題，說明這次希望彼此怎麼做得不同。', caution:'願意談不代表傷害已經消失。' },
+    idealization:{ title:'期待增加，更需要核對現實', meaning:'理想版本會更吸引人，尚未確認的現實條件也更容易被略過。', action:'把一個期待換成具體問題，確認對方實際願意做到什麼。', caution:'感覺很對不等於條件已經成立。' },
+    confusion:{ title:'猜測變多，需要回到可確認的事實', meaning:'未說出口的期待容易被雙方解讀成不同意思。', action:'把已發生的事、自己的猜測與希望分開說，再確認對方的理解。', caution:'暫時沒有答案不等於最壞的猜測成立。' },
+    expansion:{ title:'是否一起往前會變成具體問題', meaning:'新的安排、共同經驗或下一步較容易被提出。', action:'挑一個雙方都要投入的新計畫，先確認時間、資源與責任。', caution:'機會增加不代表計畫會自然落地。' },
+  };
+  function topEvent(rows, person) {
+    var events = [];
+    rows.forEach(function (row) { events = events.concat(person === 'A' ? row.personAEvents : row.personBEvents); });
+    return events.sort(function (a, b) { return b.strength * b.relationshipRelevance - a.strength * a.relationshipRelevance; })[0] || null;
+  }
+  function phaseNarrative(category, secondary, rows, stateContext) {
+    var base = phaseCopy(category, stateContext), detail = SECONDARY_COPY[secondary] || SECONDARY_COPY[category];
+    var a = topEvent(rows, 'A'), b = topEvent(rows, 'B');
+    var why = a && b
+      ? '本人較在意的「' + (TARGET_NEEDS[a.natalPoint] || THEME_LABELS[category]) + '」，與對方較在意的「' + (TARGET_NEEDS[b.natalPoint] || THEME_LABELS[secondary]) + '」在接近的時間同時變強。'
+      : '雙方在接近的時間同時碰到「' + THEME_LABELS[category] + '」課題。';
+    return {
+      title:detail.title,
+      meaning:detail.meaning || base.meaning,
+      action:detail.action || base.action,
+      caution:detail.caution || base.caution,
+      whyNow:why,
+    };
+  }
+
   function clusterPhases(shared, stateContext) {
     var anchors = shared.filter(function (s) {
       var events = s.personAEvents.concat(s.personBEvents);
@@ -388,14 +468,20 @@
     });
     return groups.map(function (group, index) {
       var categoryScores = {};
-      group.rows.forEach(function (s) { s.themes.forEach(function (t) { categoryScores[t] = (categoryScores[t] || 0) + s.sharedStrength; }); });
-      var category = Object.keys(categoryScores).sort(function (a, b) { return categoryScores[b] - categoryScores[a]; })[0];
+      group.rows.forEach(function (s) {
+        s.themes.forEach(function (t) {
+          categoryScores[t] = (categoryScores[t] || 0) + s.sharedStrength * ((s.themeScores && s.themeScores[t]) || .25);
+        });
+      });
+      var rankedCategories = Object.keys(categoryScores).sort(function (a, b) { return categoryScores[b] - categoryScores[a]; });
+      var category = rankedCategories[0], secondary = rankedCategories[1] || category;
       var strongest = group.rows.slice().sort(function (a, b) { return b.sharedStrength - a.sharedStrength; })[0];
       var confidence = group.rows.reduce(function (value, row) { return minConfidence(value, row.confidence); }, 'HIGH');
-      var copy = phaseCopy(category, stateContext);
+      var copy = phaseNarrative(category, secondary, group.rows, stateContext);
       return { id:'rtp-' + dateKey(new Date(group.start)) + '-' + index, startDate:new Date(group.start).toISOString(),
-        peakDate:strongest.peakDate, endDate:new Date(group.end).toISOString(), category:category,
-        themes:group.themes, title:copy.title, meaning:copy.meaning, action:copy.action, caution:copy.caution,
+        peakDate:strongest.peakDate, endDate:new Date(group.end).toISOString(), category:category, secondaryCategory:secondary,
+        semanticKey:category + '|' + secondary, themes:group.themes, title:copy.title, meaning:copy.meaning,
+        action:copy.action, caution:copy.caution, whyNow:copy.whyNow,
         phaseStrength:Math.max.apply(null, group.rows.map(function (s) { return s.sharedStrength; })),
         confidence:confidence, sharedActivations:group.rows };
     });
@@ -412,19 +498,19 @@
       var peak = Date.parse(phase.peakDate);
       return peak >= start.getTime() && peak < end.getTime();
     });
-    var selected = [];
+    var selected = [], visibleTitles = {};
     if (includeCurrent) {
       var current = inRange.filter(function (phase) {
         return Date.parse(phase.startDate) <= start.getTime() && Date.parse(phase.endDate) >= start.getTime();
       }).sort(function (a, b) { return b.phaseStrength - a.phaseStrength; })[0];
-      if (current) selected.push(current);
+      if (current) { selected.push(current); visibleTitles[current.title] = true; }
     }
     inRange.slice().sort(function (a, b) { return b.phaseStrength - a.phaseStrength; }).forEach(function (phase) {
-      if (selected.length >= limit || selected.indexOf(phase) >= 0) return;
+      if (selected.length >= limit || selected.indexOf(phase) >= 0 || visibleTitles[phase.title]) return;
       var spaced = selected.every(function (other) {
         return Math.abs(Date.parse(phase.peakDate) - Date.parse(other.peakDate)) / DAY_MS >= 18;
       });
-      if (spaced) selected.push(phase);
+      if (spaced) { selected.push(phase); visibleTitles[phase.title] = true; }
     });
     return selected.sort(function (a, b) { return Date.parse(a.peakDate) - Date.parse(b.peakDate); });
   }

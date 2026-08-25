@@ -6336,7 +6336,7 @@ function renderSynTimingPhase(phase, lead) {
   var h = '<article style="margin-top:12px;border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;background:var(--surface)">';
   h += '<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span style="font:600 11px var(--font-sans);color:var(--brand)">' + esc(lead || synTimingRangeText(phase)) + '</span><span class="md-kind md-kind--fact">' + esc(phase.confidence) + '</span></div>';
   h += '<h3 class="md-h3" style="font-size:16px;margin-top:8px">' + esc(phase.title) + '</h3>';
-  [['為什麼現在？','雙方的關係敏感點在接近的時間受到行運啟動，主題集中在「' + synTimingThemeLabel(phase.category) + '」。'],
+  [['為什麼現在？',phase.whyNow || ('雙方在接近的時間同時碰到「' + synTimingThemeLabel(phase.category) + '」課題。')],
    ['可能出現什麼？',contextual.meaning],['適合做什麼？',phase.action],['不要過度解讀',contextual.caution]].forEach(function (row) {
     h += '<div style="margin-top:9px"><span style="font:500 10.5px var(--font-sans);color:var(--brand)">' + row[0] + '</span><p style="font:400 12px/1.8 var(--font-sans);color:var(--text-secondary);margin:3px 0 0">' + esc(row[1]) + '</p></div>';
   });
@@ -6361,20 +6361,25 @@ function renderSynTimingStatePicker() {
   });
   return h + '</div></div>';
 }
-function renderSynastryTiming(timeline) {
+function renderSynastryTiming(timeline, model) {
   var range = state.synTimingRange || 'recent', phases = timeline.ranges[range] || [];
   var h = renderSynTimingStatePicker();
   h += '<div class="md-status md-status--info" role="status"><span class="md-status__icon">ⓘ</span><div>' + esc(timeline.reliability.note) + '<br>時序啟動不等於事件保證。</div></div>';
-  var current = timeline.currentPhase;
+  var current = timeline.currentPhase, next = timeline.nextPhase;
+  var daysToNext = next ? Math.ceil((Date.parse(next.startDate) - Date.parse(timeline.startDate)) / 86400000) : null;
   h += '<section style="margin-top:15px;border:1px solid var(--border-strong);border-radius:var(--radius-lg);padding:17px;background:rgba(201,169,110,.08)">';
   h += '<div style="font:500 10.5px var(--font-sans);color:var(--brand)">現在這段關係處在哪個階段？</div>';
   if (current) {
     var cc = synTimingContextCopy(current);
-    h += '<h2 style="font:600 18px var(--font-serif);color:var(--text);margin:8px 0 0">' + esc(current.title) + '</h2><p class="md-prose" style="margin-top:8px">' + esc(cc.meaning) + '</p>';
+    h += '<h2 style="font:600 18px var(--font-serif);color:var(--text);margin:8px 0 0">目前正在經歷：' + esc(current.title) + '</h2><p class="md-prose" style="margin-top:8px">' + esc(cc.meaning) + '</p>';
+  } else if (next && daysToNext >= 0 && daysToNext <= 14) {
+    var nc = synTimingContextCopy(next);
+    h += '<h2 style="font:600 18px var(--font-serif);color:var(--text);margin:8px 0 0">正在進入：' + esc(next.title) + '</h2><p class="md-prose" style="margin-top:8px">距離主要窗口約 ' + daysToNext + ' 天。' + esc(nc.meaning) + '</p>';
   } else {
-    h += '<h2 style="font:600 17px var(--font-serif);color:var(--text);margin:8px 0 0">目前沒有集中的重大關係觸發</h2><p class="md-prose" style="margin-top:8px">關係較可能延續目前模式，而不是突然出現明顯轉折。這不代表沒有日常互動，只代表沒有足夠的共同時序證據。</p>';
+    var baseline = model && model.analysis && model.analysis.conflictPattern && model.analysis.conflictPattern.body[0];
+    h += '<h2 style="font:600 17px var(--font-serif);color:var(--text);margin:8px 0 0">目前以原本的相處模式為主</h2><p class="md-prose" style="margin-top:8px">目前沒有新的共同時序把關係推向單一方向。' + (baseline ? '這段時間最值得觀察的是：' + esc(baseline) : '先看實際聯絡、投入與界線有沒有改變。') + '</p>';
   }
-  if (timeline.nextPhase) h += '<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)"><span style="font:500 10.5px var(--font-sans);color:var(--text-muted)">下一個明顯窗口</span><div style="font:600 13px var(--font-serif);color:var(--brand-bright);margin-top:3px">' + esc(synTimingRangeText(timeline.nextPhase)) + '｜' + esc(timeline.nextPhase.title) + '</div></div>';
+  if (next) h += '<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)"><span style="font:500 10.5px var(--font-sans);color:var(--text-muted)">下一個明顯窗口</span><div style="font:600 13px var(--font-serif);color:var(--brand-bright);margin-top:3px">' + esc(synTimingRangeText(next)) + '｜' + esc(next.title) + '</div><div style="font:400 11.5px/1.7 var(--font-sans);color:var(--text-secondary);margin-top:4px">' + esc(next.meaning) + '</div></div>';
   h += '</section>';
   var filters = [['recent','近期｜3 個月'],['mid','中期｜3–12 個月'],['long','較長期｜1–3 年']];
   h += '<div role="tablist" aria-label="關係走勢範圍" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:14px">';
@@ -6421,7 +6426,7 @@ function buildSynastryAiText(model, timeline) {
     timeline.phases.forEach(function (phase) {
       L.push('- ' + synTimingRangeText(phase) + '｜peak ' + synTimingDate(phase.peakDate)
         + '｜' + phase.category + '｜strength ' + phase.phaseStrength + '｜confidence ' + phase.confidence
-        + '｜' + phase.title + '｜' + phase.meaning);
+        + '｜' + phase.title + '｜為什麼現在：' + phase.whyNow + '｜可能表現：' + phase.meaning + '｜建議：' + phase.action);
     });
     if (!timeline.phases.length) L.push('- No concentrated timing signal was found in the calculated 0–3 year period.');
   }
@@ -6498,7 +6503,7 @@ function renderSynastry() {
     h += renderSynastryDecisionSection(model.analysis.actionAdvice, true);
     h += '<details style="margin-top:15px;border:1px dashed var(--border-strong);border-radius:var(--radius-lg);padding:12px 14px"><summary style="cursor:pointer;font:500 11.5px var(--font-sans);color:var(--brand)">查看完整雙人行星連線圖</summary><div style="margin-top:12px">' + renderSynastryLinkChart(chartA, chartB, model.aspects, state.synFacet) + '</div></details>';
   } else {
-    h += renderSynastryTiming(synEnsureTimeline());
+    h += renderSynastryTiming(synEnsureTimeline(), model);
   }
 
   h += renderPersonaPicker();

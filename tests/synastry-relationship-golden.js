@@ -63,6 +63,11 @@ check('中期窗口來自實際共同啟動', timeline.ranges.mid.length > 0 && 
 check('較長期窗口來自同一條 timeline', timeline.ranges.long.length > 0 && timeline.ranges.long.every(p => timeline.phases.indexOf(p) >= 0));
 check('三個範圍只是同一 timeline 的篩選', ['recent','mid','long'].every(key => timeline.ranges[key].every(p => timeline.phases.indexOf(p) >= 0)));
 check('顯著階段數量受控，不把每個 transit 都做成卡片', timeline.ranges.recent.length <= 4 && timeline.ranges.mid.length <= 5 && timeline.ranges.long.length <= 8);
+check('近期階段不再出現半年長窗口', timeline.ranges.recent.every(p => (Date.parse(p.endDate) - Date.parse(p.startDate)) / 86400000 <= 75),
+  timeline.ranges.recent.map(p => p.startDate.slice(0,10)+'–'+p.endDate.slice(0,10)).join('、'));
+check('近期卡片使用可見標題去重', new Set(timeline.ranges.recent.map(p => p.title)).size === timeline.ranges.recent.length,
+  timeline.ranges.recent.map(p => p.title).join('、'));
+check('每個階段說明雙方各自在意的具體項目', timeline.phases.every(p => /本人較在意/.test(p.whyNow) && /對方較在意/.test(p.whyNow)));
 check('fast triggers 不會單獨建立重大階段', timeline.phases.every(p => p.sharedActivations.some(s => s.personAEvents.concat(s.personBEvents).some(e => e.speedClass !== 'fast'))));
 check('無訊號月份不會硬生成事件', new Set(timeline.phases.map(p => p.peakDate.slice(0,7))).size < 36);
 
@@ -80,6 +85,14 @@ check('出生時間限制在結果頁可見', baseHtml.indexOf('對方出生時�
   const html = c.renderSynastry();
   check(range + ' 篩選可 render 且不進全域 fallback', html.length > 500 && html.indexOf('這個畫面出了點問題') === -1);
 });
+c.state.synTimelineTab = 'timing'; c.state.synTimingRange = 'recent'; c.state.synCurrentRelationshipState = 'unspecified';
+const recentHtml = c.renderSynastry();
+check('現況摘要不再使用無法判讀的舊句子', recentHtml.indexOf('目前沒有集中的重大關係觸發') === -1);
+check('近期卡片顯示雙方的具體關係焦點', recentHtml.indexOf('本人較在意的') !== -1 && recentHtml.indexOf('對方較在意的') !== -1);
+if (!timeline.currentPhase && timeline.nextPhase
+  && (Date.parse(timeline.nextPhase.startDate) - Date.parse(timeline.startDate)) / 86400000 <= 14) {
+  check('兩週內有窗口時摘要顯示正在進入', recentHtml.indexOf('正在進入：' + timeline.nextPhase.title) !== -1);
+}
 const cachedTimeline = c.state.synTimeline;
 c.state.synCurrentRelationshipState = 'separated';
 const contextHtml = c.renderSynastry();
@@ -119,6 +132,7 @@ console.log('- hiddenRisk：' + model.analysis.hiddenRisk.body.join(' '));
 console.log('- longTermPotential：' + model.analysis.longTermPotential.body.join(' '));
 console.log('- actionAdvice：' + model.analysis.actionAdvice.body.join('／'));
 console.log('- Timeline：近期 ' + timeline.ranges.recent.length + ' 個階段；中期 ' + timeline.ranges.mid.length + ' 個階段；較長期 ' + timeline.ranges.long.length + ' 個階段');
+console.log('- 近期階段：' + timeline.ranges.recent.map(p => p.startDate.slice(0,10)+'–'+p.endDate.slice(0,10)+' '+p.title).join('／'));
 console.log('- 檢查項目：' + checks.length);
 console.log('- 失敗：' + failures.length);
 if (failures.length) { failures.forEach(x => console.log('  ✗ ' + x)); process.exit(1); }
