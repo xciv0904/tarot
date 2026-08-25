@@ -88,7 +88,9 @@ var state = {
   synPatternOpen: {}, synProfessional: false, synMoreOpen: false,
   /* 合盤結果模型由同一份交叉相位建立，供畫面與 AI 複製共用；fingerprint 變動時重算。
      timeline 另行快取，避免每次 render 都重跑數個月的行運取樣。 */
-  synAnalysis: null, synTimeline: null, synTimelineTab: 'base',
+  synAnalysis: null, synTimeline: null, synTimelineTab: 'base', synTimingRange: 'recent',
+  /* 選填的現況只改變時序文字脈絡，不得改變事件、日期或強度。 */
+  synCurrentRelationshipState: 'unspecified',
   xiuMode: 'personal', xiuY: '', xiuM: '', xiuD: '',
   xiuPartnerY: '', xiuPartnerM: '', xiuPartnerD: '',
   xiuDayAnchor: null, xiuWikiOpen: null, xiuSavedPartners: [],

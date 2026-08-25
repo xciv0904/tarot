@@ -2,7 +2,7 @@
   "name": "mystic-deck-regression",
   "private": true,
   "scripts": {
-    "check": "node --check js/app.js && node --check js/data/reading-data.js && node --check js/data/reading-interpretation.js && node --check js/data/reading-rich-data.js && node --check js/data/astrology-knowledge-layer.js && node --check js/data/astrology-knowledge-dataset.js && node --check js/data/astrology-natal-topics-data.js && node --check js/data/astro-charts.js && node --check js/data/astro-advanced.js",
+    "check": "node --check js/app.js && node --check js/data/reading-data.js && node --check js/data/reading-interpretation.js && node --check js/data/reading-rich-data.js && node --check js/data/astrology-knowledge-layer.js && node --check js/data/astrology-knowledge-dataset.js && node --check js/data/astrology-natal-topics-data.js && node --check js/data/astro-charts.js && node --check js/data/relationship-timing.js && node --check js/data/astro-advanced.js",
     "test:reading": "node tests/reading-question-alignment.js",
     "test:reading-semantic": "node tests/reading-semantic-regression.js",
     "test:copy": "node tests/reading-copy-quality.js && node tests/astro-copy-quality.js",
@@ -16,7 +16,7 @@
     "test:charts": "node tests/multi-chart-regression.js",
     "test:progression": "node tests/progression-render-regression.js",
     "test:syn": "node tests/synastry-pattern-regression.js",
-    "test:syn-golden": "node tests/synastry-relationship-golden.js",
+    "test:syn-golden": "node tests/synastry-relationship-golden.js && node tests/relationship-timing-engine.js",
     "test:library": "node tests/library-knowledge-regression.js",
     "test:wizard": "node tests/wizard-flow-regression.js",
     "test:taxonomy": "node tests/question-taxonomy-audit.js",

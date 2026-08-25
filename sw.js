@@ -1,5 +1,5 @@
 /* Mystic Deck service worker — 卡牌圖片快取優先,頁面網路優先 */
-const CACHE = 'mystic-v74';
+const CACHE = 'mystic-v75';
 /* 牌面圖片放在獨立的、不隨版本更動的快取。
    原本圖片跟程式共用一個版本化快取，而 activate 會刪掉所有非當前版本的快取——
    等於每改一次程式就把 228 張牌圖全部清空，使用者下次開啟時要重抓一整批。
@@ -10,7 +10,7 @@ const ASSET_CACHE = 'mystic-assets-v1';
    點進星盤分頁時，資料是從快取秒讀，不需要額外等網路。 */
 /* 星盤運算引擎也一起預先快取——原本沒放進來，等於「星盤資料檔都在快取、但算盤的
    引擎不在」，離線時點進星盤分頁仍然算不出結果，前面預先快取那幾支資料檔就白做了。 */
-const CORE = ['./', './index.html', './js/data/card-images.js', './js/data/reading-data.js', './js/data/reading-interpretation.js', './js/data/reading-rich-data.js', './js/data/astrology-core-data.js', './js/data/astrology-points-data.js', './js/data/astrology-placement-templates.js', './js/data/astrology-aspect-data.js', './js/data/astrology-natal-topics-data.js', './js/data/astrology-knowledge-layer.js', './js/data/astrology-knowledge-dataset.js', './js/app.js', './js/data/astro-charts.js', './js/data/astro-advanced.js', './assets/vendor/astronomy-engine-2.1.19.min.js', './manifest.json', './assets/favicon.png', './assets/icon-192.png', './assets/icon-512.png'];
+const CORE = ['./', './index.html', './js/data/card-images.js', './js/data/reading-data.js', './js/data/reading-interpretation.js', './js/data/reading-rich-data.js', './js/data/astrology-core-data.js', './js/data/astrology-points-data.js', './js/data/astrology-placement-templates.js', './js/data/astrology-aspect-data.js', './js/data/astrology-natal-topics-data.js', './js/data/astrology-knowledge-layer.js', './js/data/astrology-knowledge-dataset.js', './js/app.js', './js/data/astro-charts.js', './js/data/relationship-timing.js', './js/data/astro-advanced.js', './assets/vendor/astronomy-engine-2.1.19.min.js', './manifest.json', './assets/favicon.png', './assets/icon-192.png', './assets/icon-512.png'];
 self.addEventListener('install', function (e) {
   /* 逐一快取，不用 cache.addAll()。addAll() 是全有全無：只要清單裡有任何一個檔案
      取不到（改名、暫時 404、網路不穩），整批都不會寫入，而外層的 catch 會把錯誤吞掉，

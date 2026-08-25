@@ -5876,13 +5876,13 @@ async function synGenerate() {
     var mm = state.synUnknownTime ? 0 : (parseInt(state.synMin, 10) || 0);
     state.synResult = computeNatalChart(parseInt(state.synY, 10), parseInt(state.synM, 10), parseInt(state.synD, 10), hh, mm, city.lat, city.lon, city.tz, state.astroHouseSystem);
     state.synCityUsed = city;
-    state.synAnalysis = null; state.synTimeline = null; state.synTimelineTab = 'base';
+    state.synAnalysis = null; state.synTimeline = null; state.synTimelineTab = 'base'; state.synTimingRange = 'recent';
     state.synGenerating = false;
     render();
     window.scrollTo(0, 0);
   }, 30);
 }
-function synReset() { state.synResult = null; state.synFacet = null; state.synAnalysis = null; state.synTimeline = null; state.synTimelineTab = 'base'; render(); window.scrollTo(0, 0); }
+function synReset() { state.synResult = null; state.synFacet = null; state.synAnalysis = null; state.synTimeline = null; state.synTimelineTab = 'base'; state.synTimingRange = 'recent'; render(); window.scrollTo(0, 0); }
 function synSetFacet(key) {
   state.synFacet = (key && state.synFacet !== key) ? key : null;
   render();
@@ -6188,109 +6188,30 @@ function synEnsureAnalysis() {
   return state.synAnalysis;
 }
 
-/* ---------- 關係時間線 ----------
-   基本關係只看 Synastry；近期與 3–12 個月則另外掃描實際行運，找同一時間對 A/B
-   關係敏感行星的啟動。未知出生時間者不使用其月亮，也從未使用 ASC、MC 或宮位。 */
-var SYNASTRY_TIMELINE_TRANSITS = [
-  { key:'Mercury', orb:1.5, weight:0.8 }, { key:'Venus', orb:2, weight:1.0 },
-  { key:'Mars', orb:2, weight:1.0 }, { key:'Jupiter', orb:2.5, weight:1.15 },
-  { key:'Saturn', orb:2.5, weight:1.35 }, { key:'Uranus', orb:1.8, weight:1.25 },
-  { key:'Neptune', orb:1.6, weight:1.1 }, { key:'Pluto', orb:1.6, weight:1.3 },
-];
-var SYNASTRY_TIMELINE_TARGETS = {
-  Sun:{ weight:1.0, theme:'關係定位與彼此期待' },
-  Moon:{ weight:1.15, theme:'情緒需求與安全感' },
-  Mercury:{ weight:1.0, theme:'溝通與重要對話' },
-  Venus:{ weight:1.25, theme:'靠近、喜歡與關係價值' },
-  Mars:{ weight:1.1, theme:'推進速度與衝突反應' },
-  Saturn:{ weight:1.2, theme:'承諾、責任與現實安排' },
-};
-function synastryTransitAspect(transitLon, natalLon, orbLimit) {
-  var diff = astroAngleDiff(transitLon, natalLon), best = null;
-  HOROSCOPE_ASPECT_ANGLES.forEach(function (pair) {
-    var orb = Math.abs(diff - pair[1]);
-    if (orb <= orbLimit && (!best || orb < best.orb)) best = { type:pair[0], orb:orb };
-  });
-  return best;
-}
-function synastryTimelineInteraction(hit) {
-  var hard = hit.aspect.type === 'square' || hit.aspect.type === 'opposition';
-  var owner = hit.owner === 'A' ? '本人' : '對方';
-  var possible = {
-    Sun: hard ? owner + '會更在意這段關係到底算什麼，模糊回應容易被聽成退縮。' : owner + '比較願意把這段關係放到檯面上，適合確認彼此期待。',
-    Moon: hard ? owner + '的情緒需求會變得明顯，小事也可能被感覺成沒有被接住。' : owner + '比較容易說出真正需要的陪伴，互動也較容易有安定感。',
-    Mercury: hard ? owner + '會急著把話說清楚，但語氣或細節容易蓋過真正要談的事。' : owner + '比較願意開口，原本卡住的話題較容易找到具體說法。',
-    Venus: hard ? owner + '會更在意喜歡有沒有被回應，試探與比較容易增加。' : owner + '更願意靠近、安排見面或把好感表達出來。',
-    Mars: hard ? owner + '的推進速度變快，若另一方還沒跟上，容易從催促變成爭執。' : owner + '比較有動力採取行動，適合一起完成一件具體的事。',
-    Saturn: hard ? owner + '會更在意承諾與現實限制，沒有談清楚的責任容易變成壓力。' : owner + '比較願意把承諾落到時間、分工與實際安排。',
-  }[hit.targetKey];
-  var attention = {
-    Sun:'先把「希望這段關係往哪裡走」說成可回答的問題。',
-    Moon:'先說需要陪伴、安靜或確認，不用冷淡或追問測試對方。',
-    Mercury:'重要對話先確認彼此要決定什麼，再交換理由。',
-    Venus:'把想見面或想被回應說清楚，不用試探對方會不會主動。',
-    Mars:'行動前先確認兩人的速度，不用臨時決定逼對方跟上。',
-    Saturn:'把責任拆成時間、金錢或分工，不用只談應不應該。',
-  }[hit.targetKey];
-  return { possible:possible, attention:attention };
-}
-function synastryTimelineWindows(chartA, chartB, unknownA, unknownB, startDate, endDate, stepDays, maxWindows) {
-  var hitsByMonth = {}, cursor = new Date(startDate.getTime());
-  while (cursor <= endDate) {
-    var transits = computeTransitPlanets(cursor);
-    SYNASTRY_TIMELINE_TRANSITS.forEach(function (transitCfg) {
-      [['A', chartA, unknownA], ['B', chartB, unknownB]].forEach(function (person) {
-        Object.keys(SYNASTRY_TIMELINE_TARGETS).forEach(function (targetKey) {
-          if (person[2] && targetKey === 'Moon') return;
-          var natal = person[1] && person[1].planets && person[1].planets[targetKey];
-          if (!natal || typeof natal.lon !== 'number') return;
-          var aspect = synastryTransitAspect(transits[transitCfg.key], natal.lon, transitCfg.orb);
-          if (!aspect) return;
-          var strength = 1 - aspect.orb / transitCfg.orb;
-          var importance = strength * transitCfg.weight * SYNASTRY_TIMELINE_TARGETS[targetKey].weight
-            * ((aspect.type === 'square' || aspect.type === 'opposition') ? 1.08 : 1);
-          var monthKey = cursor.getUTCFullYear() + '-' + pad2(cursor.getUTCMonth() + 1);
-          var hit = { date:new Date(cursor.getTime()), owner:person[0], transitKey:transitCfg.key,
-            targetKey:targetKey, aspect:aspect, importance:importance };
-          hitsByMonth[monthKey] = hitsByMonth[monthKey] || [];
-          hitsByMonth[monthKey].push(hit);
-        });
-      });
-    });
-    cursor = new Date(cursor.getTime() + stepDays * 86400000);
-  }
-  return Object.keys(hitsByMonth).sort().map(function (monthKey) {
-    var rows = hitsByMonth[monthKey].sort(function (a, b) { return b.importance - a.importance; });
-    var primary = rows[0], copy = synastryTimelineInteraction(primary);
-    var parts = monthKey.split('-');
-    return {
-      month:monthKey, label:Number(parts[0]) + ' 年 ' + Number(parts[1]) + ' 月',
-      theme:SYNASTRY_TIMELINE_TARGETS[primary.targetKey].theme,
-      possible:copy.possible, attention:copy.attention,
-      evidence:rows.slice(0, 2), importance:primary.importance,
-    };
-  }).sort(function (a, b) { return b.importance - a.importance; }).slice(0, maxWindows)
-    .sort(function (a, b) { return a.month < b.month ? -1 : 1; });
-}
-function buildSynastryTimeline(chartA, chartB, unknownA, unknownB, now) {
-  var start = new Date(now.getTime());
-  var recentEnd = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 3, start.getUTCDate()));
-  var midStart = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 3, start.getUTCDate()));
-  var midEnd = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 12, start.getUTCDate()));
+/* ---------- Relationship Timing Engine integration ---------- */
+function synTimingPersonMeta(prefix) {
+  var city = prefix === 'astro' ? state.astroCityUsed : state.synCityUsed;
   return {
-    generatedFor:start.toISOString().slice(0, 10),
-    recent:synastryTimelineWindows(chartA, chartB, unknownA, unknownB, start, recentEnd, 7, 3),
-    mid:synastryTimelineWindows(chartA, chartB, unknownA, unknownB, midStart, midEnd, 12, 5),
-    reliability:'時間線只使用實際行運對雙方行星的啟動；不使用上升、宮位或 AI 自行推測的日期。出生時間未知者的月亮也不納入時間線。',
+    unknownTime:prefix === 'astro' ? !!state.astroUnknownTime : !!state.synUnknownTime,
+    y:prefix === 'astro' ? state.astroY : state.synY,
+    m:prefix === 'astro' ? state.astroM : state.synM,
+    d:prefix === 'astro' ? state.astroD : state.synD,
+    tz:city && city.tz,
   };
 }
 function synEnsureTimeline() {
   var model = synEnsureAnalysis();
   if (!model) return null;
+  if (!window.RelationshipTimingEngine) throw new Error('Relationship Timing Engine 尚未載入');
   var today = new Date(), dayKey = today.toISOString().slice(0, 10);
-  var fingerprint = model.fingerprint + '::' + dayKey;
+  var fingerprint = model.fingerprint + '::timing-v' + RelationshipTimingEngine.schemaVersion + '::' + dayKey;
   if (!state.synTimeline || state.synTimeline.fingerprint !== fingerprint) {
-    state.synTimeline = buildSynastryTimeline(state.astroResult, state.synResult, !!state.astroUnknownTime, !!state.synUnknownTime, today);
+    state.synTimeline = RelationshipTimingEngine.buildTimeline({
+      chartA:state.astroResult, chartB:state.synResult,
+      personA:synTimingPersonMeta('astro'), personB:synTimingPersonMeta('syn'),
+      synastryAspects:model.aspects, relationshipState:'unspecified',
+      startDate:today,
+    });
     state.synTimeline.fingerprint = fingerprint;
   }
   return state.synTimeline;
@@ -6334,39 +6255,142 @@ function renderSynastryReliability(model) {
     + (limited ? '出生時間可靠度限制' : '出生時間資料完整') + '</b><br>' + esc(model.reliability.note) + '</div></div>';
 }
 function synSetTimelineTab(key) {
-  if (['base','recent','mid','long'].indexOf(key) === -1 || state.synTimelineTab === key) return;
+  if (['base','timing'].indexOf(key) === -1 || state.synTimelineTab === key) return;
   state.synTimelineTab = key;
   render(); window.scrollTo(0, 0);
 }
+function synSetTimingRange(key) {
+  if (['recent','mid','long'].indexOf(key) === -1 || state.synTimingRange === key) return;
+  state.synTimingRange = key; render();
+}
+function synSetCurrentRelationshipState(key) {
+  var allowed = ['unspecified','new','talking','stable','unstable','no_contact','separated','unrequited','other'];
+  if (allowed.indexOf(key) === -1 || state.synCurrentRelationshipState === key) return;
+  state.synCurrentRelationshipState = key;
+  /* Context changes interpretation only. Astronomical events and their dates
+     remain cached; phase copy is contextualized at render time below. */
+  render();
+}
 function renderSynastryTimelineTabs(active) {
-  var rows = [['base','基本關係'],['recent','近期 3 個月'],['mid','未來 3–12 個月'],['long','長期發展']];
-  var h = '<div role="tablist" aria-label="關係分析時間範圍" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:15px">';
+  var rows = [['base','基本關係'],['timing','關係走勢']];
+  var h = '<div role="tablist" aria-label="兩人關係分析" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:15px">';
   rows.forEach(function (row) {
     var on = row[0] === active;
-    h += '<button type="button" role="tab" aria-selected="' + on + '" onclick="synSetTimelineTab(\'' + row[0] + '\')" style="min-height:42px;border:1px solid ' + (on ? 'var(--brand-bright)' : 'var(--border)') + ';border-radius:11px;background:' + (on ? 'rgba(201,169,110,.16)' : 'var(--surface)') + ';color:' + (on ? 'var(--text)' : 'var(--text-muted)') + ';font:500 11.5px var(--font-sans);cursor:pointer">' + row[1] + '</button>';
+    h += '<button type="button" role="tab" aria-selected="' + on + '" onclick="synSetTimelineTab(\'' + row[0] + '\')" style="min-height:42px;border:1px solid ' + (on ? 'var(--brand-bright)' : 'var(--border)') + ';border-radius:11px;background:' + (on ? 'rgba(201,169,110,.16)' : 'var(--surface)') + ';color:' + (on ? 'var(--text)' : 'var(--text-muted)') + ';font:500 12px var(--font-sans);cursor:pointer">' + row[1] + '</button>';
   });
   return h + '</div>';
 }
-function renderSynastryTimelineEvidence(hit) {
-  var transitDef = findAnyPointDef(hit.transitKey), targetDef = findAnyPointDef(hit.targetKey);
-  return '行運' + (transitDef ? transitDef.zh : hit.transitKey) + ASPECT_DEFS[hit.aspect.type].zh
-    + (hit.owner === 'A' ? '本人' : '對方') + (targetDef ? targetDef.zh : hit.targetKey)
-    + '（誤差 ' + hit.aspect.orb.toFixed(1) + '°）';
+function synTimingRangeLabel(key) {
+  return ({recent:'近期｜0–3 個月',mid:'中期｜3–12 個月',long:'較長期｜1–3 年'})[key] || '近期｜0–3 個月';
 }
-function renderSynastryTimelineWindows(windows, emptyText) {
-  if (!windows || !windows.length) return '<div class="md-status md-status--info" role="status"><span class="md-status__icon">ⓘ</span><div>' + esc(emptyText) + '</div></div>';
-  var h = '<div style="margin-top:14px">';
-  windows.forEach(function (windowRow) {
-    h += '<article style="margin-top:10px;border:1px solid var(--border);border-radius:var(--radius-lg);padding:15px 16px;background:var(--surface)">';
-    h += '<div style="font:600 12px var(--font-sans);color:var(--brand-bright)">' + esc(windowRow.label) + '｜' + esc(windowRow.theme) + '</div>';
-    h += '<div style="margin-top:9px"><span style="font:500 10.5px var(--font-sans);color:var(--success)">可能表現</span><p style="font:400 12px/1.8 var(--font-sans);color:var(--text-secondary);margin:3px 0 0">' + esc(windowRow.possible) + '</p></div>';
-    h += '<div style="margin-top:8px"><span style="font:500 10.5px var(--font-sans);color:var(--warning)">需要注意</span><p style="font:400 12px/1.8 var(--font-sans);color:var(--text-secondary);margin:3px 0 0">' + esc(windowRow.attention) + '</p></div>';
-    h += '<details style="margin-top:9px;border-top:1px solid var(--border);padding-top:8px"><summary style="cursor:pointer;font:500 11px var(--font-sans);color:var(--brand)">占星依據</summary><div style="font:400 10.5px/1.7 var(--font-sans);color:var(--text-muted);margin-top:5px">';
-    windowRow.evidence.forEach(function (hit) { h += '<div>・' + esc(renderSynastryTimelineEvidence(hit)) + '</div>'; });
-    h += '</div></details></article>';
+function synTimingDate(iso) {
+  var d = new Date(iso);
+  return d.getUTCFullYear() + '/' + pad2(d.getUTCMonth() + 1) + '/' + pad2(d.getUTCDate());
+}
+function synTimingRangeText(phase) {
+  return synTimingDate(phase.startDate) + '–' + synTimingDate(phase.endDate);
+}
+function synTimingThemeLabel(key) {
+  return RelationshipTimingEngine.themeLabels[key] || key;
+}
+function synTimingContextCopy(phase) {
+  var context = state.synCurrentRelationshipState || 'unspecified';
+  if (context === 'separated') return {
+    meaning:'在目前已分開的情境下，這較像重新檢視關係與未完成議題的窗口。',
+    caution:'它不代表對方一定會聯絡或一定會復合。',
+  };
+  if (context === 'talking') return {
+    meaning:'在目前聊天或曖昧的情境下，這個主題較可能表現在互動節奏與關係定位。',
+    caution:phase.caution,
+  };
+  if (context === 'new') return {
+    meaning:'在目前剛認識的情境下，這個主題較可能表現在要不要增加互動，以及彼此怎麼理解第一印象。',
+    caution:'時序提高注意力，不代表關係已經形成或對方一定有同樣感受。',
+  };
+  if (context === 'stable') return {
+    meaning:'在穩定交往的情境下，這個主題較可能表現在下一階段與日常安排。',
+    caution:phase.caution,
+  };
+  if (context === 'unstable') return {
+    meaning:'在目前關係不穩的情境下，這個主題較可能放大原本尚未處理的差異與距離。',
+    caution:'訊號變強不等於一定分開；仍要看兩人實際如何回應。',
+  };
+  if (context === 'no_contact') return {
+    meaning:'在目前沒有聯絡的情境下，這較像各自重新理解這段關係的窗口。',
+    caution:'它不代表對方一定會主動聯絡，也不能取代現實中的互動證據。',
+  };
+  if (context === 'unrequited') return {
+    meaning:'在目前單方面在意的情境下，這個主題首先描述你的關係感受與選擇，不代表雙方會同步經歷。',
+    caution:'不能把共同時序解讀成對方一定有相同心意。',
+  };
+  return { meaning:phase.meaning, caution:phase.caution };
+}
+function renderSynTimingEvidence(event) {
+  var t = findAnyPointDef(event.transitPlanet), n = findAnyPointDef(event.natalPoint);
+  return '行運' + (t ? t.zh : event.transitPlanet) + ' ' + ASPECT_DEFS[event.aspect].zh
+    + (event.natalPerson === 'A' ? '本人' : '對方') + (n ? n.zh : event.natalPoint)
+    + '（精確誤差 ' + event.exactOrb.toFixed(2) + '°；' + event.confidence + '）';
+}
+function renderSynTimingPhase(phase, lead) {
+  var contextual = synTimingContextCopy(phase);
+  var h = '<article style="margin-top:12px;border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;background:var(--surface)">';
+  h += '<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span style="font:600 11px var(--font-sans);color:var(--brand)">' + esc(lead || synTimingRangeText(phase)) + '</span><span class="md-kind md-kind--fact">' + esc(phase.confidence) + '</span></div>';
+  h += '<h3 class="md-h3" style="font-size:16px;margin-top:8px">' + esc(phase.title) + '</h3>';
+  [['為什麼現在？','雙方的關係敏感點在接近的時間受到行運啟動，主題集中在「' + synTimingThemeLabel(phase.category) + '」。'],
+   ['可能出現什麼？',contextual.meaning],['適合做什麼？',phase.action],['不要過度解讀',contextual.caution]].forEach(function (row) {
+    h += '<div style="margin-top:9px"><span style="font:500 10.5px var(--font-sans);color:var(--brand)">' + row[0] + '</span><p style="font:400 12px/1.8 var(--font-sans);color:var(--text-secondary);margin:3px 0 0">' + esc(row[1]) + '</p></div>';
   });
-  return h + '</div>';
+  h += '<details style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px"><summary style="cursor:pointer;font:500 11px var(--font-sans);color:var(--brand)">查看占星依據</summary><div style="font:400 10.5px/1.75 var(--font-sans);color:var(--text-muted);margin-top:6px">';
+  phase.sharedActivations.forEach(function (shared) {
+    shared.personAEvents.concat(shared.personBEvents).forEach(function (event) { h += '<div>・' + esc(renderSynTimingEvidence(event)) + '</div>'; });
+    shared.relatedSynastryEvidence.slice(0, 2).forEach(function (asp) {
+      h += '<div>・合盤再啟動：' + esc(synastryAspectLine(asp)) + '</div>';
+    });
+  });
+  (phase.fastTriggers || []).forEach(function (event) {
+    h += '<div>・短期觸發：' + esc(renderSynTimingEvidence(event)) + '</div>';
+  });
+  return h + '</div></details></article>';
 }
+function renderSynTimingStatePicker() {
+  var rows = [['unspecified','不指定'],['new','剛認識'],['talking','聊天／曖昧'],['stable','穩定交往'],['unstable','關係不穩'],['no_contact','暫時沒聯絡'],['separated','已分開'],['unrequited','單戀'],['other','其他']];
+  var h = '<div style="margin-top:16px"><div style="font:500 11px var(--font-sans);color:var(--text-muted)">你們現在是？（選填，只改變解讀情境）</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:7px">';
+  rows.forEach(function (row) {
+    var on = (state.synCurrentRelationshipState || 'unspecified') === row[0];
+    h += '<button type="button" aria-pressed="' + on + '" onclick="synSetCurrentRelationshipState(\'' + row[0] + '\')" style="min-height:36px;border:1px solid ' + (on ? 'var(--brand-bright)' : 'var(--border)') + ';border-radius:14px;background:' + (on ? 'rgba(201,169,110,.15)' : 'var(--surface)') + ';color:' + (on ? 'var(--text)' : 'var(--text-muted)') + ';padding:6px 10px;cursor:pointer">' + row[1] + '</button>';
+  });
+  return h + '</div></div>';
+}
+function renderSynastryTiming(timeline) {
+  var range = state.synTimingRange || 'recent', phases = timeline.ranges[range] || [];
+  var h = renderSynTimingStatePicker();
+  h += '<div class="md-status md-status--info" role="status"><span class="md-status__icon">ⓘ</span><div>' + esc(timeline.reliability.note) + '<br>時序啟動不等於事件保證。</div></div>';
+  var current = timeline.currentPhase;
+  h += '<section style="margin-top:15px;border:1px solid var(--border-strong);border-radius:var(--radius-lg);padding:17px;background:rgba(201,169,110,.08)">';
+  h += '<div style="font:500 10.5px var(--font-sans);color:var(--brand)">現在這段關係處在哪個階段？</div>';
+  if (current) {
+    var cc = synTimingContextCopy(current);
+    h += '<h2 style="font:600 18px var(--font-serif);color:var(--text);margin:8px 0 0">' + esc(current.title) + '</h2><p class="md-prose" style="margin-top:8px">' + esc(cc.meaning) + '</p>';
+  } else {
+    h += '<h2 style="font:600 17px var(--font-serif);color:var(--text);margin:8px 0 0">目前沒有集中的重大關係觸發</h2><p class="md-prose" style="margin-top:8px">關係較可能延續目前模式，而不是突然出現明顯轉折。這不代表沒有日常互動，只代表沒有足夠的共同時序證據。</p>';
+  }
+  if (timeline.nextPhase) h += '<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)"><span style="font:500 10.5px var(--font-sans);color:var(--text-muted)">下一個明顯窗口</span><div style="font:600 13px var(--font-serif);color:var(--brand-bright);margin-top:3px">' + esc(synTimingRangeText(timeline.nextPhase)) + '｜' + esc(timeline.nextPhase.title) + '</div></div>';
+  h += '</section>';
+  var filters = [['recent','近期｜3 個月'],['mid','中期｜3–12 個月'],['long','較長期｜1–3 年']];
+  h += '<div role="tablist" aria-label="關係走勢範圍" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:14px">';
+  filters.forEach(function (row) {
+    var on = range === row[0];
+    h += '<button type="button" role="tab" aria-selected="' + on + '" onclick="synSetTimingRange(\'' + row[0] + '\')" style="min-height:42px;border:1px solid ' + (on ? 'var(--brand-bright)' : 'var(--border)') + ';border-radius:10px;background:' + (on ? 'rgba(201,169,110,.14)' : 'var(--surface)') + ';color:' + (on ? 'var(--text)' : 'var(--text-muted)') + ';font:500 10.5px var(--font-sans);padding:5px;cursor:pointer">' + row[1] + '</button>';
+  });
+  h += '</div><h3 class="md-h3" style="font-size:14px;margin-top:17px">' + esc(synTimingRangeLabel(range)) + '</h3>';
+  if (!phases.length) {
+    h += '<div class="md-status md-status--info" role="status"><span class="md-status__icon">ⓘ</span><div>這段期間沒有達到門檻的共同關係啟動，因此不會根據基本合盤硬生成事件。</div></div>';
+  } else {
+    phases.slice(0, range === 'recent' ? 4 : 8).forEach(function (phase) { h += renderSynTimingPhase(phase); });
+  }
+  return h;
+}
+
 function buildSynastryAiText(model, timeline) {
   var L = [], a = model.analysis;
   L.push('SYSTEM INSTRUCTION｜兩人關係判讀');
@@ -6388,10 +6412,18 @@ function buildSynastryAiText(model, timeline) {
     section.evidence.forEach(function (asp) { L.push('- ' + synastryAspectLine(asp)); });
   });
   if (timeline) {
-    L.push(''); L.push('TIME-DEPENDENT EVIDENCE（只能使用以下窗口）');
-    timeline.recent.concat(timeline.mid).forEach(function (row) {
-      L.push('- ' + row.label + '｜' + row.theme + '｜' + row.possible);
+    L.push(''); L.push('RELATIONSHIP TIMING ENGINE（只能使用以下窗口）');
+    L.push('Current relationship state：' + (state.synCurrentRelationshipState || 'unspecified') + '（只能改變解讀情境，不得改變天文計算）');
+    L.push('You may ONLY mention dates, periods, peaks, and relationship windows provided by the timing engine.');
+    L.push('Never infer or invent a relationship timing event from Synastry alone.');
+    L.push('If no meaningful timing activation exists in a period, explicitly say that no concentrated timing signal was found.');
+    L.push('Activation is not an event guarantee. Do not invent contact, travel, a third person, cohabitation, marriage or separation.');
+    timeline.phases.forEach(function (phase) {
+      L.push('- ' + synTimingRangeText(phase) + '｜peak ' + synTimingDate(phase.peakDate)
+        + '｜' + phase.category + '｜strength ' + phase.phaseStrength + '｜confidence ' + phase.confidence
+        + '｜' + phase.title + '｜' + phase.meaning);
     });
+    if (!timeline.phases.length) L.push('- No concentrated timing signal was found in the calculated 0–3 year period.');
   }
   L.push('');
   L.push('ANALYSIS ORDER');
@@ -6465,15 +6497,8 @@ function renderSynastry() {
     h += renderSynastryDecisionSection(model.analysis.longTermPotential, false);
     h += renderSynastryDecisionSection(model.analysis.actionAdvice, true);
     h += '<details style="margin-top:15px;border:1px dashed var(--border-strong);border-radius:var(--radius-lg);padding:12px 14px"><summary style="cursor:pointer;font:500 11.5px var(--font-sans);color:var(--brand)">查看完整雙人行星連線圖</summary><div style="margin-top:12px">' + renderSynastryLinkChart(chartA, chartB, model.aspects, state.synFacet) + '</div></details>';
-  } else if (tab === 'recent' || tab === 'mid') {
-    var timeline = synEnsureTimeline();
-    h += '<div class="md-status md-status--info" role="status"><span class="md-status__icon" aria-hidden="true">ⓘ</span><div>' + esc(timeline.reliability) + '</div></div>';
-    h += renderSynastryTimelineWindows(tab === 'recent' ? timeline.recent : timeline.mid,
-      '目前計算範圍內沒有達到門檻的行運啟動，因此不根據基本合盤編造近期發展。');
   } else {
-    h += '<div class="md-status md-status--info" role="status"><span class="md-status__icon" aria-hidden="true">ⓘ</span><div>長期發展回答的是這段關係能否維持、什麼問題會反覆，以及維持成本；這不是結婚或分手的時間預言。目前只使用 Synastry，未假裝已有 Composite、Davison 或長期推運資料。</div></div>';
-    h += renderSynastryDecisionSection(model.analysis.longTermPotential, false);
-    h += renderSynastryDecisionSection(model.analysis.actionAdvice, true);
+    h += renderSynastryTiming(synEnsureTimeline());
   }
 
   h += renderPersonaPicker();

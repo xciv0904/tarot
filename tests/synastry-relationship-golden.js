@@ -20,7 +20,7 @@ function runtime() {
   ['js/data/astrology-core-data.js','js/data/astrology-points-data.js','js/data/astrology-placement-templates.js',
    'js/data/astrology-aspect-data.js','js/data/astrology-knowledge-layer.js','js/data/astrology-knowledge-dataset.js',
    'js/data/astrology-natal-topics-data.js','js/data/card-images.js','js/data/reading-data.js','js/data/reading-interpretation.js',
-   'js/data/reading-rich-data.js','js/app.js','js/data/astro-charts.js','js/data/astro-advanced.js']
+   'js/data/reading-rich-data.js','js/app.js','js/data/astro-charts.js','js/data/relationship-timing.js','js/data/astro-advanced.js']
     .forEach(f => vm.runInContext(read(f), c, {filename:f}));
   c.ensureAstrologyBodyKeys(); return c;
 }
@@ -37,7 +37,9 @@ const chartA = chart({Sun:165,Moon:135,Mercury:201.3,Venus:208.6,Mars:52.5,Jupit
 const chartB = chart({Sun:105,Moon:116,Mercury:227.5,Venus:119.9,Mars:252.3,Jupiter:289.4,Saturn:118.3,Uranus:10.8,Neptune:61.3,Pluto:349.1}, 0);
 const model = c.buildSynastryResultModel(chartA, chartB, false, true, 'love');
 const fixedNow = new Date('2026-08-25T00:00:00.000Z');
-const timeline = c.buildSynastryTimeline(chartA, chartB, false, true, fixedNow);
+const timeline = c.RelationshipTimingEngine.buildTimeline({ chartA, chartB,
+  personA:{unknownTime:false}, personB:{unknownTime:true,y:1992,m:7,d:10,tz:'Asia/Taipei'},
+  synastryAspects:model.aspects, relationshipState:'unspecified', startDate:fixedNow });
 const prompt = c.buildSynastryAiText(model, timeline);
 
 check('案例身分：A 摩羯上升／處女太陽／獅子月亮', chartA.ascSign === 9 && chartA.planets.Sun.sign === 5 && chartA.planets.Moon.sign === 4);
@@ -55,24 +57,46 @@ check('未知時間限制進入 AI prompt', /禁止使用：上升 ASC、天頂 
   && /出生時間未知一方的月亮精確相位/.test(prompt));
 check('未知時間者的月亮精確相位在總分前排除', model.aspects.every(a => a.bKey !== 'Moon')
   && model.rawAspects.some(a => a.bKey === 'Moon'));
-check('未知時間者的月亮不進時間線 evidence', timeline.recent.concat(timeline.mid).every(w => w.evidence.every(e => !(e.owner === 'B' && e.targetKey === 'Moon'))));
-check('近期窗口來自實際行運', timeline.recent.length > 0 && timeline.recent.every(w => w.evidence.length > 0 && w.evidence.every(e => typeof e.aspect.orb === 'number')));
-check('中期窗口來自實際行運', timeline.mid.length > 0 && timeline.mid.every(w => w.evidence.length > 0 && w.evidence.every(e => typeof e.aspect.orb === 'number')));
+check('未知時間者的月亮只在整日都成立時進核心', timeline.events.filter(e => e.natalPerson === 'B' && e.natalPoint === 'Moon').every(e => e.coreEligible === (e.confidence === 'HIGH')));
+check('近期窗口來自實際共同啟動', timeline.ranges.recent.length > 0 && timeline.ranges.recent.every(p => p.sharedActivations.length > 0));
+check('中期窗口來自實際共同啟動', timeline.ranges.mid.length > 0 && timeline.ranges.mid.every(p => p.sharedActivations.length > 0));
+check('較長期窗口來自同一條 timeline', timeline.ranges.long.length > 0 && timeline.ranges.long.every(p => timeline.phases.indexOf(p) >= 0));
+check('三個範圍只是同一 timeline 的篩選', ['recent','mid','long'].every(key => timeline.ranges[key].every(p => timeline.phases.indexOf(p) >= 0)));
+check('顯著階段數量受控，不把每個 transit 都做成卡片', timeline.ranges.recent.length <= 4 && timeline.ranges.mid.length <= 5 && timeline.ranges.long.length <= 8);
+check('fast triggers 不會單獨建立重大階段', timeline.phases.every(p => p.sharedActivations.some(s => s.personAEvents.concat(s.personBEvents).some(e => e.speedClass !== 'fast'))));
+check('無訊號月份不會硬生成事件', new Set(timeline.phases.map(p => p.peakDate.slice(0,7))).size < 36);
 
 c.state.astroResult = chartA; c.state.synResult = chartB;
 c.state.astroUnknownTime = false; c.state.synUnknownTime = true;
-c.state.synRelationship = 'love'; c.state.synTimelineTab = 'base'; c.state.synAnalysis = null; c.state.synTimeline = null;
+c.state.synRelationship = 'love'; c.state.synTimelineTab = 'base'; c.state.synTimingRange = 'recent'; c.state.synAnalysis = null; c.state.synTimeline = timeline;
 const baseHtml = c.renderSynastry();
 check('結果頁第一屏先顯示 52 / 100', baseHtml.indexOf('你們的關係相性') !== -1 && baseHtml.indexOf('>52<') !== -1
   && baseHtml.indexOf('你們的關係相性') < baseHtml.indexOf('>本人<'));
 ['心動與吸引','溝通默契','情緒相處','長期穩定'].forEach(label => check('結果頁顯示分項「' + label + '」', baseHtml.indexOf(label) !== -1));
 ['你們為什麼會互相吸引？','相處起來最順的地方','最容易吵起來的地方','這段關係最大的隱患','如果真的交往，走長久容易嗎？','如果想讓關係更順'].forEach(label => check('結果頁顯示 section「' + label + '」', baseHtml.indexOf(label) !== -1));
 check('出生時間限制在結果頁可見', baseHtml.indexOf('對方出生時間未知，因此不使用對方上升、宮位') !== -1);
-['recent','mid','long'].forEach(tab => {
-  c.state.synTimelineTab = tab;
+['recent','mid','long'].forEach(range => {
+  c.state.synTimelineTab = 'timing'; c.state.synTimingRange = range;
   const html = c.renderSynastry();
-  check(tab + ' 頁籤可 render 且不進全域 fallback', html.length > 500 && html.indexOf('這個畫面出了點問題') === -1);
+  check(range + ' 篩選可 render 且不進全域 fallback', html.length > 500 && html.indexOf('這個畫面出了點問題') === -1);
 });
+const cachedTimeline = c.state.synTimeline;
+c.state.synCurrentRelationshipState = 'separated';
+const contextHtml = c.renderSynastry();
+check('現況只改文字，不重算天文 timeline', c.state.synTimeline === cachedTimeline && contextHtml.indexOf('不代表對方一定會聯絡') !== -1);
+c.innerWidth = 390;
+const mobileHtml = c.renderSynastry();
+check('iPhone 等效 viewport 可 render', mobileHtml.length > 500 && mobileHtml.indexOf('這個畫面出了點問題') === -1 && mobileHtml.indexOf('關係走勢') !== -1);
+
+/* 模擬頁面重新載入後由已儲存命盤還原：Date 以外的 chart facts 走 JSON
+   round-trip，timing cache 仍以相同 fingerprint 讀取。 */
+const restoredA = JSON.parse(JSON.stringify(chartA)), restoredB = JSON.parse(JSON.stringify(chartB));
+c.state.astroResult = restoredA; c.state.synResult = restoredB; c.state.synAnalysis = null;
+const restoredModel = c.synEnsureAnalysis();
+timeline.fingerprint = restoredModel.fingerprint + '::timing-v' + c.RelationshipTimingEngine.schemaVersion + '::2026-08-25';
+c.state.synTimeline = timeline; c.state.synTimelineTab = 'timing'; c.state.synTimingRange = 'recent';
+const restoredHtml = c.renderSynastry();
+check('已儲存命盤重新載入後關係走勢仍可 render', restoredHtml.indexOf('現在這段關係處在哪個階段？') !== -1 && restoredHtml.indexOf('這個畫面出了點問題') === -1);
 
 const renderedText = schemaKeys.map(k => model.analysis[k].body.join(' ')).join(' ');
 check('關係判讀能直接回答合不合', /相性|磨合|靠近|卡住/.test(model.analysis.relationshipVerdict.body[0]));
@@ -94,7 +118,7 @@ console.log('- conflictPattern：' + model.analysis.conflictPattern.body.join(' 
 console.log('- hiddenRisk：' + model.analysis.hiddenRisk.body.join(' '));
 console.log('- longTermPotential：' + model.analysis.longTermPotential.body.join(' '));
 console.log('- actionAdvice：' + model.analysis.actionAdvice.body.join('／'));
-console.log('- Timeline：近期 ' + timeline.recent.length + ' 個窗口；中期 ' + timeline.mid.length + ' 個窗口');
+console.log('- Timeline：近期 ' + timeline.ranges.recent.length + ' 個階段；中期 ' + timeline.ranges.mid.length + ' 個階段；較長期 ' + timeline.ranges.long.length + ' 個階段');
 console.log('- 檢查項目：' + checks.length);
 console.log('- 失敗：' + failures.length);
 if (failures.length) { failures.forEach(x => console.log('  ✗ ' + x)); process.exit(1); }
