@@ -250,14 +250,88 @@ var RECOMMENDATIONS = {
 
 var LEN_RECOMMENDATIONS = {
   love: ['box9', 'three-time', 'line5', 'grand', 'single'],
-  career: ['box9', 'three-issue', 'line5', 'grand', 'single'],
+  career: ['box9', 'three-issue', 'line5', 'three-time', 'grand', 'single'],
   family: ['three-issue', 'box9', 'line5', 'single'],
-  health: ['three-mbs', 'line5', 'box9', 'single'],
+  health: ['three-mbs', 'three-issue', 'line5', 'box9', 'single'],
   wealth: ['three-issue', 'line5', 'box9', 'single'],
-  social: ['box9', 'three-time', 'line5', 'single'],
-  study: ['three-issue', 'line5', 'box9', 'single'],
+  social: ['box9', 'three-time', 'three-issue', 'line5', 'single'],
+  study: ['three-issue', 'three-mbs', 'three-time', 'line5', 'box9', 'single'],
   decision: ['three-issue', 'line5', 'single'],
-  general: ['grand', 'box9', 'line5', 'three-time', 'single'],
+  general: ['grand', 'box9', 'three-issue', 'line5', 'three-time', 'single'],
+};
+
+/* 雷諾曼不照搬塔羅的牌陣名稱，但每一個主問題仍要有自己的工具排序。
+   line5 用來讀事件因果與後續，box9 用來交叉確認人物／環境／隱藏因素，
+   three-issue 用來找阻礙與行動，grand 只保留給真正的全局盤點。 */
+var LENORMAND_QUESTION_SPREADS = {
+  love: {
+    'partner-type':['box9','line5','single'],
+    'partner-profile':['box9','line5','single'],
+    'meet-scene':['box9','line5','three-time'],
+    'pace-pattern':['line5','box9','three-time'],
+    crush:['box9','line5','three-time'],
+    reunion:['line5','box9','three-time'],
+    'marriage-longterm':['line5','box9','three-time'],
+  },
+  career: {
+    'industry-fit':['box9','line5','single'],
+    'work-style-fit':['box9','three-issue','line5'],
+    'career-timing':['line5','three-time','box9'],
+    'workplace-strength-weakness':['box9','three-issue','line5'],
+  },
+  family: {
+    'family-dynamics':['box9','line5','three-issue'],
+    'family-relations':['box9','line5','three-issue'],
+    'living-responsibility':['line5','three-issue','box9'],
+    'family-improve':['three-issue','line5','single'],
+  },
+  health: {
+    'body-lifestyle':['three-mbs','three-issue','line5'],
+    'daily-balance':['three-mbs','line5','box9'],
+  },
+  wealth: {
+    'cashflow-risk':['line5','three-issue','box9'],
+    'risk-approach':['three-issue','line5','box9'],
+    'opportunity-source':['box9','line5','single'],
+  },
+  social: {
+    'attract-type':['box9','line5','single'],
+    'interpersonal-style':['box9','three-issue','line5'],
+    'ally-conflict':['box9','line5','three-issue'],
+  },
+  study: {
+    'major-fit':['box9','line5','three-issue'],
+    'exam-application':['line5','three-time','box9'],
+    'focus-execution':['three-issue','three-mbs','line5'],
+  },
+  decision: {
+    'dc-ab':['line5','box9','three-issue'],
+    'dc-do':['three-issue','single','line5'],
+    'dc-timing':['line5','three-time','box9'],
+    'dc-stay':['line5','box9','three-issue'],
+    'dc-offer':['three-issue','single','line5'],
+    'dc-unclear':['box9','three-issue','line5'],
+  },
+  general: {
+    'overall-theme':['grand','box9','line5'],
+    'priority-focus':['three-issue','line5','single'],
+    'hidden-blindspot':['box9','three-issue','line5'],
+    'next-direction':['line5','three-time','box9'],
+  },
+};
+
+function lenormandRecommendedSpreads(catId, questionKey) {
+  return ((LENORMAND_QUESTION_SPREADS[catId] || {})[questionKey] || []).slice();
+}
+
+var LENORMAND_SPREAD_FIT = {
+  single:'這題只需要一個直接訊號，適合先抓眼前最重要的答案。',
+  'three-time':'這題在問前後變化，適合分開看先前、現在與接下來。',
+  'three-issue':'這題需要找出卡點與做法，適合拆成現況、阻礙與建議。',
+  'three-mbs':'這題同時牽涉身體、情緒與內在需求，適合分層查看。',
+  line5:'這題在問事情怎麼發展，五張直線能讀出起因、轉折與結果。',
+  box9:'這題需要交叉確認人物、環境與隱藏因素，九宮格比單一路徑更完整。',
+  grand:'這題是在盤點多個生活領域，才需要使用 36 張大牌陣。',
 };
 
 var SPREAD_DESC = {

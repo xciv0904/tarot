@@ -2497,22 +2497,27 @@ function renderPrimaryQuestionBlock() {
   return h;
 }
 
-/* 牌陣推薦。taxonomy 的 44 個 primary 每一個都寫好了 spreads，但第二步一直只讀
+/* 牌陣推薦。taxonomy 的 primary 每一個都寫好了 spreads，但第二步曾經只讀
    RECOMMENDATIONS[category]——所以「未來可能會遇到什麼類型的人」跟「怎麼經營
    目前這段關係」拿到一模一樣的清單，而第一步明講「系統會依照內容推薦合適的牌陣」。
-   有主問題就用主問題的，沒有才退回分類清單；雷諾曼維持自己的對照表，因為
-   taxonomy 的 spreads 是照塔羅牌陣命名的。 */
+   有主問題就用主問題的，沒有才退回分類清單。雷諾曼使用自己的問題契約，
+   不把塔羅牌陣名稱硬翻成雷諾曼，但精細度必須相同。 */
 function wizSpreadRecommendations() {
   var all = currentSpreads();
   var recSrc = state.deck === 'lenormand' ? LEN_RECOMMENDATIONS : RECOMMENDATIONS;
   var byCat = ((recSrc && recSrc[state.category]) || []).filter(function (k) { return !!all[k]; });
 
   var byPrimary = [];
-  if (state.deck !== 'lenormand' && state.subtopic && typeof taxonomyPrimaryForSubtopic === 'function') {
-    var primary = taxonomyPrimaryForSubtopic(state.category, state.subtopic);
-    if (primary && typeof taxonomyRecommendedSpreads === 'function') {
-      byPrimary = taxonomyRecommendedSpreads(state.category, primary.id)
+  if (state.subtopic) {
+    if (state.deck === 'lenormand' && typeof lenormandRecommendedSpreads === 'function') {
+      byPrimary = lenormandRecommendedSpreads(state.category, state.subtopic)
         .filter(function (k) { return !!all[k]; });
+    } else if (typeof taxonomyPrimaryForSubtopic === 'function') {
+      var primary = taxonomyPrimaryForSubtopic(state.category, state.subtopic);
+      if (primary && typeof taxonomyRecommendedSpreads === 'function') {
+        byPrimary = taxonomyRecommendedSpreads(state.category, primary.id)
+          .filter(function (k) { return !!all[k]; });
+      }
     }
   }
   /* 「更貼近這題」不等於「其餘都不能用」。第一版只回傳主問題的清單，結果
@@ -2526,7 +2531,9 @@ function wizSpreadRecommendations() {
 }
 function renderSubtopicPicker() {
   var preset = getSpreadQuestionPreset();
-  var allowed = preset.subtopics || [];
+  /* 雷諾曼的主問題先於牌陣決定，不能再拿目前暫存的牌陣套用塔羅限制，
+     否則 box9 會把「未來對象」等問題直接藏掉。 */
+  var allowed = state.deck === 'lenormand' ? [] : (preset.subtopics || []);
   var options = (SUBTOPICS[state.category] || []).filter(function (s) {
     return s.modes.indexOf(state.readingMode) !== -1 && (!allowed.length || allowed.indexOf(s.key) !== -1);
   });
@@ -2993,6 +3000,9 @@ function renderWizard(spreads, isTarot) {
       h += '<button onclick="wizSetSpread(\'' + key + '\')" style="text-align:left;background:' + (active ? 'rgba(201,169,110,.15)' : 'rgba(255,255,255,.02)') + ';border:1px solid ' + (active ? '#c9a96e' : 'rgba(201,169,110,.25)') + ';border-radius:10px;padding:12px 14px;cursor:pointer">';
       h += '<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:500 13px \'Noto Sans TC\',sans-serif;color:' + (active ? '#f0e9d8' : 'rgba(240,233,216,.8)') + '">' + sp.zh + '</span><span style="font:italic 10px \'EB Garamond\',serif;color:#c9a96e">' + sp.positions.length + ' 張牌</span></div>';
       h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:4px;line-height:1.5">' + (SPREAD_DESC[key] || '') + '</div>';
+      if (!isTarot && rec.source === 'primary' && ri < rec.top.length && typeof LENORMAND_SPREAD_FIT !== 'undefined' && LENORMAND_SPREAD_FIT[key]) {
+        h += '<div style="font:500 10.5px \'Noto Sans TC\',sans-serif;color:#c9a96e;margin-top:5px;line-height:1.55">適合這題：' + esc(LENORMAND_SPREAD_FIT[key]) + '</div>';
+      }
       var posLine = sp.positions.length > 10
         ? '免選牌 · 洗牌後 36 張自動排成 9×4 陣 · 找到代表你的牌，讀它的四鄰與全局'
         : sp.positions.map(function (p2) { return p2.zh; }).join(' · ');
@@ -3154,7 +3164,9 @@ function wizSetReadingMode(mode) {
 function wizSetSpread(k) {
   state.spread = k;
   var preset = getSpreadQuestionPreset();
-  if (state.subtopic && preset.subtopics && preset.subtopics.indexOf(state.subtopic) === -1) state.subtopic = '';
+  /* 雷諾曼的具體問題由自己的推薦契約處理。不可再套塔羅 preset 把上一步
+     已選的問題清掉；即使使用者改選「這個領域也常用」的牌陣，問題仍要保留。 */
+  if (state.deck !== 'lenormand' && state.subtopic && preset.subtopics && preset.subtopics.indexOf(state.subtopic) === -1) state.subtopic = '';
   if (state.category) pruneFocusSelection(state.category);
   render();
 }

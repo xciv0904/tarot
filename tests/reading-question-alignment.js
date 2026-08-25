@@ -12,13 +12,15 @@ const sandbox = {
   lenImg: () => ''
 };
 vm.createContext(sandbox);
-vm.runInContext(source + '\n' + interpretationSource + '\nthis.__presets = SPREAD_QUESTION_PRESETS; this.__concrete = CONCRETE_QUESTION_EXAMPLES; this.__subtopics = SUBTOPICS; this.__recs = RECOMMENDATIONS; this.__lenRecs = LEN_RECOMMENDATIONS; this.__topicCfg = topicQuestionConfig; this.__spreadFocus = SPREAD_FOCUS_GROUPS; this.__subtopicFocus = SUBTOPIC_FOCUS_GROUPS;', sandbox);
+vm.runInContext(source + '\n' + interpretationSource + '\nthis.__presets = SPREAD_QUESTION_PRESETS; this.__concrete = CONCRETE_QUESTION_EXAMPLES; this.__subtopics = SUBTOPICS; this.__recs = RECOMMENDATIONS; this.__lenRecs = LEN_RECOMMENDATIONS; this.__lenQuestionSpreads = LENORMAND_QUESTION_SPREADS; this.__taxonomy = QUESTION_TAXONOMY; this.__topicCfg = topicQuestionConfig; this.__spreadFocus = SPREAD_FOCUS_GROUPS; this.__subtopicFocus = SUBTOPIC_FOCUS_GROUPS;', sandbox);
 
 const presets = sandbox.__presets;
 const concreteExamples = sandbox.__concrete;
 const subtopics = sandbox.__subtopics;
 const recommendations = sandbox.__recs;
 const lenormandRecommendations = sandbox.__lenRecs;
+const lenormandQuestionSpreads = sandbox.__lenQuestionSpreads;
+const taxonomy = sandbox.__taxonomy;
 const topicCfg = sandbox.__topicCfg;
 const spreadFocus = sandbox.__spreadFocus;
 const subtopicFocus = sandbox.__subtopicFocus;
@@ -58,6 +60,37 @@ Object.keys(recommendationSet).forEach((category) => {
 }
 validateRecommendations(recommendations, 'tarot');
 validateRecommendations(lenormandRecommendations, 'lenormand');
+
+/* 雷諾曼曾只依愛情／事業大分類推薦，甚至換牌陣時會遺失已選主問題。
+   每個可用牌卡回答的主問題現在都必須有獨立排序契約。 */
+Object.keys(subtopics).forEach((category) => {
+  (subtopics[category] || []).filter(q => q.modes.includes('cards')).forEach((question) => {
+    const rows = (lenormandQuestionSpreads[category] || {})[question.key];
+    if (!rows || rows.length < 2) errors.push(`lenormand ${category}/${question.key}: missing question-specific spread contract`);
+    (rows || []).forEach((spread) => {
+      if (!(lenormandRecommendations[category] || []).includes(spread)) {
+        errors.push(`lenormand ${category}/${question.key}: spread ${spread} is not available in category`);
+      }
+    });
+  });
+});
+(taxonomy.decision && taxonomy.decision.primaries || []).forEach((primary) => {
+  const rows = (lenormandQuestionSpreads.decision || {})[primary.id];
+  if (!rows || rows.length < 2) errors.push(`lenormand decision/${primary.id}: missing question-specific spread contract`);
+});
+Object.keys(lenormandQuestionSpreads).forEach((category) => {
+  const signatures = Object.values(lenormandQuestionSpreads[category]).map(rows => rows.join('|'));
+  if (signatures.length > 1 && new Set(signatures).size < 2) {
+    errors.push(`lenormand ${category}: every question receives the same spread order`);
+  }
+});
+Object.keys(lenormandQuestionSpreads).forEach((category) => {
+  Object.keys(lenormandQuestionSpreads[category]).forEach((question) => {
+    if (category !== 'general' && lenormandQuestionSpreads[category][question].includes('grand')) {
+      errors.push(`lenormand ${category}/${question}: Grand Tableau must not answer a focused question`);
+    }
+  });
+});
 
 const forbidden = {
   peach: /交往中|復合|前任|曖昧對象/,

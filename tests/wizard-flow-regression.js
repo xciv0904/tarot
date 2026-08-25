@@ -161,6 +161,37 @@ if (loveSelf) {
   c.wizSetDeck('tarot'); c.state.tlGuideOpen = false;
 }
 
+/* ---------- 5.6 雷諾曼主問題真的控制牌陣 ---------- */
+{
+  c.state.phase = 'setup'; c.state.wizardStep = 2; c.state.deck = 'lenormand';
+  c.state.category = 'love'; c.state.spread = 'box9'; c.state.subtopic = '';
+  c.state.wizFocusSel = {}; c.state.wizFocusExpanded = {};
+  const allLoveQuestions = c.renderReading();
+  check('雷諾曼不再因暫存牌陣隱藏未來對象問題', allLoveQuestions.indexOf('未來可能遇到什麼類型的人') !== -1);
+  check('雷諾曼不再因暫存牌陣隱藏長期關係問題', allLoveQuestions.indexOf('適婚傾向及長期關係') !== -1);
+
+  c.state.subtopic = 'partner-type';
+  const futureRecs = c.wizSpreadRecommendations();
+  check('未來對象優先九宮格／五張直線／單張', futureRecs.top.join(',') === 'box9,line5,single', futureRecs.top.join(','));
+  const futureHtml = c.renderReading();
+  check('推薦牌陣說明為什麼適合這題', futureHtml.indexOf('適合這題：') !== -1 && futureHtml.indexOf('人物、環境與隱藏因素') !== -1);
+
+  c.state.subtopic = 'pace-pattern';
+  const paceRecs = c.wizSpreadRecommendations();
+  check('關係發展改為優先讀事件線', paceRecs.top.join(',') === 'line5,box9,three-time', paceRecs.top.join(','));
+  check('不同愛情問題不再拿到相同雷諾曼排序', futureRecs.top.join(',') !== paceRecs.top.join(','));
+  c.wizSetSpread('box9');
+  check('改選雷諾曼牌陣後保留已選主問題', c.state.subtopic === 'pace-pattern', c.state.subtopic);
+
+  c.state.category = 'decision'; c.state.subtopic = 'dc-ab'; c.state.spread = 'three-issue';
+  const decisionRecs = c.wizSpreadRecommendations();
+  check('雷諾曼二選一使用獨立排序', decisionRecs.top.join(',') === 'line5,box9,three-issue', decisionRecs.top.join(','));
+  c.state.category = 'general'; c.state.subtopic = 'overall-theme'; c.state.spread = 'grand';
+  check('只有全局盤點優先大牌陣', c.wizSpreadRecommendations().top[0] === 'grand');
+  c.state.subtopic = 'priority-focus';
+  check('聚焦單題不推薦大牌陣', c.wizSpreadRecommendations().top.indexOf('grand') === -1);
+}
+
 /* ---------- 5.7 結果頁的閱讀順序 ----------
    「直接回答」原本被語氣選擇與按鈕列擋在後面，第一次用的人得從上往下讀完
    才發現結論在中間。翻牌／顯示牌義留在牌卡旁（那是讀解讀之前要用的），

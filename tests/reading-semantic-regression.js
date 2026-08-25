@@ -17,7 +17,7 @@ function loadRuntime() {
   c.document = { head:element(), body:element(), documentElement:element(), getElementById(id){return elements[id] || (elements[id]=element());}, querySelector(){return null;}, querySelectorAll(){return [];}, addEventListener(){}, createElement:element };
   vm.createContext(c);
   ['js/data/astrology-core-data.js','js/data/astrology-points-data.js','js/data/astrology-placement-templates.js','js/data/astrology-aspect-data.js','js/data/astrology-knowledge-layer.js','js/data/astrology-knowledge-dataset.js','js/data/astrology-natal-topics-data.js','js/data/card-images.js','js/data/reading-data.js','js/data/reading-interpretation.js','js/data/reading-rich-data.js','js/app.js'].forEach(file => vm.runInContext(fs.readFileSync(path.join(ROOT,file),'utf8'),c,{filename:file}));
-  vm.runInContext('window.__T=TAROT;window.__TS=TAROT_SPREADS;window.__SUB=SUBTOPICS;window.__SCHEMAS=READING_QUESTION_SCHEMAS;',c);
+  vm.runInContext('window.__T=TAROT;window.__L=LENORMAND;window.__TS=TAROT_SPREADS;window.__LS=LENORMAND_SPREADS;window.__LQS=LENORMAND_QUESTION_SPREADS;window.__SUB=SUBTOPICS;window.__SCHEMAS=READING_QUESTION_SCHEMAS;',c);
   c.__copied = () => copied;
   return c;
 }
@@ -50,6 +50,22 @@ Object.keys(c.__SUB).forEach(category => (c.__SUB[category]||[]).filter(question
     const check=c.validateReadingContent(contentType,result.typed.sections[contentType].text);
     if(!check.valid) fail(`${category}/${question.key} 的 ${contentType} 未通過語意驗證`);
   });
+}));
+
+/* 同一份問題契約也必須真的走完雷諾曼抽牌與具名答案，不能只有推薦畫面連動。 */
+let lenormandQuestionCount = 0;
+Object.keys(c.__SUB).forEach(category => (c.__SUB[category]||[]).filter(question => question.modes.includes('cards')).forEach((question,index) => {
+  const recommendations=(c.__LQS[category]||{})[question.key]||[];
+  const spread=recommendations.find(key=>key!=='grand'&&c.__LS[key]);
+  if(!spread){ fail(`lenormand ${category}/${question.key} 沒有可執行的推薦牌陣`); return; }
+  const positions=c.__LS[spread].positions;
+  const drawn=positions.map((pos,i)=>({card:c.__L[(index*5+i)%c.__L.length],reversed:false,pos,flipped:true}));
+  c.state.deck='lenormand'; c.state.category=category; c.state.subtopic=question.key; c.state.spread=spread; c.state.drawn=drawn; c.state.readingMode='cards';
+  const result=c.cardSubtopicReading(category,question.key,drawn);
+  if(!result||!result.available||!result.typed||!result.typed.available){ fail(`lenormand ${category}/${question.key} 無法產生具名答案`); return; }
+  if(result.typed.evidence.length<Math.min(3,drawn.length)) fail(`lenormand ${category}/${question.key} 牌面依據不足`);
+  if(drawn.length>1&&!result.typed.cardRelationship) fail(`lenormand ${category}/${question.key} 沒有組牌整合`);
+  lenormandQuestionCount++;
 }));
 
 const semanticCases = {
@@ -129,4 +145,4 @@ const advice=c.cardPosText({card:repeated,reversed:false,pos:{zh:'建議',en:'Ad
 if(obstacle===advice || !/阻力/.test(obstacle) || !/建議/.test(advice)) fail('同一張牌在不同牌位沒有改變解讀');
 
 if(failures.length){ console.error(`Reading semantic regression FAILED (${failures.length})`); failures.forEach(x=>console.error('- '+x)); process.exit(1); }
-console.log(`Reading semantic regression passed: ${GOLDEN_SPREADS.length} Golden Test Spreads, ${Object.keys(semanticCases).length} answerTarget validators, all question contracts complete.`);
+console.log(`Reading semantic regression passed: ${GOLDEN_SPREADS.length} Tarot Golden Test Spreads, ${lenormandQuestionCount} Lenormand question paths, ${Object.keys(semanticCases).length} answerTarget validators, all question contracts complete.`);
