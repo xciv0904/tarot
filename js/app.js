@@ -25,6 +25,7 @@ var state = {
   wizFocusLimitHit: '',
   /* Step 3 的兩個選填 disclosure */
   wizFocusOpen: false, wizContextOpen: false,
+  wizSpreadOpen: false, wizModeOpen: false,
   /* 結果頁延伸區塊：展開中的細節題、選取中的新問題、更多方向、上一個解讀的快照 */
   followUpSelected: '', followUpMoreOpen: false, previousReading: null, overallOpen: false,   // 選滿 3 項後又點擊第 4 項時，記錄是哪個分類觸發，顯示提示用
   drawn: [],
@@ -285,15 +286,28 @@ function lenPairText(a, b) {
 /* adjacent-pair readings for the current lenormand draw */
 function lenPairs(drawn) {
   var out = [];
+  if ((READING_QUESTION_PLANS[state.category] || {})[state.subtopic]) return lenormandQuestionPairIndices(drawn.length).map(function(p) {
+    var a=drawn[p[0]],b=drawn[p[1]];
+    return {label:a.card.nameZh+' ＋ '+b.card.nameZh,text:projectedQuestionPair(a,b,state.category,state.subtopic)};
+  });
+  var topic = state.category === 'love' ? lenormandQuestionTopic(state.subtopic) : '';
+  if (topic) return lenormandQuestionPairIndices(drawn.length).map(function (p) {
+    var a = drawn[p[0]].card, b = drawn[p[1]].card;
+    return { label:a.nameZh + ' ＋ ' + b.nameZh, text:lenormandQuestionPairText(a,b,topic) };
+  });
   for (var i = 0; i < drawn.length - 1; i++) {
     var a = drawn[i].card, b = drawn[i + 1].card;
-    out.push({ label: a.nameZh + ' ＋ ' + b.nameZh, text: lenPairText(a, b) });
+    out.push({ label: a.nameZh + ' ＋ ' + b.nameZh, text: topic ? lenormandQuestionPairText(a,b,topic) : lenPairText(a, b) });
   }
   return out;
 }
 
 function lenStory(drawn) {
   if (!drawn || drawn.length < 2) return '';
+  var named=buildPlannedQuestionReading(state.category,state.subtopic,drawn,posRole);
+  if(named)return named.cardRelationship;
+  var topic = state.category === 'love' ? lenormandQuestionTopic(state.subtopic) : '';
+  if (topic) return buildLenormandQuestionReading(readingSchemaFor('love',state.subtopic),drawn,topic).cardRelationship;
   var pairs = lenPairs(drawn);
   if (drawn.length === 3) {
     return '第一張「' + drawn[0].card.nameZh + '」交代背景，並以「' + pairs[0].text + '」推進到核心牌「' + drawn[1].card.nameZh + '」；接著「' + pairs[1].text + '」，因此事情會朝「' + LEN_COMBI[drawn[2].card.n].n + '」的方向發展。';
@@ -1298,8 +1312,8 @@ function rr(ctx, x, y, w, h2, r) {
 
 /* 分享圖只放具體問題的精簡摘要；完整欄位仍保留在「複製給 AI」與歷史紀錄中。 */
 function currentSubtopicShareData() {
-  if (!state.subtopic || !SUBTOPICS[state.category]) return null;
-  var def = (SUBTOPICS[state.category] || []).filter(function (s) { return s.key === state.subtopic; })[0];
+  if (!state.subtopic) return null;
+  var def = plannedQuestionDefinition(state.category,state.subtopic);
   if (!def) return null;
   var cardRes = cardSubtopicReading(state.category, state.subtopic, state.drawn);
   var astroRes = (state.readingMode === 'combined' && state.astroResult)
@@ -2483,8 +2497,11 @@ function renderTaxonomyPrimaryPicker(catKey) {
 function renderPrimaryQuestionBlock() {
   var h = '';
   if (['love', 'career', 'family', 'wealth', 'health', 'social', 'study', 'general'].indexOf(state.category) !== -1) {
-    h += renderModePicker();
     h += renderSubtopicPicker();
+    h += '<div style="margin-top:12px"><button type="button" aria-expanded="' + state.wizModeOpen + '" onclick="wizToggleModeOptions()" style="min-height:44px;background:none;border:none;padding:0;text-align:left;cursor:pointer;font:500 12px var(--font-sans);color:var(--brand)">'
+      + (state.readingMode === 'combined' ? '已加入我的星盤・調整設定' : '加入我的星盤（選填）') + ' ▾</button>';
+    if (state.wizModeOpen) h += renderModePicker();
+    h += '</div>';
   } else if (!SUBTOPICS[state.category] && taxonomyHasCategory(state.category)) {
     /* 決策類：沒有舊題庫，主問題直接來自 taxonomy。 */
     h += renderTaxonomyPrimaryPicker(state.category);
@@ -2530,12 +2547,9 @@ function wizSpreadRecommendations() {
   return { top: byPrimary, rest: rest, source: 'primary' };
 }
 function renderSubtopicPicker() {
-  var preset = getSpreadQuestionPreset();
-  /* 雷諾曼的主問題先於牌陣決定，不能再拿目前暫存的牌陣套用塔羅限制，
-     否則 box9 會把「未來對象」等問題直接藏掉。 */
-  var allowed = state.deck === 'lenormand' ? [] : (preset.subtopics || []);
+  // The question comes first; a provisional spread must not hide questions.
   var options = (SUBTOPICS[state.category] || []).filter(function (s) {
-    return s.modes.indexOf(state.readingMode) !== -1 && (!allowed.length || allowed.indexOf(s.key) !== -1);
+    return s.modes.indexOf(state.readingMode) !== -1;
   });
   if (!options.length) return '';
   /* 所有選項收進單一選單，避免和自由輸入、範例問題同時鋪成數十顆按鈕。
@@ -2545,7 +2559,7 @@ function renderSubtopicPicker() {
   h += '<option value="">先不選，直接描述問題</option>';
   options.forEach(function (s) {
     var active = state.subtopic === s.key;
-    h += '<option value="' + esc(s.key) + '"' + (active ? ' selected' : '') + '>' + esc(s.zh) + '</option>';
+    h += '<option value="' + esc(s.key) + '"' + (active ? ' selected' : '') + '>' + esc(state.deck === 'lenormand' && state.category === 'love' ? lenormandQuestionLabel(s.key,s.zh) : s.zh) + '</option>';
   });
   h += '</select>';
   return h;
@@ -2983,12 +2997,12 @@ function renderWizard(spreads, isTarot) {
 
     var rec = wizSpreadRecommendations();
     var recs = rec.top.concat(rec.rest);
-    h += '<div style="font:600 15px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:22px;border-top:1px solid rgba(201,169,110,.18);padding-top:16px">選一個牌陣</div>';
-    h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:5px;line-height:1.7">'
-      + (rec.source === 'primary'
-        ? '排在前面的是比較貼近你上面那一題的。換一個問題，排序就會換。'
-        : '先選上面的問題，這裡會把更貼近那一題的排到前面。')
-      + '</div>';
+    var selectedSpread = spreads[state.spread];
+    h += '<div style="margin-top:16px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--bg-raised)">';
+    h += '<div style="font:500 13px var(--font-sans);color:var(--text)">這次使用：' + esc(selectedSpread ? selectedSpread.zh : '') + (selectedSpread ? '（' + selectedSpread.positions.length + ' 張）' : '') + '</div>';
+    h += '<p style="font:400 12px var(--font-sans);color:var(--text-secondary);line-height:1.8;margin:6px 0 0">網站已配好適合的牌陣，不需要懂牌陣名稱。換一個問題，牌陣也會跟著調整；直接按下一步即可。</p>';
+    h += '<button type="button" aria-expanded="' + state.wizSpreadOpen + '" onclick="wizToggleSpreadOptions()" style="min-height:44px;background:none;border:none;padding:6px 0 0;text-align:left;cursor:pointer;font:500 12px var(--font-sans);color:var(--brand)">自行換牌陣（選填） ' + (state.wizSpreadOpen ? '▴' : '▾') + '</button></div>';
+    if (state.wizSpreadOpen) {
     h += '<div style="display:flex;flex-direction:column;gap:9px;margin-top:14px">';
     recs.forEach(function (key, ri) {
       if (rec.source === 'primary' && rec.rest.length) {
@@ -3010,6 +3024,7 @@ function renderWizard(spreads, isTarot) {
       h += '</button>';
     });
     h += '</div>';
+    }
     h += wizBtns(true, !!spreads[state.spread] && recs.indexOf(state.spread) !== -1, '下一步', 'wizNext()');
 
   } else if (state.wizardStep === 3) {
@@ -3099,7 +3114,8 @@ function renderWizard(spreads, isTarot) {
     h += row('牌陣', sp2.zh + '（' + sp2.positions.length + ' 張）');
     if (!isTarot) h += row('時間範圍', timeframeLabel());
     if (state.target) h += row('對象', esc(state.target));
-    h += row('問題', state.question ? esc(state.question) : '<span style="color:rgba(240,233,216,.62)">（未填寫，將以通用方式解讀）</span>');
+    var chosenQuestion = plannedQuestionDefinition(state.category, state.subtopic);
+    h += row('問題', state.question ? esc(state.question) : chosenQuestion ? esc(chosenQuestion.zh) : '<span style="color:rgba(240,233,216,.62)">（未填寫，將以通用方式解讀）</span>');
     h += '</div>';
     h += wizBtns(true, true, '開始抽牌 →', 'startReading()');
   }
@@ -3111,12 +3127,19 @@ function renderWizard(spreads, isTarot) {
 }
 
 function wizSetDeck(d) {
-  if (state.deck !== d) { state.deck = d; state.spread = 'single'; }
+  if (state.deck !== d) {
+    state.deck = d; state.spread = 'single';
+    if (state.category) {
+      var rec = wizSpreadRecommendations();
+      state.spread = rec.top[0] || rec.rest[0] || state.spread;
+    }
+  }
   render();
 }
 function wizSetCat(k) {
   if (state.category !== k) {
     state.category = k; state.target = ''; state.subtopic = ''; state.readingMode = 'cards';
+    state.wizSpreadOpen = false; state.wizModeOpen = false;
     state.wizFocusLimitHit = ''; // 切換分類時清掉上一個分類殘留的「已選滿」提示
     var recSource = state.deck === 'lenormand' ? LEN_RECOMMENDATIONS : RECOMMENDATIONS;
     var firstRecommended = (recSource[k] || [])[0];
@@ -3130,6 +3153,9 @@ function wizSetCat(k) {
    不能讓隱藏的舊選擇偷偷送進 prompt。範例與 placeholder 也會跟著換。 */
 function wizSetSubtopic(key) {
   state.subtopic = key;
+  var recommended = wizSpreadRecommendations();
+  var best = recommended.top[0] || recommended.rest[0];
+  if (best) state.spread = best;
   var cat = state.category;
   var sel = state.wizFocusSel[cat];
   if (sel && sel.length) {
@@ -3145,6 +3171,9 @@ function wizSetSubtopic(key) {
   state.wizFocusLimitHit = '';
   render();
 }
+
+function wizToggleSpreadOptions() { state.wizSpreadOpen = !state.wizSpreadOpen; render(); }
+function wizToggleModeOptions() { state.wizModeOpen = !state.wizModeOpen; render(); }
 
 function readingBuildAstro() {
   state.returnToReadingAfterAstro = true;
@@ -3163,10 +3192,7 @@ function wizSetReadingMode(mode) {
 }
 function wizSetSpread(k) {
   state.spread = k;
-  var preset = getSpreadQuestionPreset();
-  /* 雷諾曼的具體問題由自己的推薦契約處理。不可再套塔羅 preset 把上一步
-     已選的問題清掉；即使使用者改選「這個領域也常用」的牌陣，問題仍要保留。 */
-  if (state.deck !== 'lenormand' && state.subtopic && preset.subtopics && preset.subtopics.indexOf(state.subtopic) === -1) state.subtopic = '';
+  // A voluntary tool change must not silently replace the user's question.
   if (state.category) pruneFocusSelection(state.category);
   render();
 }
@@ -3226,6 +3252,7 @@ function currentSpreads() {
 
 function renderReading() {
   var isTarot = state.deck === 'tarot';
+  var namedQuestion = (READING_QUESTION_PLANS[state.category] || {})[state.subtopic];
   var spreads = currentSpreads();
   if (!spreads[state.spread]) state.spread = 'single';
   var h = '';
@@ -3309,6 +3336,10 @@ function renderReading() {
       var c = d.card;
       var meaningZh = isTarot ? (d.reversed ? c.revZh : c.upZh) : c.mZh;
       var meaningEn = isTarot ? (d.reversed ? c.revEn : c.upEn) : c.mEn;
+      if (!isTarot && state.category === 'love' && lenormandQuestionTopic(state.subtopic)) {
+        meaningZh = cardCoreMeaning(d,false);
+        meaningEn = '';
+      }
       h += '<div style="width:' + cardW + ';display:flex;flex-direction:column;align-items:center;gap:8px;animation:cardIn .4s ease both">';
       h += '<div style="font:500 10px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase">' + d.pos.zh + ' ' + d.pos.en + '</div>';
       var cardFront = '<div style="position:absolute;inset:3px;border:1px solid #d8b96c;border-radius:6px;overflow:hidden;display:flex;flex-direction:column">'
@@ -3341,7 +3372,7 @@ function renderReading() {
     // summary panel
     h += '<div id="summary-panel" style="margin-top:28px;border-top:1px solid rgba(201,169,110,.2);padding-top:20px;display:' + (allFlipped() ? 'block' : 'none') + '">';
     h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:rgba(240,233,216,.5);text-transform:uppercase;text-align:center">解讀摘要 Reading Summary</div>';
-    var activeSubDef = state.subtopic ? (SUBTOPICS[state.category] || []).filter(function (s) { return s.key === state.subtopic; })[0] : null;
+    var activeSubDef = state.subtopic ? plannedQuestionDefinition(state.category,state.subtopic) : null;
     var activeCardResult = activeSubDef ? cardSubtopicReading(state.category, state.subtopic, state.drawn) : null;
     if (activeSubDef && activeCardResult && activeCardResult.available) {
       h += renderSubtopicResultPanel(activeSubDef, activeCardResult, '直接回答這個問題');
@@ -3441,10 +3472,11 @@ function renderReading() {
     if (!isTarot && state.spread === 'grand') {
       h += grandPanel();
     }
-    if (!isTarot && state.spread === 'box9') {
+    var questionTopic = namedQuestion;
+    if (!isTarot && state.spread === 'box9' && !questionTopic) {
       h += box9Panel();
     }
-    if (!isTarot && state.drawn.length >= 2 && state.spread !== 'grand' && state.spread !== 'box9') {
+    if (!isTarot && state.drawn.length >= 2 && state.spread !== 'grand' && state.spread !== 'box9' && !questionTopic) {
       var lp = lenPairs(state.drawn);
       h += '<div style="border:1px solid rgba(201,169,110,.3);border-radius:10px;padding:15px 17px;background:rgba(255,255,255,.02);margin-top:12px">';
       h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:#c9a96e;text-transform:uppercase">✧ 組牌解讀 Pair Reading</div>';
@@ -3465,26 +3497,31 @@ function renderReading() {
       h += '</div>';
     }
     if (state.spread !== 'grand') {
+    h += '<p style="font:400 12px var(--font-sans);color:var(--text-secondary);line-height:1.8;margin:16px 0 0">想了解某一張牌，點牌名展開即可；一次只展開一張。</p>';
     h += '<div style="display:flex;flex-direction:column;gap:12px;margin-top:16px">';
     state.drawn.forEach(function (d) {
       var c = d.card;
       var meaningZh = isTarot ? (d.reversed ? c.revZh : c.upZh) : c.mZh;
       var meaningEn = isTarot ? (d.reversed ? c.revEn : c.upEn) : c.mEn;
-      h += '<div style="border:1px solid rgba(201,169,110,.25);border-radius:10px;padding:12px 16px;background:rgba(255,255,255,.02)">';
+      h += '<details name="reading-card-meaning" style="border:1px solid var(--border);border-radius:10px;padding:12px 16px;background:var(--bg-raised)">';
+      h += '<summary style="min-height:44px;cursor:pointer;color:var(--brand);font:500 12px var(--font-sans)">';
       h += '<div style="display:flex;justify-content:space-between;align-items:baseline">';
       h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.08em;color:#c9a96e;text-transform:uppercase">' + d.pos.zh + ' ' + d.pos.en + '</div>';
       if (isTarot) h += '<div style="font:400 10px \'EB Garamond\',serif;color:rgba(240,233,216,.62)">' + (d.reversed ? '逆位 Reversed' : '正位 Upright') + '</div>';
       h += '</div>';
       h += '<div style="font:600 14px \'Noto Serif TC\',serif;color:#f0e9d8;margin-top:4px">' + esc(c.nameZh) + ' <span style="font:italic 11px \'EB Garamond\',serif;color:rgba(240,233,216,.5)">' + esc(c.nameEn) + '</span></div>';
-      h += '<div style="font:italic 10px \'EB Garamond\',serif;color:rgba(240,233,216,.62);margin-top:1px">' + esc(meaningEn) + '</div>';
+      h += '</summary>';
+      if (!questionTopic) h += '<div style="font:italic 10px \'EB Garamond\',serif;color:rgba(240,233,216,.62);margin-top:1px">' + esc(meaningEn) + '</div>';
+      var positionText = cardPosText(d, isTarot);
+      h += '<div style="font:400 14px var(--font-sans);color:var(--text);margin-top:10px;line-height:1.85">' + esc(positionText) + '</div>';
       var fields = [
         ['核心訊息', 'Core', cardCoreMeaning(d, isTarot)],
-        ['目前狀態', 'Now', cardPosText(d, isTarot)],
         ['可能的盲點', 'Blind Spot', cardBlindSpot(d, isTarot)],
         ['建議採取的行動', 'Action', cardAction(d, isTarot)],
       ];
       h += '<div style="margin-top:9px;display:flex;flex-direction:column;gap:7px">';
       fields.forEach(function (f) {
+        if (f[2] === positionText) return;
         h += '<div><span style="font:500 10px \'Noto Sans TC\',sans-serif;letter-spacing:.06em;color:#c9a96e">' + f[0] + ' <span style="font:italic 9px \'EB Garamond\',serif;color:rgba(201,169,110,.6)">' + f[1] + '</span></span>';
         h += '<div style="font:400 12px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.85);margin-top:2px;line-height:1.7">' + esc(f[2]) + '</div></div>';
       });
@@ -3494,7 +3531,7 @@ function renderReading() {
       /* 原本是 <span onclick>，用鍵盤 Tab 走不到、螢幕閱讀器也不會念成可點擊元素；
          換成 <button> 之後同時取得焦點樣式、Enter/空白鍵操作與正確的語意角色。 */
       h += '<div style="margin-top:8px"><button type="button" onclick="openLibCard(\'' + libKey + '\')" style="min-height:36px;background:none;border:none;padding:0;font:400 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;cursor:pointer;border-bottom:1px dotted rgba(201,169,110,.5)">在牌典查看這張牌 →</button></div>';
-      h += '</div>';
+      h += '</details>';
     });
     h += '</div>';
     }
@@ -3670,9 +3707,11 @@ var POS_TEMPLATES = {
 
 /* combine card meaning + position modifier + topic context into one sentence */
 function cardPosText(d, isTarot) {
+  var plannedText = projectedQuestionCardText(d,state.category,state.subtopic,posRole(d.pos.zh));
+  if (plannedText) return polishSentence(plannedText);
+  var questionTopic = !isTarot && state.category === 'love' ? lenormandQuestionTopic(state.subtopic) : '';
+  if (questionTopic) return polishSentence(lenormandCardQuestionText(d,questionTopic));
   var role = posRole(d.pos.zh);
-  var kws = cardKws(d, isTarot);
-  var kw = kws[0] || (d.reversed ? '受阻的能量' : '核心能量');
   var meaning = '';
   if (isTarot && d.card.rich) {
     var r = d.card.rich;
@@ -3688,11 +3727,25 @@ function cardPosText(d, isTarot) {
   } else {
     meaning = isTarot ? (d.reversed ? d.card.revZh : d.card.upZh) : d.card.mZh;
   }
-  var t = POS_TEMPLATES[role] || POS_TEMPLATES.generic;
-  var tpl = (isTarot && d.reversed) ? t.fr : t.fu;
+  // Explain the position with the actual meaning, rather than making readers
+  // decipher a keyword and then repeating the same meaning after it.
+  var plainLeads = {
+    obstacle: '可能的阻力，請檢查以下情況是否有不足或做得過頭的地方：',
+    advice: '這張牌的建議，可以參考的做法或需要調整的傾向：',
+    past: '過去可能有這樣的經驗，影響了現在：',
+    future: '接下來可以觀察是否出現這種發展：',
+    root: '這件事背後可能反覆出現的情況：',
+    other: '可以從對方的實際行動或周圍情況確認：',
+    self: '可以對照自己目前的想法或反應：',
+    hope: '可以確認自己是否期待或擔心這種情況：',
+    present: '可以對照目前是否有這種情況：',
+    bond: '可以觀察兩人相處時是否有這種情況：',
+    strength: '這個選項可能有利的地方，仍需確認是否做得到：',
+    generic: '這個位置可以留意的情況：'
+  };
   /* meaning 來自牌義資料，有的有句號、有的沒有，先去掉再由 polishSentence 統一補，
      避免組成「⋯⋯。的狀態。」這種句中多一個句號的情況。 */
-  return polishSentence(tpl.replace('{kw}', kw).replace('{meaning}', String(meaning).replace(/[。！]$/, '')));
+  return polishSentence((plainLeads[role] || plainLeads.generic) + String(meaning).replace(/[。！]$/, ''));
 }
 
 /* ---- structured per-card breakdown: 核心訊息 / 目前狀態 / 盲點 / 行動 / 提醒 ---- */
@@ -3739,20 +3792,41 @@ var REMINDER_TEMPLATES = {
   generic: '把牌義對照目前發生的事，只保留能驗證的部分。',
 };
 function cardCoreMeaning(d, isTarot) {
+  var planned = questionProjection(d,state.category,state.subtopic);
+  if (planned) return polishSentence(planned.answer);
+  var topic = !isTarot && state.category === 'love' ? lenormandQuestionTopic(state.subtopic) : '';
+  if (topic) {
+    var row = LENORMAND_QUESTION_MEANINGS[d.card.n];
+    return polishSentence(topic === 'appearance' ? (row.appearance || '這張牌沒有足夠的外在風格線索') : row.quality);
+  }
   var meaningZh = isTarot ? (d.reversed ? d.card.revZh : d.card.upZh) : d.card.mZh;
   return polishSentence(meaningZh);
 }
 function cardBlindSpot(d, isTarot) {
+  var projection = questionProjection(d,state.category,state.subtopic);
+  if (projection) return polishSentence('本題需要核對：' + projection.condition);
+  var topic = !isTarot && state.category === 'love' ? lenormandQuestionTopic(state.subtopic) : '';
+  if (topic === 'appearance') return '外在風格的象徵聯想不等於實際長相，也不能代表對方的人品。';
+  if (topic === 'quality') return polishSentence('需要核對的地方：' + LENORMAND_QUESTION_MEANINGS[d.card.n].observe);
   var role = posRole(d.pos.zh);
   var kw = cardKws(d, isTarot)[0] || '這張牌';
   return polishSentence((BLIND_SPOT_TEMPLATES[role] || BLIND_SPOT_TEMPLATES.generic).replace('{kw}', kw));
 }
 function cardAction(d, isTarot) {
+  var projection = questionProjection(d,state.category,state.subtopic);
+  if (projection) return polishSentence(projection.action);
+  var questionTopic = !isTarot && state.category === 'love' ? lenormandQuestionTopic(state.subtopic) : '';
+  if (questionTopic === 'quality') return polishSentence(LENORMAND_QUESTION_MEANINGS[d.card.n].observe);
+  if (questionTopic === 'appearance') return '把這些外在風格聯想留作參考，認識對方後再對照實際印象。';
   var role = posRole(d.pos.zh);
   var kw = cardKws(d, isTarot)[0] || '這張牌';
   return polishSentence((ACTION_TEMPLATES[role] || ACTION_TEMPLATES.generic).replace('{kw}', kw));
 }
 function cardReminder(d, isTarot) {
+  if ((READING_QUESTION_PLANS[state.category] || {})[state.subtopic]) return '這是本題需要核對的方向，請以實際資訊與行動確認。';
+  var topic = !isTarot && state.category === 'love' ? lenormandQuestionTopic(state.subtopic) : '';
+  if (topic === 'appearance') return '這些是外在風格的象徵聯想，請以實際認識的人為準。';
+  if (topic === 'quality') return '以持續的實際行動確認相處，不用單張牌判定好人或壞人。';
   var role = posRole(d.pos.zh);
   return polishSentence(REMINDER_TEMPLATES[role] || REMINDER_TEMPLATES.generic);
 }
@@ -3874,7 +3948,7 @@ var TRAIT_AXIS_LABELS = {
 var LOVE_TONE_POOL = {
   trend: {
     positive: ['整體發展的走向偏向順利，關係有機會穩定往前推進', '牌面能量偏正向，事情有機會比預期更快出現進展', '目前的趨勢對你有利，順著現有的節奏走下去即可'],
-    neutral: ['現在是好壞都有的階段，走向會由接下來這幾次互動決定，不是現在就定案', '關係停在不上不下的位置，通常是有句話還沒說出口，說了才會動', '兩邊都還在觀望，誰先把自己的期待講清楚，走向就往誰的方向偏'],
+    neutral: ['目前適合維持互動，先不要急著增加投入；確認對方也會主動聯絡或安排見面後，再往前一步', '目前先把彼此對關係的期待說清楚，再決定是否繼續投入；不要只靠聊天頻率判斷關係有沒有進展', '先用一次具體邀約確認對方是否願意配合；有回應再繼續，若一直沒有回應，就放慢主動的頻率'],
     challenging: ['目前的趨勢帶有一些阻力，進展可能比預期慢一些', '牌面顯示這段時間需要多一點耐心，不宜期待立即的變化', '發展走向暫時卡在某個環節，建議先處理眼前的課題再往前'],
   },
   favor: {
@@ -4349,10 +4423,18 @@ function polishSubtopicResult(out) {
 }
 
 function cardSubtopicReading(catKey, subtopicKey, drawnCards) {
+  if (catKey === 'decision') {
+    var decision = buildPlannedQuestionReading(catKey,subtopicKey,drawnCards,posRole);
+    if (decision) return {available:true,catKey:catKey,subtopicKey:subtopicKey,conclusion:polishSentence(decision.primaryAnswer),traits:'',trend:'',favor:'',risk:'',action:polishSentence(decision.action),caveat:decision.uncertainty,tone:'neutral',typed:decision};
+  }
   var out = polishSubtopicResult(cardSubtopicReadingRaw(catKey, subtopicKey, drawnCards));
   if (out && out.available) {
     out.typed = buildTypedQuestionReading(catKey, subtopicKey, drawnCards, out);
     if (out.typed && out.typed.primaryAnswer) out.conclusion = polishSentence(out.typed.primaryAnswer);
+    if (out.typed && (READING_QUESTION_PLANS[catKey] || {})[subtopicKey]) {
+      out.action = polishSentence(out.typed.action);
+      out.caveat = polishSentence(out.typed.uncertainty);
+    }
   }
   return out;
 }
@@ -4522,10 +4604,14 @@ function buildCardRelationship(drawnCards, isTarot) {
 }
 
 function buildTypedQuestionReading(catKey, subtopicKey, drawnCards, legacy) {
+  var planned = buildPlannedQuestionReading(catKey,subtopicKey,drawnCards,posRole);
+  if (planned) return planned;
   var schema = readingSchemaFor(catKey, subtopicKey);
   var out = { available:false, schema:schema || null, primaryAnswer:'', sections:{}, cardRelationship:'', evidence:[], action:'', uncertainty:'', omitted:[] };
   if (!schema || !drawnCards || !drawnCards.length) return out;
   var isTarot = typeof drawnCards[0].card.arcana !== 'undefined';
+  var questionTopic = !isTarot && catKey === 'love' ? lenormandQuestionTopic(subtopicKey) : '';
+  if (questionTopic) return buildLenormandQuestionReading(schema,drawnCards,questionTopic);
   var focus = readingFocusForSchema(catKey, subtopicKey, drawnCards);
   var group = loveCardGroup(focus.card, isTarot);
   var seed = schema.questionId + '|question=' + String(state.question || '') + '|' + drawnCards.map(function (d) { return (isTarot ? d.card.id : 'l' + d.card.n) + (d.reversed ? 'R' : 'U') + '@' + d.pos.zh; }).join('|');
@@ -4533,8 +4619,37 @@ function buildTypedQuestionReading(catKey, subtopicKey, drawnCards, legacy) {
 
   schema.sectionOrder.forEach(function (contentType) {
     var text = typedGroupText(contentType, group, seed);
+    var sectionEvidence = focusEvidence;
     if (!text && contentType === 'financial_advice') text = legacy.action || legacy.risk;
-    if (!text && contentType === 'relationship_development') text = legacy.trend || legacy.conclusion;
+    if (!text && contentType === 'financial_state') text = legacy.conclusion;
+    if (!text && /^(action|wellbeing_action|relationship_repair|focus_method|next_step_action)$/.test(contentType)) text = legacy.action || legacy.conclusion;
+    if (!text && contentType === 'relationship_development' && catKey !== 'love') text = legacy.trend || legacy.conclusion;
+    if (!text && contentType === 'relationship_development') {
+      // A mixed total is not a conclusion. Use the development position's
+      // meaning and name the actual obstacle instead of averaging them away.
+      var outcome = drawnCards.filter(function (d) { return posRole(d.pos.zh) === 'future'; }).slice(-1)[0] || focus;
+      var obstacle = drawnCards.filter(function (d) { return posRole(d.pos.zh) === 'obstacle'; })[0];
+      var rich = outcome.card.rich;
+      var oi = outcome.reversed ? 1 : 0;
+      var meaning = isTarot
+        ? (rich && rich.ctx.love ? rich.ctx.love[oi] : (outcome.reversed ? outcome.card.revZh : outcome.card.upZh))
+        : ((LEN_RICH[outcome.card.n] || {}).love || outcome.card.mZh);
+      text = '關係接下來較偏向：' + polishSentence(meaning);
+      sectionEvidence = [readingEvidence(outcome, isTarot)];
+      if (obstacle && obstacle !== outcome) {
+        sectionEvidence.push(readingEvidence(obstacle, isTarot));
+        var obstacleRich = obstacle.card.rich;
+        // A supportive upright card in an obstacle position asks about its
+        // missing/excessive expression. Describe that possibility, without
+        // changing its orientation or asserting it is already happening.
+        var shadowIndex = obstacle.reversed || NEG_TAROT_IDS.indexOf(obstacle.card.id) === -1 ? 1 : 0;
+        var obstacleMeaning = isTarot
+          ? (obstacleRich && obstacleRich.ctx.love ? obstacleRich.ctx.love[shadowIndex] : (shadowIndex ? obstacle.card.revZh : obstacle.card.upZh))
+          : ((LEN_RICH[obstacle.card.n] || {}).love || obstacle.card.mZh);
+        text += '優先確認是否有這種情況：' + polishSentence(obstacleMeaning);
+        text += '先確認這一點，再判斷關係是否有實際進展。';
+      }
+    }
     if (!text && contentType === 'interaction_style') text = legacy.traits || legacy.risk;
     if (!text && contentType === 'counterpart_attitude') text = legacy.conclusion;
     if (!text && contentType === 'reconciliation_conditions') text = (legacy.risk ? legacy.risk + ' ' : '') + (legacy.action || '');
@@ -4542,13 +4657,18 @@ function buildTypedQuestionReading(catKey, subtopicKey, drawnCards, legacy) {
     if (!text && /^(family_|living_|relationship_repair|wellbeing_|social_|ally_|learning_|exam_|focus_|overall_|priority_|hidden_|next_)/.test(contentType)) {
       text = contentType === 'action' ? legacy.action : (legacy.conclusion || legacy.traits || legacy.trend);
     }
-    addTypedSection(out, schema, contentType, text, focusEvidence);
+    addTypedSection(out, schema, contentType, text, sectionEvidence);
   });
 
   var firstType = schema.sectionOrder.filter(function (key) { return !!out.sections[key]; })[0];
   out.primaryAnswer = firstType ? out.sections[firstType].text : polishSentence(refineReadingCopy(legacy.conclusion));
   out.cardRelationship = polishSentence(refineReadingCopy(buildCardRelationship(drawnCards, isTarot)));
   out.evidence = drawnCards.slice(0, Math.min(3, drawnCards.length)).map(function (d) { return readingEvidence(d, isTarot); });
+  if (out.sections.relationship_development) {
+    out.sections.relationship_development.evidence.forEach(function (line) {
+      if (out.evidence.indexOf(line) === -1) out.evidence.push(line);
+    });
+  }
   out.action = polishSentence(refineReadingCopy(legacy.action || ''));
   out.uncertainty = polishSentence(refineReadingCopy(legacy.caveat || '牌面呈現目前條件下的傾向，後續仍會受實際選擇影響。'));
   out.available = !!out.primaryAnswer;
@@ -4578,35 +4698,39 @@ var SUBTOPIC_UI_CAVEAT = {
 function renderSubtopicResultPanel(subtopicDef, result, titleText) {
   if (!result || !result.available) return '';
   var title = titleText || '具體問題解讀';
+  var questionLabel = state.deck === 'lenormand' && state.category === 'love' ? lenormandQuestionLabel(state.subtopic,subtopicDef.zh) : subtopicDef.zh;
   var isCombinedDetail = titleText === '牌卡具體解讀';
   var h = '<div style="border:1px solid rgba(201,169,110,.4);border-radius:10px;padding:15px 17px;background:rgba(255,255,255,.02);margin-top:12px">';
   if (isCombinedDetail) {
     h += '<details><summary style="min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;list-style:none;font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:#e6cd9a;text-transform:uppercase">✦ ' + esc(title) + '<span style="font:400 10px \'Noto Sans TC\',sans-serif;letter-spacing:0;color:rgba(240,233,216,.62);white-space:nowrap">點擊展開</span></summary>';
     h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.5);margin-top:2px;line-height:1.6">' + esc(subtopicDef.zh) + '</div>';
   } else {
-    h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:#e6cd9a;text-transform:uppercase">✦ ' + esc(title) + ' · ' + esc(subtopicDef.zh) + '</div>';
+    h += '<div style="font:500 11px \'Noto Sans TC\',sans-serif;letter-spacing:.1em;color:#e6cd9a;text-transform:uppercase">✦ ' + esc(title) + ' · ' + esc(questionLabel) + '</div>';
   }
   if (result.typed && result.typed.available) {
     var typed = result.typed;
     h += '<div style="margin-top:10px;padding:11px 13px;border-left:2px solid #e6cd9a;background:rgba(201,169,110,.08)">';
     h += '<div style="font:500 10px \'Noto Sans TC\',sans-serif;color:#c9a96e">直接回答</div>';
     h += '<div style="font:500 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:3px;line-height:1.8">' + esc(typed.primaryAnswer) + '</div></div>';
+    if (typed.action && typed.action !== typed.primaryAnswer) {
+      h += '<div style="margin-top:12px;padding:11px 13px;background:var(--bg-raised);border-radius:8px">';
+      h += '<div style="font:500 12px var(--font-sans);color:var(--brand)">下一步可以做什麼</div>';
+      h += '<div style="font:400 14px var(--font-sans);color:var(--text);margin-top:4px;line-height:1.85">' + esc(typed.action) + '</div></div>';
+    }
     h += '<div style="margin-top:10px;display:flex;flex-direction:column;gap:9px">';
     (typed.schema.sectionOrder || []).forEach(function (contentType) {
       var section = typed.sections[contentType];
-      if (!section || section.text === typed.primaryAnswer) return;
+      if (!section || section.text === typed.primaryAnswer || section.text === typed.action) return;
       h += '<div><span style="font:500 10px \'Noto Sans TC\',sans-serif;letter-spacing:.04em;color:#c9a96e">' + esc(section.label) + '</span>';
       h += '<div style="font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:3px;line-height:1.8">' + esc(section.text) + '</div></div>';
     });
     if (typed.cardRelationship) {
-      h += '<div><span style="font:500 10px \'Noto Sans TC\',sans-serif;letter-spacing:.04em;color:#c9a96e">牌與牌怎麼互相影響</span>';
-      h += '<div style="font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:3px;line-height:1.8">' + esc(typed.cardRelationship) + '</div></div>';
-    }
-    if (typed.action && !Object.keys(typed.sections).some(function (key) { return typed.sections[key].text === typed.action; })) {
-      h += '<div><span style="font:500 10px \'Noto Sans TC\',sans-serif;letter-spacing:.04em;color:#c9a96e">下一步可以做什麼</span>';
-      h += '<div style="font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:3px;line-height:1.8">' + esc(typed.action) + '</div></div>';
+      h += '<details><summary style="min-height:44px;display:flex;align-items:center;cursor:pointer;font:500 12px var(--font-sans);color:var(--brand)">牌與牌怎麼互相影響</summary>';
+      h += '<div style="font:400 13px \'Noto Sans TC\',sans-serif;color:#f0e9d8;margin-top:3px;line-height:1.8">' + esc(typed.cardRelationship) + '</div></details>';
     }
     h += '</div>';
+    var specificTopic = (READING_QUESTION_PLANS[state.category] || {})[state.subtopic];
+    h += '<p style="font:400 12px var(--font-sans);color:var(--text-secondary);line-height:1.8;margin:12px 0 0">' + esc(specificTopic ? typed.uncertainty : '請把以上內容對照實際發生的事；牌面不能確認對方心裡怎麼想，也不保證未來結果。') + '</p>';
     h += '<details style="margin-top:10px"><summary style="min-height:40px;display:flex;align-items:center;cursor:pointer;font:400 11px \'Noto Sans TC\',sans-serif;color:#c9a96e">為什麼這樣判斷</summary>';
     h += '<div style="font:400 11px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.68);line-height:1.8">';
     typed.evidence.forEach(function (line) { h += '· ' + esc(line) + '<br>'; });
@@ -4734,6 +4858,9 @@ var CLASSIC_COMBOS = [
 
 /* full spread analysis: detailed stats insights + combo detection */
 function analyzeSpread(drawn, isTarot) {
+  if ((READING_QUESTION_PLANS[state.category] || {})[state.subtopic]) return [];
+  // These questions use contextual meanings, not a good/bad card count.
+  if (!isTarot && state.category === 'love' && lenormandQuestionTopic(state.subtopic)) return [];
   var out = [];
   if (!isTarot || !drawn.length) return out;
   var total = drawn.length;
@@ -4817,6 +4944,13 @@ function overallReading() {
   var isTarot = state.deck === 'tarot';
   var drawn = state.drawn;
   if (!drawn.length) return '';
+  var planned = buildPlannedQuestionReading(state.category,state.subtopic,drawn,posRole);
+  if (planned) return polishSentence(planned.primaryAnswer + (planned.action ? '下一步：' + planned.action : ''));
+  var questionTopic = !isTarot && state.category === 'love' ? lenormandQuestionTopic(state.subtopic) : '';
+  if (questionTopic) {
+    var questionReading = buildLenormandQuestionReading(readingSchemaFor('love',state.subtopic),drawn,questionTopic);
+    return polishSentence(questionReading.primaryAnswer + (questionReading.action ? '下一步：' + questionReading.action : ''));
+  }
   var score = 0;
   drawn.forEach(function (d) {
     if (isTarot) {
@@ -4832,7 +4966,7 @@ function overallReading() {
   var toneIdx = ratio > 0.34 ? 0 : (ratio < -0.34 ? 2 : 1);
   /* 語氣描述改成一般人一看就懂的說法：原本的「正向與提醒交織」「能量偏向沉澱與提醒」
      是占卜圈的行話，第一次使用的人得先猜這是好是壞。 */
-  var toneTxt = ['整體看起來偏順利', '有好的部分，也有需要注意的地方', '提醒的成分比較多，適合先穩住再往前'][toneIdx];
+  var toneTxt = ['整體看起來偏順利', '目前適合小幅嘗試，先不要加大投入', '提醒的成分比較多，適合先穩住再往前'][toneIdx];
   var insights = drawInsights(drawn, isTarot);
 
   /* 牌位名稱本身常常已經帶「的」（「過去的影響」「發展的結果」），再接一個
@@ -4965,7 +5099,7 @@ function buildDrawn() {
   var isTarot = state.deck === 'tarot';
   var data = isTarot ? TAROT : LENORMAND;
   var spreads = currentSpreads();
-  var positions = spreads[state.spread].positions;
+  var positions = questionDrawPositions(spreads[state.spread].positions,state.category,state.subtopic,state.deck);
   state.drawn = state.picked.map(function (j, i) {
     return { card: data[state.pickOrder[j]], reversed: isTarot ? Math.random() < 0.5 : false, flipped: state.spread === 'grand', pos: positions[i] };
   });
@@ -5003,8 +5137,8 @@ function buildDrawn() {
          readingMode／cardReading／astroReading／combinedReading 是 Phase 1C 新增欄位（事業目前
          沒有星盤引擎，astroReading／combinedReading 固定為 null，readingMode 固定為 'cards'，
          不臨時捏造）；catKey 是 Phase 2A 純新增欄位，方便未來區分是哪個分類的子問題結果。 */
-      subtopic: (state.subtopic && SUBTOPICS[state.category]) ? (function () {
-        var def = (SUBTOPICS[state.category] || []).filter(function (s) { return s.key === state.subtopic; })[0];
+      subtopic: (state.subtopic && plannedQuestionDefinition(state.category,state.subtopic)) ? (function () {
+        var def = plannedQuestionDefinition(state.category,state.subtopic);
         if (!def) return null;
         var hasAstroEngine = ['love', 'career', 'family', 'wealth', 'health', 'social', 'study', 'general'].indexOf(state.category) !== -1;
         var cardRes = cardSubtopicReading(state.category, state.subtopic, state.drawn);
@@ -5012,7 +5146,7 @@ function buildDrawn() {
           ? astroCategoryReading(state.category, state.subtopic, state.astroResult, state.astroUnknownTime) : null;
         var combRes = (astroRes && astroRes.available) ? combinedReading(cardRes, astroRes, state.category, state.subtopic) : null;
         return {
-          key: state.subtopic, zh: def.zh, catKey: state.category,
+          key: state.subtopic, zh: !isTarot && state.category === 'love' ? lenormandQuestionLabel(state.subtopic,def.zh) : def.zh, catKey: state.category,
           reading: cardRes,
           readingMode: hasAstroEngine ? state.readingMode : 'cards',
           cardReading: cardRes,
@@ -5186,22 +5320,30 @@ function setAiPersona(key) {
 }
 /* 放在每個「複製給 AI 解讀」按鈕正上方的小選擇器，所有風格（含隨機的擲筊）共用同一套 state.aiPersona */
 function renderPersonaPicker() {
-  /* tagline used to live only in the title="" attribute, which mobile touch
-     browsers never show (no hover, no long-press tooltip) — so on phones
-     every non-selected persona was just an unexplained name. Each option now
-     prints its own tagline underneath, always visible regardless of device. */
-  var h = '<div style="margin-top:16px">';
-  h += '<div style="font:400 10px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-bottom:6px">解讀語氣 AI Tone</div>';
+  // Keep saved persona keys and exported instructions; explain the choice
+  // with everyday labels and keep it out of the default reading path.
+  var labels = {
+    moon: ['溫暖說明', '完整解釋牌意，語氣溫和，也給你方向'],
+    blade: ['直接說重點', '直接指出問題，最後給一個可行做法'],
+    blank: ['簡短摘要', '只看一兩個最重要的重點'],
+    warmlight: ['先安撫情緒', '先回應你的感受，再提供建議'],
+    compass: ['具體行動步驟', '把重點整理成接下來能做的事'],
+    random: ['幫我選', '每次複製時，從以上方式隨機選一種']
+  };
+  var selected = findAiPersona(state.aiPersona);
+  var h = '<details style="margin-top:16px;border:1px solid var(--border);border-radius:10px;padding:10px 12px">';
+  h += '<summary style="min-height:44px;cursor:pointer;font:500 12px var(--font-sans);color:var(--brand)">AI 回覆方式（選填）：' + esc(labels[selected.key][0]) + '</summary>';
+  h += '<p style="font:400 12px var(--font-sans);color:var(--text-secondary);line-height:1.8;margin:8px 0 10px">不確定就用預設的「溫暖說明」。這裡只設定貼給 AI 後希望收到的回覆方式，不會改變上面的站內解析。</p>';
   h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">';
   AI_PERSONAS.forEach(function (p) {
     var on = state.aiPersona === p.key;
     h += '<button type="button" aria-pressed="' + on + '" onclick="setAiPersona(\'' + p.key + '\')" style="text-align:left;padding:8px 10px;border-radius:10px;border:1px solid ' + (on ? '#c9a96e' : 'rgba(201,169,110,.28)') + ';background:' + (on ? 'rgba(201,169,110,.18)' : 'rgba(255,255,255,.02)') + ';cursor:pointer">';
-    h += '<div style="font:500 12px \'Noto Sans TC\',sans-serif;color:' + (on ? '#f0e9d8' : 'rgba(240,233,216,.72)') + '">' + esc(p.name) + '</div>';
-    h += '<div style="font:400 9px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.62);margin-top:2px;line-height:1.4">' + esc(p.tagline) + '</div>';
+    h += '<div style="font:500 12px var(--font-sans);color:var(--text)">' + esc(labels[p.key][0]) + (p.key === 'moon' ? '（預設）' : '') + '</div>';
+    h += '<div style="font:400 11px var(--font-sans);color:var(--text-secondary);margin-top:4px;line-height:1.6">' + esc(labels[p.key][1]) + '</div>';
     h += '</button>';
   });
   h += '</div>';
-  h += '</div>';
+  h += '</details>';
   return h;
 }
 
@@ -5268,7 +5410,7 @@ function copyForAI() {
 
   /* 主要回答任務。taxonomy 有對應時附上 intent，讓模型知道這題要回答什麼型態的問題。 */
   if (taxPrimary) {
-    lines.push('主要問題（這次最需要回答的）：' + taxPrimary.label);
+    lines.push('主要問題（這次最需要回答的）：' + (!isTarot && state.category === 'love' ? lenormandQuestionLabel(state.subtopic,taxPrimary.label) : taxPrimary.label));
     lines.push('　問題意圖 intent：' + taxPrimary.intent);
     var assume = Object.keys(taxPrimary.assumptions || {}).filter(function (k) { return taxPrimary.assumptions[k]; });
     if (assume.length) lines.push('　這題的前提：' + assume.join('、') + '（不符合前提的內容不要寫）');
@@ -5289,6 +5431,15 @@ function copyForAI() {
     lines.push('answerTarget：' + activeSchema.answerTarget);
     lines.push('允許內容型別：' + activeSchema.allowedContentTypes.join('、'));
     lines.push('排除內容型別：' + activeSchema.excludedContentTypes.join('、'));
+    var questionTopic = !isTarot && state.category === 'love' ? lenormandQuestionTopic(state.subtopic) : '';
+    if (questionTopic) lines.push('本題解讀範圍：' + (questionTopic === 'appearance'
+      ? '只解讀外貌與穿搭的象徵聯想，不從長相推斷人品、財力、性別或家庭背景；沒有外在風格線索的牌明說不足。'
+      : '以實際可確認的陪伴、承諾、言行與關係安排解讀相處品質，不替對方評定好人或壞人。'));
+  }
+  if (state.category === 'decision' && state.subtopic) {
+    var decisionDef = plannedQuestionDefinition('decision',state.subtopic);
+    var decisionResult = cardSubtopicReading('decision',state.subtopic,state.drawn);
+    if (decisionDef && decisionResult.available) appendTypedReadingCopy(lines,decisionDef,decisionResult);
   }
   var safety = (typeof QUESTION_TAXONOMY !== 'undefined' && QUESTION_TAXONOMY[state.category])
     ? (QUESTION_TAXONOMY[state.category].safetyRules || []) : [];

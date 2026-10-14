@@ -8,7 +8,9 @@ Node `vm` to test the natal topic pipeline.
 
 ```text
 index.html
-  ├─ eager  js/data/card-images.js, js/data/reading-data.js, js/app.js
+  ├─ eager  js/data/card-images.js, js/data/reading-data.js
+  │         js/data/reading-interpretation.js, js/data/reading-question-planner.js
+  │         js/app.js
   │           └─ shell, navigation, tarot/Lenormand reading, learning, persistence
   ├─ idle   js/data/reading-rich-data.js         (78-card full meanings)
   └─ on demand, when the astrology tab opens:
@@ -31,6 +33,15 @@ of lazily-loaded data must degrade safely when it has not arrived yet.
 - Content planning assembles readable answers.
 - UI code renders the result and handles interaction.
 - Copy-to-AI formats existing facts; it must not recalculate or invent them.
+
+## Named card questions
+
+`reading-question-planner.js` follows `reading-interpretation.js` and precedes
+`app.js`. It owns authored card facets and the 36 existing named-question plans,
+including the six decision IDs. The planner returns the existing typed-reading
+shape; card detail, summary, evidence, pair text and copy consumers share it.
+Lenormand A/B positions are copied for that draw without mutating spread definitions.
+See `docs/reading-question-capability-audit.md` for the coverage and limitations.
 
 ## Change direction
 

@@ -16,7 +16,7 @@ function loadRuntime() {
   c.scrollTo = function(){}; c.alert = function(){}; c.confirm = function(){return false;};
   c.document = { head:element(), body:element(), documentElement:element(), getElementById(id){return elements[id] || (elements[id]=element());}, querySelector(){return null;}, querySelectorAll(){return [];}, addEventListener(){}, createElement:element };
   vm.createContext(c);
-  ['js/data/astrology-core-data.js','js/data/astrology-points-data.js','js/data/astrology-placement-templates.js','js/data/astrology-aspect-data.js','js/data/astrology-knowledge-layer.js','js/data/astrology-knowledge-dataset.js','js/data/astrology-natal-topics-data.js','js/data/card-images.js','js/data/reading-data.js','js/data/reading-interpretation.js','js/data/reading-rich-data.js','js/app.js'].forEach(file => vm.runInContext(fs.readFileSync(path.join(ROOT,file),'utf8'),c,{filename:file}));
+  ['js/data/astrology-core-data.js','js/data/astrology-points-data.js','js/data/astrology-placement-templates.js','js/data/astrology-aspect-data.js','js/data/astrology-knowledge-layer.js','js/data/astrology-knowledge-dataset.js','js/data/astrology-natal-topics-data.js','js/data/card-images.js','js/data/reading-data.js','js/data/reading-interpretation.js','js/data/reading-question-planner.js','js/data/reading-rich-data.js','js/app.js'].forEach(file => vm.runInContext(fs.readFileSync(path.join(ROOT,file),'utf8'),c,{filename:file}));
   vm.runInContext('window.__T=TAROT;window.__L=LENORMAND;window.__TS=TAROT_SPREADS;window.__LS=LENORMAND_SPREADS;window.__LQS=LENORMAND_QUESTION_SPREADS;window.__SUB=SUBTOPICS;window.__SCHEMAS=READING_QUESTION_SCHEMAS;',c);
   c.__copied = () => copied;
   return c;
@@ -74,6 +74,54 @@ const semanticCases = {
   partner_appearance:{ pass:['第一印象較冷靜，穿著偏簡潔俐落。','表情較克制，外在風格不過度張揚。'], fail:['對方重視承諾。','對方遇到問題會理性溝通。','對方個性成熟可靠。'] },
   suitable_roles:{ pass:['客戶成功專員。','活動企劃。','內容編輯。','專案協調。','教育訓練相關工作。'], fail:['適合自由發揮的工作。','適合公平的環境。','適合與人互動。'] }
 };
+
+/* Full deck: the same symbol must serve different answer targets. */
+for (const lenCard of c.__L) {
+  const drawn=[{card:lenCard,reversed:false,pos:{zh:'指引',en:'Guidance'},flipped:true}];
+  Object.assign(c.state,{deck:'lenormand',category:'love',spread:'single',drawn,readingMode:'cards'});
+  c.state.subtopic='partner-profile';
+  const looks=c.cardSubtopicReading('love','partner-profile',drawn).typed;
+  const lookText=c.cardPosText(drawn[0],false);
+  if(!looks.available || !looks.sections.partner_appearance || looks.sections.partner_traits) fail(`雷諾曼 ${lenCard.n} 外貌題混入個性或缺少外在描述`);
+  if(/狡詐|騙子|人品不好|不忠|一定是/.test(looks.primaryAnswer)) fail(`雷諾曼 ${lenCard.n} 外貌題誤判人品`);
+  if(looks.cardRelationship) fail(`雷諾曼 ${lenCard.n} 單張捏造組合`);
+  c.state.subtopic='marriage-longterm';
+  const quality=c.cardSubtopicReading('love','marriage-longterm',drawn).typed;
+  if(!quality.available || !quality.sections.longterm_relationship || !quality.action) fail(`雷諾曼 ${lenCard.n} 相處題缺少答案與觀察做法`);
+  if(lookText===c.cardPosText(drawn[0],false)) fail(`雷諾曼 ${lenCard.n} 換問題未改變逐張解讀`);
+  if(/娃娃臉|穿搭|肩背|身形/.test(quality.primaryAnswer)) fail(`雷諾曼 ${lenCard.n} 相處題混入外貌`);
+}
+const lenDraw = ns => ns.map((n,i)=>({card:c.__L.find(x=>x.n===n),reversed:false,pos:{zh:'位置'+i,en:'P'+i},flipped:true}));
+const contrasting=lenDraw([7,14,34,15,25]);
+Object.assign(c.state,{deck:'lenormand',category:'love',spread:'line5',drawn:contrasting,subtopic:'partner-profile'});
+const contrastingLooks=c.cardSubtopicReading('love','partner-profile',contrasting).typed;
+if(!/外在|風格/.test(contrastingLooks.primaryAnswer) || /人品不好|不忠|騙子/.test(contrastingLooks.primaryAnswer)) fail('蛇、狐狸、魚、熊、戒指的外貌組合被判成人品');
+if(contrastingLooks.evidence.length!==5) fail('組合解讀遺漏實際抽到的牌');
+c.state.subtopic='marriage-longterm';
+const contrastingQuality=c.cardSubtopicReading('love','marriage-longterm',contrasting).typed;
+if(!/放慢投入|優先確認/.test(contrastingQuality.primaryAnswer) || !/承諾/.test(contrastingQuality.primaryAnswer)) fail('相處品質未整合需要核對與承諾兩種訊號');
+c.state.subtopic='partner-profile';
+const childBear=c.cardSubtopicReading('love','partner-profile',lenDraw([13,15])).typed;
+if(!/不同面向/.test(childBear.cardRelationship)) fail('孩子與熊的外貌組合未解釋可並存的特徵');
+const grid=lenDraw([1,2,13,15,5,7,25,18,35]);
+c.state.spread='box9'; c.state.drawn=grid;
+const gridPairs=c.lenPairs(grid);
+if(gridPairs.some(p=>p.label==='孩子 ＋ 熊')) fail('九宮格跨行的非相鄰牌被組成一對');
+if(!gridPairs.some(p=>p.label==='幸運草 ＋ 樹')) fail('九宮格漏掉中央的垂直相鄰牌');
+
+/* Category audit repairs: actions must answer what to do, not restate status. */
+['tarot','lenormand'].forEach(deck=>{
+  const drawn=deck==='tarot'?draw('three-time',['cups-2','swords-9','pentacles-6'],[0,0,0]):lenDraw([13,7,25]);
+  Object.assign(c.state,{deck,category:'career',subtopic:'career-timing',drawn,spread:'three-time'});
+  const career=c.cardSubtopicReading('career','career-timing',drawn).typed;
+  if(/關係接下來|感情|伴侶|心房/.test(career.primaryAnswer)) fail(`${deck} 事業題混用愛情結論`);
+  c.state.category='health'; c.state.subtopic='daily-balance';
+  const health=c.cardSubtopicReading('health','daily-balance',drawn);
+  if(!/先調整|安排|減少|記錄/.test(health.typed.primaryAnswer)) fail(`${deck} 健康調整題沒有回答可採取的做法`);
+  c.state.category='wealth'; c.state.subtopic='cashflow-risk';
+  const wealth=c.cardSubtopicReading('wealth','cashflow-risk',drawn).typed;
+  if(!wealth.sections.financial_state) fail(`${deck} 收支現況題遺漏現況欄位`);
+});
 Object.keys(semanticCases).forEach(type => {
   semanticCases[type].pass.forEach(text => { if(!c.validateReadingContent(type,text).valid) fail(`${type} 誤擋合格句：${text}`); });
   semanticCases[type].fail.forEach(text => { if(c.validateReadingContent(type,text).valid) fail(`${type} 誤收錯配句：${text}`); });
@@ -117,6 +165,24 @@ GOLDEN_SPREADS.forEach(fixture => {
   directAnswers[fixture.id]=result.typed.primaryAnswer;
 });
 
+/* A mixed total must still give a direction from the development card.
+   These two spreads have the same neutral bucket but opposite outcome cards. */
+const mixedAnswers = [false, true].map(reversed => {
+  const drawn = draw('three-time', ['cups-2', 'swords-2', 'cups-A'], [0, 1, reversed]);
+  c.state.deck = 'tarot'; c.state.category = 'love'; c.state.subtopic = 'pace-pattern';
+  c.state.spread = 'three-time'; c.state.drawn = drawn; c.state.readingMode = 'cards';
+  if (c.loveToneBucket(drawn, true) !== 'neutral') fail('中性方向案例沒有保留相同的整體語氣');
+  const result = c.cardSubtopicReading('love', 'pace-pattern', drawn);
+  const answer = result.typed.primaryAnswer;
+  const expected = c.refineReadingCopy(card('cups-A').rich.ctx.love[reversed ? 1 : 0]);
+  if (!answer.includes(expected)) fail('關係結論沒有使用發展牌的實際正逆位牌義');
+  if (/好壞都有|不上不下|有好的部分，也有需要注意/.test(answer)) fail('關係結論仍然只說好壞並存');
+  const html = c.renderSubtopicResultPanel(c.__SUB.love.find(x => x.key === 'pace-pattern'), result);
+  if (html.indexOf('下一步可以做什麼') > html.indexOf('牌與牌怎麼互相影響')) fail('下一步仍然埋在組牌解釋後面');
+  return answer;
+});
+if (mixedAnswers[0] === mixedAnswers[1]) fail('同為中性語氣的相反發展牌得到相同結論');
+
 /* 抽牌動畫的「宇宙正在替你解答」是產品儀式感，依產品要求保留；
    去 AI 味與白話規則只限制實際解讀內容。 */
 c.state.phase='focus'; c.state.deck='tarot'; c.state.spread='single'; c.state.drawn=[];
@@ -132,6 +198,7 @@ const traits=c.cardSubtopicReading('love','partner-type',sameCards).typed.primar
 if(scene===traits) fail('同一組牌換題目後直接答案沒有改變');
 
 /* 沒有選預設子題時，自由輸入的二選一與是非題也要在第一句回答。 */
+c.state.subtopic='';
 c.state.drawn=sameCards; c.state.category='love'; c.state.question='這是穩定期還是關係正在疏遠？';
 const eitherOrAnswer=c.overallReading();
 if(!/直接回答：/.test(eitherOrAnswer) || !/(穩定期|關係正在疏遠)/.test(eitherOrAnswer)) fail('自由輸入的二選一題沒有直接回答');

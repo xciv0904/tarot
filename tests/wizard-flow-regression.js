@@ -33,7 +33,7 @@ c.document = { head:element(), body:element(), documentElement:element(),
   getElementById(id){ return elements[id] || (elements[id] = element()); },
   querySelector(){return null;}, querySelectorAll(){return [];}, addEventListener(){}, createElement:element };
 vm.createContext(c);
-['js/data/card-images.js','js/data/reading-data.js','js/data/reading-interpretation.js','js/app.js']
+['js/data/card-images.js','js/data/reading-data.js','js/data/reading-interpretation.js','js/data/reading-question-planner.js','js/app.js']
   .forEach(f => vm.runInContext(read(f), c, { filename: f }));
 const G = vm.runInContext('({topicQuestionConfig, SUBTOPICS, CATEGORIES})', c);
 
@@ -129,6 +129,30 @@ if (loveSelf) {
   });
 }
 
+/* The default path chooses a question, not two successive tools. */
+['tarot', 'lenormand'].forEach(deck => {
+  cats.forEach(cat => {
+    c.state.deck = deck; c.state.category = null; c.state.phase = 'setup';
+    c.state.wizardStep = 2; c.state.drawn = [];
+    c.wizSetCat(cat);
+    const page = c.renderReading();
+    check(deck + '/' + cat + '：預設沒有要求自行選牌陣', !page.includes('onclick="wizSetSpread('));
+    check(deck + '/' + cat + '：明講網站已配好牌陣', page.includes('網站已配好適合的牌陣'));
+    const questions = (G.SUBTOPICS[cat] || []).filter(q => q.modes.includes('cards'));
+    questions.forEach(q => check(deck + '/' + q.key + '：不會因預設牌陣而藏掉問題', page.includes('value="' + q.key + '"')));
+    if (questions.length) {
+      const question = questions[questions.length - 1];
+      c.wizSetSubtopic(question.key);
+      const rec = c.wizSpreadRecommendations();
+      check(deck + '/' + cat + '：換問題後自動配好推薦牌陣', c.state.spread === (rec.top[0] || rec.rest[0]));
+      c.wizToggleSpreadOptions();
+      check(deck + '/' + cat + '：仍可展開自行選擇', c.renderReading().includes('onclick="wizSetSpread('));
+      c.wizSetSpread('single');
+      check(deck + '/' + cat + '：自行換牌陣保留原問題', c.state.subtopic === question.key);
+    }
+  });
+});
+
 /* ---------- 5.5 第一步的牌組選擇 ----------
    原本牌組藏在原生 <details> 裡。render() 會整段重畫 innerHTML，
    <details> 的開合只存在 DOM，所以裡面任何會觸發 render() 的按鈕
@@ -168,7 +192,7 @@ if (loveSelf) {
   c.state.wizFocusSel = {}; c.state.wizFocusExpanded = {};
   const allLoveQuestions = c.renderReading();
   check('雷諾曼不再因暫存牌陣隱藏未來對象問題', allLoveQuestions.indexOf('未來可能遇到什麼類型的人') !== -1);
-  check('雷諾曼不再因暫存牌陣隱藏長期關係問題', allLoveQuestions.indexOf('適婚傾向及長期關係') !== -1);
+  check('雷諾曼不再因暫存牌陣隱藏長期關係問題', allLoveQuestions.indexOf('value="marriage-longterm"') !== -1);
 
   c.state.subtopic = 'partner-type';
   const futureRecs = c.wizSpreadRecommendations();

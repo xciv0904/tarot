@@ -16,7 +16,7 @@ function runtime() {
   c.document={head:element(),body:element(),documentElement:element(),getElementById(id){return elements[id]||(elements[id]=element());},querySelector(){return null;},querySelectorAll(){return [];},addEventListener(){},createElement:element};
   vm.createContext(c);
   vm.runInContext(read('assets/vendor/astronomy-engine-2.1.19.min.js'),c,{filename:'astronomy'});
-  ['js/data/astrology-core-data.js','js/data/astrology-points-data.js','js/data/astrology-placement-templates.js','js/data/astrology-aspect-data.js','js/data/astrology-knowledge-layer.js','js/data/astrology-knowledge-dataset.js','js/data/astrology-natal-topics-data.js','js/data/card-images.js','js/data/reading-data.js','js/data/reading-interpretation.js','js/data/reading-rich-data.js','js/app.js','js/data/astro-charts.js','js/data/relationship-timing.js','js/data/astro-advanced.js'].forEach(f=>vm.runInContext(read(f),c,{filename:f}));
+  ['js/data/astrology-core-data.js','js/data/astrology-points-data.js','js/data/astrology-placement-templates.js','js/data/astrology-aspect-data.js','js/data/astrology-knowledge-layer.js','js/data/astrology-knowledge-dataset.js','js/data/astrology-natal-topics-data.js','js/data/card-images.js','js/data/reading-data.js','js/data/reading-interpretation.js','js/data/reading-question-planner.js','js/data/reading-rich-data.js','js/app.js','js/data/astro-charts.js','js/data/relationship-timing.js','js/data/astro-advanced.js'].forEach(f=>vm.runInContext(read(f),c,{filename:f}));
   c.ensureAstrologyBodyKeys(); return c;
 }
 const c = runtime(), engine = c.RelationshipTimingEngine, fixed = new Date('2026-08-25T00:00:00.000Z');

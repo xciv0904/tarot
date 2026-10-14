@@ -40,7 +40,7 @@ function loadRuntime() {
   ['js/data/astrology-core-data.js','js/data/astrology-points-data.js','js/data/astrology-placement-templates.js',
    'js/data/astrology-aspect-data.js','js/data/astrology-knowledge-layer.js','js/data/astrology-knowledge-dataset.js',
    'js/data/astrology-natal-topics-data.js','js/data/card-images.js','js/data/reading-data.js',
-   'js/data/reading-interpretation.js','js/data/reading-rich-data.js','js/app.js',
+   'js/data/reading-interpretation.js','js/data/reading-question-planner.js','js/data/reading-rich-data.js','js/app.js',
    'js/data/astro-charts.js','js/data/astro-advanced.js','tests/golden-charts.js']
     .forEach(f => vm.runInContext(read(f), c, { filename: f }));
   c.ensureAstrologyBodyKeys();

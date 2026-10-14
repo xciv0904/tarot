@@ -38,7 +38,7 @@ c.document = { head:element(), body:element(), documentElement:element(),
   getElementById(id){ return elements[id] || (elements[id] = element()); },
   querySelector(){return null;}, querySelectorAll(){return [];}, addEventListener(){}, createElement:element };
 vm.createContext(c);
-['js/data/card-images.js','js/data/reading-data.js','js/data/reading-interpretation.js','js/app.js']
+['js/data/card-images.js','js/data/reading-data.js','js/data/reading-interpretation.js','js/data/reading-question-planner.js','js/app.js']
   .forEach(f => vm.runInContext(read(f), c, { filename: f }));
 /* reading-data.js 用 const 宣告，不會掛到 VM 的全域物件上，要另外取出來。 */
 const G = vm.runInContext(
