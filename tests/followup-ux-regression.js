@@ -189,6 +189,38 @@ check('不同分類的推薦不相同', new Set(Object.values(sets)).size >= 6,
   if (restart !== -1) check('延伸問題排在「重新提問」之前', follow < restart);
 }
 
+/* Reading → library → same reading: no reset, reroll or duplicate save. */
+for (const deck of ['tarot','lenormand']) {
+  setupResult('love', 'partner-type', {love:['對方可能的個性']});
+  c.state.deck=deck;
+  const cards=vm.runInContext(deck==='tarot'?'TAROT':'LENORMAND',c);
+  c.state.drawn=c.state.drawn.map((d,i)=>({...d,card:cards[i]}));
+  c.state.question='這次的相處方式';c.state.picked=[2,5,8];c.state.overallOpen=true;
+  const before=JSON.stringify({drawn:c.state.drawn,picked:c.state.picked,question:c.state.question,subtopic:c.state.subtopic,spread:c.state.spread,history:c.state.history});
+  const details=[{open:false},{open:true}];
+  c.document.querySelectorAll=selector=>selector==='#view details'?details:[];
+  c.scrollY=418;let lastScroll;
+  c.scrollTo=(x,y)=>{lastScroll=y;};
+  c.openLibCard(deck==='tarot'?cards[1].id:'l'+cards[1].n);
+  check(deck+' 牌典有明確返回結果按鈕',c.renderLibrary().includes('返回這次占卜結果'));
+  check(deck+' 牌典對應正確牌組',c.state.libDeck===deck);
+  c.closeLibCard();
+  check(deck+' 返回列表仍保留結果入口',c.renderLibrary().includes('返回這次占卜結果'));
+  details[1].open=false;
+  c.returnFromLibrary();
+  check(deck+' 返回同一份結果',c.state.tab==='reading'&&c.state.phase==='result'&&before===JSON.stringify({drawn:c.state.drawn,picked:c.state.picked,question:c.state.question,subtopic:c.state.subtopic,spread:c.state.spread,history:c.state.history}));
+  check(deck+' 恢復原本捲動與展開狀態',lastScroll===418&&details[1].open&&!details[0].open);
+  c.openLibCard(deck==='tarot'?cards[0].id:'l'+cards[0].n);
+  c.go('reading', c.state.deck);
+  check(deck+' 底部占卜導覽也能返回結果',c.state.phase==='result'&&c.state.drawn.length===3);
+  c.go('library');
+  check(deck+' 底部牌典導覽不清空結果',c.state.drawn.length===3&&!!c.state.libraryReadingReturn);
+  c.go('home');
+  c.go('library');
+  check(deck+' 一般牌典沒有過期返回入口',!c.state.libraryReadingReturn&&!c.renderLibrary().includes('返回這次占卜結果'));
+}
+c.document.querySelectorAll=()=>[];
+
 console.log('# 結果頁延伸互動回歸測試');
 console.log('');
 console.log('- 檢查項目：' + checks.length);

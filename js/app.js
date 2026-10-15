@@ -36,6 +36,7 @@ var state = {
   libDeck: 'tarot',
   libSuit: 'all',
   libSelected: null,
+  libraryReadingReturn: null, // 只保留本次從結果頁進入牌典的返回位置，不寫入歷史。
   histSelected: null,
   mnOpen: false,
   mnTab: 'suit',
@@ -3238,12 +3239,36 @@ function updateQHint(v) {
 }
 
 function openLibCard(key) {
+  rememberReadingForLibrary();
+  if (state.tab !== 'reading' && state.tab !== 'library') state.libraryReadingReturn = null;
   state.tab = 'library';
   state.libQuiz = false;
   state.libDeck = /^l\d+$/.test(key) ? 'lenormand' : 'tarot';
   state.libSuit = 'all';
   state.libSelected = key;
   render(); window.scrollTo(0, 0);
+}
+
+function rememberReadingForLibrary() {
+  if (state.tab !== 'reading' || state.phase !== 'result' || !state.drawn.length) return;
+  const openDetails = [];
+  document.querySelectorAll('#view details').forEach(function (detail, index) {
+    if (detail.open) openDetails.push(index);
+  });
+  state.libraryReadingReturn = { scrollY: window.scrollY || 0, openDetails: openDetails };
+}
+
+function returnFromLibrary() {
+  const previous = state.libraryReadingReturn;
+  if (!previous) return;
+  state.libraryReadingReturn = null;
+  state.tab = 'reading';
+  state.libQuiz = false;
+  render();
+  document.querySelectorAll('#view details').forEach(function (detail, index) {
+    detail.open = previous.openDetails.indexOf(index) !== -1;
+  });
+  window.scrollTo(0, previous.scrollY);
 }
 
 function currentSpreads() {
@@ -5667,6 +5692,9 @@ function renderLibrary() {
   var libIsTarot = state.libDeck === 'tarot';
   var h = '';
   h += '<div style="padding:0 20px">';
+  if (state.libraryReadingReturn) {
+    h += '<button type="button" onclick="returnFromLibrary()" style="width:100%;min-height:44px;margin-bottom:16px;padding:11px 14px;border:1px solid var(--border);border-radius:12px;background:var(--bg-raised);color:var(--brand);font:500 13px var(--font-sans);cursor:pointer;text-align:left">← 返回這次占卜結果</button>';
+  }
   h += '<h2 style="font:600 18px \'Noto Serif TC\',serif;color:#f0e9d8;text-align:center;margin:0">牌義典藏</h2>';
   h += '<div style="font:italic 11px \'EB Garamond\',serif;color:rgba(240,233,216,.62);text-align:center;margin-top:2px">Card Meaning Library</div>';
 
@@ -6184,12 +6212,18 @@ function resetReading() {
 }
 
 function go(tab, deck) {
+  if (tab === 'reading' && state.tab === 'library' && state.libraryReadingReturn && (!deck || deck === state.deck)) {
+    returnFromLibrary();
+    return;
+  }
+  if (tab === 'library') rememberReadingForLibrary();
+  else state.libraryReadingReturn = null;
   if (tab !== 'astro') state.returnToReadingAfterAstro = false;
   state.tab = tab;
   state.histSelected = null;
   state.libQuiz = false;
   if (deck) state.deck = deck;
-  resetReading();
+  if (!(tab === 'library' && state.libraryReadingReturn)) resetReading();
   /* 占卜與牌典一定會用到完整牌義；正常情況下首頁載入後的空檔就已經補載完成，
      這裡再保險呼叫一次（已載入時是同步的 no-op），避免使用者直接開這兩個分頁時
      只看到降級的短牌義。載入完成後載入器會自己重畫。 */
