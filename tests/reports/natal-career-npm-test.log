@@ -1,0 +1,58 @@
+
+> test
+> npm run check && npm run test:reading && npm run test:reading-semantic && npm run test:question-planner && npm run test:copy && npm run test:career && npm run test:topic-diversity && npm run test:topic-audit && npm run test:ux && npm run test:ui && npm run test:charts && npm run test:progression && npm run test:syn && npm run test:syn-golden && npm run test:library && npm run test:wizard && npm run test:taxonomy && npm run test:followup && npm run test:natal-sentence && npm run test:golden && npm run test:life && npm run test:life-upgrade && npm run test:life-immersive && npm run test:life-theater && npm run test:life-fortune && npm run test:life-narrative && npm run test:event-audit && npm run test:life-coherence && npm run test:life-reflection && npm run test:life-variety && npm run test:life-expansion && npm run test:life-profile && npm run test:life-exploration && npm run test:life-journey && npm run test:momentum
+
+
+> check
+> node --check js/app.js && node --check js/data/reading-data.js && node --check js/data/reading-interpretation.js && node --check js/data/reading-question-planner.js && node --check js/data/reading-rich-data.js && node --check js/data/astrology-knowledge-layer.js && node --check js/data/astrology-knowledge-dataset.js && node --check js/data/astrology-natal-topics-data.js && node --check js/data/astro-charts.js && node --check js/data/relationship-timing.js && node --check js/data/astro-advanced.js && node --check js/life-simulator/events.js && node --check js/life-simulator/adapters.js && node --check js/life-simulator/engine.js && node --check js/life-simulator/storage.js && node --check js/life-simulator/ui.js && node --check js/life-simulator/systems.js && node --check js/life-simulator/scenarios.js && node --check js/life-simulator/simulation.js && node --check js/life-simulator/experience.js && node --check js/life-simulator/story-arcs.js && node --check js/life-simulator/agency.js && node --check js/life-simulator/immersive.js && node --check js/life-simulator/theater.js && node --check js/life-simulator/fortune.js && node --check js/life-simulator/fortune-view.js && node --check js/life-simulator/narrative-state.js && node --check js/life-simulator/narrative.js && node --check js/life-simulator/narrative-view.js && node --check js/life-simulator/coherence.js && node --check js/life-simulator/coherence-view.js && node --check js/life-simulator/reflection.js && node --check js/life-simulator/reflection-view.js && node --check js/life-simulator/variety.js && node --check js/life-simulator/variety-view.js && node --check js/life-simulator/life-content.js && node --check js/life-simulator/expansion.js && node --check js/life-simulator/expansion-view.js && node --check js/life-exploration/profile.js && node --check js/life-exploration/profile-storage.js && node --check js/life-exploration/ui.js && node --check js/life-loader.js && node --check js/life-exploration/future-state.js && node --check js/life-exploration/theme-rules.js && node --check js/life-exploration/astrology-adapter.js && node --check js/life-exploration/cross-analysis.js && node --check js/life-exploration/route-catalog.js && node --check js/life-exploration/route-engine.js && node --check js/life-exploration/future-engine.js && node --check js/life-exploration/exploration-storage.js && node --check js/life-exploration/report.js && node --check js/life-exploration/exploration-view.js && node --check js/life-simulator/journey.js && node --check js/life-simulator/journey-view.js && node --check js/life-exploration/future-journey.js && node --check js/life-simulator/occupation-data.js && node --check js/life-simulator/world-context.js && node --check js/life-simulator/education-data.js && node --check js/life-simulator/education-world.js && node --check js/life-simulator/education-view.js && node --check js/life-simulator/partnership.js && node --check js/life-simulator/momentum-core.js && node --check js/life-simulator/momentum-adapter.js && node --check js/life-simulator/momentum-view.js && node --check js/life-exploration/momentum-future.js
+
+
+> test:reading
+> node tests/reading-question-alignment.js
+
+Reading question alignment passed: 39 tarot + 44 lenormand spread/category pairs, 190 focus options checked for overlap.
+
+> test:reading-semantic
+> node tests/reading-semantic-regression.js
+
+Reading semantic regression passed: 16 Tarot Golden Test Spreads, 30 Lenormand question paths, 4 answerTarget validators, all question contracts complete.
+
+> test:question-planner
+> node tests/reading-question-planner-regression.js
+
+Question planner passed: 63789 checks, 36 questions, all 78 Tarot cards upright/reversed and 36 Lenormand cards.
+
+> test:copy
+> node tests/reading-copy-quality.js && node tests/astro-copy-quality.js
+
+Reading copy quality passed: 4252 段解讀輸出，半形逗號 0、缺句尾標點 0、標點錯誤 0、填充語 0/6、行話 0、結尾句最高占比 0%、牌位疊「的」0、語氣重複 0。
+Astro copy quality passed: 288 筆人生主題答案／604 條分項，重述標籤 0/19、缺句尾標點 0、半形逗號 0、結論與分項矛盾 2/2、顯示時修剪掉題目框架字 0 筆、完整樣本 648 份中引號不成對 0、條件句誤斷 0、拉扯組合 4 種且同調性 0、未摺疊術語 0/2、純資料複製格式 3 組全數通過。
+
+> test:career
+> node tests/natal-career-analysis.js && node tests/natal-career-compatibility.js
+
+Natal career analysis: 7586 assertions passed, six production-calculated charts; deterministic, traceable, signed scoring, six environment axes, perturbations, unknown time, visible UI.
+Natal career compatibility: 612/612 protected answers byte-identical; 36 approved career answers match the reviewed changes and updated snapshot; tests never rewrite snapshots.
+
+> test:topic-diversity
+> node tests/natal-topic-diversity.js
+
+Natal topic diversity: 6 charts × 8 cards passed
+Report: tests/reports/natal-topic-diversity.md
+
+> test:topic-audit
+> node tests/natal-topic-audit.js
+
+Natal topic audit: 54 questions × 12 charts — PASS 1, WARNING 53, FAIL 0
+Reports: tests/reports/topic-audit-report.json , tests/reports/topic-audit-report.md
+
+> test:ux
+> node tests/ux-structure-regression.js
+
+# UX 結構回歸測試
+
+- 檢查項目：100
+- 通過：76
+- 失敗：1
+
+  ✗ CSP 禁止 object 與 frame 嵌入

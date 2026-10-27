@@ -1,0 +1,37 @@
+
+> test:career
+> node tests/natal-career-analysis.js && node tests/natal-career-compatibility.js
+
+Natal career analysis: 7587 assertions passed, six production-calculated charts; deterministic, traceable, signed scoring, six environment axes, perturbations, unknown time, visible UI.
+Natal career compatibility: 612/612 protected answers byte-identical; 36 approved career answers match the reviewed changes and updated snapshot; tests never rewrite snapshots.
+
+
+> test:topic-audit
+> node tests/natal-topic-audit.js
+
+Natal topic audit: 54 questions × 12 charts — PASS 1, WARNING 53, FAIL 0
+Reports: tests/reports/topic-audit-report.json , tests/reports/topic-audit-report.md
+
+
+> test:ui
+> node tests/ui-render-smoke.js
+
+# 畫面渲染煙霧測試
+
+- 渲染畫面／狀態：13
+  · 首頁（5285 字元，標題 2）
+  · 占卜・設定（7209 字元，標題 2）
+  · 牌典（61494 字元，標題 2）
+  · 歷史・空狀態（429 字元，標題 2）
+  · 更多（2487 字元，標題 2）
+  · 星盤・出生資料輸入（6602 字元，標題 2）
+  · 星盤・結果總覽（112059 字元，標題 2/3/3/3/3）
+  · 星盤・結果（出生時間未知）（81608 字元，標題 2/3/3/3）
+  · 人生主題・尚未選主題（5930 字元，標題 2/3）
+  · 人生主題・一般模式（16857 字元，標題 2/3/4/4/4/4）
+  · 人生主題・專業模式（21404 字元，標題 2/3/4/4/4/4）
+  · 星盤・錯誤狀態（17256 字元，標題 2/3/4/4/4/4）
+  · 人生主題・換盤後（8606 字元，標題 2/3/4）
+- 失敗：0
+
+全部通過。

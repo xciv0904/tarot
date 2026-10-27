@@ -1,0 +1,271 @@
+{
+  "summary": {
+    "commands": 35,
+    "passed": 33,
+    "failed": 2,
+    "existingFailingAssertions": 3,
+    "careerAssertions": 7587,
+    "protectedAnswers": 612,
+    "approvedCareerSnapshotCases": 36,
+    "goldenCases": 648,
+    "goldenExistingStudyWarnings": 4
+  },
+  "fullNpmTest": {
+    "exitCode": 1,
+    "reason": "Stops at existing CSP UX assertion: expected frame-src none, current workspace has frame-src self.",
+    "log": "tests/reports/natal-career-npm-test.log"
+  },
+  "results": [
+    {
+      "name": "check",
+      "status": 0,
+      "signal": null,
+      "verification": "Passed in final npm test before the existing UX gate."
+    },
+    {
+      "name": "test:reading",
+      "status": 0,
+      "signal": null,
+      "verification": "Passed in final npm test before the existing UX gate."
+    },
+    {
+      "name": "test:reading-semantic",
+      "status": 0,
+      "signal": null,
+      "verification": "Passed in final npm test before the existing UX gate."
+    },
+    {
+      "name": "test:question-planner",
+      "status": 0,
+      "signal": null,
+      "verification": "Passed in final npm test before the existing UX gate."
+    },
+    {
+      "name": "test:copy",
+      "status": 0,
+      "signal": null,
+      "verification": "Passed in final npm test before the existing UX gate."
+    },
+    {
+      "name": "test:career",
+      "status": 0,
+      "signal": null,
+      "tail": "> test:career\n> node tests/natal-career-analysis.js && node tests/natal-career-compatibility.js\n\nNatal career analysis: 7587 assertions passed, six production-calculated charts; deterministic, traceable, signed scoring, six environment axes, perturbations, unknown time, visible UI.\nNatal career compatibility: 612/612 protected answers byte-identical; 36 approved career answers match the reviewed changes and updated snapshot; tests never rewrite snapshots."
+    },
+    {
+      "name": "test:topic-diversity",
+      "status": 0,
+      "signal": null,
+      "verification": "Passed in final npm test before the existing UX gate."
+    },
+    {
+      "name": "test:topic-audit",
+      "status": 0,
+      "signal": null,
+      "verification": "Passed in final npm test before the existing UX gate.",
+      "tail": "Natal topic audit: 54 questions × 12 charts — PASS 1, WARNING 53, FAIL 0\nReports: tests/reports/topic-audit-report.json , tests/reports/topic-audit-report.md"
+    },
+    {
+      "name": "test:ux",
+      "status": 1,
+      "signal": null,
+      "tail": "- 通過：76\n- 失敗：1\n\n  ✗ CSP 禁止 object 與 frame 嵌入",
+      "preexisting": true
+    },
+    {
+      "name": "test:ui",
+      "status": 0,
+      "signal": null,
+      "tail": "  · 人生主題・換盤後（8606 字元，標題 2/3/4）\n- 失敗：0\n\n全部通過。"
+    },
+    {
+      "name": "test:charts",
+      "status": 0,
+      "signal": null,
+      "tail": "- 檢查項目：32\n- 失敗：0\n\n全部通過。"
+    },
+    {
+      "name": "test:progression",
+      "status": 0,
+      "signal": null,
+      "tail": "- 檢查項目：16\n- 失敗：0\n\n全部通過。"
+    },
+    {
+      "name": "test:syn",
+      "status": 0,
+      "signal": null,
+      "tail": "  · D 土星影響很強：35 組相位 → 7 個模式，前三 = commit／trust／empathy\n  · E 外行星影響很強：27 組相位 → 4 個模式，前三 = freedom／trust／empathy\n\n全部通過。"
+    },
+    {
+      "name": "test:syn-golden",
+      "status": 1,
+      "signal": null,
+      "tail": "- 檢查項目：57\n- 失敗：2\n  ✗ 近期卡片顯示雙方的具體關係焦點\n  ✗ 現況只改文字，不重算天文 timeline",
+      "preexisting": true
+    },
+    {
+      "name": "test:library",
+      "status": 0,
+      "signal": null,
+      "tail": "- 大牌 22 張、3 階段、7 組直行對應\n- 數字階段 10、花色 4、宮廷 4、易混淆 14 組（29 張牌）\n\n全部通過。"
+    },
+    {
+      "name": "test:wizard",
+      "status": 0,
+      "signal": null,
+      "tail": "- 檢查項目：290\n- 失敗：0\n\n全部通過。"
+    },
+    {
+      "name": "test:taxonomy",
+      "status": 0,
+      "signal": null,
+      "tail": "- Primary 稽核：PASS 16　WARNING 28　FAIL 0\n- 面向 registry：166 個\n\n全部通過。"
+    },
+    {
+      "name": "test:followup",
+      "status": 0,
+      "signal": null,
+      "tail": "- 檢查項目：94\n- 失敗：0\n\n全部通過。"
+    },
+    {
+      "name": "test:natal-sentence",
+      "status": 0,
+      "signal": null,
+      "tail": "- 合成句：2850\n- 失敗：0\n\n全部通過。"
+    },
+    {
+      "name": "test:golden",
+      "status": 0,
+      "signal": null,
+      "tail": "- `fifth_house_creative`: 第五宮創作表現\n- `sixth_house_routine`: 第六宮工作健康節奏\n- `ninth_house_learning`: 第九宮學習跨域\n- `fixed_tension`: 固定星座＋張力相位"
+    },
+    {
+      "name": "test:life",
+      "status": 0,
+      "signal": null,
+      "tail": "> test:life\n> node tests/life-simulator-regression.js\n\nLife simulator: 36916 checks passed; Current-rule whole-life decisions 15–18 across 30 seeds. Legacy replay preserved."
+    },
+    {
+      "name": "test:life-upgrade",
+      "status": 0,
+      "signal": null,
+      "tail": "> test:life-upgrade\n> node tests/life-simulator-upgrade.js\n\nLife upgrade: 76884 checks passed; 100/100 complete seeded lives; scenarios burnout, business, cohabit, conflict, course, courtship, education, finance, friendship, health, job, marriage, meet, overseas, project, promotion, referral, retirement, return, stagnation, startup, teen, visa; endings natural, limit. Largest life 351992 bytes; test time 26462 ms."
+    },
+    {
+      "name": "test:life-immersive",
+      "status": 0,
+      "signal": null,
+      "tail": "Seeded lives: 60/100\nSeeded lives: 80/100\nSeeded lives: 100/100\nImmersive: 70911 checks; 100 lives + 10 strategies; 36 nodes; 300/300 materially different choices."
+    },
+    {
+      "name": "test:life-theater",
+      "status": 0,
+      "signal": null,
+      "tail": "> test:life-theater\n> node tests/life-simulator-theater.js\n\nDestiny Theater: 69 checks passed; 8 complete lives unchanged, pure views, interaction locking, old saves and all four areas."
+    },
+    {
+      "name": "test:life-fortune",
+      "status": 0,
+      "signal": null,
+      "tail": "Fortune lives: 60/100\nFortune lives: 80/100\nFortune lives: 100/100\nFortune: 41098 checks; A–J, 100 seeded lives, old engines 4/5 unchanged; largest 668659 bytes."
+    },
+    {
+      "name": "test:life-narrative",
+      "status": 0,
+      "signal": null,
+      "tail": "Narrative lives: 60/100\nNarrative lives: 80/100\nNarrative lives: 100/100\nNarrative: 43163 checks; A–H, 100 complete lives from birth, actual career and relationship chains; largest 744766 characters."
+    },
+    {
+      "name": "test:event-audit",
+      "status": 0,
+      "signal": null,
+      "tail": "> test:event-audit\n> node tests/life-simulator-event-audit.js\n\nEvent audit: 437 checks; 24/24 world definitions; 36/36 arc nodes; 21 effect operations; no validation failures. Manual review list retained."
+    },
+    {
+      "name": "test:life-coherence",
+      "status": 0,
+      "signal": null,
+      "tail": "Coherent lives 80/100\nCoherent lives 100/100\nCoherence: 53713 checks, 100 complete birth lives, all ten regressions and source balances passed; largest 973784 characters.",
+      "initialAttempt": {
+        "status": null,
+        "signal": "SIGTERM",
+        "error": "spawnSync npm ETIMEDOUT",
+        "tail": "\nCoherent lives 20/100\nCoherent lives 40/100\nCoherent lives 60/100"
+      },
+      "rerunCommand": "node tests/life-simulator-coherence.js",
+      "verification": "Completed directly without the earlier 180-second wrapper limit."
+    },
+    {
+      "name": "test:life-reflection",
+      "status": 0,
+      "signal": null,
+      "tail": "Reflected lives 80/100\nReflected lives 100/100\nReflection: 21446 checks; 100 complete birth lives; 3937 exact choice records; 100 actual blueprints; no simulation or storage changes.",
+      "initialAttempt": {
+        "status": null,
+        "signal": "SIGTERM",
+        "error": "spawnSync npm ETIMEDOUT",
+        "tail": "> node tests/life-simulator-reflection.js\n\nReflected lives 20/100\nReflected lives 40/100"
+      },
+      "rerunCommand": "node tests/life-simulator-reflection.js",
+      "verification": "Completed directly without the earlier 180-second wrapper limit."
+    },
+    {
+      "name": "test:life-variety",
+      "status": 0,
+      "signal": null,
+      "tail": "Varied lives 100/100\nCoverage before assertions: {\"paths\":100,\"sequences\":100,\"industries\":[\"社區服務\",\"活動\",\"烘焙\",\"設計\",\"軟體\",\"行政\",\"餐飲\"],\"coverage\":{\"startups\":16,\"promotions\":40,\"overseas\":32,\"interleavings\":136,\"courses\":78,\"relationships\":18}}\nVariety: 18625 checks; 100 complete same-chart lives; 100 substantive paths; 100 sequences; 7 industries.",
+      "initialAttempt": {
+        "status": null,
+        "signal": "SIGTERM",
+        "error": "spawnSync npm ETIMEDOUT",
+        "tail": "> node tests/life-simulator-variety.js\n\nVaried lives 20/100\nVaried lives 40/100"
+      },
+      "rerunCommand": "node tests/life-simulator-variety.js",
+      "verification": "Completed directly without the earlier 180-second wrapper limit."
+    },
+    {
+      "name": "test:life-expansion",
+      "status": 0,
+      "signal": null,
+      "tail": "Expanded lives 100/100\nExpansion coverage: {\"schoolTemplates\":11,\"paths\":100,\"industries\":[\"設計\",\"社區服務\",\"零售\",\"設備維護\",\"餐飲\",\"編輯\",\"軟體測試\",\"攝影\",\"料理\",\"展覽\",\"軟體\",\"運動活動\",\"剪輯\",\"園藝\",\"動畫\",\"採購\"]}\nExpansion: {\"checks\":2477,\"wholeLives\":100,\"careers\":40,\"programs\":24,\"reachableOccupations\":40,\"schoolTemplates\":11,\"paths\":100,\"industries\":[\"設計\",\"社區服務\",\"零售\",\"設備維護\",\"餐飲\",\"編輯\",\"軟體測試\",\"攝影\",\"料理\",\"展覽\",\"軟體\",\"運動活動\",\"剪輯\",\"園藝\",\"動畫\",\"採購\"],\"choices\":3916,\"teenPartners\":5,\"teenDeclines\":5,\"adultPartners\":6,\"breakups\":11,\"branches\":5,\"oldVersionsByteIdentical\":[4,5,6,7,\"7.1.0\",\"7.2.0\"]}",
+      "initialAttempt": {
+        "status": null,
+        "signal": "SIGTERM",
+        "error": "spawnSync npm ETIMEDOUT",
+        "tail": "> test:life-expansion\n> node tests/life-simulator-expansion.js\n\nExpanded lives 20/100"
+      },
+      "rerunCommand": "node tests/life-simulator-expansion.js",
+      "verification": "Completed directly without the earlier 180-second wrapper limit."
+    },
+    {
+      "name": "test:life-profile",
+      "status": 0,
+      "signal": null,
+      "tail": "> test:life-profile\n> node tests/life-exploration-profile.js\n\nLife profile: 283 checks; 100 round trips; real facts isolated; unknown values preserved; no prediction generated."
+    },
+    {
+      "name": "test:life-exploration",
+      "status": 0,
+      "signal": null,
+      "tail": "Exploration lives 60/100\nExploration lives 80/100\nExploration lives 100/100\nComplete exploration: 5608 checks; 100 three-year lives; 100 branches; max transition 4.55 ms"
+    },
+    {
+      "name": "test:life-journey",
+      "status": 0,
+      "signal": null,
+      "tail": "\nJourney: 72 occupations reach work-specific stories; legacy replay, divergent branches, training-to-interview and sustained progression passed.\nFuture journey: concrete career and city transitions, work-specific life, no repeated completed stages, five-year passage, alternatives, fork/import/replay and version-1 preservation passed.\nWorld journey: 48 majors, four-year domestic tuition, funded Japan/Korea admission-visa-degree-return paths, no automatic overseas work/debt, historical bounds mutual dating and marriage with time/budget consequences, and three complete lives passed."
+    },
+    {
+      "name": "test:momentum",
+      "status": 0,
+      "signal": null,
+      "tail": "> test:momentum\n> node tests/destiny-momentum.js\n\nDestiny Momentum: 117 checks passed; paired 20–40 lives, monthly replay, opportunity deadlines, autonomous world/NPCs, source-balanced money, consent, qualifications, delayed outcomes, isolation and stagnation diagnostics."
+    }
+  ],
+  "additionalRelationshipTiming": {
+    "exitCode": 0,
+    "checks": 25,
+    "output": "# Relationship Timing Engine Numerical QA\n- 固定時間：2026-08-25T00:00:00Z\n- Saturn □/☌ synthetic target hits：2026-09-25 R、2027-02-19 D\n- 月亮整日移動：12.7577°\n- 檢查項目：25\n- 失敗：0\n全部通過。\n"
+  },
+  "baselineProof": "tests/reports/natal-career-existing-failures.json"
+}

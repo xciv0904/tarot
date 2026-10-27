@@ -1,0 +1,138 @@
+
+> test
+> npm run check && npm run test:reading && npm run test:reading-semantic && npm run test:question-planner && npm run test:copy && npm run test:career && npm run test:topic-diversity && npm run test:topic-audit && npm run test:ux && npm run test:ui && npm run test:charts && npm run test:progression && npm run test:syn && npm run test:syn-golden && npm run test:library && npm run test:wizard && npm run test:taxonomy && npm run test:followup && npm run test:natal-sentence && npm run test:golden
+
+
+> check
+> node --check js/app.js && node --check js/data/reading-data.js && node --check js/data/reading-interpretation.js && node --check js/data/reading-question-planner.js && node --check js/data/reading-rich-data.js && node --check js/data/astrology-knowledge-layer.js && node --check js/data/astrology-knowledge-dataset.js && node --check js/data/astrology-natal-topics-data.js && node --check js/data/astro-charts.js && node --check js/data/relationship-timing.js && node --check js/data/astro-advanced.js
+
+
+> test:reading
+> node tests/reading-question-alignment.js
+
+Reading question alignment passed: 39 tarot + 44 lenormand spread/category pairs, 190 focus options checked for overlap.
+
+> test:reading-semantic
+> node tests/reading-semantic-regression.js
+
+Reading semantic regression passed: 16 Tarot Golden Test Spreads, 30 Lenormand question paths, 4 answerTarget validators, all question contracts complete.
+
+> test:question-planner
+> node tests/reading-question-planner-regression.js
+
+Question planner passed: 63789 checks, 36 questions, all 78 Tarot cards upright/reversed and 36 Lenormand cards.
+
+> test:copy
+> node tests/reading-copy-quality.js && node tests/astro-copy-quality.js
+
+Reading copy quality passed: 4252 段解讀輸出，半形逗號 0、缺句尾標點 0、標點錯誤 0、填充語 0/6、行話 0、結尾句最高占比 0%、牌位疊「的」0、語氣重複 0。
+Astro copy quality passed: 288 筆人生主題答案／604 條分項，重述標籤 0/19、缺句尾標點 0、半形逗號 0、結論與分項矛盾 2/2、顯示時修剪掉題目框架字 0 筆、完整樣本 648 份中引號不成對 0、條件句誤斷 0、拉扯組合 4 種且同調性 0、未摺疊術語 0/2、純資料複製格式 3 組全數通過。
+
+> test:career
+> node tests/natal-career-analysis.js && node tests/natal-career-compatibility.js
+
+Natal career analysis: 7587 assertions passed, six production-calculated charts; deterministic, traceable, signed scoring, six environment axes, perturbations, unknown time, visible UI.
+Natal career compatibility: 612/612 protected answers byte-identical; 36 approved career answers match the reviewed changes and updated snapshot; tests never rewrite snapshots.
+
+> test:topic-diversity
+> node tests/natal-topic-diversity.js
+
+Natal topic diversity: 6 charts × 8 cards passed
+Report: tests/reports/natal-topic-diversity.md
+
+> test:topic-audit
+> node tests/natal-topic-audit.js
+
+Natal topic audit: 54 questions × 12 charts — PASS 1, WARNING 53, FAIL 0
+Reports: tests/reports/topic-audit-report.json , tests/reports/topic-audit-report.md
+
+> test:ux
+> node tests/ux-structure-regression.js
+
+# UX 結構回歸測試
+
+- 檢查項目：100
+- 通過：76
+- 失敗：0
+
+全部通過。
+
+> test:ui
+> node tests/ui-render-smoke.js
+
+# 畫面渲染煙霧測試
+
+- 渲染畫面／狀態：13
+  · 首頁（4941 字元，標題 2）
+  · 占卜・設定（7209 字元，標題 2）
+  · 牌典（61494 字元，標題 2）
+  · 歷史・空狀態（429 字元，標題 2）
+  · 更多（2033 字元，標題 2）
+  · 星盤・出生資料輸入（6602 字元，標題 2）
+  · 星盤・結果總覽（112059 字元，標題 2/3/3/3/3）
+  · 星盤・結果（出生時間未知）（81608 字元，標題 2/3/3/3）
+  · 人生主題・尚未選主題（5930 字元，標題 2/3）
+  · 人生主題・一般模式（16857 字元，標題 2/3/4/4/4/4）
+  · 人生主題・專業模式（21404 字元，標題 2/3/4/4/4/4）
+  · 星盤・錯誤狀態（17256 字元，標題 2/3/4/4/4/4）
+  · 人生主題・換盤後（8606 字元，標題 2/3/4）
+- 失敗：0
+
+全部通過。
+
+> test:charts
+> node tests/multi-chart-regression.js
+
+# 多命盤回歸測試
+
+- 檢查項目：32
+- 失敗：0
+
+全部通過。
+
+> test:progression
+> node tests/progression-render-regression.js
+
+# 人生階段變化回歸測試
+
+- 檢查項目：16
+- 失敗：0
+
+全部通過。
+
+> test:syn
+> node tests/synastry-pattern-regression.js
+
+# 合盤關係模式回歸測試
+
+- 檢查項目：616
+- 失敗：0
+  · A 和諧個人行星為主：34 組相位 → 9 個模式，前三 = attraction／commit／freedom
+  · B 緊張個人行星為主：68 組相位 → 9 個模式，前三 = attraction／talk／commit
+  · C 和諧與緊張並存：26 組相位 → 9 個模式，前三 = commit／talk／attraction
+  · D 土星影響很強：35 組相位 → 7 個模式，前三 = commit／trust／empathy
+  · E 外行星影響很強：27 組相位 → 4 個模式，前三 = freedom／trust／empathy
+
+全部通過。
+
+> test:syn-golden
+> node tests/synastry-relationship-golden.js && node tests/relationship-timing-engine.js
+
+# 兩人關係 Golden Test
+
+- 案例：戀愛／伴侶；A 摩羯上升、處女太陽、獅子月亮；B 出生時間未知、巨蟹太陽、巨蟹月亮
+- Compatibility：52
+- Subscores：心動與吸引 33／溝通默契 40／情緒相處 60／長期穩定 39
+- relationshipVerdict：整體相性落在中間：有明確的靠近理由，也有幾個會反覆卡住的地方。最能把你們拉近的是：雙方都冷靜時，這個組合處理事情很有效率。真正會消耗關係的則是：一方主動的方式，剛好踩到另一方最在意的點。
+- attraction：關係裡同時有想在一起與想透氣兩種力量，兩種都是真的。 這份吸引能否維持，關鍵在於：把節奏講成時間，例如「今天我想自己待著，明天一起吃飯」。
+- whatWorks：雙方都冷靜時，這個組合處理事情很有效率。 同一件事，一方的反應是趕快解決，另一方的反應是先離開現場。
+- conflictPattern：當一方想立刻靠近或確認關係時，另一方更在意氣氛與步調；前者把遲疑讀成冷淡，後者則把追問讀成壓迫。 這個循環最早可以在這裡截斷：想靠近的時候直接說做法，不要用試探或賭氣的方式表達。
+- hiddenRisk：一方主動的方式，剛好踩到另一方最在意的點。 情緒上來時，追與躲會互相加強，問題本身反而沒被談到。
+- longTermPotential：能把兩人留在關係裡的支點是：雙方都冷靜時，這個組合處理事情很有效率。 最容易重複的問題是：情緒上來時，追與躲會互相加強，問題本身反而沒被談到。 維持成本偏高，反覆問題若沒有明確做法會持續消耗。 比較容易走長久的條件是：先講「我需要十分鐘」或「我需要現在講完」，讓對方知道你在做什麼。
+- actionAdvice：想靠近的時候直接說做法，不要用試探或賭氣的方式表達。／先講「我需要十分鐘」或「我需要現在講完」，讓對方知道你在做什麼。／把節奏講成時間，例如「今天我想自己待著，明天一起吃飯」。
+- Timeline：近期 2 個階段；中期 3 個階段；較長期 8 個階段
+- 近期階段：2026-08-23–2026-10-17 需要說清楚彼此怎麼看這段關係／2026-09-25–2026-11-09 原本的相處節奏需要調整
+- 檢查項目：57
+- 失敗：2
+  ✗ 近期卡片顯示雙方的具體關係焦點
+  ✗ 現況只改文字，不重算天文 timeline

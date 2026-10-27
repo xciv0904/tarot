@@ -1,0 +1,146 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>部分配置：職涯回應驗證</title><style>
+  /* ================================================================
+     設計 Token（單一事實來源）
+     ----------------------------------------------------------------
+     這份專案的畫面是用 JS 字串組出來的 inline style，歷史上同一個顏色
+     在不同檔案被硬寫了幾百次（#c9a96e 出現 184 次、#f0e9d8 134 次）。
+     這裡先把「已經在用的值」原封不動收斂成 CSS variables，數值完全不變，
+     所以不會造成任何視覺回歸；之後新增或修改的區塊一律改用 var(--…)，
+     舊的 inline 值可以逐步替換而不需要一次性大改。
+     ================================================================ */
+  :root{
+    /* 色票 —— 底層 */
+    --bg:#14111a;
+    --bg-raised:#1a1622;
+    --bg-sunken:#241f2e;
+    --surface:rgba(255,255,255,.025);
+    --surface-strong:rgba(255,255,255,.04);
+    /* 色票 —— 文字 */
+    --text:#f0e9d8;
+    --text-secondary:rgba(240,233,216,.78);
+    --text-muted:rgba(240,233,216,.6);
+    /* .35–.4 的灰在深色底上低於 4.5:1，正文一律不使用，只允許用在
+       純裝飾或已經有其他非顏色標示的補充字。 */
+    --text-faint:rgba(240,233,216,.5);
+    /* 色票 —— 品牌與狀態 */
+    --brand:#c9a96e;
+    --brand-bright:#e6cd9a;
+    --brand-dim:rgba(201,169,110,.25);
+    --brand-line:rgba(201,169,110,.3);
+    --brand-wash:rgba(201,169,110,.08);
+    --success:#9bc5a3;
+    --warning:#d9a0a0;
+    --danger:#d67878;
+    --info:#8fc7f4;
+    /* 邊框 */
+    --border:rgba(201,169,110,.25);
+    --border-strong:rgba(201,169,110,.4);
+    --border-hair:rgba(201,169,110,.15);
+    /* 字級層級 */
+    --fs-display:20px;
+    --fs-h2:16px;
+    --fs-h3:14px;
+    --fs-body:13px;
+    --fs-sm:12px;
+    --fs-xs:11px;
+    --lh-tight:1.5;
+    --lh-body:1.8;
+    --fw-regular:400;
+    --fw-medium:500;
+    --fw-bold:600;
+    --font-sans:'Noto Sans TC',sans-serif;
+    --font-serif:'Noto Serif TC',serif;
+    --font-latin:'EB Garamond',serif;
+    /* 間距 */
+    --sp-1:4px; --sp-2:6px; --sp-3:8px; --sp-4:12px; --sp-5:16px; --sp-6:22px; --sp-7:28px;
+    /* 形狀 */
+    --radius-sm:8px; --radius-md:10px; --radius-lg:14px; --radius-pill:22px;
+    --shadow-card:0 1px 0 rgba(255,255,255,.02) inset;
+    /* 控制項 */
+    --control-h:44px;        /* 觸控目標下限，WCAG 2.2 AA 目標大小 */
+    --control-h-sm:36px;
+    --field-h:40px;
+    /* 動態 */
+    --motion-fast:120ms;
+    --motion-base:220ms;
+    /* 長文可讀行寬 */
+    --measure:38em;
+  }
+
+  @keyframes cardIn { from { opacity:0; transform:translateY(10px) scale(.97);} to { opacity:1; transform:translateY(0) scale(1);} }
+  body{margin:0;background:var(--bg);font-family:var(--font-sans);-webkit-tap-highlight-color:transparent}
+  a{color:var(--brand)}
+  a:hover{color:var(--brand-bright)}
+  /* 連結不能只靠顏色辨識（WCAG 1.4.1）：內文連結一律帶底線。 */
+  #view a{text-decoration:underline;text-underline-offset:2px}
+  button{font-family:var(--font-sans)}
+  button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,
+  summary:focus-visible,a:focus-visible,[tabindex]:focus-visible{
+    outline:2px solid var(--brand-bright);outline-offset:3px;border-radius:2px
+  }
+  /* details/summary 預設的 focus 樣式在部分瀏覽器不明顯，統一補上。 */
+  summary{cursor:pointer}
+  .sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+  /* 鍵盤使用者的跳至主要內容連結：平常隱藏，聚焦時出現。 */
+  .skip-link{position:absolute;left:-9999px;top:0;z-index:99;background:var(--bg-raised);color:var(--brand-bright);
+    border:1px solid var(--brand);border-radius:var(--radius-sm);padding:10px 16px;font:var(--fw-medium) var(--fs-sm)/1 var(--font-sans)}
+  .skip-link:focus{left:12px;top:12px}
+  .home-ambient-video{display:none;position:fixed;top:0;left:0;width:100%;height:170vh;object-fit:cover;object-position:50% 0;filter:grayscale(.86) saturate(.3) brightness(.4) contrast(1.12);opacity:.44;pointer-events:none;z-index:0}
+  .is-home .home-ambient-video{display:block}
+  ::-webkit-scrollbar{width:6px}
+  ::-webkit-scrollbar-thumb{background:rgba(201,169,110,.3);border-radius:3px}
+  input::placeholder{color:rgba(240,233,216,.35)}
+
+  /* ---- 手機水平溢出防線 ----------------------------------------
+     長英文字串、寬表格與 SVG 是這個專案最容易撐破 320px 的三個來源。
+     這裡只約束「會溢出的元素」，不用 overflow-x:hidden 遮蓋問題，
+     避免把真正的版面錯誤藏起來。 */
+  #view{overflow-wrap:anywhere}
+  #view table{max-width:100%;display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  #view pre{max-width:100%;overflow-x:auto;white-space:pre-wrap;word-break:break-word}
+  #view img,#view svg,#view video{max-width:100%}
+  #view input,#view textarea,#view select{max-width:100%;box-sizing:border-box}
+  /* iOS 在 font-size < 16px 的欄位聚焦時會自動放大整頁，造成水平捲動。 */
+  @supports (-webkit-touch-callout:none){
+    #view input,#view textarea,#view select{font-size:16px}
+  }
+
+  /* ---- 共用元件類別（新程式碼使用，舊 inline style 不受影響） ---- */
+  .md-h2{font:var(--fw-bold) var(--fs-h2)/1.5 var(--font-serif);color:var(--text);margin:0}
+  .md-h3{font:var(--fw-bold) var(--fs-h3)/1.5 var(--font-serif);color:var(--brand-bright);margin:0}
+  .md-note{font:var(--fw-regular) var(--fs-xs)/var(--lh-body) var(--font-sans);color:var(--text-muted)}
+  .md-prose{max-width:var(--measure)}
+  /* 內容類型徽章：把「排盤事實 / 綜合判斷 / 解讀文字」在視覺上分開，
+     不只用顏色區分，每一種都帶自己的文字標籤與外框樣式。 */
+  .md-kind{display:inline-flex;align-items:center;gap:4px;font:var(--fw-medium) 10px/1 var(--font-sans);
+    border-radius:var(--radius-sm);padding:4px 8px;border:1px solid currentColor;white-space:nowrap}
+  .md-kind--fact{color:var(--info)}
+  .md-kind--rule{color:var(--brand)}
+  .md-kind--reading{color:var(--success)}
+  .md-kind--limit{color:var(--warning)}
+  /* 狀態訊息：loading / error / empty / success 共用同一個外觀語言，
+     每一種都同時具備圖示、文字前綴與顏色，不單靠顏色傳達狀態。 */
+  .md-status{display:flex;gap:8px;align-items:flex-start;border-radius:var(--radius-md);
+    padding:10px 13px;margin-top:var(--sp-4);
+    font:var(--fw-regular) var(--fs-xs)/1.75 var(--font-sans);border:1px solid var(--border)}
+  .md-status--error{border-color:rgba(214,120,120,.45);background:rgba(214,120,120,.08);color:var(--text-secondary)}
+  .md-status--success{border-color:rgba(155,197,163,.45);background:rgba(155,197,163,.08);color:var(--text-secondary)}
+  .md-status--info{border-color:var(--border);background:var(--surface);color:var(--text-muted)}
+  .md-status__icon{flex:none;font-size:13px;line-height:1.4}
+  /* 目前命盤身分列：使用者隨時知道畫面上這些結果是「哪一張盤」算出來的。 */
+  .md-chartbar{border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface);
+    padding:10px 13px;margin-top:var(--sp-4)}
+  .md-chartbar__row{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:5px}
+  .md-chartbar__item{font:var(--fw-regular) 10.5px/1.6 var(--font-sans);color:var(--text-muted);white-space:nowrap}
+  .md-chartbar__item b{color:var(--text-secondary);font-weight:var(--fw-medium)}
+
+  @media (prefers-reduced-motion: reduce) {
+    *,*::before,*::after{
+      animation-duration:.01ms!important;
+      animation-iteration-count:1!important;
+      scroll-behavior:auto!important;
+      transition-duration:.01ms!important
+    }
+    .home-ambient-video{display:none!important}
+  }
+</style></head><body><div style="min-height:100vh;background:#14111a;background-image:radial-gradient(circle at 15% 10%, rgba(201,169,110,.10), transparent 40%),radial-gradient(circle at 85% 80%, rgba(124,92,255,.08), transparent 45%),radial-gradient(1px 1px at 10% 8%, rgba(240,233,216,.4), transparent 60%),radial-gradient(1px 1px at 32% 22%, rgba(201,169,110,.35), transparent 60%),radial-gradient(1px 1px at 6% 40%, rgba(240,233,216,.3), transparent 60%),radial-gradient(1px 1px at 22% 62%, rgba(201,169,110,.3), transparent 60%),radial-gradient(1px 1px at 12% 80%, rgba(240,233,216,.3), transparent 60%),radial-gradient(1px 1px at 88% 12%, rgba(201,169,110,.3), transparent 60%),radial-gradient(1px 1px at 94% 30%, rgba(240,233,216,.35), transparent 60%),radial-gradient(1px 1px at 78% 55%, rgba(201,169,110,.3), transparent 60%),radial-gradient(1px 1px at 92% 72%, rgba(240,233,216,.3), transparent 60%),radial-gradient(1px 1px at 82% 90%, rgba(201,169,110,.3), transparent 60%);background-attachment:scroll;display:flex;justify-content:center"><div id="app-shell" style="width:100%;max-width:560px;min-height:100vh;position:relative;z-index:1;padding-bottom:calc(90px + env(safe-area-inset-bottom));box-sizing:border-box"><main id="view"><h2>部分配置的職涯分析</h2><p>合成測試：只保留水星在處女座這條線索，示範如何繼續探索；這不是完整命盤。</p><div style="margin-top:22px;border-top:1px solid rgba(201,169,110,.2);padding-top:16px"><div style="display:flex;flex-wrap:wrap;gap:6px"><span class="md-kind md-kind--fact">排盤資料</span><span class="md-kind md-kind--rule">綜合判斷</span><span class="md-kind md-kind--reading">解讀文字</span></div><p class="md-note md-prose" style="margin:6px 0 0">下方每張卡片的答案屬於<strong style="color:var(--success);font-weight:500">解讀文字</strong>——它由本站的規則整合你的排盤資料而成，描述的是本命傾向，不是計算出來的事件或近期預測。展開「為什麼這樣說？」可以往回追到<strong style="color:var(--brand);font-weight:500">綜合判斷</strong>與原始<strong style="color:var(--info);font-weight:500">排盤資料</strong>。</p><h4 style="font:500 11px 'Noto Sans TC',sans-serif;color:#c9a96e;letter-spacing:.05em;margin:14px 0 0">主題總覽</h4><div class="md-prose" style="font:400 12.5px 'Noto Sans TC',sans-serif;color:rgba(240,233,216,.82);line-height:1.85;margin-top:6px">工作任務依職能需求排序，環境比較六組相反條件，能力則辨識相對突出的做事方式。請用實際任務與經驗核對命盤傾向。</div><div role="group" aria-label="閱讀深度" style="display:flex;justify-content:flex-end;align-items:center;gap:6px;margin-top:10px;flex-wrap:wrap"><span style="font:400 10.5px 'Noto Sans TC',sans-serif;color:rgba(240,233,216,.6);padding:6px 2px">閱讀深度</span><button type="button" aria-pressed="true" onclick="natalTopicSetExplanationMode(false)" style="min-height:36px;font:500 10.5px 'Noto Sans TC',sans-serif;border:1px solid #e6cd9a;border-radius:12px;padding:5px 9px;background:rgba(201,169,110,.18);color:#f0e9d8;cursor:pointer">✓ 一般</button><button type="button" aria-pressed="false" onclick="natalTopicSetExplanationMode(true)" style="min-height:36px;font:500 10.5px 'Noto Sans TC',sans-serif;border:1px solid rgba(201,169,110,.3);border-radius:12px;padding:5px 9px;background:transparent;color:#c9a96e;cursor:pointer">專業</button></div><div role="status" style="text-align:right;font:400 10px 'Noto Sans TC',sans-serif;color:rgba(240,233,216,.6);margin-top:3px">目前：一般模式（只顯示白話結論、生活表現與做法）　結論本身不會因模式而改變。</div><div style="margin-top:16px;border:1px solid rgba(201,169,110,.28);border-radius:14px;padding:16px 17px;background:rgba(255,255,255,.025);box-shadow:0 1px 0 rgba(255,255,255,.02) inset"><h4 style="font:500 11px 'Noto Sans TC',sans-serif;color:rgba(201,169,110,.85);letter-spacing:.03em;margin:0">我適合負責哪些工作內容？</h4><div style="font:600 15px 'Noto Serif TC',serif;color:#e6cd9a;margin-top:6px;line-height:1.6">可先試做系統規劃與數據分析。</div><div style="margin-top:11px;display:flex;flex-direction:column;gap:7px"><div style="border-left:2px solid rgba(201,169,110,.35);padding-left:9px"><span style="font:500 10.5px 'Noto Sans TC',sans-serif;color:#c9a96e">依命盤排序的工作任務</span><div style="font:400 11.5px 'Noto Sans TC',sans-serif;color:rgba(240,233,216,.75);line-height:1.75;margin-top:2px">1．系統規劃與數據分析：定義資料欄位、比較指標並規劃系統流程。較強傾向：邏輯分析、精準核對；依據：水星在處女座。</div></div><div style="border-left:2px solid rgba(201,169,110,.35);padding-left:9px"><span style="font:500 10.5px 'Noto Sans TC',sans-serif;color:#c9a96e">下一步怎麼驗證</span><div style="font:400 11.5px 'Noto Sans TC',sans-serif;color:rgba(240,233,216,.75);line-height:1.75;margin-top:2px">先執行上面的工作任務，完成一個小成果，記錄完成時間、最順手與最費力的步驟，再確認是否願意持續投入。補齊其他配置後再擴大職能比較。</div></div></div><div style="margin-top:11px;display:flex;gap:7px;align-items:flex-start"><span style="flex:none;font:500 10px 'Noto Sans TC',sans-serif;color:#d9a0a0;background:rgba(214,120,120,.12);border-radius:8px;padding:2px 7px;margin-top:1px">實用提醒</span><div style="font:400 11.5px 'Noto Sans TC',sans-serif;color:rgba(240,233,216,.68);line-height:1.75">目前先依水星在處女座這條線索探索。先試做，再確認是否願意持續投入；其他配置補齊後再擴大職能比較。</div></div><details ontoggle="natalTopicSetExpanded('career-work-type',this.open)" style="margin-top:10px;border-top:1px solid rgba(201,169,110,.14);padding-top:8px"><summary style="font:500 11px 'Noto Sans TC',sans-serif;color:rgba(201,169,110,.9);cursor:pointer;min-height:36px;display:flex;align-items:center;gap:6px"><span>為什麼這樣說？</span><span class="md-kind md-kind--rule">綜合判斷</span></summary><div style="font:400 11.5px 'Noto Sans TC',sans-serif;color:rgba(240,233,216,.68);line-height:1.8;padding:2px 0 6px">系統規劃與數據分析：支持來源為水星在處女座。實作製作與品質檢驗：支持來源為水星在處女座。教學訓練與知識轉譯：支持來源為水星在處女座。</div></details></div><div style="margin-top:16px;border:1px solid rgba(201,169,110,.28);border-radius:14px;padding:16px 17px;background:rgba(255,255,255,.025);box-shadow:0 1px 0 rgba(255,255,255,.02) inset"><h4 style="font:500 11px 'Noto Sans TC',sans-serif;color:rgba(201,169,110,.85);letter-spacing:.03em;margin:0">適合什麼工作環境</h4><div style="font:600 15px 'Noto Serif TC',serif;color:#e6cd9a;margin-top:6px;line-height:1.6">可先試試固定流程與清楚規範。</div><div style="margin-top:11px;display:flex;flex-direction:column;gap:7px"><div style="border-left:2px solid rgba(201,169,110,.35);padding-left:9px"><span style="font:500 10.5px 'Noto Sans TC',sans-serif;color:#c9a96e">工作節奏與合作方式</span><div style="font:400 11.5px 'Noto Sans TC',sans-serif;color:rgba(240,233,216,.75);line-height:1.75;margin-top:2px">先把下列條件當成可以試行的安排。制度與變動：穩定制度與可預期節奏。合作密度：密集團隊合作。競爭氛圍：合作互助與共同目標。</div></div><div style="border-left:2px solid rgba(201,169,110,.35);padding-left:9px"><span style="font:500 10.5px 'Noto Sans TC',sans-serif;color:#c9a96e">自主、接觸與移動需求</span><div style="font:400 11.5px 'Noto Sans TC',sans-serif;color:rgba(240,233,216,.75);line-height:1.75;margin-top:2px">流程與自主：固定流程與清楚規範。對外接觸：前台接觸人群。工作地點：固定地點與穩定設備。</div></div></div><div style="margin-top:11px;display:flex;gap:7px;align-items:flex-start"><span style="flex:none;font:500 10px 'Noto Sans TC',sans-serif;color:#d9a0a0;background:rgba(214,120,120,.12);border-radius:8px;padding:2px 7px;margin-top:1px">實用提醒</span><div style="font:400 11.5px 'Noto Sans TC',sans-serif;color:rgba(240,233,216,.68);line-height:1.75">目前先依水星在處女座這條線索探索。先比較兩種實際工作安排；其他配置補齊後再確認環境偏好。</div></div><details ontoggle="natalTopicSetExpanded('career-work-env',this.open)" style="margin-top:10px;border-top:1px solid rgba(201,169,110,.14);padding-top:8px"><summary style="font:500 11px 'Noto Sans TC',sans-serif;color:rgba(201,169,110,.9);cursor:pointer;min-height:36px;display:flex;align-items:center;gap:6px"><span>為什麼這樣說？</span><span class="md-kind md-kind--rule">綜合判斷</span></summary><div style="font:400 11.5px 'Noto Sans TC',sans-serif;color:rgba(240,233,216,.68);line-height:1.8;padding:2px 0 6px">流程與自主：固定流程與清楚規範。依據：水星在處女座。制度與變動：穩定制度與可預期節奏。依據：水星在處女座。工作地點：固定地點與穩定設備。依據：水星在處女座。合作密度：密集團隊合作。依據：水星在處女座。競爭氛圍：合作互助與共同目標。依據：水星在處女座。對外接觸：前台接觸人群。依據：水星在處女座。</div></details></div><div style="margin-top:16px;border:1px solid rgba(201,169,110,.28);border-radius:14px;padding:16px 17px;background:rgba(255,255,255,.025);box-shadow:0 1px 0 rgba(255,255,255,.02) inset"><h4 style="font:500 11px 'Noto Sans TC',sans-serif;color:rgba(201,169,110,.85);letter-spacing:.03em;margin:0">我在職場最拿手的是什麼？</h4><div style="font:600 15px 'Noto Serif TC',serif;color:#e6cd9a;margin-top:6px;line-height:1.6">可先驗證的職場優勢是核對細節並維持品質。</div><div style="margin-top:11px;display:flex;flex-direction:column;gap:7px"><div style="border-left:2px solid rgba(201,169,110,.35);padding-left:9px"><span style="font:500 10.5px 'Noto Sans TC',sans-serif;color:#c9a96e">主要優勢</span><div style="font:400 11.5px 'Noto Sans TC',sans-serif;color:rgba(240,233,216,.75);line-height:1.75;margin-top:2px">依標準找出差異，重複核對交付內容。來源：水星在處女座。</div></div><div style="border-left:2px solid rgba(201,169,110,.35);padding-left:9px"><span style="font:500 10.5px 'Noto Sans TC',sans-serif;color:#c9a96e">次要線索與盲點（待驗證）</span><div style="font:400 11.5px 'Noto Sans TC',sans-serif;color:rgba(240,233,216,.75);line-height:1.75;margin-top:2px">追查原因並驗證假設：比較證據、排除不成立的解釋，再測試解法。來源：水星在處女座。主要能力用過頭時，容易過度挑錯而忽略任務的整體目的。</div></div></div><div style="margin-top:11px;display:flex;gap:7px;align-items:flex-start"><span style="flex:none;font:500 10px 'Noto Sans TC',sans-serif;color:#d9a0a0;background:rgba(214,120,120,.12);border-radius:8px;padding:2px 7px;margin-top:1px">實用提醒</span><div style="font:400 11.5px 'Noto Sans TC',sans-serif;color:rgba(240,233,216,.68);line-height:1.75">目前先依水星在處女座這條線索探索。先用一項成果與他人回饋核對；其他配置補齊後再確認優勢排序。</div></div><details ontoggle="natalTopicSetExpanded('career-core-skill',this.open)" style="margin-top:10px;border-top:1px solid rgba(201,169,110,.14);padding-top:8px"><summary style="font:500 11px 'Noto Sans TC',sans-serif;color:rgba(201,169,110,.9);cursor:pointer;min-height:36px;display:flex;align-items:center;gap:6px"><span>為什麼這樣說？</span><span class="md-kind md-kind--rule">綜合判斷</span></summary><div style="font:400 11.5px 'Noto Sans TC',sans-serif;color:rgba(240,233,216,.68);line-height:1.8;padding:2px 0 6px">核對細節並維持品質：支持來源為水星在處女座。追查原因並驗證假設：支持來源為水星在處女座。拆分責任與安排進度：支持來源為水星在處女座。</div></details></div><div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:18px"><button type="button" onclick="shareNatalTopicImage()" style="min-height:44px;font:400 12px 'Noto Sans TC',sans-serif;background:none;border:1px solid rgba(201,169,110,.4);color:#c9a96e;padding:10px 20px;border-radius:20px;cursor:pointer">分享結果圖 Share</button></div><div style="text-align:center;margin-top:10px;padding-bottom:8px"><button id="natal-topic-copy-btn" onclick="natalTopicCopyForAI()" style="min-height:44px;font:400 12px 'Noto Sans TC',sans-serif;background:none;border:1px solid rgba(201,169,110,.4);color:#c9a96e;padding:10px 20px;border-radius:20px;cursor:pointer">複製給 AI 解讀 Copy for AI</button></div><div style="margin-top:8px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface);padding:10px 12px;"><div style="font:400 11px 'Noto Sans TC',sans-serif;color:rgba(240,233,216,.72);line-height:1.75">複製後貼到任一個 AI 對話框送出即可，不需要另外下指令——提示詞裡已經寫好解讀原則。</div><div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:7px"><a href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer" style="min-height:36px;display:inline-flex;align-items:center;font:500 11.5px 'Noto Sans TC',sans-serif;color:#c9a96e;background:rgba(201,169,110,.08);border:1px solid rgba(201,169,110,.35);border-radius:18px;padding:7px 15px;text-decoration:none">ChatGPT ↗</a><a href="https://claude.ai/new" target="_blank" rel="noopener noreferrer" style="min-height:36px;display:inline-flex;align-items:center;font:500 11.5px 'Noto Sans TC',sans-serif;color:#c9a96e;background:rgba(201,169,110,.08);border:1px solid rgba(201,169,110,.35);border-radius:18px;padding:7px 15px;text-decoration:none">Claude ↗</a><a href="https://gemini.google.com/app" target="_blank" rel="noopener noreferrer" style="min-height:36px;display:inline-flex;align-items:center;font:500 11.5px 'Noto Sans TC',sans-serif;color:#c9a96e;background:rgba(201,169,110,.08);border:1px solid rgba(201,169,110,.35);border-radius:18px;padding:7px 15px;text-decoration:none">Gemini ↗</a></div><div style="font:400 10px 'Noto Sans TC',sans-serif;color:rgba(240,233,216,.62);line-height:1.6;margin-top:7px">本站只把文字放進你的剪貼簿，不會自行傳送任何資料。要不要貼、貼給誰，由你決定。</div></div></div></main></div></div></body></html>

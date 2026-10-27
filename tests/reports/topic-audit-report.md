@@ -117,10 +117,10 @@
 - answerTarget：suitable_roles
 - answerTargets：適合的職能或角色、容易發揮的工作內容
 - detailLabels：適合的職能角色、容易發揮的工作內容
-- semanticKeys：suitable_roles:selfDirection@planet|Mars|0|10|、suitable_roles:structure@planet|Sun|9|10|+consistency、suitable_roles:novelty@planet|Venus|8|10|+freedom、suitable_roles:emotionalResponse@planet|Moon|3|4|、suitable_roles:structure@planet|Sun|9|10|+novelty、suitable_roles:structure@planet|Jupiter|9|10|+emotionalResponse、suitable_roles:novelty@planet|Mercury|8|10|+visibility、suitable_roles:consistency@planet|Venus|1|2|+emotionalResponse、suitable_roles:visibility@planet|Sun|4|5|+harmony、suitable_roles:depthTrust@planet|Moon|7|10|+emotionalResponse、suitable_roles:novelty@planet|Jupiter|8|9|、suitable_roles:depthTrust@planet|Mars|7|10|+selfDirection
-- fallback：17%
-- 重複風險：title/detail 0.29；headline/detail 0.33；跨命盤 1
-- WARNING：其中兩張測試盤的主結論較接近，原因是主導語義或落座相同；部分測試盤由空宮改採可追溯的宮主星資料
+- semanticKeys：career-vector-1:suitable_roles:management、career-vector-1:suitable_roles:data、career-vector-1:suitable_roles:creative、career-vector-1:suitable_roles:technical、career-vector-1:suitable_roles:outreach、career-vector-1:suitable_roles:education
+- fallback：0%
+- 重複風險：title/detail 0；headline/detail 0；跨命盤 1
+- WARNING：其中兩張測試盤的主結論較接近，原因是主導語義或落座相同
 
 ### 適合什麼工作環境（career-work-env）— WARNING
 
@@ -129,10 +129,10 @@
 - answerTarget：suitable_environment
 - answerTargets：適合的工作場域、舒適的工作節奏與氛圍
 - detailLabels：適合的工作場域、舒適的步調與氛圍
-- semanticKeys：suitable_environment:structure@angle|mc|9||+visibility、suitable_environment:consistency@planet|Venus|1|6|、suitable_environment:visibility@planet|Moon|4|8|+emotionalResponse、suitable_environment:consistency@planet|Jupiter|1|3|、suitable_environment:emotionalResponse@angle|mc|3||+freedom、suitable_environment:emotionalResponse@planet|Sun|11|12|+visibility、suitable_environment:novelty@planet|Mercury|8|10|+dialogue、suitable_environment:consistency@planet|Venus|1|2|+structure、suitable_environment:visibility@planet|Saturn|4|12|+consistency、suitable_environment:structure@planet|Mars|9|6|+consistency、suitable_environment:dialogue@planet|Venus|2|2|+novelty、suitable_environment:selfDirection@planet|Mars|7|10|+depthTrust
-- fallback：75%
-- 重複風險：title/detail 0；headline/detail 0.23；跨命盤 1
-- WARNING：其中兩張測試盤的主結論較接近，原因是主導語義或落座相同；部分測試盤由空宮改採可追溯的宮主星資料
+- semanticKeys：career-vector-1:suitable_environment:contact、career-vector-1:suitable_environment:stability、career-vector-1:suitable_environment:process
+- fallback：0%
+- 重複風險：title/detail 0；headline/detail 0；跨命盤 1
+- WARNING：其中兩張測試盤的主結論較接近，原因是主導語義或落座相同
 
 ### 我在職場最拿手的是什麼？（career-core-skill）— WARNING
 
@@ -141,10 +141,10 @@
 - answerTarget：workplace_advantages
 - answerTargets：你最拿手的職場能力、別人會倚賴你的部分
 - detailLabels：最拿手的職場能力、別人會倚賴你的部分
-- semanticKeys：strength:selfDirection@planet|Mars|0|10|、strength:structure@planet|Saturn|9|10|、strength:freedom@planet|Uranus|10|1|+novelty、strength:emotionalResponse@planet|Moon|3|4|、strength:emotionalResponse@planet|Neptune|11|12|+selfDirection、strength:visibility@planet|Saturn|4|2|+selfDirection、strength:consistency@planet|Venus|1|2|、strength:selfDirection@planet|Mars|0|5|+visibility、strength:structure@planet|Mars|9|6|、strength:novelty@planet|Jupiter|8|9|、strength:depthTrust@planet|Mars|7|10|+visibility
+- semanticKeys：career-vector-1:workplace_advantages:lead、career-vector-1:workplace_advantages:inspect、career-vector-1:workplace_advantages:invent、career-vector-1:workplace_advantages:express、career-vector-1:workplace_advantages:diagnose
 - fallback：0%
-- 重複風險：title/detail 0.33；headline/detail 0.06；跨命盤 1
-- WARNING：其中兩張測試盤的主結論較接近，原因是主導語義或落座相同
+- 重複風險：title/detail 0；headline/detail 0；跨命盤 1
+- WARNING：其中兩張測試盤的主結論較接近，原因是主導語義或落座相同；存在 49–64 字的句子
 
 ### 適合穩定就業、自由工作或創業（career-work-mode）— WARNING
 

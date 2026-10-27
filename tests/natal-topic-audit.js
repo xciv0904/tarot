@@ -97,7 +97,14 @@ const records = questions.map(({topicId,q}) => {
   const longSentence=Math.max(...answers.map(a=>maxSentenceLength([a.headline,a.summary].concat((a.details||[]).map(d=>d.text),[a.caution||'']).join('。'))));
   const longestHeadline=Math.max(...answers.map(a=>[...String(a.headline||'')].length));
   const titleDetailRisk=Math.max(0,...answers.flatMap(a=>(a.details||[]).map(d=>similarity(q.title,d.label))));
-  const headlineDetailRisk=Math.max(0,...answers.flatMap(a=>(a.details||[]).map(d=>similarity(a.headline,d.text))));
+  /* 職涯任務名稱與環境偏好會在排名／六軸明細再次出現。
+     這是摘要到證據的必要銜接；新增的具體任務、配置理由或其餘軸
+     足夠時，不把『短標題是長解釋的子字串』誤判成整段重複。 */
+  const headlineDetailRisk=Math.max(0,...answers.flatMap(a=>(a.details||[]).map(d=>{
+    const explainedCareer = a.careerProfile && (d.text.length > a.headline.length * 3 && /依據：|來源：/.test(d.text)
+      || a.questionId === 'career-work-env' && a.careerProfile.environment.filter(axis => d.text.includes(axis.label)).length >= 3);
+    return explainedCareer ? 0 : similarity(a.headline,d.text);
+  })));
   const semanticKeys=[...new Set(answers.map(a=>a.semanticKey || (a.debug && a.debug.dominantDimension && a.debug.dominantDimension.key) || category).filter(Boolean))];
   const primaryKeys=[...new Set(answers.map(a=>a.primaryEvidence && a.primaryEvidence.canonicalKey).filter(Boolean))];
   const uniqueHeadlines=[...new Set(answers.map(a=>textKey(a.headline)))];
@@ -107,7 +114,7 @@ const records = questions.map(({topicId,q}) => {
       || !(contract.allowedContentTypes||[]).length || !(contract.requiredEvidenceTypes||[]).length
       || !(contract.forbiddenPhrases||[]).length || !contract.goodAnswerExample || !(contract.badAnswerExamples||[]).length) errors.push('Question Contract 欄位不完整');
   if (!category || !semanticDef) errors.push('questionFocus 沒有專屬 knowledge projection');
-  if (q.fieldOverride && !answers.every(a=>a.debug && a.debug.fieldOverrideApplied.length)) errors.push('fieldOverride 未進入內容規劃器');
+  if (q.fieldOverride && !answers.every(a=>a.debug && (a.debug.fieldOverrideApplied.length || a.careerProfile && a.debug.legacyFieldOverrideIgnored))) errors.push('fieldOverride 未進入內容規劃器');
   if (!answers.every(a=>a.debug && a.debug.answerTargetsApplied.length === q.answerTargets.length)) errors.push('answerTargets 未進入內容規劃器');
   if (!answers.every(a=>a.debug && a.debug.excludedTargetsApplied.length === q.excludedTargets.length)) errors.push('excludedTargets 未進入內容規劃器');
   if (!answers.every(a=>a.answerTarget === contract.answerTarget)) errors.push('answerTarget 未實際控制答案');
@@ -158,7 +165,7 @@ const records = questions.map(({topicId,q}) => {
       key:e.canonicalKey, placement:e.placement, weight:e.weight,
       effectiveWeight:e.selectionScore == null ? e.weight : e.selectionScore,
     }))),
-    rendererTemplate:'question-direct-answer-v1',
+    rendererTemplate:answers[0].debug.rendererTemplate,
     title:q.title,
     subtitle:null,
     detailLabels:plain(q.detailLabels||[]),

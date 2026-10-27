@@ -1,0 +1,4952 @@
+{
+  "description": "Unmodified career engine, six fictitious production-calculated Placidus charts",
+  "cases": [
+    {
+      "id": "spring-action",
+      "chart": {
+        "utcDate": "1991-03-25T00:10:00.000Z",
+        "asc": 46.60304433190424,
+        "mc": 303.7155563924204,
+        "ascSign": 1,
+        "houseCusps": [
+          46.60304433190424,
+          74.78993802105151,
+          99.06567139657926,
+          123.71555639242041,
+          152.37694829452994,
+          187.5882422588512,
+          226.60304433190424,
+          254.7899380210515,
+          279.0656713965793,
+          303.7155563924204,
+          332.37694829452994,
+          7.58824225885121
+        ],
+        "houseSystem": "placidus",
+        "planets": {
+          "Sun": {
+            "lon": 3.8507517798611275,
+            "retro": false,
+            "house": 11,
+            "sign": 0,
+            "deg": 3.8507517798611275
+          },
+          "Moon": {
+            "lon": 116.76547517854999,
+            "retro": false,
+            "house": 3,
+            "sign": 3,
+            "deg": 26.76547517854999
+          },
+          "Mercury": {
+            "lon": 22.165955939150365,
+            "retro": false,
+            "house": 12,
+            "sign": 0,
+            "deg": 22.165955939150365
+          },
+          "Venus": {
+            "lon": 37.368903120123775,
+            "retro": false,
+            "house": 12,
+            "sign": 1,
+            "deg": 7.368903120123775
+          },
+          "Mars": {
+            "lon": 85.29585076347809,
+            "retro": false,
+            "house": 2,
+            "sign": 2,
+            "deg": 25.295850763478086
+          },
+          "Jupiter": {
+            "lon": 123.5981192974217,
+            "retro": true,
+            "house": 3,
+            "sign": 4,
+            "deg": 3.5981192974217038
+          },
+          "Saturn": {
+            "lon": 304.63540735158904,
+            "retro": false,
+            "house": 10,
+            "sign": 10,
+            "deg": 4.635407351589038
+          },
+          "Uranus": {
+            "lon": 283.5605650837233,
+            "retro": false,
+            "house": 9,
+            "sign": 9,
+            "deg": 13.560565083723304
+          },
+          "Neptune": {
+            "lon": 286.5935487313898,
+            "retro": false,
+            "house": 9,
+            "sign": 9,
+            "deg": 16.593548731389774
+          },
+          "Pluto": {
+            "lon": 230.1069045428103,
+            "retro": true,
+            "house": 7,
+            "sign": 7,
+            "deg": 20.106904542810298
+          }
+        },
+        "points": {
+          "Node": {
+            "lon": 294.73450268263,
+            "retro": true,
+            "house": 9,
+            "sign": 9,
+            "deg": 24.734502682630023
+          },
+          "SNode": {
+            "lon": 114.73450268263002,
+            "retro": true,
+            "house": 3,
+            "sign": 3,
+            "deg": 24.734502682630023
+          },
+          "Lilith": {
+            "lon": 266.3614211815808,
+            "retro": false,
+            "house": 8,
+            "sign": 8,
+            "deg": 26.361421181580795
+          },
+          "Chiron": {
+            "lon": 110.37532363410207,
+            "retro": false,
+            "house": 3,
+            "sign": 3,
+            "deg": 20.375323634102074
+          },
+          "Fortune": {
+            "lon": 159.51776773059305,
+            "retro": false,
+            "house": 5,
+            "sign": 5,
+            "deg": 9.51776773059305
+          },
+          "Vertex": {
+            "lon": 200.25707472592327,
+            "retro": false,
+            "house": 6,
+            "sign": 6,
+            "deg": 20.257074725923275
+          }
+        },
+        "aspects": [
+          {
+            "a": "Sun",
+            "b": "Jupiter",
+            "type": "trine",
+            "orb": 0.2526324824394237
+          },
+          {
+            "a": "Sun",
+            "b": "Saturn",
+            "type": "sextile",
+            "orb": 0.7846555717279102
+          },
+          {
+            "a": "Moon",
+            "b": "Mercury",
+            "type": "square",
+            "orb": 4.599519239399626
+          },
+          {
+            "a": "Moon",
+            "b": "Jupiter",
+            "type": "conjunction",
+            "orb": 6.832644118871713
+          },
+          {
+            "a": "Moon",
+            "b": "Saturn",
+            "type": "opposition",
+            "orb": 7.869932173039047
+          },
+          {
+            "a": "Mercury",
+            "b": "Mars",
+            "type": "sextile",
+            "orb": 3.129894824327721
+          },
+          {
+            "a": "Mercury",
+            "b": "Neptune",
+            "type": "square",
+            "orb": 5.572407207760591
+          },
+          {
+            "a": "Venus",
+            "b": "Jupiter",
+            "type": "square",
+            "orb": 3.7707838227020716
+          },
+          {
+            "a": "Venus",
+            "b": "Saturn",
+            "type": "square",
+            "orb": 2.7334957685347376
+          },
+          {
+            "a": "Jupiter",
+            "b": "Saturn",
+            "type": "opposition",
+            "orb": 1.037288054167334
+          },
+          {
+            "a": "Uranus",
+            "b": "Neptune",
+            "type": "conjunction",
+            "orb": 3.0329836476664696
+          },
+          {
+            "a": "Neptune",
+            "b": "Pluto",
+            "type": "sextile",
+            "orb": 3.5133558114205243
+          },
+          {
+            "a": "Node",
+            "b": "Moon",
+            "type": "opposition",
+            "orb": 2.0309724959199684
+          },
+          {
+            "a": "Node",
+            "b": "Mercury",
+            "type": "square",
+            "orb": 2.568546743479658
+          },
+          {
+            "a": "SNode",
+            "b": "Moon",
+            "type": "conjunction",
+            "orb": 2.0309724959199684
+          },
+          {
+            "a": "SNode",
+            "b": "Mercury",
+            "type": "square",
+            "orb": 2.568546743479658
+          },
+          {
+            "a": "SNode",
+            "b": "Pluto",
+            "type": "trine",
+            "orb": 4.627598139819725
+          },
+          {
+            "a": "Lilith",
+            "b": "Mercury",
+            "type": "trine",
+            "orb": 4.19546524243043
+          },
+          {
+            "a": "Lilith",
+            "b": "Mars",
+            "type": "opposition",
+            "orb": 1.065570418102709
+          },
+          {
+            "a": "Chiron",
+            "b": "Moon",
+            "type": "conjunction",
+            "orb": 6.390151544447917
+          },
+          {
+            "a": "Chiron",
+            "b": "Mercury",
+            "type": "square",
+            "orb": 1.790632305048291
+          },
+          {
+            "a": "Chiron",
+            "b": "Uranus",
+            "type": "opposition",
+            "orb": 6.8147585503787695
+          },
+          {
+            "a": "Chiron",
+            "b": "Neptune",
+            "type": "opposition",
+            "orb": 3.7817749027123
+          },
+          {
+            "a": "Chiron",
+            "b": "Pluto",
+            "type": "trine",
+            "orb": 0.26841909129177566
+          },
+          {
+            "a": "Fortune",
+            "b": "Venus",
+            "type": "trine",
+            "orb": 2.148864610469275
+          },
+          {
+            "a": "Fortune",
+            "b": "Uranus",
+            "type": "trine",
+            "orb": 4.042797353130254
+          },
+          {
+            "a": "Vertex",
+            "b": "Mercury",
+            "type": "opposition",
+            "orb": 1.9088812132270903
+          },
+          {
+            "a": "Vertex",
+            "b": "Mars",
+            "type": "trine",
+            "orb": 5.038776037554811
+          },
+          {
+            "a": "Vertex",
+            "b": "Neptune",
+            "type": "square",
+            "orb": 3.663525994533501
+          },
+          {
+            "a": "Node",
+            "b": "Chiron",
+            "type": "opposition",
+            "orb": 4.359179048527949
+          },
+          {
+            "a": "Node",
+            "b": "Vertex",
+            "type": "square",
+            "orb": 4.477427956706748
+          },
+          {
+            "a": "SNode",
+            "b": "Chiron",
+            "type": "conjunction",
+            "orb": 4.359179048527949
+          },
+          {
+            "a": "SNode",
+            "b": "Vertex",
+            "type": "square",
+            "orb": 4.477427956706748
+          },
+          {
+            "a": "Chiron",
+            "b": "Vertex",
+            "type": "square",
+            "orb": 0.11824890817879918
+          }
+        ]
+      },
+      "fingerprint": "806b91b2",
+      "answers": [
+        {
+          "questionId": "career-work-type",
+          "headline": "適合制度建立、品質控管或長期負責的角色。",
+          "summary": "你擅長跳脫既有框架思考，這在需要創新與變革的位置上特別突出。",
+          "details": [
+            {
+              "label": "適合的職能角色",
+              "text": "需要建立規則、確保品質的角色。",
+              "semanticType": "suitable_roles_1"
+            },
+            {
+              "label": "容易發揮的工作內容",
+              "text": "需要嘗試新方法、新技術的位置。",
+              "semanticType": "suitable_roles_2"
+            }
+          ],
+          "caution": "留意別因為對自己要求太高，而過度嚴格或拖延。",
+          "primary": {
+            "factor": "第10宮內行星",
+            "placement": "土星在水瓶座第10宮",
+            "reason": "土星直接落在第10宮，代表這個生活領域被明顯啟動",
+            "weight": 9,
+            "elemTag": "風",
+            "planetKey": "Saturn",
+            "sign": 10,
+            "house": 10,
+            "role": "housePlanets:10",
+            "canonicalKey": "planet|Saturn|10|10|",
+            "sourceRoles": [
+              "housePlanets:10"
+            ],
+            "rawWeight": 9,
+            "biasBonus": 2,
+            "selectionScore": 11,
+            "semanticSupport": "支持「持續投入與兌現承諾」：會觀察一個人是否長期說到做到，而不是只看當下熱度",
+            "semanticLimitation": "過度使用時：因一次失誤就提前判定整段合作不可靠"
+          },
+          "semanticScores": [
+            {
+              "key": "consistency",
+              "score": 15.5,
+              "sources": [
+                {
+                  "dimension": "consistency",
+                  "score": 11,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Venus|1|12|"
+                },
+                {
+                  "dimension": "consistency",
+                  "score": 9.9,
+                  "planetKey": "Saturn",
+                  "evidenceKey": "planet|Saturn|10|10|"
+                },
+                {
+                  "dimension": "consistency",
+                  "score": 8.25,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Uranus|9|9|"
+                },
+                {
+                  "dimension": "consistency",
+                  "score": 4.5,
+                  "planetKey": "Venus",
+                  "evidenceKey": "planet|Venus|1|12|"
+                }
+              ]
+            },
+            {
+              "key": "freedom",
+              "score": 13.9,
+              "sources": [
+                {
+                  "dimension": "freedom",
+                  "score": 12.100000000000001,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Saturn|10|10|"
+                },
+                {
+                  "dimension": "freedom",
+                  "score": 10,
+                  "planetKey": "Uranus",
+                  "evidenceKey": "planet|Uranus|9|9|"
+                },
+                {
+                  "dimension": "freedom",
+                  "score": -1.1,
+                  "planetKey": null,
+                  "evidenceKey": "angle|mc|10||"
+                }
+              ]
+            },
+            {
+              "key": "structure",
+              "score": 13.2,
+              "sources": [
+                {
+                  "dimension": "structure",
+                  "score": 11,
+                  "planetKey": "Saturn",
+                  "evidenceKey": "planet|Saturn|10|10|"
+                },
+                {
+                  "dimension": "structure",
+                  "score": 11,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Uranus|9|9|"
+                }
+              ]
+            },
+            {
+              "key": "novelty",
+              "score": 10.7,
+              "sources": [
+                {
+                  "dimension": "novelty",
+                  "score": 9.075000000000001,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Saturn|10|10|"
+                },
+                {
+                  "dimension": "novelty",
+                  "score": 9,
+                  "planetKey": "Uranus",
+                  "evidenceKey": "planet|Uranus|9|9|"
+                },
+                {
+                  "dimension": "novelty",
+                  "score": -0.8250000000000001,
+                  "planetKey": null,
+                  "evidenceKey": "angle|mc|10||"
+                }
+              ]
+            },
+            {
+              "key": "harmony",
+              "score": 9.5,
+              "sources": [
+                {
+                  "dimension": "harmony",
+                  "score": 9.5,
+                  "planetKey": "Venus",
+                  "evidenceKey": "planet|Venus|1|12|"
+                }
+              ]
+            },
+            {
+              "key": "selfDirection",
+              "score": 9.5,
+              "sources": [
+                {
+                  "dimension": "selfDirection",
+                  "score": 8.25,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Sun|0|11|"
+                },
+                {
+                  "dimension": "selfDirection",
+                  "score": 6.375,
+                  "planetKey": "Sun",
+                  "evidenceKey": "planet|Sun|0|11|"
+                }
+              ]
+            },
+            {
+              "key": "visibility",
+              "score": 7.5,
+              "sources": [
+                {
+                  "dimension": "visibility",
+                  "score": 7.5,
+                  "planetKey": "Sun",
+                  "evidenceKey": "planet|Sun|0|11|"
+                }
+              ]
+            },
+            {
+              "key": "practicalCare",
+              "score": 6.1,
+              "sources": [
+                {
+                  "dimension": "practicalCare",
+                  "score": 6.050000000000001,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Venus|1|12|"
+                }
+              ]
+            },
+            {
+              "key": "intensity",
+              "score": 4.5,
+              "sources": [
+                {
+                  "dimension": "intensity",
+                  "score": 4.5375000000000005,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Sun|0|11|"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "questionId": "career-work-env",
+          "headline": "適合講究美感、氣氛和諧、重視人際互動的環境。",
+          "summary": "太過鬆散、缺乏規則的環境，容易讓你覺得沒有安全感。",
+          "details": [
+            {
+              "label": "適合的工作場域",
+              "text": "同事之間相處融洽、彼此欣賞的環境。",
+              "semanticType": "suitable_environment_1"
+            },
+            {
+              "label": "舒適的步調與氛圍",
+              "text": "重視長期累積而非短期表現的環境。",
+              "semanticType": "suitable_environment_2"
+            }
+          ],
+          "caution": "留意環境是否讓你為了維持表面和諧而壓抑真實想法。",
+          "primary": {
+            "factor": "第6宮主星",
+            "placement": "金星（第6宮主星）在金牛座第12宮",
+            "reason": "第6宮宮頭在天秤座，守護星是金星，它實際的落點是這個生活領域怎麼被打理的關鍵線索",
+            "weight": 8,
+            "elemTag": "土",
+            "planetKey": "Venus",
+            "sign": 1,
+            "house": 12,
+            "role": "houseRuler:6",
+            "canonicalKey": "planet|Venus|1|12|",
+            "sourceRoles": [
+              "houseRuler:6"
+            ],
+            "fallbackUsed": true,
+            "fallbackSource": "houseRuler",
+            "fallbackReason": "No planets in house 6",
+            "rawWeight": 8,
+            "biasBonus": 2,
+            "selectionScore": 10,
+            "semanticSupport": "支持「持續投入與兌現承諾」：會觀察一個人是否長期說到做到，而不是只看當下熱度",
+            "semanticLimitation": "過度使用時：因一次失誤就提前判定整段合作不可靠"
+          },
+          "semanticScores": [
+            {
+              "key": "consistency",
+              "score": 13.3,
+              "sources": [
+                {
+                  "dimension": "consistency",
+                  "score": 11,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Venus|1|12|"
+                },
+                {
+                  "dimension": "consistency",
+                  "score": 6.75,
+                  "planetKey": "Saturn",
+                  "evidenceKey": "planet|Saturn|10|10|"
+                },
+                {
+                  "dimension": "consistency",
+                  "score": 4.5,
+                  "planetKey": "Venus",
+                  "evidenceKey": "planet|Venus|1|12|"
+                }
+              ]
+            },
+            {
+              "key": "freedom",
+              "score": 11.6,
+              "sources": [
+                {
+                  "dimension": "freedom",
+                  "score": 9.9,
+                  "planetKey": null,
+                  "evidenceKey": "angle|mc|10||"
+                },
+                {
+                  "dimension": "freedom",
+                  "score": 8.25,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Saturn|10|10|"
+                }
+              ]
+            },
+            {
+              "key": "harmony",
+              "score": 9.5,
+              "sources": [
+                {
+                  "dimension": "harmony",
+                  "score": 9.5,
+                  "planetKey": "Venus",
+                  "evidenceKey": "planet|Venus|1|12|"
+                }
+              ]
+            },
+            {
+              "key": "novelty",
+              "score": 8.7,
+              "sources": [
+                {
+                  "dimension": "novelty",
+                  "score": 7.425000000000001,
+                  "planetKey": null,
+                  "evidenceKey": "angle|mc|10||"
+                },
+                {
+                  "dimension": "novelty",
+                  "score": 6.187500000000001,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Saturn|10|10|"
+                }
+              ]
+            },
+            {
+              "key": "structure",
+              "score": 7.5,
+              "sources": [
+                {
+                  "dimension": "structure",
+                  "score": 7.5,
+                  "planetKey": "Saturn",
+                  "evidenceKey": "planet|Saturn|10|10|"
+                }
+              ]
+            },
+            {
+              "key": "practicalCare",
+              "score": 6.1,
+              "sources": [
+                {
+                  "dimension": "practicalCare",
+                  "score": 6.050000000000001,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Venus|1|12|"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "questionId": "career-core-skill",
+          "headline": "核心職場競爭力是主導、決策與凝聚注意力。",
+          "summary": "別人會在需要創造價值、和諧與彼此欣賞時倚賴這項能力。",
+          "details": [
+            {
+              "label": "最拿手的職場能力",
+              "text": "看到方向後傾向先動手，不等所有人完全同意。",
+              "semanticType": "workplace_advantages_1"
+            },
+            {
+              "label": "別人會倚賴你的部分",
+              "text": "穩定表現需要公平、舒適與有品質的互動。",
+              "semanticType": "workplace_advantages_2"
+            }
+          ],
+          "caution": "留意過度把成敗綁在自我價值上。",
+          "primary": {
+            "factor": "太陽",
+            "placement": "太陽在牡羊座第11宮",
+            "reason": "核心自我、意志與生命力",
+            "weight": 7,
+            "elemTag": "火",
+            "planetKey": "Sun",
+            "sign": 0,
+            "house": 11,
+            "role": "planet:Sun",
+            "canonicalKey": "planet|Sun|0|11|",
+            "sourceRoles": [
+              "planet:Sun"
+            ],
+            "rawWeight": 7,
+            "biasBonus": 0.5,
+            "selectionScore": 7.5,
+            "semanticSupport": "支持「自主決定與立即行動」：看到方向後傾向先動手，不等所有人完全同意",
+            "semanticLimitation": "過度使用時：用自己的速度推進，沒有確認他人是否跟得上"
+          },
+          "semanticScores": [
+            {
+              "key": "selfDirection",
+              "score": 12.7,
+              "sources": [
+                {
+                  "dimension": "selfDirection",
+                  "score": 8.25,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Sun|0|11|"
+                },
+                {
+                  "dimension": "selfDirection",
+                  "score": 8.25,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mercury|0|12|"
+                },
+                {
+                  "dimension": "selfDirection",
+                  "score": 7.5,
+                  "planetKey": "Mars",
+                  "evidenceKey": "planet|Mars|2|2|"
+                },
+                {
+                  "dimension": "selfDirection",
+                  "score": 6.375,
+                  "planetKey": "Sun",
+                  "evidenceKey": "planet|Sun|0|11|"
+                }
+              ]
+            },
+            {
+              "key": "dialogue",
+              "score": 9.7,
+              "sources": [
+                {
+                  "dimension": "dialogue",
+                  "score": 8.25,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mars|2|2|"
+                },
+                {
+                  "dimension": "dialogue",
+                  "score": 7.125,
+                  "planetKey": "Mercury",
+                  "evidenceKey": "planet|Mercury|0|12|"
+                }
+              ]
+            },
+            {
+              "key": "consistency",
+              "score": 9.5,
+              "sources": [
+                {
+                  "dimension": "consistency",
+                  "score": 8.8,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Venus|1|12|"
+                },
+                {
+                  "dimension": "consistency",
+                  "score": 3.6,
+                  "planetKey": "Venus",
+                  "evidenceKey": "planet|Venus|1|12|"
+                }
+              ]
+            },
+            {
+              "key": "harmony",
+              "score": 7.6,
+              "sources": [
+                {
+                  "dimension": "harmony",
+                  "score": 7.6,
+                  "planetKey": "Venus",
+                  "evidenceKey": "planet|Venus|1|12|"
+                }
+              ]
+            },
+            {
+              "key": "visibility",
+              "score": 7.5,
+              "sources": [
+                {
+                  "dimension": "visibility",
+                  "score": 7.5,
+                  "planetKey": "Sun",
+                  "evidenceKey": "planet|Sun|0|11|"
+                }
+              ]
+            },
+            {
+              "key": "intensity",
+              "score": 6.3,
+              "sources": [
+                {
+                  "dimension": "intensity",
+                  "score": 4.5375000000000005,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Sun|0|11|"
+                },
+                {
+                  "dimension": "intensity",
+                  "score": 4.5375000000000005,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mercury|0|12|"
+                },
+                {
+                  "dimension": "intensity",
+                  "score": 4.125,
+                  "planetKey": "Mars",
+                  "evidenceKey": "planet|Mars|2|2|"
+                }
+              ]
+            },
+            {
+              "key": "novelty",
+              "score": 6,
+              "sources": [
+                {
+                  "dimension": "novelty",
+                  "score": 5.362500000000001,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mars|2|2|"
+                },
+                {
+                  "dimension": "novelty",
+                  "score": 3.375,
+                  "planetKey": "Mercury",
+                  "evidenceKey": "planet|Mercury|0|12|"
+                }
+              ]
+            },
+            {
+              "key": "practicalCare",
+              "score": 4.8,
+              "sources": [
+                {
+                  "dimension": "practicalCare",
+                  "score": 4.840000000000001,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Venus|1|12|"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "winter-structure",
+      "chart": {
+        "utcDate": "1985-01-15T07:20:00.000Z",
+        "asc": 88.10040738759699,
+        "mc": 345.07026656613397,
+        "ascSign": 2,
+        "houseCusps": [
+          88.10040738759699,
+          111.64902000966737,
+          136.35139862772206,
+          165.07026656613402,
+          198.8716489075589,
+          234.76683846821334,
+          268.100407387597,
+          291.6490200096673,
+          316.3513986277221,
+          345.07026656613397,
+          18.871648907558892,
+          54.76683846821328
+        ],
+        "houseSystem": "placidus",
+        "planets": {
+          "Sun": {
+            "lon": 295.0928058425121,
+            "retro": false,
+            "house": 8,
+            "sign": 9,
+            "deg": 25.09280584251212
+          },
+          "Moon": {
+            "lon": 222.37411250848663,
+            "retro": false,
+            "house": 5,
+            "sign": 7,
+            "deg": 12.374112508486633
+          },
+          "Mercury": {
+            "lon": 274.7373051618465,
+            "retro": false,
+            "house": 7,
+            "sign": 9,
+            "deg": 4.737305161846507
+          },
+          "Venus": {
+            "lon": 341.9880135367391,
+            "retro": false,
+            "house": 9,
+            "sign": 11,
+            "deg": 11.988013536739118
+          },
+          "Mars": {
+            "lon": 346.04862895904364,
+            "retro": false,
+            "house": 10,
+            "sign": 11,
+            "deg": 16.04862895904364
+          },
+          "Jupiter": {
+            "lon": 294.7977061594281,
+            "retro": false,
+            "house": 8,
+            "sign": 9,
+            "deg": 24.797706159428117
+          },
+          "Saturn": {
+            "lon": 235.9837045955918,
+            "retro": false,
+            "house": 6,
+            "sign": 7,
+            "deg": 25.983704595591803
+          },
+          "Uranus": {
+            "lon": 256.13919434470995,
+            "retro": false,
+            "house": 6,
+            "sign": 8,
+            "deg": 16.13919434470995
+          },
+          "Neptune": {
+            "lon": 272.0066966459847,
+            "retro": false,
+            "house": 7,
+            "sign": 9,
+            "deg": 2.0066966459846753
+          },
+          "Pluto": {
+            "lon": 214.60706218110408,
+            "retro": false,
+            "house": 5,
+            "sign": 7,
+            "deg": 4.607062181104084
+          }
+        },
+        "points": {
+          "Node": {
+            "lon": 54.39423292272107,
+            "retro": true,
+            "house": 11,
+            "sign": 1,
+            "deg": 24.394232922721073
+          },
+          "SNode": {
+            "lon": 234.39423292272113,
+            "retro": true,
+            "house": 5,
+            "sign": 7,
+            "deg": 24.39423292272113
+          },
+          "Lilith": {
+            "lon": 14.622566527403478,
+            "retro": false,
+            "house": 10,
+            "sign": 0,
+            "deg": 14.622566527403478
+          },
+          "Chiron": {
+            "lon": 63.14939151006331,
+            "retro": true,
+            "house": 12,
+            "sign": 2,
+            "deg": 3.1493915100633103
+          },
+          "Fortune": {
+            "lon": 15.3817140535715,
+            "retro": false,
+            "house": 10,
+            "sign": 0,
+            "deg": 15.3817140535715
+          },
+          "Vertex": {
+            "lon": 222.23683047697168,
+            "retro": false,
+            "house": 5,
+            "sign": 7,
+            "deg": 12.236830476971676
+          }
+        },
+        "aspects": [
+          {
+            "a": "Sun",
+            "b": "Jupiter",
+            "type": "conjunction",
+            "orb": 0.295099683084004
+          },
+          {
+            "a": "Sun",
+            "b": "Saturn",
+            "type": "sextile",
+            "orb": 0.8908987530796821
+          },
+          {
+            "a": "Moon",
+            "b": "Venus",
+            "type": "trine",
+            "orb": 0.38609897174751495
+          },
+          {
+            "a": "Moon",
+            "b": "Mars",
+            "type": "trine",
+            "orb": 3.6745164505570074
+          },
+          {
+            "a": "Moon",
+            "b": "Pluto",
+            "type": "conjunction",
+            "orb": 7.767050327382549
+          },
+          {
+            "a": "Mercury",
+            "b": "Neptune",
+            "type": "conjunction",
+            "orb": 2.7306085158618316
+          },
+          {
+            "a": "Mercury",
+            "b": "Pluto",
+            "type": "sextile",
+            "orb": 0.13024298074242324
+          },
+          {
+            "a": "Venus",
+            "b": "Mars",
+            "type": "conjunction",
+            "orb": 4.060615422304522
+          },
+          {
+            "a": "Venus",
+            "b": "Uranus",
+            "type": "square",
+            "orb": 4.151180807970832
+          },
+          {
+            "a": "Mars",
+            "b": "Uranus",
+            "type": "square",
+            "orb": 0.09056538566630934
+          },
+          {
+            "a": "Jupiter",
+            "b": "Saturn",
+            "type": "sextile",
+            "orb": 1.1859984361636862
+          },
+          {
+            "a": "Neptune",
+            "b": "Pluto",
+            "type": "sextile",
+            "orb": 2.6003655351194084
+          },
+          {
+            "a": "Node",
+            "b": "Sun",
+            "type": "trine",
+            "orb": 0.6985729197910473
+          },
+          {
+            "a": "Node",
+            "b": "Jupiter",
+            "type": "trine",
+            "orb": 0.40347323670704327
+          },
+          {
+            "a": "Node",
+            "b": "Saturn",
+            "type": "opposition",
+            "orb": 1.5894716728707294
+          },
+          {
+            "a": "SNode",
+            "b": "Sun",
+            "type": "sextile",
+            "orb": 0.6985729197909905
+          },
+          {
+            "a": "SNode",
+            "b": "Jupiter",
+            "type": "sextile",
+            "orb": 0.4034732367069864
+          },
+          {
+            "a": "SNode",
+            "b": "Saturn",
+            "type": "conjunction",
+            "orb": 1.5894716728706726
+          },
+          {
+            "a": "Lilith",
+            "b": "Uranus",
+            "type": "trine",
+            "orb": 1.5166278173064711
+          },
+          {
+            "a": "Chiron",
+            "b": "Saturn",
+            "type": "opposition",
+            "orb": 7.165686914471507
+          },
+          {
+            "a": "Fortune",
+            "b": "Uranus",
+            "type": "trine",
+            "orb": 0.7574802911384495
+          },
+          {
+            "a": "Vertex",
+            "b": "Moon",
+            "type": "conjunction",
+            "orb": 0.13728203151495677
+          },
+          {
+            "a": "Vertex",
+            "b": "Venus",
+            "type": "trine",
+            "orb": 0.24881694023255818
+          },
+          {
+            "a": "Vertex",
+            "b": "Mars",
+            "type": "trine",
+            "orb": 3.811798482071964
+          },
+          {
+            "a": "Vertex",
+            "b": "Pluto",
+            "type": "conjunction",
+            "orb": 7.629768295867592
+          },
+          {
+            "a": "Lilith",
+            "b": "Fortune",
+            "type": "conjunction",
+            "orb": 0.7591475261680216
+          }
+        ]
+      },
+      "fingerprint": "3fc1126f",
+      "answers": [
+        {
+          "questionId": "career-work-type",
+          "headline": "適合需要主動出擊、開拓與執行力的角色。",
+          "summary": "你擅長用感受與想像力打動人心，這在需要創意與同理的位置上特別突出。",
+          "details": [
+            {
+              "label": "適合的職能角色",
+              "text": "需要率先開拓、搶佔先機的角色。",
+              "semanticType": "suitable_roles_1"
+            },
+            {
+              "label": "容易發揮的工作內容",
+              "text": "需要同理他人處境、提供支持的位置。",
+              "semanticType": "suitable_roles_2"
+            }
+          ],
+          "caution": "留意別因為太急著推進，而忽略團隊的節奏。",
+          "primary": {
+            "factor": "第10宮內行星",
+            "placement": "火星在雙魚座第10宮",
+            "reason": "火星直接落在第10宮，代表這個生活領域被明顯啟動",
+            "weight": 10,
+            "elemTag": "水",
+            "planetKey": "Mars",
+            "sign": 11,
+            "house": 10,
+            "role": "housePlanets:10",
+            "canonicalKey": "planet|Mars|11|10|",
+            "sourceRoles": [
+              "housePlanets:10"
+            ],
+            "rawWeight": 10,
+            "biasBonus": 2,
+            "selectionScore": 12,
+            "semanticSupport": "支持「自主決定與立即行動」：看到方向後傾向先動手，不等所有人完全同意",
+            "semanticLimitation": "過度使用時：用自己的速度推進，沒有確認他人是否跟得上"
+          },
+          "semanticScores": [
+            {
+              "key": "structure",
+              "score": 14.9,
+              "sources": [
+                {
+                  "dimension": "structure",
+                  "score": 11,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Neptune|9|7|"
+                },
+                {
+                  "dimension": "structure",
+                  "score": 11,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mercury|9|7|"
+                },
+                {
+                  "dimension": "structure",
+                  "score": 8.25,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Sun|9|8|"
+                }
+              ]
+            },
+            {
+              "key": "selfDirection",
+              "score": 13.3,
+              "sources": [
+                {
+                  "dimension": "selfDirection",
+                  "score": 12,
+                  "planetKey": "Mars",
+                  "evidenceKey": "planet|Mars|11|10|"
+                },
+                {
+                  "dimension": "selfDirection",
+                  "score": 6.375,
+                  "planetKey": "Sun",
+                  "evidenceKey": "planet|Sun|9|8|"
+                }
+              ]
+            },
+            {
+              "key": "emotionalResponse",
+              "score": 12.6,
+              "sources": [
+                {
+                  "dimension": "emotionalResponse",
+                  "score": 11.22,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mars|11|10|"
+                },
+                {
+                  "dimension": "emotionalResponse",
+                  "score": 8,
+                  "planetKey": "Neptune",
+                  "evidenceKey": "planet|Neptune|9|7|"
+                },
+                {
+                  "dimension": "emotionalResponse",
+                  "score": -0.935,
+                  "planetKey": null,
+                  "evidenceKey": "angle|mc|11||"
+                }
+              ]
+            },
+            {
+              "key": "consistency",
+              "score": 11.1,
+              "sources": [
+                {
+                  "dimension": "consistency",
+                  "score": 8.25,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Neptune|9|7|"
+                },
+                {
+                  "dimension": "consistency",
+                  "score": 8.25,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mercury|9|7|"
+                },
+                {
+                  "dimension": "consistency",
+                  "score": 6.187500000000001,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Sun|9|8|"
+                }
+              ]
+            },
+            {
+              "key": "harmony",
+              "score": 10.2,
+              "sources": [
+                {
+                  "dimension": "harmony",
+                  "score": 9.239999999999998,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mars|11|10|"
+                },
+                {
+                  "dimension": "harmony",
+                  "score": 5.5,
+                  "planetKey": "Neptune",
+                  "evidenceKey": "planet|Neptune|9|7|"
+                },
+                {
+                  "dimension": "harmony",
+                  "score": -0.77,
+                  "planetKey": null,
+                  "evidenceKey": "angle|mc|11||"
+                }
+              ]
+            },
+            {
+              "key": "dialogue",
+              "score": 9.5,
+              "sources": [
+                {
+                  "dimension": "dialogue",
+                  "score": 9.5,
+                  "planetKey": "Mercury",
+                  "evidenceKey": "planet|Mercury|9|7|"
+                }
+              ]
+            },
+            {
+              "key": "visibility",
+              "score": 7.5,
+              "sources": [
+                {
+                  "dimension": "visibility",
+                  "score": 7.5,
+                  "planetKey": "Sun",
+                  "evidenceKey": "planet|Sun|9|8|"
+                }
+              ]
+            },
+            {
+              "key": "intensity",
+              "score": 6.6,
+              "sources": [
+                {
+                  "dimension": "intensity",
+                  "score": 6.6000000000000005,
+                  "planetKey": "Mars",
+                  "evidenceKey": "planet|Mars|11|10|"
+                }
+              ]
+            },
+            {
+              "key": "novelty",
+              "score": 4.5,
+              "sources": [
+                {
+                  "dimension": "novelty",
+                  "score": 4.5,
+                  "planetKey": "Mercury",
+                  "evidenceKey": "planet|Mercury|9|7|"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "questionId": "career-work-env",
+          "headline": "適合制度清楚、講求紀律與長期累積的環境。",
+          "summary": "太過僵化、講求一致性的環境，容易讓你覺得被綁住、想要逃離。",
+          "details": [
+            {
+              "label": "適合的工作場域",
+              "text": "有明確制度與規範可以依循的環境。",
+              "semanticType": "suitable_environment_1"
+            },
+            {
+              "label": "舒適的步調與氛圍",
+              "text": "鼓勵嘗試新方法、不墨守成規的環境。",
+              "semanticType": "suitable_environment_2"
+            }
+          ],
+          "caution": "留意環境是否讓你把責任攬得太重、忽略適時求助。",
+          "primary": {
+            "factor": "第6宮內行星",
+            "placement": "土星在天蠍座第6宮",
+            "reason": "土星直接落在第6宮，代表這個生活領域被明顯啟動",
+            "weight": 9,
+            "elemTag": "水",
+            "planetKey": "Saturn",
+            "sign": 7,
+            "house": 6,
+            "role": "housePlanets:6",
+            "canonicalKey": "planet|Saturn|7|6|",
+            "sourceRoles": [
+              "housePlanets:6",
+              "planet:Saturn"
+            ],
+            "rawWeight": 9,
+            "biasBonus": 2.5,
+            "selectionScore": 11.5,
+            "semanticSupport": "支持「深度信任與核心真相」：會追問表面說法背後的動機，重要事情不接受含糊帶過",
+            "semanticLimitation": "過度使用時：在證據不足時持續試探、查證或掌控細節"
+          },
+          "semanticScores": [
+            {
+              "key": "depthTrust",
+              "score": 16.9,
+              "sources": [
+                {
+                  "dimension": "depthTrust",
+                  "score": 12.65,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Saturn|7|6|"
+                },
+                {
+                  "dimension": "depthTrust",
+                  "score": 11,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Pluto|7|5|"
+                },
+                {
+                  "dimension": "depthTrust",
+                  "score": 10,
+                  "planetKey": "Pluto",
+                  "evidenceKey": "planet|Pluto|7|5|"
+                }
+              ]
+            },
+            {
+              "key": "intensity",
+              "score": 12.9,
+              "sources": [
+                {
+                  "dimension": "intensity",
+                  "score": 9.4875,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Saturn|7|6|"
+                },
+                {
+                  "dimension": "intensity",
+                  "score": 9,
+                  "planetKey": "Pluto",
+                  "evidenceKey": "planet|Pluto|7|5|"
+                },
+                {
+                  "dimension": "intensity",
+                  "score": 8.25,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Pluto|7|5|"
+                }
+              ]
+            },
+            {
+              "key": "novelty",
+              "score": 12.8,
+              "sources": [
+                {
+                  "dimension": "novelty",
+                  "score": 11,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Uranus|8|6|"
+                },
+                {
+                  "dimension": "novelty",
+                  "score": 9,
+                  "planetKey": "Uranus",
+                  "evidenceKey": "planet|Uranus|8|6|"
+                }
+              ]
+            },
+            {
+              "key": "structure",
+              "score": 11.5,
+              "sources": [
+                {
+                  "dimension": "structure",
+                  "score": 11.5,
+                  "planetKey": "Saturn",
+                  "evidenceKey": "planet|Saturn|7|6|"
+                }
+              ]
+            },
+            {
+              "key": "freedom",
+              "score": 11.3,
+              "sources": [
+                {
+                  "dimension": "freedom",
+                  "score": 10,
+                  "planetKey": "Uranus",
+                  "evidenceKey": "planet|Uranus|8|6|"
+                },
+                {
+                  "dimension": "freedom",
+                  "score": 6.6000000000000005,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Uranus|8|6|"
+                }
+              ]
+            },
+            {
+              "key": "consistency",
+              "score": 10.4,
+              "sources": [
+                {
+                  "dimension": "consistency",
+                  "score": 10.35,
+                  "planetKey": "Saturn",
+                  "evidenceKey": "planet|Saturn|7|6|"
+                }
+              ]
+            },
+            {
+              "key": "emotionalResponse",
+              "score": 8.4,
+              "sources": [
+                {
+                  "dimension": "emotionalResponse",
+                  "score": 8.415000000000001,
+                  "planetKey": null,
+                  "evidenceKey": "angle|mc|11||"
+                }
+              ]
+            },
+            {
+              "key": "harmony",
+              "score": 6.9,
+              "sources": [
+                {
+                  "dimension": "harmony",
+                  "score": 6.930000000000001,
+                  "planetKey": null,
+                  "evidenceKey": "angle|mc|11||"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "questionId": "career-core-skill",
+          "headline": "核心職場競爭力是學習、表達與整理複雜資訊。",
+          "summary": "別人會在需要建立清楚的自我定位並主動承擔時倚賴這項能力。",
+          "details": [
+            {
+              "label": "最拿手的職場能力",
+              "text": "會先確認規則、期限和誰負責哪一段，再放心投入。",
+              "semanticType": "workplace_advantages_1"
+            },
+            {
+              "label": "別人會倚賴你的部分",
+              "text": "穩定表現需要被看見、被肯定並保有主體性。",
+              "semanticType": "workplace_advantages_2"
+            }
+          ],
+          "caution": "留意想得太多或注意力分散。",
+          "primary": {
+            "factor": "上升主星（命主星）",
+            "placement": "水星（上升主星（命主星））在摩羯座第7宮",
+            "reason": "第1宮宮頭在雙子座，守護星是水星，它實際的落點是這個生活領域怎麼被打理的關鍵線索",
+            "weight": 9,
+            "elemTag": "土",
+            "planetKey": "Mercury",
+            "sign": 9,
+            "house": 7,
+            "role": "chartRuler",
+            "canonicalKey": "planet|Mercury|9|7|",
+            "sourceRoles": [
+              "planet:Mercury",
+              "chartRuler"
+            ],
+            "rawWeight": 9,
+            "biasBonus": 0.5,
+            "selectionScore": 9.5,
+            "semanticSupport": "支持「責任分工與可預期性」：會先確認規則、期限和誰負責哪一段，再放心投入",
+            "semanticLimitation": "過度使用時：增加規則與檢查，甚至把別人的部分也接過來"
+          },
+          "semanticScores": [
+            {
+              "key": "structure",
+              "score": 12.1,
+              "sources": [
+                {
+                  "dimension": "structure",
+                  "score": 10.450000000000001,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mercury|9|7|"
+                },
+                {
+                  "dimension": "structure",
+                  "score": 8.25,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Sun|9|8|"
+                }
+              ]
+            },
+            {
+              "key": "consistency",
+              "score": 9.1,
+              "sources": [
+                {
+                  "dimension": "consistency",
+                  "score": 7.8375,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mercury|9|7|"
+                },
+                {
+                  "dimension": "consistency",
+                  "score": 6.187500000000001,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Sun|9|8|"
+                }
+              ]
+            },
+            {
+              "key": "dialogue",
+              "score": 9,
+              "sources": [
+                {
+                  "dimension": "dialogue",
+                  "score": 9.025,
+                  "planetKey": "Mercury",
+                  "evidenceKey": "planet|Mercury|9|7|"
+                }
+              ]
+            },
+            {
+              "key": "selfDirection",
+              "score": 8.8,
+              "sources": [
+                {
+                  "dimension": "selfDirection",
+                  "score": 7.5,
+                  "planetKey": "Mars",
+                  "evidenceKey": "planet|Mars|11|10|"
+                },
+                {
+                  "dimension": "selfDirection",
+                  "score": 6.375,
+                  "planetKey": "Sun",
+                  "evidenceKey": "planet|Sun|9|8|"
+                }
+              ]
+            },
+            {
+              "key": "visibility",
+              "score": 7.5,
+              "sources": [
+                {
+                  "dimension": "visibility",
+                  "score": 7.5,
+                  "planetKey": "Sun",
+                  "evidenceKey": "planet|Sun|9|8|"
+                }
+              ]
+            },
+            {
+              "key": "emotionalResponse",
+              "score": 7,
+              "sources": [
+                {
+                  "dimension": "emotionalResponse",
+                  "score": 7.0125,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mars|11|10|"
+                }
+              ]
+            },
+            {
+              "key": "harmony",
+              "score": 5.8,
+              "sources": [
+                {
+                  "dimension": "harmony",
+                  "score": 5.775,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mars|11|10|"
+                }
+              ]
+            },
+            {
+              "key": "novelty",
+              "score": 4.3,
+              "sources": [
+                {
+                  "dimension": "novelty",
+                  "score": 4.275,
+                  "planetKey": "Mercury",
+                  "evidenceKey": "planet|Mercury|9|7|"
+                }
+              ]
+            },
+            {
+              "key": "intensity",
+              "score": 4.1,
+              "sources": [
+                {
+                  "dimension": "intensity",
+                  "score": 4.125,
+                  "planetKey": "Mars",
+                  "evidenceKey": "planet|Mars|11|10|"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "summer-information",
+      "chart": {
+        "utcDate": "2000-06-07T21:30:00.000Z",
+        "asc": 82.85145755760959,
+        "mc": 339.04940613410946,
+        "ascSign": 2,
+        "houseCusps": [
+          82.85145755760959,
+          106.6406021099537,
+          131.00655165037733,
+          159.0494061341094,
+          192.40506262189433,
+          228.7078863647164,
+          262.8514575576096,
+          286.64060210995376,
+          311.00655165037733,
+          339.04940613410946,
+          12.40506262189433,
+          48.70788636471633
+        ],
+        "houseSystem": "placidus",
+        "planets": {
+          "Sun": {
+            "lon": 77.41364246318778,
+            "retro": false,
+            "house": 12,
+            "sign": 2,
+            "deg": 17.413642463187784
+          },
+          "Moon": {
+            "lon": 151.48125639304476,
+            "retro": false,
+            "house": 3,
+            "sign": 5,
+            "deg": 1.4812563930447595
+          },
+          "Mercury": {
+            "lon": 101.33380396827624,
+            "retro": false,
+            "house": 1,
+            "sign": 3,
+            "deg": 11.333803968276243
+          },
+          "Venus": {
+            "lon": 76.44882408304176,
+            "retro": false,
+            "house": 12,
+            "sign": 2,
+            "deg": 16.448824083041757
+          },
+          "Mars": {
+            "lon": 84.18631801767452,
+            "retro": false,
+            "house": 1,
+            "sign": 2,
+            "deg": 24.186318017674523
+          },
+          "Jupiter": {
+            "lon": 55.0827483531686,
+            "retro": false,
+            "house": 12,
+            "sign": 1,
+            "deg": 25.082748353168597
+          },
+          "Saturn": {
+            "lon": 53.992667507665715,
+            "retro": false,
+            "house": 12,
+            "sign": 1,
+            "deg": 23.992667507665715
+          },
+          "Uranus": {
+            "lon": 320.74714323637636,
+            "retro": true,
+            "house": 9,
+            "sign": 10,
+            "deg": 20.74714323637636
+          },
+          "Neptune": {
+            "lon": 306.33514676867037,
+            "retro": true,
+            "house": 8,
+            "sign": 10,
+            "deg": 6.33514676867037
+          },
+          "Pluto": {
+            "lon": 251.37449491746975,
+            "retro": true,
+            "house": 6,
+            "sign": 8,
+            "deg": 11.374494917469747
+          }
+        },
+        "points": {
+          "Node": {
+            "lon": 116.65685289170415,
+            "retro": true,
+            "house": 2,
+            "sign": 3,
+            "deg": 26.656852891704148
+          },
+          "SNode": {
+            "lon": 296.65685289170415,
+            "retro": true,
+            "house": 8,
+            "sign": 9,
+            "deg": 26.656852891704148
+          },
+          "Lilith": {
+            "lon": 280.99918288859726,
+            "retro": false,
+            "house": 7,
+            "sign": 9,
+            "deg": 10.999182888597261
+          },
+          "Chiron": {
+            "lon": 253.53032423227148,
+            "retro": true,
+            "house": 6,
+            "sign": 8,
+            "deg": 13.530324232271482
+          },
+          "Fortune": {
+            "lon": 156.91907148746657,
+            "retro": false,
+            "house": 3,
+            "sign": 5,
+            "deg": 6.919071487466567
+          },
+          "Vertex": {
+            "lon": 219.22494213472532,
+            "retro": false,
+            "house": 5,
+            "sign": 7,
+            "deg": 9.224942134725325
+          }
+        },
+        "aspects": [
+          {
+            "a": "Sun",
+            "b": "Venus",
+            "type": "conjunction",
+            "orb": 0.9648183801460277
+          },
+          {
+            "a": "Sun",
+            "b": "Mars",
+            "type": "conjunction",
+            "orb": 6.772675554486739
+          },
+          {
+            "a": "Sun",
+            "b": "Uranus",
+            "type": "trine",
+            "orb": 3.3335007731885753
+          },
+          {
+            "a": "Sun",
+            "b": "Pluto",
+            "type": "opposition",
+            "orb": 6.039147545718038
+          },
+          {
+            "a": "Venus",
+            "b": "Mars",
+            "type": "conjunction",
+            "orb": 7.7374939346327665
+          },
+          {
+            "a": "Venus",
+            "b": "Uranus",
+            "type": "trine",
+            "orb": 4.298319153334603
+          },
+          {
+            "a": "Venus",
+            "b": "Pluto",
+            "type": "opposition",
+            "orb": 5.07432916557201
+          },
+          {
+            "a": "Mars",
+            "b": "Uranus",
+            "type": "trine",
+            "orb": 3.4391747812981635
+          },
+          {
+            "a": "Jupiter",
+            "b": "Saturn",
+            "type": "conjunction",
+            "orb": 1.0900808455028823
+          },
+          {
+            "a": "Jupiter",
+            "b": "Uranus",
+            "type": "square",
+            "orb": 4.335605116792237
+          },
+          {
+            "a": "Saturn",
+            "b": "Uranus",
+            "type": "square",
+            "orb": 3.245524271289355
+          },
+          {
+            "a": "Node",
+            "b": "Jupiter",
+            "type": "sextile",
+            "orb": 1.5741045385355505
+          },
+          {
+            "a": "Node",
+            "b": "Saturn",
+            "type": "sextile",
+            "orb": 2.664185384038433
+          },
+          {
+            "a": "SNode",
+            "b": "Jupiter",
+            "type": "trine",
+            "orb": 1.5741045385355505
+          },
+          {
+            "a": "SNode",
+            "b": "Saturn",
+            "type": "trine",
+            "orb": 2.664185384038433
+          },
+          {
+            "a": "Lilith",
+            "b": "Mercury",
+            "type": "opposition",
+            "orb": 0.3346210796789819
+          },
+          {
+            "a": "Chiron",
+            "b": "Sun",
+            "type": "opposition",
+            "orb": 3.883318230916302
+          },
+          {
+            "a": "Chiron",
+            "b": "Venus",
+            "type": "opposition",
+            "orb": 2.9184998507702744
+          },
+          {
+            "a": "Chiron",
+            "b": "Pluto",
+            "type": "conjunction",
+            "orb": 2.1558293148017356
+          },
+          {
+            "a": "Fortune",
+            "b": "Moon",
+            "type": "conjunction",
+            "orb": 5.437815094421808
+          },
+          {
+            "a": "Fortune",
+            "b": "Pluto",
+            "type": "square",
+            "orb": 4.455423430003179
+          },
+          {
+            "a": "Vertex",
+            "b": "Mercury",
+            "type": "trine",
+            "orb": 2.108861833550918
+          },
+          {
+            "a": "Vertex",
+            "b": "Neptune",
+            "type": "square",
+            "orb": 2.8897953660549547
+          },
+          {
+            "a": "Lilith",
+            "b": "Fortune",
+            "type": "trine",
+            "orb": 4.080111401130694
+          },
+          {
+            "a": "Lilith",
+            "b": "Vertex",
+            "type": "sextile",
+            "orb": 1.7742407538719362
+          },
+          {
+            "a": "Fortune",
+            "b": "Vertex",
+            "type": "sextile",
+            "orb": 2.3058706472587573
+          }
+        ]
+      },
+      "fingerprint": "099ef900",
+      "answers": [
+        {
+          "questionId": "career-work-type",
+          "headline": "適合創意發想、願景傳遞或需要同理與想像力的角色。",
+          "summary": "你擅長把複雜的東西講清楚，這項能力在需要溝通橋樑的位置上特別吃香。",
+          "details": [
+            {
+              "label": "適合的職能角色",
+              "text": "需要用創意或故事打動人的角色。",
+              "semanticType": "suitable_roles_1"
+            },
+            {
+              "label": "容易發揮的工作內容",
+              "text": "擔任團隊裡的溝通橋樑。",
+              "semanticType": "suitable_roles_2"
+            }
+          ],
+          "caution": "留意別因為太顧及別人的感受，而讓自己的底線越退越後面。",
+          "primary": {
+            "factor": "第10宮主星",
+            "placement": "海王星（第10宮主星）在水瓶座第8宮",
+            "reason": "第10宮宮頭在雙魚座，守護星是海王星，它實際的落點是這個生活領域怎麼被打理的關鍵線索",
+            "weight": 8,
+            "elemTag": "風",
+            "planetKey": "Neptune",
+            "sign": 10,
+            "house": 8,
+            "role": "houseRuler:10",
+            "canonicalKey": "planet|Neptune|10|8|",
+            "sourceRoles": [
+              "houseRuler:10"
+            ],
+            "fallbackUsed": true,
+            "fallbackSource": "houseRuler",
+            "fallbackReason": "No planets in house 10",
+            "rawWeight": 8,
+            "biasBonus": 2,
+            "selectionScore": 10,
+            "semanticSupport": "支持「情緒回應與安全感」：會先讀取對方的情緒，再決定自己要靠近還是退開",
+            "semanticLimitation": "過度使用時：把對方的情緒全部接到自己身上"
+          },
+          "semanticScores": [
+            {
+              "key": "emotionalResponse",
+              "score": 12.4,
+              "sources": [
+                {
+                  "dimension": "emotionalResponse",
+                  "score": 11,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mercury|3|1|"
+                },
+                {
+                  "dimension": "emotionalResponse",
+                  "score": 8,
+                  "planetKey": "Neptune",
+                  "evidenceKey": "planet|Neptune|10|8|"
+                },
+                {
+                  "dimension": "emotionalResponse",
+                  "score": -0.935,
+                  "planetKey": null,
+                  "evidenceKey": "angle|mc|11||"
+                }
+              ]
+            },
+            {
+              "key": "dialogue",
+              "score": 11.2,
+              "sources": [
+                {
+                  "dimension": "dialogue",
+                  "score": 9.5,
+                  "planetKey": "Mercury",
+                  "evidenceKey": "planet|Mercury|3|1|"
+                },
+                {
+                  "dimension": "dialogue",
+                  "score": 8.25,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Sun|2|12|"
+                }
+              ]
+            },
+            {
+              "key": "freedom",
+              "score": 11,
+              "sources": [
+                {
+                  "dimension": "freedom",
+                  "score": 11,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Neptune|10|8|"
+                }
+              ]
+            },
+            {
+              "key": "novelty",
+              "score": 10.2,
+              "sources": [
+                {
+                  "dimension": "novelty",
+                  "score": 8.25,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Neptune|10|8|"
+                },
+                {
+                  "dimension": "novelty",
+                  "score": 5.362500000000001,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Sun|2|12|"
+                },
+                {
+                  "dimension": "novelty",
+                  "score": 4.5,
+                  "planetKey": "Mercury",
+                  "evidenceKey": "planet|Mercury|3|1|"
+                }
+              ]
+            },
+            {
+              "key": "practicalCare",
+              "score": 7.7,
+              "sources": [
+                {
+                  "dimension": "practicalCare",
+                  "score": 7.700000000000001,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mercury|3|1|"
+                }
+              ]
+            },
+            {
+              "key": "visibility",
+              "score": 7.5,
+              "sources": [
+                {
+                  "dimension": "visibility",
+                  "score": 7.5,
+                  "planetKey": "Sun",
+                  "evidenceKey": "planet|Sun|2|12|"
+                }
+              ]
+            },
+            {
+              "key": "selfDirection",
+              "score": 6.4,
+              "sources": [
+                {
+                  "dimension": "selfDirection",
+                  "score": 6.375,
+                  "planetKey": "Sun",
+                  "evidenceKey": "planet|Sun|2|12|"
+                }
+              ]
+            },
+            {
+              "key": "harmony",
+              "score": 5.3,
+              "sources": [
+                {
+                  "dimension": "harmony",
+                  "score": 5.5,
+                  "planetKey": "Neptune",
+                  "evidenceKey": "planet|Neptune|10|8|"
+                },
+                {
+                  "dimension": "harmony",
+                  "score": -0.77,
+                  "planetKey": null,
+                  "evidenceKey": "angle|mc|11||"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "questionId": "career-work-env",
+          "headline": "適合允許深入鑽研、涉及機密或高強度投入的環境。",
+          "summary": "太過鬆散、缺乏規則的環境，容易讓你覺得沒有安全感。",
+          "details": [
+            {
+              "label": "適合的工作場域",
+              "text": "允許你深入研究、不被打斷的環境。",
+              "semanticType": "suitable_environment_1"
+            },
+            {
+              "label": "舒適的步調與氛圍",
+              "text": "重視長期累積而非短期表現的環境。",
+              "semanticType": "suitable_environment_2"
+            }
+          ],
+          "caution": "留意環境是否讓你長期處於高張力、難以放鬆的狀態。",
+          "primary": {
+            "factor": "第6宮內行星",
+            "placement": "冥王星在射手座第6宮",
+            "reason": "冥王星直接落在第6宮，代表這個生活領域被明顯啟動",
+            "weight": 9,
+            "elemTag": "火",
+            "planetKey": "Pluto",
+            "sign": 8,
+            "house": 6,
+            "role": "housePlanets:6",
+            "canonicalKey": "planet|Pluto|8|6|",
+            "sourceRoles": [
+              "housePlanets:6",
+              "houseRuler:6"
+            ],
+            "rawWeight": 9,
+            "biasBonus": 2,
+            "selectionScore": 11,
+            "semanticSupport": "支持「新鮮感與擴大選項」：會主動接觸新題目、新圈子或不同做法，從變化中找到動力",
+            "semanticLimitation": "過度使用時：同時打開太多選項，尚未驗證就轉向下一個"
+          },
+          "semanticScores": [
+            {
+              "key": "novelty",
+              "score": 12.1,
+              "sources": [
+                {
+                  "dimension": "novelty",
+                  "score": 12.100000000000001,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Pluto|8|6|"
+                }
+              ]
+            },
+            {
+              "key": "depthTrust",
+              "score": 11,
+              "sources": [
+                {
+                  "dimension": "depthTrust",
+                  "score": 11,
+                  "planetKey": "Pluto",
+                  "evidenceKey": "planet|Pluto|8|6|"
+                }
+              ]
+            },
+            {
+              "key": "intensity",
+              "score": 9.9,
+              "sources": [
+                {
+                  "dimension": "intensity",
+                  "score": 9.9,
+                  "planetKey": "Pluto",
+                  "evidenceKey": "planet|Pluto|8|6|"
+                }
+              ]
+            },
+            {
+              "key": "consistency",
+              "score": 9.6,
+              "sources": [
+                {
+                  "dimension": "consistency",
+                  "score": 8.25,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Saturn|1|12|"
+                },
+                {
+                  "dimension": "consistency",
+                  "score": 6.75,
+                  "planetKey": "Saturn",
+                  "evidenceKey": "planet|Saturn|1|12|"
+                }
+              ]
+            },
+            {
+              "key": "emotionalResponse",
+              "score": 8.4,
+              "sources": [
+                {
+                  "dimension": "emotionalResponse",
+                  "score": 8.415000000000001,
+                  "planetKey": null,
+                  "evidenceKey": "angle|mc|11||"
+                }
+              ]
+            },
+            {
+              "key": "structure",
+              "score": 7.5,
+              "sources": [
+                {
+                  "dimension": "structure",
+                  "score": 7.5,
+                  "planetKey": "Saturn",
+                  "evidenceKey": "planet|Saturn|1|12|"
+                }
+              ]
+            },
+            {
+              "key": "freedom",
+              "score": 7.3,
+              "sources": [
+                {
+                  "dimension": "freedom",
+                  "score": 7.26,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Pluto|8|6|"
+                }
+              ]
+            },
+            {
+              "key": "harmony",
+              "score": 6.9,
+              "sources": [
+                {
+                  "dimension": "harmony",
+                  "score": 6.930000000000001,
+                  "planetKey": null,
+                  "evidenceKey": "angle|mc|11||"
+                }
+              ]
+            },
+            {
+              "key": "practicalCare",
+              "score": 4.5,
+              "sources": [
+                {
+                  "dimension": "practicalCare",
+                  "score": 4.5375000000000005,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Saturn|1|12|"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "questionId": "career-core-skill",
+          "headline": "核心職場競爭力是學習、表達與整理複雜資訊。",
+          "summary": "別人會在需要建立清楚的自我定位並主動承擔時倚賴這項能力。",
+          "details": [
+            {
+              "label": "最拿手的職場能力",
+              "text": "會用提問、比較資訊和來回討論確認彼此是否理解一致。",
+              "semanticType": "workplace_advantages_1"
+            },
+            {
+              "label": "別人會倚賴你的部分",
+              "text": "穩定表現需要被看見、被肯定並保有主體性。",
+              "semanticType": "workplace_advantages_2"
+            }
+          ],
+          "caution": "留意想得太多或注意力分散。",
+          "primary": {
+            "factor": "上升主星（命主星）",
+            "placement": "水星（上升主星（命主星））在巨蟹座第1宮",
+            "reason": "第1宮宮頭在雙子座，守護星是水星，它實際的落點是這個生活領域怎麼被打理的關鍵線索",
+            "weight": 9,
+            "elemTag": "水",
+            "planetKey": "Mercury",
+            "sign": 3,
+            "house": 1,
+            "role": "chartRuler",
+            "canonicalKey": "planet|Mercury|3|1|",
+            "sourceRoles": [
+              "planet:Mercury",
+              "chartRuler"
+            ],
+            "rawWeight": 9,
+            "biasBonus": 0.5,
+            "selectionScore": 9.5,
+            "semanticSupport": "支持「資訊交換與說清楚」：會用提問、比較資訊和來回討論確認彼此是否理解一致",
+            "semanticLimitation": "過度使用時：持續追問和分析，卻延後表明自己的決定"
+          },
+          "semanticScores": [
+            {
+              "key": "dialogue",
+              "score": 12.3,
+              "sources": [
+                {
+                  "dimension": "dialogue",
+                  "score": 9.025,
+                  "planetKey": "Mercury",
+                  "evidenceKey": "planet|Mercury|3|1|"
+                },
+                {
+                  "dimension": "dialogue",
+                  "score": 8.25,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Sun|2|12|"
+                },
+                {
+                  "dimension": "dialogue",
+                  "score": 8.25,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mars|2|1|"
+                }
+              ]
+            },
+            {
+              "key": "emotionalResponse",
+              "score": 10.5,
+              "sources": [
+                {
+                  "dimension": "emotionalResponse",
+                  "score": 10.450000000000001,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mercury|3|1|"
+                }
+              ]
+            },
+            {
+              "key": "selfDirection",
+              "score": 8.8,
+              "sources": [
+                {
+                  "dimension": "selfDirection",
+                  "score": 7.5,
+                  "planetKey": "Mars",
+                  "evidenceKey": "planet|Mars|2|1|"
+                },
+                {
+                  "dimension": "selfDirection",
+                  "score": 6.375,
+                  "planetKey": "Sun",
+                  "evidenceKey": "planet|Sun|2|12|"
+                }
+              ]
+            },
+            {
+              "key": "visibility",
+              "score": 7.5,
+              "sources": [
+                {
+                  "dimension": "visibility",
+                  "score": 7.5,
+                  "planetKey": "Sun",
+                  "evidenceKey": "planet|Sun|2|12|"
+                }
+              ]
+            },
+            {
+              "key": "practicalCare",
+              "score": 7.3,
+              "sources": [
+                {
+                  "dimension": "practicalCare",
+                  "score": 7.315,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mercury|3|1|"
+                }
+              ]
+            },
+            {
+              "key": "novelty",
+              "score": 7.3,
+              "sources": [
+                {
+                  "dimension": "novelty",
+                  "score": 5.362500000000001,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Sun|2|12|"
+                },
+                {
+                  "dimension": "novelty",
+                  "score": 5.362500000000001,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mars|2|1|"
+                },
+                {
+                  "dimension": "novelty",
+                  "score": 4.275,
+                  "planetKey": "Mercury",
+                  "evidenceKey": "planet|Mercury|3|1|"
+                }
+              ]
+            },
+            {
+              "key": "intensity",
+              "score": 4.1,
+              "sources": [
+                {
+                  "dimension": "intensity",
+                  "score": 4.125,
+                  "planetKey": "Mars",
+                  "evidenceKey": "planet|Mars|2|1|"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "summer-care",
+      "chart": {
+        "utcDate": "1994-07-08T04:40:00.000Z",
+        "asc": 204.77354491735863,
+        "mc": 115.50784550007802,
+        "ascSign": 6,
+        "houseCusps": [
+          204.77354491735863,
+          233.78682656839158,
+          264.1313036853534,
+          295.507845500078,
+          327.24265993164,
+          357.5771435617979,
+          24.773544917358663,
+          53.786826568391575,
+          84.13130368535337,
+          115.50784550007802,
+          147.24265993164,
+          177.57714356179793
+        ],
+        "houseSystem": "placidus",
+        "planets": {
+          "Sun": {
+            "lon": 105.80817757295205,
+            "retro": false,
+            "house": 9,
+            "sign": 3,
+            "deg": 15.808177572952047
+          },
+          "Moon": {
+            "lon": 97.50898428698122,
+            "retro": false,
+            "house": 9,
+            "sign": 3,
+            "deg": 7.508984286981217
+          },
+          "Mercury": {
+            "lon": 89.49594963798438,
+            "retro": false,
+            "house": 9,
+            "sign": 2,
+            "deg": 29.49594963798438
+          },
+          "Venus": {
+            "lon": 146.50179418574294,
+            "retro": false,
+            "house": 10,
+            "sign": 4,
+            "deg": 26.501794185742938
+          },
+          "Mars": {
+            "lon": 63.01498729436224,
+            "retro": false,
+            "house": 8,
+            "sign": 2,
+            "deg": 3.0149872943622427
+          },
+          "Jupiter": {
+            "lon": 214.822828041026,
+            "retro": false,
+            "house": 1,
+            "sign": 7,
+            "deg": 4.822828041026014
+          },
+          "Saturn": {
+            "lon": 342.2169193399368,
+            "retro": true,
+            "house": 5,
+            "sign": 11,
+            "deg": 12.216919339936794
+          },
+          "Uranus": {
+            "lon": 294.719185820451,
+            "retro": true,
+            "house": 3,
+            "sign": 9,
+            "deg": 24.719185820451003
+          },
+          "Neptune": {
+            "lon": 292.1384509852518,
+            "retro": true,
+            "house": 3,
+            "sign": 9,
+            "deg": 22.13845098525178
+          },
+          "Pluto": {
+            "lon": 235.49706972464594,
+            "retro": true,
+            "house": 2,
+            "sign": 7,
+            "deg": 25.49706972464594
+          }
+        },
+        "points": {
+          "Node": {
+            "lon": 231.12708999105314,
+            "retro": true,
+            "house": 1,
+            "sign": 7,
+            "deg": 21.12708999105314
+          },
+          "SNode": {
+            "lon": 51.12708999105314,
+            "retro": true,
+            "house": 7,
+            "sign": 1,
+            "deg": 21.12708999105314
+          },
+          "Lilith": {
+            "lon": 40.17799395171983,
+            "retro": false,
+            "house": 7,
+            "sign": 1,
+            "deg": 10.177993951719827
+          },
+          "Chiron": {
+            "lon": 155.93052511801397,
+            "retro": false,
+            "house": 11,
+            "sign": 5,
+            "deg": 5.930525118013975
+          },
+          "Fortune": {
+            "lon": 196.4743516313879,
+            "retro": false,
+            "house": 12,
+            "sign": 6,
+            "deg": 16.47435163138789
+          },
+          "Vertex": {
+            "lon": 94.67422141673882,
+            "retro": false,
+            "house": 9,
+            "sign": 3,
+            "deg": 4.674221416738817
+          }
+        },
+        "aspects": [
+          {
+            "a": "Sun",
+            "b": "Saturn",
+            "type": "trine",
+            "orb": 3.591258233015253
+          },
+          {
+            "a": "Sun",
+            "b": "Neptune",
+            "type": "opposition",
+            "orb": 6.330273412299732
+          },
+          {
+            "a": "Moon",
+            "b": "Jupiter",
+            "type": "trine",
+            "orb": 2.6861562459552033
+          },
+          {
+            "a": "Moon",
+            "b": "Saturn",
+            "type": "trine",
+            "orb": 4.707935052955577
+          },
+          {
+            "a": "Mercury",
+            "b": "Venus",
+            "type": "sextile",
+            "orb": 2.9941554522414435
+          },
+          {
+            "a": "Mercury",
+            "b": "Jupiter",
+            "type": "trine",
+            "orb": 5.326878403041633
+          },
+          {
+            "a": "Venus",
+            "b": "Pluto",
+            "type": "square",
+            "orb": 1.0047244610969983
+          },
+          {
+            "a": "Mars",
+            "b": "Pluto",
+            "type": "opposition",
+            "orb": 7.517917569716303
+          },
+          {
+            "a": "Uranus",
+            "b": "Neptune",
+            "type": "conjunction",
+            "orb": 2.580734835199223
+          },
+          {
+            "a": "Uranus",
+            "b": "Pluto",
+            "type": "sextile",
+            "orb": 0.7778839041949368
+          },
+          {
+            "a": "Neptune",
+            "b": "Pluto",
+            "type": "sextile",
+            "orb": 3.35861873939416
+          },
+          {
+            "a": "Node",
+            "b": "Sun",
+            "type": "trine",
+            "orb": 5.3189124181010925
+          },
+          {
+            "a": "Node",
+            "b": "Venus",
+            "type": "square",
+            "orb": 5.374704194689798
+          },
+          {
+            "a": "Node",
+            "b": "Uranus",
+            "type": "sextile",
+            "orb": 3.592095829397863
+          },
+          {
+            "a": "Node",
+            "b": "Neptune",
+            "type": "sextile",
+            "orb": 1.0113609941986397
+          },
+          {
+            "a": "Node",
+            "b": "Pluto",
+            "type": "conjunction",
+            "orb": 4.3699797335928
+          },
+          {
+            "a": "SNode",
+            "b": "Venus",
+            "type": "square",
+            "orb": 5.374704194689798
+          },
+          {
+            "a": "SNode",
+            "b": "Uranus",
+            "type": "trine",
+            "orb": 3.592095829397863
+          },
+          {
+            "a": "SNode",
+            "b": "Neptune",
+            "type": "trine",
+            "orb": 1.0113609941986397
+          },
+          {
+            "a": "SNode",
+            "b": "Pluto",
+            "type": "opposition",
+            "orb": 4.3699797335928
+          },
+          {
+            "a": "Lilith",
+            "b": "Moon",
+            "type": "sextile",
+            "orb": 2.66900966473861
+          },
+          {
+            "a": "Lilith",
+            "b": "Jupiter",
+            "type": "opposition",
+            "orb": 5.355165910693813
+          },
+          {
+            "a": "Lilith",
+            "b": "Saturn",
+            "type": "sextile",
+            "orb": 2.038925388216967
+          },
+          {
+            "a": "Chiron",
+            "b": "Moon",
+            "type": "sextile",
+            "orb": 1.5784591689672425
+          },
+          {
+            "a": "Chiron",
+            "b": "Mars",
+            "type": "square",
+            "orb": 2.915537823651732
+          },
+          {
+            "a": "Chiron",
+            "b": "Jupiter",
+            "type": "sextile",
+            "orb": 1.1076970769879608
+          },
+          {
+            "a": "Chiron",
+            "b": "Saturn",
+            "type": "opposition",
+            "orb": 6.286394221922819
+          },
+          {
+            "a": "Fortune",
+            "b": "Sun",
+            "type": "square",
+            "orb": 0.6661740584358427
+          },
+          {
+            "a": "Fortune",
+            "b": "Neptune",
+            "type": "square",
+            "orb": 5.6640993538638895
+          },
+          {
+            "a": "Vertex",
+            "b": "Moon",
+            "type": "conjunction",
+            "orb": 2.8347628702424004
+          },
+          {
+            "a": "Vertex",
+            "b": "Mercury",
+            "type": "conjunction",
+            "orb": 5.178271778754436
+          },
+          {
+            "a": "Vertex",
+            "b": "Jupiter",
+            "type": "trine",
+            "orb": 0.14860662428719706
+          },
+          {
+            "a": "Lilith",
+            "b": "Chiron",
+            "type": "trine",
+            "orb": 4.247468833705852
+          },
+          {
+            "a": "Chiron",
+            "b": "Vertex",
+            "type": "sextile",
+            "orb": 1.256303701275158
+          }
+        ]
+      },
+      "fingerprint": "d8a4375b",
+      "answers": [
+        {
+          "questionId": "career-work-type",
+          "headline": "適合美感把關、人際協調或對外關係的角色。",
+          "summary": "你很容易感知到別人沒說出口的需要，這份敏銳讓你在照顧型的位置上特別稱職。",
+          "details": [
+            {
+              "label": "適合的職能角色",
+              "text": "需要對外建立關係、維持形象的角色。",
+              "semanticType": "suitable_roles_1"
+            },
+            {
+              "label": "容易發揮的工作內容",
+              "text": "負責維繫團隊情感、安撫氣氛的位置。",
+              "semanticType": "suitable_roles_2"
+            }
+          ],
+          "caution": "留意別為了維持和諧而不敢表達真正的意見。",
+          "primary": {
+            "factor": "第10宮內行星",
+            "placement": "金星在獅子座第10宮",
+            "reason": "金星直接落在第10宮，代表這個生活領域被明顯啟動",
+            "weight": 11,
+            "elemTag": "火",
+            "planetKey": "Venus",
+            "sign": 4,
+            "house": 10,
+            "role": "housePlanets:10",
+            "canonicalKey": "planet|Venus|4|10|",
+            "sourceRoles": [
+              "housePlanets:10",
+              "chartRuler"
+            ],
+            "rawWeight": 11,
+            "biasBonus": 2,
+            "selectionScore": 13,
+            "semanticSupport": "支持「被看見與主動表態」：會先表明立場，也願意在眾人面前承擔結果",
+            "semanticLimitation": "過度使用時：把不同意見理解成對能力的否定"
+          },
+          "semanticScores": [
+            {
+              "key": "visibility",
+              "score": 15.8,
+              "sources": [
+                {
+                  "dimension": "visibility",
+                  "score": 14.3,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Venus|4|10|"
+                },
+                {
+                  "dimension": "visibility",
+                  "score": 7.5,
+                  "planetKey": "Sun",
+                  "evidenceKey": "planet|Sun|3|9|"
+                }
+              ]
+            },
+            {
+              "key": "emotionalResponse",
+              "score": 14.4,
+              "sources": [
+                {
+                  "dimension": "emotionalResponse",
+                  "score": 11,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Moon|3|9|"
+                },
+                {
+                  "dimension": "emotionalResponse",
+                  "score": 10,
+                  "planetKey": "Moon",
+                  "evidenceKey": "planet|Moon|3|9|"
+                },
+                {
+                  "dimension": "emotionalResponse",
+                  "score": 8.25,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Sun|3|9|"
+                },
+                {
+                  "dimension": "emotionalResponse",
+                  "score": -1.1,
+                  "planetKey": null,
+                  "evidenceKey": "angle|mc|3||"
+                }
+              ]
+            },
+            {
+              "key": "harmony",
+              "score": 12.4,
+              "sources": [
+                {
+                  "dimension": "harmony",
+                  "score": 12.35,
+                  "planetKey": "Venus",
+                  "evidenceKey": "planet|Venus|4|10|"
+                }
+              ]
+            },
+            {
+              "key": "practicalCare",
+              "score": 10.1,
+              "sources": [
+                {
+                  "dimension": "practicalCare",
+                  "score": 7.700000000000001,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Moon|3|9|"
+                },
+                {
+                  "dimension": "practicalCare",
+                  "score": 7,
+                  "planetKey": "Moon",
+                  "evidenceKey": "planet|Moon|3|9|"
+                },
+                {
+                  "dimension": "practicalCare",
+                  "score": 5.775,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Sun|3|9|"
+                },
+                {
+                  "dimension": "practicalCare",
+                  "score": -0.77,
+                  "planetKey": null,
+                  "evidenceKey": "angle|mc|3||"
+                }
+              ]
+            },
+            {
+              "key": "selfDirection",
+              "score": 9.1,
+              "sources": [
+                {
+                  "dimension": "selfDirection",
+                  "score": 7.865000000000001,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Venus|4|10|"
+                },
+                {
+                  "dimension": "selfDirection",
+                  "score": 6.375,
+                  "planetKey": "Sun",
+                  "evidenceKey": "planet|Sun|3|9|"
+                }
+              ]
+            },
+            {
+              "key": "consistency",
+              "score": 5.9,
+              "sources": [
+                {
+                  "dimension": "consistency",
+                  "score": 5.8500000000000005,
+                  "planetKey": "Venus",
+                  "evidenceKey": "planet|Venus|4|10|"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "questionId": "career-work-env",
+          "headline": "適合氛圍柔軟、重視創意與同理、少僵化規則的環境。",
+          "summary": "第5宮的個人表現遇上土星的紀律傾向，讓你更適合把創意或才華放進一套清楚的規則裡慢慢累積成果。",
+          "details": [
+            {
+              "label": "適合的工作場域",
+              "text": "允許你用直覺與感受工作的環境。",
+              "semanticType": "suitable_environment_1"
+            },
+            {
+              "label": "舒適的步調與氛圍",
+              "text": "責任分工清楚、不會曖昧不明的環境。",
+              "semanticType": "suitable_environment_2"
+            }
+          ],
+          "caution": "留意環境是否讓你逃避該面對的現實問題。",
+          "primary": {
+            "factor": "第6宮主星",
+            "placement": "海王星（第6宮主星）在摩羯座第3宮",
+            "reason": "第6宮宮頭在雙魚座，守護星是海王星，它實際的落點是這個生活領域怎麼被打理的關鍵線索",
+            "weight": 8,
+            "elemTag": "土",
+            "planetKey": "Neptune",
+            "sign": 9,
+            "house": 3,
+            "role": "houseRuler:6",
+            "canonicalKey": "planet|Neptune|9|3|",
+            "sourceRoles": [
+              "houseRuler:6"
+            ],
+            "fallbackUsed": true,
+            "fallbackSource": "houseRuler",
+            "fallbackReason": "No planets in house 6",
+            "rawWeight": 8,
+            "biasBonus": 2,
+            "selectionScore": 10,
+            "semanticSupport": "支持「情緒回應與安全感」：會先讀取對方的情緒，再決定自己要靠近還是退開",
+            "semanticLimitation": "過度使用時：把對方的情緒全部接到自己身上"
+          },
+          "semanticScores": [
+            {
+              "key": "emotionalResponse",
+              "score": 12.9,
+              "sources": [
+                {
+                  "dimension": "emotionalResponse",
+                  "score": 9.9,
+                  "planetKey": null,
+                  "evidenceKey": "angle|mc|3||"
+                },
+                {
+                  "dimension": "emotionalResponse",
+                  "score": 8,
+                  "planetKey": "Neptune",
+                  "evidenceKey": "planet|Neptune|9|3|"
+                },
+                {
+                  "dimension": "emotionalResponse",
+                  "score": 7.0125,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Saturn|11|5|"
+                }
+              ]
+            },
+            {
+              "key": "structure",
+              "score": 12.5,
+              "sources": [
+                {
+                  "dimension": "structure",
+                  "score": 11,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Neptune|9|3|"
+                },
+                {
+                  "dimension": "structure",
+                  "score": 7.5,
+                  "planetKey": "Saturn",
+                  "evidenceKey": "planet|Saturn|11|5|"
+                }
+              ]
+            },
+            {
+              "key": "consistency",
+              "score": 9.6,
+              "sources": [
+                {
+                  "dimension": "consistency",
+                  "score": 8.25,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Neptune|9|3|"
+                },
+                {
+                  "dimension": "consistency",
+                  "score": 6.75,
+                  "planetKey": "Saturn",
+                  "evidenceKey": "planet|Saturn|11|5|"
+                }
+              ]
+            },
+            {
+              "key": "harmony",
+              "score": 6.9,
+              "sources": [
+                {
+                  "dimension": "harmony",
+                  "score": 5.775,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Saturn|11|5|"
+                },
+                {
+                  "dimension": "harmony",
+                  "score": 5.5,
+                  "planetKey": "Neptune",
+                  "evidenceKey": "planet|Neptune|9|3|"
+                }
+              ]
+            },
+            {
+              "key": "practicalCare",
+              "score": 6.9,
+              "sources": [
+                {
+                  "dimension": "practicalCare",
+                  "score": 6.930000000000001,
+                  "planetKey": null,
+                  "evidenceKey": "angle|mc|3||"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "questionId": "career-core-skill",
+          "headline": "核心職場競爭力是主導、決策與凝聚注意力。",
+          "summary": "別人會在需要創造價值、和諧與彼此欣賞時倚賴這項能力。",
+          "details": [
+            {
+              "label": "最拿手的職場能力",
+              "text": "會用提問、比較資訊和來回討論確認彼此是否理解一致。",
+              "semanticType": "workplace_advantages_1"
+            },
+            {
+              "label": "別人會倚賴你的部分",
+              "text": "穩定表現需要公平、舒適與有品質的互動。",
+              "semanticType": "workplace_advantages_2"
+            }
+          ],
+          "caution": "留意過度把成敗綁在自我價值上。",
+          "primary": {
+            "factor": "太陽",
+            "placement": "太陽在巨蟹座第9宮",
+            "reason": "核心自我、意志與生命力",
+            "weight": 7,
+            "elemTag": "水",
+            "planetKey": "Sun",
+            "sign": 3,
+            "house": 9,
+            "role": "planet:Sun",
+            "canonicalKey": "planet|Sun|3|9|",
+            "sourceRoles": [
+              "planet:Sun"
+            ],
+            "rawWeight": 7,
+            "biasBonus": 0.5,
+            "selectionScore": 7.5,
+            "semanticSupport": "支持「被看見與主動表態」：會先表明立場，也願意在眾人面前承擔結果",
+            "semanticLimitation": "過度使用時：把不同意見理解成對能力的否定"
+          },
+          "semanticScores": [
+            {
+              "key": "dialogue",
+              "score": 11.3,
+              "sources": [
+                {
+                  "dimension": "dialogue",
+                  "score": 8.25,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mercury|2|9|"
+                },
+                {
+                  "dimension": "dialogue",
+                  "score": 8.25,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mars|2|8|"
+                },
+                {
+                  "dimension": "dialogue",
+                  "score": 7.125,
+                  "planetKey": "Mercury",
+                  "evidenceKey": "planet|Mercury|2|9|"
+                }
+              ]
+            },
+            {
+              "key": "visibility",
+              "score": 10.3,
+              "sources": [
+                {
+                  "dimension": "visibility",
+                  "score": 8.8,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Venus|4|10|"
+                },
+                {
+                  "dimension": "visibility",
+                  "score": 7.5,
+                  "planetKey": "Sun",
+                  "evidenceKey": "planet|Sun|3|9|"
+                }
+              ]
+            },
+            {
+              "key": "selfDirection",
+              "score": 9.7,
+              "sources": [
+                {
+                  "dimension": "selfDirection",
+                  "score": 7.5,
+                  "planetKey": "Mars",
+                  "evidenceKey": "planet|Mars|2|8|"
+                },
+                {
+                  "dimension": "selfDirection",
+                  "score": 6.375,
+                  "planetKey": "Sun",
+                  "evidenceKey": "planet|Sun|3|9|"
+                },
+                {
+                  "dimension": "selfDirection",
+                  "score": 4.840000000000001,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Venus|4|10|"
+                }
+              ]
+            },
+            {
+              "key": "emotionalResponse",
+              "score": 8.3,
+              "sources": [
+                {
+                  "dimension": "emotionalResponse",
+                  "score": 8.25,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Sun|3|9|"
+                }
+              ]
+            },
+            {
+              "key": "harmony",
+              "score": 7.6,
+              "sources": [
+                {
+                  "dimension": "harmony",
+                  "score": 7.6,
+                  "planetKey": "Venus",
+                  "evidenceKey": "planet|Venus|4|10|"
+                }
+              ]
+            },
+            {
+              "key": "novelty",
+              "score": 7.1,
+              "sources": [
+                {
+                  "dimension": "novelty",
+                  "score": 5.362500000000001,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mercury|2|9|"
+                },
+                {
+                  "dimension": "novelty",
+                  "score": 5.362500000000001,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mars|2|8|"
+                },
+                {
+                  "dimension": "novelty",
+                  "score": 3.375,
+                  "planetKey": "Mercury",
+                  "evidenceKey": "planet|Mercury|2|9|"
+                }
+              ]
+            },
+            {
+              "key": "practicalCare",
+              "score": 5.8,
+              "sources": [
+                {
+                  "dimension": "practicalCare",
+                  "score": 5.775,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Sun|3|9|"
+                }
+              ]
+            },
+            {
+              "key": "intensity",
+              "score": 4.1,
+              "sources": [
+                {
+                  "dimension": "intensity",
+                  "score": 4.125,
+                  "planetKey": "Mars",
+                  "evidenceKey": "planet|Mars|2|8|"
+                }
+              ]
+            },
+            {
+              "key": "consistency",
+              "score": 3.6,
+              "sources": [
+                {
+                  "dimension": "consistency",
+                  "score": 3.6,
+                  "planetKey": "Venus",
+                  "evidenceKey": "planet|Venus|4|10|"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "autumn-depth",
+      "chart": {
+        "utcDate": "1997-11-04T14:50:00.000Z",
+        "asc": 124.88078614282233,
+        "mc": 30.04179017143008,
+        "ascSign": 4,
+        "houseCusps": [
+          124.88078614282233,
+          149.52072741336553,
+          177.90793208454556,
+          210.04179017143008,
+          243.3884629984302,
+          275.23131503820866,
+          304.88078614282233,
+          329.52072741336553,
+          357.90793208454556,
+          30.04179017143008,
+          63.38846299843027,
+          95.23131503820866
+        ],
+        "houseSystem": "placidus",
+        "planets": {
+          "Sun": {
+            "lon": 222.22448637261937,
+            "retro": false,
+            "house": 4,
+            "sign": 7,
+            "deg": 12.224486372619367
+          },
+          "Moon": {
+            "lon": 271.26655079070974,
+            "retro": false,
+            "house": 5,
+            "sign": 9,
+            "deg": 1.2665507907097435
+          },
+          "Mercury": {
+            "lon": 235.33216249055636,
+            "retro": false,
+            "house": 4,
+            "sign": 7,
+            "deg": 25.332162490556357
+          },
+          "Venus": {
+            "lon": 269.2422814431728,
+            "retro": false,
+            "house": 5,
+            "sign": 8,
+            "deg": 29.24228144317283
+          },
+          "Mars": {
+            "lon": 266.54417794814935,
+            "retro": false,
+            "house": 5,
+            "sign": 8,
+            "deg": 26.544177948149354
+          },
+          "Jupiter": {
+            "lon": 313.3131292566459,
+            "retro": false,
+            "house": 7,
+            "sign": 10,
+            "deg": 13.31312925664588
+          },
+          "Saturn": {
+            "lon": 15.015130702098418,
+            "retro": true,
+            "house": 9,
+            "sign": 0,
+            "deg": 15.015130702098418
+          },
+          "Uranus": {
+            "lon": 304.92445395240975,
+            "retro": false,
+            "house": 7,
+            "sign": 10,
+            "deg": 4.924453952409749
+          },
+          "Neptune": {
+            "lon": 297.37829384294923,
+            "retro": false,
+            "house": 6,
+            "sign": 9,
+            "deg": 27.378293842949233
+          },
+          "Pluto": {
+            "lon": 244.57974890341666,
+            "retro": false,
+            "house": 5,
+            "sign": 8,
+            "deg": 4.579748903416657
+          }
+        },
+        "points": {
+          "Node": {
+            "lon": 166.76582617625854,
+            "retro": true,
+            "house": 2,
+            "sign": 5,
+            "deg": 16.765826176258543
+          },
+          "SNode": {
+            "lon": 346.76582617625854,
+            "retro": true,
+            "house": 8,
+            "sign": 11,
+            "deg": 16.765826176258543
+          },
+          "Lilith": {
+            "lon": 175.58049728898686,
+            "retro": false,
+            "house": 2,
+            "sign": 5,
+            "deg": 25.580497288986862
+          },
+          "Chiron": {
+            "lon": 217.68245721845278,
+            "retro": false,
+            "house": 4,
+            "sign": 7,
+            "deg": 7.682457218452782
+          },
+          "Fortune": {
+            "lon": 75.83872172473195,
+            "retro": false,
+            "house": 11,
+            "sign": 2,
+            "deg": 15.838721724731954
+          },
+          "Vertex": {
+            "lon": 244.48433352721867,
+            "retro": false,
+            "house": 5,
+            "sign": 8,
+            "deg": 4.484333527218666
+          }
+        },
+        "aspects": [
+          {
+            "a": "Sun",
+            "b": "Jupiter",
+            "type": "square",
+            "orb": 1.0886428840265125
+          },
+          {
+            "a": "Moon",
+            "b": "Venus",
+            "type": "conjunction",
+            "orb": 2.024269347536915
+          },
+          {
+            "a": "Moon",
+            "b": "Mars",
+            "type": "conjunction",
+            "orb": 4.7223728425603895
+          },
+          {
+            "a": "Mercury",
+            "b": "Neptune",
+            "type": "sextile",
+            "orb": 2.0461313523928766
+          },
+          {
+            "a": "Venus",
+            "b": "Mars",
+            "type": "conjunction",
+            "orb": 2.6981034950234744
+          },
+          {
+            "a": "Jupiter",
+            "b": "Saturn",
+            "type": "sextile",
+            "orb": 1.702001445452538
+          },
+          {
+            "a": "Uranus",
+            "b": "Neptune",
+            "type": "conjunction",
+            "orb": 7.546160109460516
+          },
+          {
+            "a": "Uranus",
+            "b": "Pluto",
+            "type": "sextile",
+            "orb": 0.3447050489930916
+          },
+          {
+            "a": "SNode",
+            "b": "Sun",
+            "type": "trine",
+            "orb": 4.541339803639175
+          },
+          {
+            "a": "Lilith",
+            "b": "Moon",
+            "type": "square",
+            "orb": 5.686053501722881
+          },
+          {
+            "a": "Lilith",
+            "b": "Mercury",
+            "type": "sextile",
+            "orb": 0.24833479843050554
+          },
+          {
+            "a": "Lilith",
+            "b": "Venus",
+            "type": "square",
+            "orb": 3.661784154185966
+          },
+          {
+            "a": "Lilith",
+            "b": "Mars",
+            "type": "square",
+            "orb": 0.9636806591624918
+          },
+          {
+            "a": "Lilith",
+            "b": "Neptune",
+            "type": "trine",
+            "orb": 1.797796553962371
+          },
+          {
+            "a": "Chiron",
+            "b": "Sun",
+            "type": "conjunction",
+            "orb": 4.542029154166585
+          },
+          {
+            "a": "Chiron",
+            "b": "Jupiter",
+            "type": "square",
+            "orb": 5.630672038193097
+          },
+          {
+            "a": "Chiron",
+            "b": "Uranus",
+            "type": "square",
+            "orb": 2.7580032660430334
+          },
+          {
+            "a": "Fortune",
+            "b": "Jupiter",
+            "type": "trine",
+            "orb": 2.5255924680860744
+          },
+          {
+            "a": "Fortune",
+            "b": "Saturn",
+            "type": "sextile",
+            "orb": 0.8235910226335363
+          },
+          {
+            "a": "Vertex",
+            "b": "Uranus",
+            "type": "sextile",
+            "orb": 0.44012042519108263
+          },
+          {
+            "a": "Vertex",
+            "b": "Pluto",
+            "type": "conjunction",
+            "orb": 0.09541537619799101
+          },
+          {
+            "a": "Node",
+            "b": "Fortune",
+            "type": "square",
+            "orb": 0.9271044515265885
+          },
+          {
+            "a": "SNode",
+            "b": "Fortune",
+            "type": "square",
+            "orb": 0.9271044515265885
+          }
+        ]
+      },
+      "fingerprint": "754e4947",
+      "answers": [
+        {
+          "questionId": "career-work-type",
+          "headline": "適合需要代表、領導或站上舞台的角色。",
+          "summary": "你擅長讓不同的人和意見達成平衡，這在需要協調與美感判斷的位置上特別突出。",
+          "details": [
+            {
+              "label": "適合的職能角色",
+              "text": "需要代表團隊發聲的角色。",
+              "semanticType": "suitable_roles_1"
+            },
+            {
+              "label": "容易發揮的工作內容",
+              "text": "負責審美判斷或品牌調性的位置。",
+              "semanticType": "suitable_roles_2"
+            }
+          ],
+          "caution": "留意別因為想證明自己而不願授權給別人。",
+          "primary": {
+            "factor": "上升主星（命主星）",
+            "placement": "太陽（上升主星（命主星））在天蠍座第4宮",
+            "reason": "第1宮宮頭在獅子座，守護星是太陽，它實際的落點是這個生活領域怎麼被打理的關鍵線索",
+            "weight": 9,
+            "elemTag": "水",
+            "planetKey": "Sun",
+            "sign": 7,
+            "house": 4,
+            "role": "chartRuler",
+            "canonicalKey": "planet|Sun|7|4|",
+            "sourceRoles": [
+              "planet:Sun",
+              "chartRuler"
+            ],
+            "rawWeight": 9,
+            "biasBonus": 2.5,
+            "selectionScore": 11.5,
+            "semanticSupport": "支持「深度信任與核心真相」：會追問表面說法背後的動機，重要事情不接受含糊帶過",
+            "semanticLimitation": "過度使用時：在證據不足時持續試探、查證或掌控細節"
+          },
+          "semanticScores": [
+            {
+              "key": "depthTrust",
+              "score": 12.7,
+              "sources": [
+                {
+                  "dimension": "depthTrust",
+                  "score": 12.65,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Sun|7|4|"
+                }
+              ]
+            },
+            {
+              "key": "visibility",
+              "score": 11.5,
+              "sources": [
+                {
+                  "dimension": "visibility",
+                  "score": 11.5,
+                  "planetKey": "Sun",
+                  "evidenceKey": "planet|Sun|7|4|"
+                }
+              ]
+            },
+            {
+              "key": "novelty",
+              "score": 11,
+              "sources": [
+                {
+                  "dimension": "novelty",
+                  "score": 11,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Venus|8|5|"
+                }
+              ]
+            },
+            {
+              "key": "selfDirection",
+              "score": 9.8,
+              "sources": [
+                {
+                  "dimension": "selfDirection",
+                  "score": 9.775,
+                  "planetKey": "Sun",
+                  "evidenceKey": "planet|Sun|7|4|"
+                }
+              ]
+            },
+            {
+              "key": "intensity",
+              "score": 9.5,
+              "sources": [
+                {
+                  "dimension": "intensity",
+                  "score": 9.4875,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Sun|7|4|"
+                }
+              ]
+            },
+            {
+              "key": "harmony",
+              "score": 9.5,
+              "sources": [
+                {
+                  "dimension": "harmony",
+                  "score": 9.5,
+                  "planetKey": "Venus",
+                  "evidenceKey": "planet|Venus|8|5|"
+                }
+              ]
+            },
+            {
+              "key": "freedom",
+              "score": 6.6,
+              "sources": [
+                {
+                  "dimension": "freedom",
+                  "score": 6.6000000000000005,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Venus|8|5|"
+                }
+              ]
+            },
+            {
+              "key": "consistency",
+              "score": 4.3,
+              "sources": [
+                {
+                  "dimension": "consistency",
+                  "score": 4.5,
+                  "planetKey": "Venus",
+                  "evidenceKey": "planet|Venus|8|5|"
+                },
+                {
+                  "dimension": "consistency",
+                  "score": -1.1,
+                  "planetKey": null,
+                  "evidenceKey": "angle|mc|1||"
+                }
+              ]
+            },
+            {
+              "key": "practicalCare",
+              "score": -0.6,
+              "sources": [
+                {
+                  "dimension": "practicalCare",
+                  "score": -0.6050000000000001,
+                  "planetKey": null,
+                  "evidenceKey": "angle|mc|1||"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "questionId": "career-work-env",
+          "headline": "適合制度清楚、講求紀律與長期累積的環境。",
+          "summary": "太過現實、講求效率至上的環境，容易讓你覺得格格不入、狀態被消耗。",
+          "details": [
+            {
+              "label": "適合的工作場域",
+              "text": "有明確制度與規範可以依循的環境。",
+              "semanticType": "suitable_environment_1"
+            },
+            {
+              "label": "舒適的步調與氛圍",
+              "text": "重視創意與美感勝過死板規則的環境。",
+              "semanticType": "suitable_environment_2"
+            }
+          ],
+          "caution": "留意環境是否讓你把責任攬得太重、忽略適時求助。",
+          "primary": {
+            "factor": "第6宮主星",
+            "placement": "土星（第6宮主星）在牡羊座第9宮",
+            "reason": "第6宮宮頭在摩羯座，守護星是土星，它實際的落點是這個生活領域怎麼被打理的關鍵線索",
+            "weight": 9,
+            "elemTag": "火",
+            "planetKey": "Saturn",
+            "sign": 0,
+            "house": 9,
+            "role": "houseRuler:6",
+            "canonicalKey": "planet|Saturn|0|9|",
+            "sourceRoles": [
+              "houseRuler:6",
+              "planet:Saturn"
+            ],
+            "rawWeight": 9,
+            "biasBonus": 2.5,
+            "selectionScore": 11.5,
+            "semanticSupport": "支持「持續投入與兌現承諾」：會觀察一個人是否長期說到做到，而不是只看當下熱度",
+            "semanticLimitation": "過度使用時：因一次失誤就提前判定整段合作不可靠"
+          },
+          "semanticScores": [
+            {
+              "key": "consistency",
+              "score": 14,
+              "sources": [
+                {
+                  "dimension": "consistency",
+                  "score": 10.35,
+                  "planetKey": "Saturn",
+                  "evidenceKey": "planet|Saturn|0|9|"
+                },
+                {
+                  "dimension": "consistency",
+                  "score": 9.9,
+                  "planetKey": null,
+                  "evidenceKey": "angle|mc|1||"
+                },
+                {
+                  "dimension": "consistency",
+                  "score": 8.25,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Neptune|9|6|"
+                }
+              ]
+            },
+            {
+              "key": "structure",
+              "score": 13.7,
+              "sources": [
+                {
+                  "dimension": "structure",
+                  "score": 11.5,
+                  "planetKey": "Saturn",
+                  "evidenceKey": "planet|Saturn|0|9|"
+                },
+                {
+                  "dimension": "structure",
+                  "score": 11,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Neptune|9|6|"
+                }
+              ]
+            },
+            {
+              "key": "selfDirection",
+              "score": 12.7,
+              "sources": [
+                {
+                  "dimension": "selfDirection",
+                  "score": 12.65,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Saturn|0|9|"
+                }
+              ]
+            },
+            {
+              "key": "emotionalResponse",
+              "score": 8,
+              "sources": [
+                {
+                  "dimension": "emotionalResponse",
+                  "score": 8,
+                  "planetKey": "Neptune",
+                  "evidenceKey": "planet|Neptune|9|6|"
+                }
+              ]
+            },
+            {
+              "key": "intensity",
+              "score": 7,
+              "sources": [
+                {
+                  "dimension": "intensity",
+                  "score": 6.9575000000000005,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Saturn|0|9|"
+                }
+              ]
+            },
+            {
+              "key": "harmony",
+              "score": 5.5,
+              "sources": [
+                {
+                  "dimension": "harmony",
+                  "score": 5.5,
+                  "planetKey": "Neptune",
+                  "evidenceKey": "planet|Neptune|9|6|"
+                }
+              ]
+            },
+            {
+              "key": "practicalCare",
+              "score": 5.4,
+              "sources": [
+                {
+                  "dimension": "practicalCare",
+                  "score": 5.445,
+                  "planetKey": null,
+                  "evidenceKey": "angle|mc|1||"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "questionId": "career-core-skill",
+          "headline": "核心職場競爭力是主導、決策與凝聚注意力。",
+          "summary": "別人會在需要理解資訊並建立清楚的連結時倚賴這項能力。",
+          "details": [
+            {
+              "label": "最拿手的職場能力",
+              "text": "會追問表面說法背後的動機，重要事情不接受含糊帶過。",
+              "semanticType": "workplace_advantages_1"
+            },
+            {
+              "label": "別人會倚賴你的部分",
+              "text": "穩定表現需要交流、變化與足夠的思考空間。",
+              "semanticType": "workplace_advantages_2"
+            }
+          ],
+          "caution": "留意過度把成敗綁在自我價值上。",
+          "primary": {
+            "factor": "上升主星（命主星）",
+            "placement": "太陽（上升主星（命主星））在天蠍座第4宮",
+            "reason": "第1宮宮頭在獅子座，守護星是太陽，它實際的落點是這個生活領域怎麼被打理的關鍵線索",
+            "weight": 9,
+            "elemTag": "水",
+            "planetKey": "Sun",
+            "sign": 7,
+            "house": 4,
+            "role": "chartRuler",
+            "canonicalKey": "planet|Sun|7|4|",
+            "sourceRoles": [
+              "planet:Sun",
+              "chartRuler"
+            ],
+            "rawWeight": 9,
+            "biasBonus": 0.5,
+            "selectionScore": 9.5,
+            "semanticSupport": "支持「深度信任與核心真相」：會追問表面說法背後的動機，重要事情不接受含糊帶過",
+            "semanticLimitation": "過度使用時：在證據不足時持續試探、查證或掌控細節"
+          },
+          "semanticScores": [
+            {
+              "key": "depthTrust",
+              "score": 12.1,
+              "sources": [
+                {
+                  "dimension": "depthTrust",
+                  "score": 10.450000000000001,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Sun|7|4|"
+                },
+                {
+                  "dimension": "depthTrust",
+                  "score": 8.25,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mercury|7|4|"
+                }
+              ]
+            },
+            {
+              "key": "intensity",
+              "score": 9.9,
+              "sources": [
+                {
+                  "dimension": "intensity",
+                  "score": 7.8375,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Sun|7|4|"
+                },
+                {
+                  "dimension": "intensity",
+                  "score": 6.187500000000001,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mercury|7|4|"
+                },
+                {
+                  "dimension": "intensity",
+                  "score": 4.125,
+                  "planetKey": "Mars",
+                  "evidenceKey": "planet|Mars|8|5|"
+                }
+              ]
+            },
+            {
+              "key": "selfDirection",
+              "score": 9.6,
+              "sources": [
+                {
+                  "dimension": "selfDirection",
+                  "score": 8.075,
+                  "planetKey": "Sun",
+                  "evidenceKey": "planet|Sun|7|4|"
+                },
+                {
+                  "dimension": "selfDirection",
+                  "score": 7.5,
+                  "planetKey": "Mars",
+                  "evidenceKey": "planet|Mars|8|5|"
+                }
+              ]
+            },
+            {
+              "key": "visibility",
+              "score": 9.5,
+              "sources": [
+                {
+                  "dimension": "visibility",
+                  "score": 9.5,
+                  "planetKey": "Sun",
+                  "evidenceKey": "planet|Sun|7|4|"
+                }
+              ]
+            },
+            {
+              "key": "novelty",
+              "score": 8.9,
+              "sources": [
+                {
+                  "dimension": "novelty",
+                  "score": 8.25,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mars|8|5|"
+                },
+                {
+                  "dimension": "novelty",
+                  "score": 3.375,
+                  "planetKey": "Mercury",
+                  "evidenceKey": "planet|Mercury|7|4|"
+                }
+              ]
+            },
+            {
+              "key": "dialogue",
+              "score": 7.1,
+              "sources": [
+                {
+                  "dimension": "dialogue",
+                  "score": 7.125,
+                  "planetKey": "Mercury",
+                  "evidenceKey": "planet|Mercury|7|4|"
+                }
+              ]
+            },
+            {
+              "key": "freedom",
+              "score": 5,
+              "sources": [
+                {
+                  "dimension": "freedom",
+                  "score": 4.95,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mars|8|5|"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "autumn-design",
+      "chart": {
+        "utcDate": "1988-10-15T10:00:00.000Z",
+        "asc": 34.107530156980886,
+        "mc": 293.841357949432,
+        "ascSign": 1,
+        "houseCusps": [
+          34.107530156980886,
+          64.5903504791126,
+          89.64538992069015,
+          113.841357949432,
+          141.01825994157957,
+          174.60900226597084,
+          214.10753015698083,
+          244.59035047911266,
+          269.64538992069015,
+          293.841357949432,
+          321.0182599415796,
+          354.60900226597084
+        ],
+        "houseSystem": "placidus",
+        "planets": {
+          "Sun": {
+            "lon": 202.26876486584513,
+            "retro": false,
+            "house": 6,
+            "sign": 6,
+            "deg": 22.268764865845128
+          },
+          "Moon": {
+            "lon": 253.8479789823358,
+            "retro": false,
+            "house": 8,
+            "sign": 8,
+            "deg": 13.847978982335803
+          },
+          "Mercury": {
+            "lon": 193.7573408758226,
+            "retro": true,
+            "house": 6,
+            "sign": 6,
+            "deg": 13.757340875822592
+          },
+          "Venus": {
+            "lon": 162.6614223976918,
+            "retro": false,
+            "house": 5,
+            "sign": 5,
+            "deg": 12.661422397691808
+          },
+          "Mars": {
+            "lon": 0.9623245920367935,
+            "retro": true,
+            "house": 12,
+            "sign": 0,
+            "deg": 0.9623245920367935
+          },
+          "Jupiter": {
+            "lon": 65.4070126693831,
+            "retro": true,
+            "house": 2,
+            "sign": 2,
+            "deg": 5.407012669383107
+          },
+          "Saturn": {
+            "lon": 267.59915344379465,
+            "retro": false,
+            "house": 8,
+            "sign": 8,
+            "deg": 27.59915344379465
+          },
+          "Uranus": {
+            "lon": 267.7160710510925,
+            "retro": false,
+            "house": 8,
+            "sign": 8,
+            "deg": 27.716071051092513
+          },
+          "Neptune": {
+            "lon": 277.6127673151035,
+            "retro": false,
+            "house": 9,
+            "sign": 9,
+            "deg": 7.612767315103497
+          },
+          "Pluto": {
+            "lon": 221.70111859020403,
+            "retro": false,
+            "house": 7,
+            "sign": 7,
+            "deg": 11.701118590204032
+          }
+        },
+        "points": {
+          "Node": {
+            "lon": 341.89462257430455,
+            "retro": true,
+            "house": 11,
+            "sign": 11,
+            "deg": 11.894622574304549
+          },
+          "SNode": {
+            "lon": 161.89462257430455,
+            "retro": true,
+            "house": 5,
+            "sign": 5,
+            "deg": 11.894622574304549
+          },
+          "Lilith": {
+            "lon": 167.14647316002754,
+            "retro": false,
+            "house": 5,
+            "sign": 5,
+            "deg": 17.14647316002754
+          },
+          "Chiron": {
+            "lon": 96.52632087492344,
+            "retro": true,
+            "house": 3,
+            "sign": 3,
+            "deg": 6.526320874923442
+          },
+          "Fortune": {
+            "lon": 342.5283160404902,
+            "retro": false,
+            "house": 11,
+            "sign": 11,
+            "deg": 12.52831604049021
+          },
+          "Vertex": {
+            "lon": 194.49613227863392,
+            "retro": false,
+            "house": 6,
+            "sign": 6,
+            "deg": 14.496132278633922
+          }
+        },
+        "aspects": [
+          {
+            "a": "Moon",
+            "b": "Mercury",
+            "type": "sextile",
+            "orb": 0.09063810651321091
+          },
+          {
+            "a": "Moon",
+            "b": "Venus",
+            "type": "square",
+            "orb": 1.186556584643995
+          },
+          {
+            "a": "Venus",
+            "b": "Neptune",
+            "type": "trine",
+            "orb": 5.048655082588311
+          },
+          {
+            "a": "Venus",
+            "b": "Pluto",
+            "type": "sextile",
+            "orb": 0.9603038074877759
+          },
+          {
+            "a": "Mars",
+            "b": "Saturn",
+            "type": "square",
+            "orb": 3.363171148242145
+          },
+          {
+            "a": "Mars",
+            "b": "Uranus",
+            "type": "square",
+            "orb": 3.2462535409442808
+          },
+          {
+            "a": "Saturn",
+            "b": "Uranus",
+            "type": "conjunction",
+            "orb": 0.11691760729786438
+          },
+          {
+            "a": "Node",
+            "b": "Moon",
+            "type": "square",
+            "orb": 1.9533564080312544
+          },
+          {
+            "a": "Node",
+            "b": "Venus",
+            "type": "opposition",
+            "orb": 0.7667998233872595
+          },
+          {
+            "a": "Node",
+            "b": "Pluto",
+            "type": "trine",
+            "orb": 0.1935039841005164
+          },
+          {
+            "a": "SNode",
+            "b": "Moon",
+            "type": "square",
+            "orb": 1.9533564080312544
+          },
+          {
+            "a": "SNode",
+            "b": "Venus",
+            "type": "conjunction",
+            "orb": 0.7667998233872595
+          },
+          {
+            "a": "SNode",
+            "b": "Neptune",
+            "type": "trine",
+            "orb": 4.281855259201052
+          },
+          {
+            "a": "SNode",
+            "b": "Pluto",
+            "type": "sextile",
+            "orb": 0.1935039841005164
+          },
+          {
+            "a": "Lilith",
+            "b": "Moon",
+            "type": "square",
+            "orb": 3.2984941776917367
+          },
+          {
+            "a": "Lilith",
+            "b": "Venus",
+            "type": "conjunction",
+            "orb": 4.485050762335732
+          },
+          {
+            "a": "Chiron",
+            "b": "Mars",
+            "type": "square",
+            "orb": 5.563996282886649
+          },
+          {
+            "a": "Chiron",
+            "b": "Neptune",
+            "type": "opposition",
+            "orb": 1.0864464401800547
+          },
+          {
+            "a": "Chiron",
+            "b": "Pluto",
+            "type": "trine",
+            "orb": 5.17479771528059
+          },
+          {
+            "a": "Fortune",
+            "b": "Moon",
+            "type": "square",
+            "orb": 1.3196629418455927
+          },
+          {
+            "a": "Fortune",
+            "b": "Venus",
+            "type": "opposition",
+            "orb": 0.1331063572015978
+          },
+          {
+            "a": "Fortune",
+            "b": "Pluto",
+            "type": "trine",
+            "orb": 0.8271974502861781
+          },
+          {
+            "a": "Vertex",
+            "b": "Sun",
+            "type": "conjunction",
+            "orb": 7.772632587211206
+          },
+          {
+            "a": "Vertex",
+            "b": "Moon",
+            "type": "sextile",
+            "orb": 0.6481532962981191
+          },
+          {
+            "a": "Vertex",
+            "b": "Mercury",
+            "type": "conjunction",
+            "orb": 0.73879140281133
+          },
+          {
+            "a": "Node",
+            "b": "Lilith",
+            "type": "opposition",
+            "orb": 5.251850585722991
+          },
+          {
+            "a": "Node",
+            "b": "Chiron",
+            "type": "trine",
+            "orb": 5.368301699381107
+          },
+          {
+            "a": "Node",
+            "b": "Fortune",
+            "type": "conjunction",
+            "orb": 0.6336934661856617
+          },
+          {
+            "a": "SNode",
+            "b": "Lilith",
+            "type": "conjunction",
+            "orb": 5.251850585722991
+          },
+          {
+            "a": "SNode",
+            "b": "Fortune",
+            "type": "opposition",
+            "orb": 0.6336934661856617
+          },
+          {
+            "a": "Lilith",
+            "b": "Fortune",
+            "type": "opposition",
+            "orb": 4.618157119537329
+          }
+        ]
+      },
+      "fingerprint": "24511069",
+      "answers": [
+        {
+          "questionId": "career-work-type",
+          "headline": "適合制度建立、品質控管或長期負責的角色。",
+          "summary": "你擅長讓不同的人和意見達成平衡，這在需要協調與美感判斷的位置上特別突出。",
+          "details": [
+            {
+              "label": "適合的職能角色",
+              "text": "需要建立規則、確保品質的角色。",
+              "semanticType": "suitable_roles_1"
+            },
+            {
+              "label": "容易發揮的工作內容",
+              "text": "負責審美判斷或品牌調性的位置。",
+              "semanticType": "suitable_roles_2"
+            }
+          ],
+          "caution": "留意別因為對自己要求太高，而過度嚴格或拖延。",
+          "primary": {
+            "factor": "第10宮主星",
+            "placement": "土星（第10宮主星）在射手座第8宮",
+            "reason": "第10宮宮頭在摩羯座，守護星是土星，它實際的落點是這個生活領域怎麼被打理的關鍵線索",
+            "weight": 8,
+            "elemTag": "火",
+            "planetKey": "Saturn",
+            "sign": 8,
+            "house": 8,
+            "role": "houseRuler:10",
+            "canonicalKey": "planet|Saturn|8|8|",
+            "sourceRoles": [
+              "houseRuler:10"
+            ],
+            "fallbackUsed": true,
+            "fallbackSource": "houseRuler",
+            "fallbackReason": "No planets in house 10",
+            "rawWeight": 8,
+            "biasBonus": 2,
+            "selectionScore": 10,
+            "semanticSupport": "支持「責任分工與可預期性」：會先確認規則、期限和誰負責哪一段，再放心投入",
+            "semanticLimitation": "過度使用時：增加規則與檢查，甚至把別人的部分也接過來"
+          },
+          "semanticScores": [
+            {
+              "key": "structure",
+              "score": 11.4,
+              "sources": [
+                {
+                  "dimension": "structure",
+                  "score": 10,
+                  "planetKey": "Saturn",
+                  "evidenceKey": "planet|Saturn|8|8|"
+                },
+                {
+                  "dimension": "structure",
+                  "score": 8.25,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Venus|5|5|"
+                },
+                {
+                  "dimension": "structure",
+                  "score": -1.1,
+                  "planetKey": null,
+                  "evidenceKey": "angle|mc|9||"
+                }
+              ]
+            },
+            {
+              "key": "harmony",
+              "score": 11.2,
+              "sources": [
+                {
+                  "dimension": "harmony",
+                  "score": 9.5,
+                  "planetKey": "Venus",
+                  "evidenceKey": "planet|Venus|5|5|"
+                },
+                {
+                  "dimension": "harmony",
+                  "score": 8.25,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Sun|6|6|"
+                }
+              ]
+            },
+            {
+              "key": "novelty",
+              "score": 11,
+              "sources": [
+                {
+                  "dimension": "novelty",
+                  "score": 11,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Saturn|8|8|"
+                }
+              ]
+            },
+            {
+              "key": "consistency",
+              "score": 9.7,
+              "sources": [
+                {
+                  "dimension": "consistency",
+                  "score": 9,
+                  "planetKey": "Saturn",
+                  "evidenceKey": "planet|Saturn|8|8|"
+                },
+                {
+                  "dimension": "consistency",
+                  "score": 4.5,
+                  "planetKey": "Venus",
+                  "evidenceKey": "planet|Venus|5|5|"
+                },
+                {
+                  "dimension": "consistency",
+                  "score": -0.8250000000000001,
+                  "planetKey": null,
+                  "evidenceKey": "angle|mc|9||"
+                }
+              ]
+            },
+            {
+              "key": "practicalCare",
+              "score": 7.7,
+              "sources": [
+                {
+                  "dimension": "practicalCare",
+                  "score": 7.700000000000001,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Venus|5|5|"
+                }
+              ]
+            },
+            {
+              "key": "visibility",
+              "score": 7.5,
+              "sources": [
+                {
+                  "dimension": "visibility",
+                  "score": 7.5,
+                  "planetKey": "Sun",
+                  "evidenceKey": "planet|Sun|6|6|"
+                }
+              ]
+            },
+            {
+              "key": "freedom",
+              "score": 6.6,
+              "sources": [
+                {
+                  "dimension": "freedom",
+                  "score": 6.6000000000000005,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Saturn|8|8|"
+                }
+              ]
+            },
+            {
+              "key": "selfDirection",
+              "score": 6.4,
+              "sources": [
+                {
+                  "dimension": "selfDirection",
+                  "score": 6.375,
+                  "planetKey": "Sun",
+                  "evidenceKey": "planet|Sun|6|6|"
+                }
+              ]
+            },
+            {
+              "key": "dialogue",
+              "score": 4.5,
+              "sources": [
+                {
+                  "dimension": "dialogue",
+                  "score": 4.5375000000000005,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Sun|6|6|"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "questionId": "career-work-env",
+          "headline": "適合資訊流通快、需要頻繁討論交流的環境。",
+          "summary": "太過壓抑個人風格、要求你隱身在體制後面的環境，反而會讓你失去動力。",
+          "details": [
+            {
+              "label": "適合的工作場域",
+              "text": "同事之間常常互相交換想法的環境。",
+              "semanticType": "suitable_environment_1"
+            },
+            {
+              "label": "舒適的步調與氛圍",
+              "text": "容許你展現個人風格的環境。",
+              "semanticType": "suitable_environment_2"
+            }
+          ],
+          "caution": "留意環境是否讓你分心太多，反而抓不到重點。",
+          "primary": {
+            "factor": "第6宮內行星",
+            "placement": "水星在天秤座第6宮",
+            "reason": "水星直接落在第6宮，代表這個生活領域被明顯啟動",
+            "weight": 10,
+            "elemTag": "風",
+            "planetKey": "Mercury",
+            "sign": 6,
+            "house": 6,
+            "role": "housePlanets:6",
+            "canonicalKey": "planet|Mercury|6|6|",
+            "sourceRoles": [
+              "housePlanets:6",
+              "houseRuler:6"
+            ],
+            "rawWeight": 10,
+            "biasBonus": 2,
+            "selectionScore": 12,
+            "semanticSupport": "支持「公平協調與相處品質」：會先找雙方都能接受的做法，並留意互動是否公平、得體",
+            "semanticLimitation": "過度使用時：先維持表面順利，把真正不同意的地方留到最後"
+          },
+          "semanticScores": [
+            {
+              "key": "harmony",
+              "score": 15.6,
+              "sources": [
+                {
+                  "dimension": "harmony",
+                  "score": 13.200000000000001,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mercury|6|6|"
+                },
+                {
+                  "dimension": "harmony",
+                  "score": 12.100000000000001,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Sun|6|6|"
+                }
+              ]
+            },
+            {
+              "key": "dialogue",
+              "score": 14.2,
+              "sources": [
+                {
+                  "dimension": "dialogue",
+                  "score": 11.399999999999999,
+                  "planetKey": "Mercury",
+                  "evidenceKey": "planet|Mercury|6|6|"
+                },
+                {
+                  "dimension": "dialogue",
+                  "score": 7.260000000000002,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mercury|6|6|"
+                },
+                {
+                  "dimension": "dialogue",
+                  "score": 6.655000000000001,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Sun|6|6|"
+                }
+              ]
+            },
+            {
+              "key": "structure",
+              "score": 11.4,
+              "sources": [
+                {
+                  "dimension": "structure",
+                  "score": 9.9,
+                  "planetKey": null,
+                  "evidenceKey": "angle|mc|9||"
+                },
+                {
+                  "dimension": "structure",
+                  "score": 7.5,
+                  "planetKey": "Saturn",
+                  "evidenceKey": "planet|Saturn|8|8|"
+                }
+              ]
+            },
+            {
+              "key": "visibility",
+              "score": 11,
+              "sources": [
+                {
+                  "dimension": "visibility",
+                  "score": 11,
+                  "planetKey": "Sun",
+                  "evidenceKey": "planet|Sun|6|6|"
+                }
+              ]
+            },
+            {
+              "key": "selfDirection",
+              "score": 9.4,
+              "sources": [
+                {
+                  "dimension": "selfDirection",
+                  "score": 9.35,
+                  "planetKey": "Sun",
+                  "evidenceKey": "planet|Sun|6|6|"
+                }
+              ]
+            },
+            {
+              "key": "novelty",
+              "score": 9.3,
+              "sources": [
+                {
+                  "dimension": "novelty",
+                  "score": 8.25,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Saturn|8|8|"
+                },
+                {
+                  "dimension": "novelty",
+                  "score": 5.4,
+                  "planetKey": "Mercury",
+                  "evidenceKey": "planet|Mercury|6|6|"
+                }
+              ]
+            },
+            {
+              "key": "consistency",
+              "score": 8.8,
+              "sources": [
+                {
+                  "dimension": "consistency",
+                  "score": 7.425000000000001,
+                  "planetKey": null,
+                  "evidenceKey": "angle|mc|9||"
+                },
+                {
+                  "dimension": "consistency",
+                  "score": 6.75,
+                  "planetKey": "Saturn",
+                  "evidenceKey": "planet|Saturn|8|8|"
+                }
+              ]
+            },
+            {
+              "key": "freedom",
+              "score": 5,
+              "sources": [
+                {
+                  "dimension": "freedom",
+                  "score": 4.95,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Saturn|8|8|"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "questionId": "career-core-skill",
+          "headline": "核心職場競爭力是美感、協調與關係經營。",
+          "summary": "別人會在需要建立清楚的自我定位並主動承擔時倚賴這項能力。",
+          "details": [
+            {
+              "label": "最拿手的職場能力",
+              "text": "會先找雙方都能接受的做法，並留意互動是否公平、得體。",
+              "semanticType": "workplace_advantages_1"
+            },
+            {
+              "label": "別人會倚賴你的部分",
+              "text": "穩定表現需要被看見、被肯定並保有主體性。",
+              "semanticType": "workplace_advantages_2"
+            }
+          ],
+          "caution": "留意為維持和諧而壓下真實立場。",
+          "primary": {
+            "factor": "上升主星（命主星）",
+            "placement": "金星（上升主星（命主星））在處女座第5宮",
+            "reason": "第1宮宮頭在金牛座，守護星是金星，它實際的落點是這個生活領域怎麼被打理的關鍵線索",
+            "weight": 8,
+            "elemTag": "土",
+            "planetKey": "Venus",
+            "sign": 5,
+            "house": 5,
+            "role": "chartRuler",
+            "canonicalKey": "planet|Venus|5|5|",
+            "sourceRoles": [
+              "chartRuler"
+            ],
+            "rawWeight": 8,
+            "biasBonus": 0,
+            "selectionScore": 8,
+            "semanticSupport": "支持「公平協調與相處品質」：會先找雙方都能接受的做法，並留意互動是否公平、得體",
+            "semanticLimitation": "過度使用時：先維持表面順利，把真正不同意的地方留到最後"
+          },
+          "semanticScores": [
+            {
+              "key": "harmony",
+              "score": 11.4,
+              "sources": [
+                {
+                  "dimension": "harmony",
+                  "score": 8.25,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Sun|6|6|"
+                },
+                {
+                  "dimension": "harmony",
+                  "score": 8.25,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mercury|6|6|"
+                },
+                {
+                  "dimension": "harmony",
+                  "score": 7.6,
+                  "planetKey": "Venus",
+                  "evidenceKey": "planet|Venus|5|5|"
+                }
+              ]
+            },
+            {
+              "key": "selfDirection",
+              "score": 11,
+              "sources": [
+                {
+                  "dimension": "selfDirection",
+                  "score": 8.25,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mars|0|12|"
+                },
+                {
+                  "dimension": "selfDirection",
+                  "score": 7.5,
+                  "planetKey": "Mars",
+                  "evidenceKey": "planet|Mars|0|12|"
+                },
+                {
+                  "dimension": "selfDirection",
+                  "score": 6.375,
+                  "planetKey": "Sun",
+                  "evidenceKey": "planet|Sun|6|6|"
+                }
+              ]
+            },
+            {
+              "key": "dialogue",
+              "score": 8.9,
+              "sources": [
+                {
+                  "dimension": "dialogue",
+                  "score": 7.125,
+                  "planetKey": "Mercury",
+                  "evidenceKey": "planet|Mercury|6|6|"
+                },
+                {
+                  "dimension": "dialogue",
+                  "score": 4.5375000000000005,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Sun|6|6|"
+                },
+                {
+                  "dimension": "dialogue",
+                  "score": 4.5375000000000005,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mercury|6|6|"
+                }
+              ]
+            },
+            {
+              "key": "visibility",
+              "score": 7.5,
+              "sources": [
+                {
+                  "dimension": "visibility",
+                  "score": 7.5,
+                  "planetKey": "Sun",
+                  "evidenceKey": "planet|Sun|6|6|"
+                }
+              ]
+            },
+            {
+              "key": "structure",
+              "score": 6.6,
+              "sources": [
+                {
+                  "dimension": "structure",
+                  "score": 6.6000000000000005,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Venus|5|5|"
+                }
+              ]
+            },
+            {
+              "key": "practicalCare",
+              "score": 6.2,
+              "sources": [
+                {
+                  "dimension": "practicalCare",
+                  "score": 6.16,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Venus|5|5|"
+                }
+              ]
+            },
+            {
+              "key": "intensity",
+              "score": 5.4,
+              "sources": [
+                {
+                  "dimension": "intensity",
+                  "score": 4.5375000000000005,
+                  "planetKey": null,
+                  "evidenceKey": "planet|Mars|0|12|"
+                },
+                {
+                  "dimension": "intensity",
+                  "score": 4.125,
+                  "planetKey": "Mars",
+                  "evidenceKey": "planet|Mars|0|12|"
+                }
+              ]
+            },
+            {
+              "key": "consistency",
+              "score": 3.6,
+              "sources": [
+                {
+                  "dimension": "consistency",
+                  "score": 3.6,
+                  "planetKey": "Venus",
+                  "evidenceKey": "planet|Venus|5|5|"
+                }
+              ]
+            },
+            {
+              "key": "novelty",
+              "score": 3.4,
+              "sources": [
+                {
+                  "dimension": "novelty",
+                  "score": 3.375,
+                  "planetKey": "Mercury",
+                  "evidenceKey": "planet|Mercury|6|6|"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -4786,7 +4786,249 @@ function buildTopicOverview(topicId, answers) {
   return fillTpl(astroSeededPick(seed, pool), { tone: tone });
 }
 
-var NATAL_TOPIC_PROMPT_VERSION = 'topic-contract-v10';
+/* 職涯規則是本站可稽核的占星詮釋，不是職業能力測驗或就業機率。
+ * 只讀既有排盤：不重算黃經／宮位／相位。每筆來源保留 task/env/skill
+ * 三組貢獻；同一天體的指標角色合併，以最大關聯權重取代重複累加。 */
+var NatalCareerAnalysis = (function () {
+  const version = 'career-vector-1';
+  const featureLabels = {initiative:'主動推進', order:'結構與持續', analysis:'邏輯分析', creativity:'創作發想', expression:'資訊表達', care:'需求照顧', influence:'帶領與代表', mobility:'變動與探索', depth:'深入追查', autonomy:'獨立自主', precision:'精準核對', resource:'資源衡量'};
+  const questionIds = ['career-work-type', 'career-work-env', 'career-core-skill'];
+  const signs = [
+    {initiative:1, influence:.5, mobility:.5, autonomy:.8, order:-.5, care:-.3, depth:-.4, precision:-.5},
+    {order:.8, precision:.6, resource:1, care:.4, creativity:.4, mobility:-.7, initiative:-.3},
+    {expression:1, mobility:.8, analysis:.5, creativity:.4, depth:-.6, order:-.5, precision:-.3},
+    {care:1, order:.4, resource:.5, depth:.4, mobility:-.6, initiative:-.4, influence:-.2},
+    {influence:1, creativity:.8, expression:.7, initiative:.6, autonomy:.5, precision:-.4, depth:-.3},
+    {precision:1, analysis:1, order:.8, care:.3, creativity:-.4, mobility:-.3},
+    {expression:.7, care:.5, creativity:.6, influence:.7, initiative:-.4, autonomy:-.4},
+    {depth:1, analysis:.7, resource:.7, autonomy:.5, mobility:-.4, expression:-.5},
+    {mobility:1, expression:.7, initiative:.5, autonomy:.8, creativity:.4, precision:-.6, order:-.5},
+    {order:1, resource:.8, influence:.6, precision:.7, depth:.5, mobility:-.6, creativity:-.3},
+    {autonomy:1, analysis:.8, creativity:.7, mobility:.6, order:-.5, care:-.2},
+    {care:.9, creativity:1, depth:.5, precision:-.6, order:-.6, initiative:-.3},
+  ];
+  const planets = {
+    Sun:{influence:1, initiative:.5, creativity:.4}, Moon:{care:1, resource:.3},
+    Mercury:{analysis:.8, expression:1, precision:.5}, Venus:{creativity:1, care:.6, resource:.5},
+    Mars:{initiative:1, autonomy:.5, precision:.2}, Jupiter:{mobility:1, expression:.6, influence:.5},
+    Saturn:{order:1, precision:.8, resource:.6}, Uranus:{autonomy:1, analysis:.6, creativity:.7},
+    Neptune:{creativity:1, care:.7, depth:.4}, Pluto:{depth:1, resource:.6, analysis:.6},
+  };
+  const houses = {
+    1:{autonomy:.6, initiative:.4}, 2:{resource:.8, precision:.3}, 3:{expression:.7, mobility:.3},
+    4:{care:.6, order:.3}, 5:{creativity:.8, expression:.4}, 6:{precision:.7, order:.5},
+    7:{care:.4, influence:.5}, 8:{depth:.7, resource:.6}, 9:{mobility:.7, expression:.4},
+    10:{influence:.7, order:.3}, 11:{expression:.4, creativity:.4}, 12:{depth:.6, autonomy:.4},
+  };
+  // 正值為需求吻合；負值為相反工作方式造成的適配成本。分數沒有共同底分。
+  const roles = [
+    ['market','市場開發與談判',{initiative:1, influence:.8, expression:.6, care:-.35, order:-.25},'尋找客戶、比較合作條件並推進談判','過快承諾合作，忽略交付能力'],
+    ['creative','創意發想與內容製作',{creativity:1, expression:.8, autonomy:.4, order:-.4},'發展企劃概念、撰寫腳本並製作內容','靈感持續擴張，卻沒有收斂交件範圍'],
+    ['data','系統規劃與數據分析',{analysis:1, precision:.8, order:.6, mobility:-.5},'定義資料欄位、比較指標並規劃系統流程','分析得太完整，延後實際驗證'],
+    ['operations','現場應變與營運',{initiative:.8, mobility:.7, precision:.6, order:.4, depth:-.4},'調度人力、排除現場異常並維持服務運作','忙著救火，沒有記錄可重用的處理流程'],
+    ['management','組織管理與決策',{influence:1, order:.8, initiative:.5, autonomy:-.3},'分配責任、決定優先順序並追蹤團隊成果','把決策集中在自己身上，難以授權'],
+    ['technical','技術研究與問題解決',{depth:1, analysis:.9, autonomy:.6, expression:-.5},'建立假設、追查故障原因並測試技術方案','持續深入細節，忽略交付時間'],
+    ['finance','資源配置與風險審核',{resource:1, depth:.7, precision:.8, initiative:-.4, creativity:-.3},'核對預算、比較風險並審查資源分配','為避免損失，遲遲無法作出可逆決定'],
+    ['craft','實作製作與品質檢驗',{precision:1, order:.8, initiative:.4, expression:-.6, mobility:-.3},'依規格操作設備、製作成品並檢查品質','過度堅持規格，未確認使用者真正需要'],
+    ['care','照護支持與個案服務',{care:1, order:.4, precision:.3, initiative:-.5, autonomy:-.25},'辨識個案需求、追蹤照護進度並協調支援','承接過多他人需求，自己的負荷失控'],
+    ['education','教學訓練與知識轉譯',{expression:1, care:.5, analysis:.5, depth:-.25},'設計教材、示範做法並確認學習者理解','不停補充解釋，沒有檢查對方是否會操作'],
+    ['design','設計開發與體驗改善',{creativity:1, precision:.7, care:.4, analysis:.3, influence:-.4},'製作原型、比較使用回饋並調整視覺或流程','過度打磨作品，拖延交付與測試'],
+    ['outreach','跨域拓展與對外推廣',{mobility:1, expression:.6, influence:.6, autonomy:.4, order:-.5},'拜訪合作夥伴、跨地協作並公開介紹方案','同時拓展太多方向，缺乏後續維護'],
+  ];
+  const strengths = [
+    ['initiate','快速啟動並推進',{initiative:1, autonomy:.4, order:-.25},'先提出可執行的第一步，再依現場回應調整','急著推進而跳過必要核對'],
+    ['organize','拆分責任與安排進度',{order:1, influence:.5, mobility:-.3},'把模糊任務拆成負責人、期限與驗收條件','規劃過細而難以接受臨時改動'],
+    ['diagnose','追查原因並驗證假設',{analysis:.8, depth:1, expression:-.3},'比較證據、排除不成立的解釋，再測試解法','鑽研過久而未及時讓同事知道進度'],
+    ['express','整理重點並說明做法',{expression:1, analysis:.3, depth:-.25},'依對方理解程度整理資訊，確認彼此解讀一致','講解過多卻未檢查實作結果'],
+    ['invent','提出新方向並製作雛形',{creativity:1, autonomy:.4, order:-.3},'把分散想法組成新方案，先做雛形取得回饋','不斷換方向而讓成品無法收斂'],
+    ['support','辨識需求並協助合作',{care:1, expression:.3, initiative:-.3},'察覺對方的困難，安排合適支援並持續追蹤','為維持關係而承擔不屬於自己的責任'],
+    ['lead','整合意見並承擔決定',{influence:1, initiative:.4, autonomy:-.2},'在意見分歧時定出優先順序，讓團隊能繼續行動','急於定案而沒有納入不同專業的提醒'],
+    ['inspect','核對細節並維持品質',{precision:1, order:.5, mobility:-.3},'依標準找出差異，重複核對交付內容','過度挑錯而忽略任務的整體目的'],
+    ['allocate','衡量代價並配置資源',{resource:1, order:.4, initiative:-.25},'比較時間、成本與風險，保留能持續運作的餘裕','太在意已投入的成本而不願停止低效方案'],
+    ['adapt','跨情境調整並連結資源',{mobility:1, autonomy:.4, order:-.4},'快速理解新場域限制，找到可以合作的人與方法','切換太快而遺漏需要長期維護的承諾'],
+  ];
+  const axes = [
+    ['stability','制度與變動',{order:1, precision:.3, mobility:-1, autonomy:-.3},'穩定制度與可預期節奏','高度變動與短週期調整'],
+    ['team','合作密度',{care:.8, expression:.6, influence:.3, autonomy:-1, depth:-.4},'密集團隊合作','獨立專注作業'],
+    ['competition','競爭氛圍',{initiative:1, influence:.4, care:-1},'成果競爭與明確挑戰','合作互助與共同目標'],
+    ['process','流程與自主',{order:1, precision:.4, creativity:-.8, autonomy:-.8},'固定流程與清楚規範','自主創造與方法選擇權'],
+    ['contact','對外接觸',{expression:.8, influence:.7, care:.3, depth:-1, precision:-.3},'前台接觸人群','後台專業與低干擾空間'],
+    ['movement','工作地點',{mobility:1, autonomy:.2, order:-.5, precision:-.4},'經常移動與跨地接觸','固定地點與穩定設備'],
+  ];
+  const round = value => Math.round(value * 10000) / 10000;
+  function add(target, vector, weight) { Object.keys(vector).forEach(key => { target[key] = (target[key] || 0) + vector[key] * weight; }); }
+  function dot(vector, weights) { return Object.keys(weights).reduce((sum, key) => sum + (vector[key] || 0) * weights[key], 0); }
+  function rank(definitions, sources, channel) {
+    return definitions.map(row => {
+      const contributions = sources.map(source => ({evidenceKey:source.canonicalKey, placement:source.placement, value:round(dot(source.vectors[channel], row[2]))}));
+      const score = round(contributions.reduce((sum, item) => sum + item.value, 0));
+      const terms = Object.keys(row[2]).map(key => ({feature:key, coefficient:row[2][key], value:round(sources.reduce((sum, source) => sum + (source.vectors[channel][key] || 0), 0) * row[2][key])}));
+      return {id:row[0], label:row[1], score, contributions, terms, definition:row};
+    }).sort((a,b) => b.score - a.score || a.id.localeCompare(b.id));
+  }
+  function profile(chart, unknownTime) {
+    const sources = [], skipped = [], selected = {}, intrinsic = {Sun:.45, Mercury:.9, Venus:.5, Mars:.9, Saturn:.9};
+    function source(key, label, vector, weights, extra) {
+      const vectors = {};
+      ['task','environment','skill'].forEach((channel,index) => { vectors[channel] = {}; add(vectors[channel], vector, weights[index]); });
+      sources.push(Object.assign({canonicalKey:'career:' + key, factor:'職涯配置', placement:label, weight:weights[0], role:'career', reason:label, sourceRoles:[], vectors}, extra || {}));
+    }
+    if (!unknownTime) {
+      const careerHouses = [10,6,2];
+      // MC 與十宮宮頭同座時合成一筆，不把同一個星座算兩次。
+      const angleSigns = {};
+      const mcSign = Number.isFinite(chart.mc) ? Math.floor(astroNormDeg(chart.mc) / 30) : null;
+      if (mcSign != null) angleSigns[mcSign] = {labels:['MC'], weights:[2.2,.7,.35]};
+      careerHouses.forEach(house => {
+        const cusp = chart.houseCusps && chart.houseCusps[house - 1];
+        if (!Number.isFinite(cusp)) { skipped.push({factor:'第' + house + '宮', reason:'缺少宮頭資料，不推測宮主星'}); return; }
+        const sign = Math.floor(astroNormDeg(cusp) / 30);
+        const weights = house === 10 ? [1.8,.6,.3] : house === 6 ? [1.3,2,.45] : [1.2,.65,.35];
+        const entry = angleSigns[sign] || (angleSigns[sign] = {labels:[], weights:[0,0,0]});
+        entry.labels.push('第' + house + '宮宮頭');
+        entry.weights = weights.map((w,index) => Math.max(w,entry.weights[index]));
+        const ruler = natalHouseRulerKey(chart,house);
+        if (ruler) (selected[ruler] || (selected[ruler] = [])).push(house);
+      });
+      Object.keys(angleSigns).forEach(key => {
+        const entry = angleSigns[key];
+        source('axis:' + key,entry.labels.join('／') + '在' + ZODIAC_SIGNS[key].zh,signs[key],entry.weights,{sign:Number(key), sourceRoles:entry.labels});
+      });
+    } else skipped.push({factor:'MC、宮位與宮主星', reason:'出生時間未知，全部排除；只提供行星落座的有限傾向'});
+    Object.keys(chart.planets || {}).sort().forEach(key => {
+      const p = chart.planets[key], rulerHouses = selected[key] || [];
+      const inCareerHouse = !unknownTime && [2,6,10].indexOf(p.house) !== -1;
+      if ((!intrinsic[key] && !rulerHouses.length && !inCareerHouse) || !planets[key] || !signs[p.sign]) return;
+      const context = Math.max(inCareerHouse ? (p.house === 10 ? 2.1 : p.house === 6 ? 1.5 : 1.3) : 0,
+        ...rulerHouses.map(house => house === 10 ? 1.8 : house === 6 ? 1.5 : 1.2));
+      const vector = {};
+      add(vector,signs[p.sign],.75); add(vector,planets[key],.25);
+      // 宮主星實際落宮說明該職涯功能往哪裡實踐；沒有時間時絕不讀此欄。
+      if (!unknownTime && houses[p.house]) add(vector,houses[p.house],.25);
+      const envContext = !unknownTime && (p.house === 6 || rulerHouses.indexOf(6) !== -1) ? 2 : context * .55;
+      const weights = [Math.max(intrinsic[key] || 0,context), Math.max((intrinsic[key] || 0) * .6,envContext), Math.max(intrinsic[key] || 0,context * .75)];
+      const rolesForPlanet = rulerHouses.map(house => '第' + house + '宮主星');
+      if (inCareerHouse) rolesForPlanet.push('第' + p.house + '宮內行星');
+      if (intrinsic[key]) rolesForPlanet.push('行星工作方式');
+      const def = findAnyPointDef(key);
+      source('planet:' + key,def.zh + '在' + ZODIAC_SIGNS[p.sign].zh + (!unknownTime && p.house ? '第' + p.house + '宮' : '') + (rulerHouses.length ? '（' + rulerHouses.map(h => '第' + h + '宮主星').join('、') + '）' : ''),vector,weights,{planetKey:key, sign:p.sign, house:unknownTime ? null : p.house, sourceRoles:rolesForPlanet});
+    });
+    // 只讀排盤已有的主要相位。至少一端是職涯來源；依兩端行星功能與
+    // 緊密程度給有限修正。張力不等於沒有能力，改為整合成本與盲點線索。
+    const relevant = new Set(sources.map(s => s.planetKey).filter(Boolean));
+    const seen = new Set();
+    (chart.aspects || []).forEach(aspect => {
+      const limit = {conjunction:8, sextile:4, square:6, trine:6, opposition:8}[aspect.type];
+      if (!limit || !Number.isFinite(aspect.orb) || aspect.orb < 0 || aspect.orb > limit || !planets[aspect.a] || !planets[aspect.b]) return;
+      if (!relevant.has(aspect.a) && !relevant.has(aspect.b)) return;
+      if (unknownTime && (aspect.a === 'Moon' || aspect.b === 'Moon')) return;
+      const key = [aspect.a,aspect.b].sort().join(':') + ':' + aspect.type;
+      if (seen.has(key)) return; seen.add(key);
+      const tense = aspect.type === 'square' || aspect.type === 'opposition';
+      const vector = {};
+      add(vector,planets[aspect.a],.5); add(vector,planets[aspect.b],.5);
+      const strength = .3 * (1 - aspect.orb / (limit + 1)) * (tense ? -.65 : aspect.type === 'conjunction' ? .65 : 1);
+      source('aspect:' + key,aspectPlacementText(aspect),vector,[strength,strength,strength],{aspect, natureTag:tense ? 'tense' : 'supportive', weight:Math.abs(strength), reason:tense ? '兩種功能需要協調，扣除整合成本，不能當作能力缺陷' : '兩種功能較容易共同運作，提供有限支持'});
+    });
+    sources.sort((a,b) => a.canonicalKey.localeCompare(b.canonicalKey));
+    const vectors = {task:{}, environment:{}, skill:{}};
+    sources.forEach(s => Object.keys(vectors).forEach(channel => add(vectors[channel],s.vectors[channel],1)));
+    const taskScores = rank(roles,sources,'task');
+    const skillScores = rank(strengths,sources,'skill');
+    const environment = rank(axes,sources,'environment').map(axis => {
+      const magnitude = axis.contributions.reduce((sum, item) => sum + Math.abs(item.value),0);
+      const mixed = magnitude === 0 || Math.abs(axis.score) / magnitude < .18;
+      return Object.assign(axis,{mixed, preference:mixed ? '兩端訊號接近，宜保留切換空間' : axis.score > 0 ? axis.definition[3] : axis.definition[4], avoid:mixed ? '長期只能採取單一方式' : axis.score > 0 ? axis.definition[4] : axis.definition[3]});
+    }).sort((a,b) => Math.abs(b.score) - Math.abs(a.score) || a.id.localeCompare(b.id));
+    return {version, unknownTime:!!unknownTime, sources, evidence:sources, skipped, vectors, taskScores, skillScores, environment, limitations:[unknownTime ? '出生時間未知：不使用 MC、宮位、宮主星與月亮相位，環境判斷較有限。' : '採目前所選宮位制與現代守護星；出生時間誤差會影響 MC、宮頭與宮主星。','分數是本站占星象徵規則的相對比較，不是就業機率、已驗證能力或職業資格。']};
+  }
+  function evidenceText(item, positive, plain) {
+    const contributions = item.contributions.filter(c => positive ? c.value > 0 : c.value < 0).sort((a,b) => positive ? b.value - a.value : a.value - b.value);
+    return contributions.slice(0,2).map(c => plain ? c.placement.replace(/（[^）]*）/g,'') : c.placement).join('、');
+  }
+  function featureReason(item) {
+    return item.terms.filter(term => term.coefficient > 0 && term.value > 0).sort((a,b) => b.value - a.value).slice(0,2).map(term => featureLabels[term.feature]).join('、');
+  }
+  function answer(p,q) {
+    const isTask = q.id === questionIds[0], isEnv = q.id === questionIds[1];
+    const scores = isTask ? p.taskScores : isEnv ? p.environment : p.skillScores;
+    const best = scores[0], second = scores[1];
+    const configurations = p.sources.filter(s => !s.aspect);
+    const limited = configurations.length === 1;
+    const enough = configurations.length > 0 && (isTask ? best.score > .15 : scores.some(s => Math.abs(s.score) > .01));
+    const base = {questionId:q.id, title:q.title, intent:q.intent, questionFocus:q.questionFocus, answerTargetsCount:q.answerTargets.length, careerProfile:p, semanticKey:version + ':' + q.questionFocus + ':' + (best ? best.id : 'insufficient'), headlineConceptKeys:[q.id + ':headline'], summaryConceptKeys:[q.id + ':summary'], detailConceptKeys:[q.id + ':detail'], cautionConceptKeys:[q.id + ':caution']};
+    const direction = isEnv && best && best.score < 0 ? -1 : 1;
+    const trace = best ? best.contributions.slice().sort((a,b) => Number(b.value * direction > 0) - Number(a.value * direction > 0) || Math.abs(b.value) - Math.abs(a.value)) : [];
+    base.selectionRanked = trace.map(c => {
+      const source = p.sources.find(s => s.canonicalKey === c.evidenceKey);
+      return Object.assign({},source,{selectionScore:Math.abs(c.value), weight:Math.abs(c.value), semanticSupport:(c.value * direction >= 0 ? '支持「' : '牴觸「') + (isEnv ? best.preference : best.label) + '」（此來源在該軸貢獻 ' + (c.value >= 0 ? '+' : '') + c.value + '）', semanticLimitation:source.aspect ? source.reason : '只代表相對傾向，需由實際工作經驗驗證'});
+    });
+    base.primaryEvidence = base.selectionRanked[0] || null; base.supportingEvidence = base.selectionRanked.slice(1,3);
+    if (!enough) {
+      base.careerCoverage = 'exploration';
+      base.semanticKey = version + ':' + q.questionFocus + ':exploration';
+      base.headline = isTask ? '先從一項真實工作任務開始探索。' : isEnv ? '先比較讓你較能投入的工作環境。' : '先用完成過的工作辨認自己的優勢。';
+      base.summary = configurations.length ? '已讀到部分配置，先用實際任務比較不同方向，再逐步縮小範圍。' : '命盤資料尚未接上，仍可先整理實際經驗；完成出生資料後會接續分析。';
+      base.details = isTask ? [
+        {label:'現在就能做的工作探索', text:'選一項最近真正需要負責的工作任務，先完成一個小成果。記錄自己在分析問題、執行與協調的哪一步較順手。'},
+        {label:'把經驗帶回分析', text:'記下完成時間、最有把握的部分與需要協助的地方。完成或重新讀取出生資料後，再用命盤配置比較職能方向。'},
+      ] : isEnv ? [
+        {label:'先比較工作節奏', text:'回想最近能專心投入的工作或學習環境，記錄制度是否清楚、變動多寡，以及獨立作業或團隊合作的比例。'},
+        {label:'再確認實際安排', text:'比較固定流程或自主創造、前台接觸或後台專業、固定地點或經常移動，選出最影響你投入感的一項，再觀察一週。'},
+      ] : [
+        {label:'找出有成果的工作片段', text:'選一件別人確實倚賴你完成的工作，寫下你做了什麼、解決了哪個問題，以及結果如何，作為能力判斷的起點。'},
+        {label:'辨認優勢與盲點', text:'再找一項相似任務，確認同樣做法能否重現成果，也記錄容易卡住或需要協助的步驟。完成命盤資料後，再比較主要與次要優勢。'},
+      ];
+      base.caution = isTask ? '先用工作成果比較方向；命盤資料接上後，再提供個人化職能排序。' : isEnv ? '這是環境比較方法，尚未判定你的命盤偏好；記下實際體驗，再與後續分析對照。' : '先以真實成果確認能力，這裡尚未替你下命盤結論；補上資料後再比較相對優勢。';
+      return base;
+    }
+    if (isTask) {
+      const recommendations = scores.filter(s => s.score > 0 && s.score >= best.score * .55).slice(0,limited ? 1 : 3);
+      base.careerRecommendations = recommendations;
+      base.headline = '優先探索' + best.label + '。';
+      base.summary = '依任務需求與命盤的支持、牴觸訊號排序，分數接近時保留並列方向。';
+      const close = second && best.score - second.score < Math.abs(best.score) * .15;
+      const firstDetail = (close ? '前兩項支持接近，可用小型任務比較。' : '') + recommendations.map((item,index) => (index + 1) + '．' + item.label + '：' + item.definition[3] + '。較強傾向：' + (featureReason(item) || '相反需求較少') + '；依據：' + evidenceText(item,true,true) + '。').join('');
+      const lower = scores[scores.length - 1];
+      base.details = [{label:'依命盤排序的工作任務', text:firstDetail}, {label:'需要補強的工作要求', text:'相對較不優先的是' + lower.label + '。' + (evidenceText(lower,false,true) ? '牴觸線索：' + evidenceText(lower,false,true) + '。' : '目前支持較少。') + '若要投入，先用小型實作確認能否持續承擔這類任務。'}];
+      base.caution = '優先方向的盲點：' + best.definition[4] + '；先約定交付條件與檢查時點。';
+    } else if (isEnv) {
+      const strong = scores.filter(s => !s.mixed).sort((a,b) => Math.abs(b.score) - Math.abs(a.score));
+      base.headline = strong.length ? '工作環境較偏向' + strong[0].preference + '。' : '工作環境需兼顧兩端的安排。';
+      base.summary = '六個環境軸各自比較相反條件，不從推薦職能反推工作環境。';
+      const ordered = axes.map(axis => p.environment.find(s => s.id === axis[0]));
+      const describe = group => group.map(axis => axis.label + '：' + axis.preference + '。').join('');
+      base.details = [{label:'工作節奏與合作方式', text:describe(ordered.slice(0,3))}, {label:'自主、接觸與移動需求', text:describe(ordered.slice(3))}];
+      base.caution = strong.length ? '可能不適應：' + strong.slice(0,2).map(axis => axis.avoid).join('、') + '；面試時確認實際工作安排。' : '各軸支持接近，先比較實際制度與工時，不強行判定單一環境。';
+    } else {
+      const close = best.score - second.score < Math.max(.3,Math.abs(best.score) * .15);
+      base.headline = '職場優勢是' + best.label + '。';
+      base.summary = '這是命盤的行為傾向排序，仍需透過實作與他人回饋確認能力。';
+      base.details = [{label:close ? '主要優勢（前兩項接近）' : '主要優勢', text:best.definition[3] + '。來源：' + evidenceText(best,true,true) + '。'}, {label:close ? '並列優勢與能力盲點' : '次要優勢與能力盲點', text:second.label + '：' + second.definition[3] + '。來源：' + evidenceText(second,true,true) + '。主要能力用過頭時，容易' + best.definition[4] + '。'}];
+      base.caution = '別人可能依賴你' + best.definition[3] + '；請用一次具體任務的成果與回饋核對這個判斷。';
+    }
+    if (limited) {
+      base.careerCoverage = 'partial';
+      base.headline = isTask ? '可先試做' + best.label + '。' : isEnv ? '可先試試' + (scores.find(score => !score.mixed) || best).preference + '。' : '可先驗證的職場優勢是' + best.label + '。';
+      base.summary = '先用已有的配置提供試做方向，其他職涯配置補齊後再確認排序。';
+      if (isTask) base.details[1] = {label:'下一步怎麼驗證', text:'先執行上面的工作任務，完成一個小成果，記錄完成時間、最順手與最費力的步驟，再確認是否願意持續投入。補齊其他配置後再擴大職能比較。'};
+      if (isEnv) base.details[0].text = '先把下列條件當成可以試行的安排。' + base.details[0].text;
+      if (!isTask && !isEnv) base.details[1].label = '次要線索與盲點（待驗證）';
+      base.caution = '目前先依' + configurations[0].placement.replace(/（[^）]*）/g,'') + '這條線索探索。' + (isTask ? '先試做，再確認是否願意持續投入；其他配置補齊後再擴大職能比較。' : isEnv ? '先比較兩種實際工作安排；其他配置補齊後再確認環境偏好。' : '先用一項成果與他人回饋核對；其他配置補齊後再確認優勢排序。');
+    }
+    return base;
+  }
+  function explanation(p,q) {
+    if (!p.sources.some(source => !source.aspect) || q.id === questionIds[0] && p.taskScores[0].score <= .15) {
+      return {supportNote:'先從可完成的工作任務與實際經驗開始；完成或重新讀取出生資料後，再用命盤配置比較方向。', tensionNotes:[], limitations:p.limitations.slice()};
+    }
+    const lines = q.id === questionIds[1] ? p.environment.map(axis => axis.label + '：' + axis.preference + '。依據：' + evidenceText(axis,axis.score >= 0) + '。') : (q.id === questionIds[0] ? p.taskScores : p.skillScores).slice(0,3).map(item => item.label + '：支持來源為' + evidenceText(item,true) + (evidenceText(item,false) ? '；相反需求來自' + evidenceText(item,false) : '') + '。');
+    return {supportNote:lines.join(''), tensionNotes:p.sources.filter(s => s.natureTag === 'tense').map(s => s.placement + '：' + s.reason + '。'), limitations:p.limitations.slice()};
+  }
+  return {version, questionIds, profile, answer, explanation};
+}());
+
+var NATAL_TOPIC_PROMPT_VERSION = 'topic-contract-v11-career';
 var NATAL_TOPIC_KNOWLEDGE_VERSION = typeof ASTRO_TOPIC_SEMANTIC_VERSION !== 'undefined' ? ASTRO_TOPIC_SEMANTIC_VERSION : 'unknown';
 function natalChartFingerprint(chart, unknownTime) {
   if (!chart) return '';
@@ -4799,7 +5041,11 @@ function natalChartFingerprint(chart, unknownTime) {
     var p = chart.points[key] || {};
     parts.push('x:' + key + ':' + Number(p.lon || 0).toFixed(4) + ':' + (p.house == null ? '' : p.house));
   });
-  if (!unknownTime) parts.push('a:' + Number(chart.asc || 0).toFixed(4), 'm:' + Number(chart.mc || 0).toFixed(4));
+  if (!unknownTime) {
+    parts.push('a:' + Number(chart.asc || 0).toFixed(4), 'm:' + Number(chart.mc || 0).toFixed(4));
+    parts.push('cusps:' + (chart.houseCusps || []).map(function (cusp) { return Number(cusp).toFixed(4); }).join(','));
+  }
+  parts.push('aspects:' + (chart.aspects || []).map(function (a) { return [a.a,a.b].sort().join(':') + ':' + a.type + ':' + Number(a.orb).toFixed(4); }).sort().join(','));
   var input = parts.join('|'), hash = 2166136261;
   for (var i = 0; i < input.length; i++) { hash ^= input.charCodeAt(i); hash = Math.imul(hash, 16777619); }
   return ('00000000' + (hash >>> 0).toString(16)).slice(-8);
@@ -4822,21 +5068,25 @@ function analyzeNatalTopic(chartData, topicId, selectedQuestionIds, unknownTime)
   /* 同一批產生的題目共用這三個陣列，避免指標池重疊時湊出重複句子或讓同一筆
      evidence 主導整批題目（usedPrimaryKeys 是 V2.1 新增，見 pickPrimaryEvidence）。 */
   var usedHeadlines = [], usedSummaries = [], usedPrimaryKeys = [], usedCautions = [];
+  var careerProfile = topicId === 'career' && questions.some(function (q) { return NatalCareerAnalysis.questionIds.indexOf(q.id) !== -1; })
+    ? NatalCareerAnalysis.profile(chartData, unknownTime) : null;
   var answers = questions.map(function (q) {
+    var careerQuestion = careerProfile && NatalCareerAnalysis.questionIds.indexOf(q.id) !== -1;
     var indicators = getTopicIndicators(topicId, q.id);
-    var extracted = extractChartEvidence(chartData, unknownTime, indicators);
+    var extracted = careerQuestion ? {evidence:careerProfile.evidence, skipped:careerProfile.skipped} : extractChartEvidence(chartData, unknownTime, indicators);
     var ranked = rankEvidence(extracted.evidence);
     var merged = mergeSupportingSignals(ranked);
     var tensions = identifyTensions(ranked);
-    var content = buildQuestionContent(topicId, q, ranked, { usedHeadlines: usedHeadlines, usedSummaries: usedSummaries, usedPrimaryKeys: usedPrimaryKeys, usedCautions: usedCautions });
+    var content = careerQuestion ? attachNatalQuestionContract(NatalCareerAnalysis.answer(careerProfile, q), q) : buildQuestionContent(topicId, q, ranked, { usedHeadlines: usedHeadlines, usedSummaries: usedSummaries, usedPrimaryKeys: usedPrimaryKeys, usedCautions: usedCautions });
     var contractValidation = validateNatalAnswerAgainstContract(content, q);
     if (!contractValidation.passed) content = natalInsufficientAnswerForContract(content, contractValidation);
     else { content.contractStatus = 'pass'; content.contractErrors = []; }
     var effectiveRanked = content.selectionRanked || ranked;
-    var advanced = buildAdvancedExplanation(q, effectiveRanked, extracted.skipped, tensions, merged);
+    var advanced = careerQuestion ? NatalCareerAnalysis.explanation(careerProfile, q) : buildAdvancedExplanation(q, effectiveRanked, extracted.skipped, tensions, merged);
     content.limitations = advanced.limitations.slice();
     content.ranked = effectiveRanked; content.skipped = extracted.skipped; content.merged = merged; content.tensions = tensions; content.advanced = advanced;
     effectiveRanked.forEach(function (e) {
+      if (careerQuestion) return;
       var matched = ((content.semanticProfile && content.semanticProfile.scores) || []).filter(function (item) {
         return item.sources.some(function (src) { return src.evidenceKey === e.canonicalKey; });
       })[0];
@@ -4844,16 +5094,23 @@ function analyzeNatalTopic(chartData, topicId, selectedQuestionIds, unknownTime)
       e.semanticSupport = def ? ('支持「' + def.label + '」：' + def.behavior) : '這項資料只作為次要占星背景，沒有直接決定主結論';
       e.semanticLimitation = def ? ('過度使用時：' + def.overuse) : '權重不足以單獨形成結論';
     });
+    var careerChannel = q.id === 'career-work-type' ? 'task' : q.id === 'career-work-env' ? 'environment' : 'skill';
     content.debug = {
       topic:topicId,
-      rendererTemplate:'question-direct-answer-v1',
+      rendererTemplate:careerQuestion ? NatalCareerAnalysis.version : 'question-direct-answer-v1',
+      careerAnalysis:careerQuestion ? {
+        version:careerProfile.version, coverage:content.careerCoverage || 'full', channel:careerChannel, vector:careerProfile.vectors[careerChannel],
+        scores:careerChannel === 'task' ? careerProfile.taskScores : careerChannel === 'environment' ? careerProfile.environment : careerProfile.skillScores,
+        sources:careerProfile.sources.map(function (source) { return {key:source.canonicalKey, placement:source.placement, vector:source.vectors[careerChannel]}; }),
+      } : null,
       answerTarget:content.answerTarget,
       contractStatus:content.contractStatus,
       contractErrors:(content.contractErrors || []).slice(),
       sectionKeys:(content.sectionOrder || []).slice(),
       questionFocusApplied:q.questionFocus,
       knowledgeProjection:(QUESTIONFOCUS_HOUSE_CATEGORY[q.questionFocus] || 'general'),
-      fieldOverrideApplied:q.fieldOverride ? Object.keys(q.fieldOverride) : [],
+      fieldOverrideApplied:!careerQuestion && q.fieldOverride ? Object.keys(q.fieldOverride) : [],
+      legacyFieldOverrideIgnored:careerQuestion && !!q.fieldOverride,
       answerTargetsApplied:(q.answerTargets || []).slice(),
       excludedTargetsApplied:(q.excludedTargets || []).slice(),
       selectedIndicators:effectiveRanked.map(function (e) { return e.canonicalKey; }),
@@ -4879,7 +5136,12 @@ function analyzeNatalTopic(chartData, topicId, selectedQuestionIds, unknownTime)
     });
   });
   var qualityFlags = validateNatalTopicContent(answers, topicId);
-  var overview = refineTraditionalChineseCopy(buildTopicOverview(topicId, answers));
+  var explorationOnly = answers.length > 0 && answers.every(function (a) { return a.careerCoverage === 'exploration'; });
+  var overview = refineTraditionalChineseCopy(explorationOnly
+    ? '先整理一項工作成果、一次投入的環境與一個被他人倚賴的經驗。接上命盤資料後，再比較哪些方向獲得配置支持。'
+    : careerProfile && answers.every(function (a) { return a.careerProfile; })
+    ? '工作任務依職能需求排序，環境比較六組相反條件，能力則辨識相對突出的做事方式。請用實際任務與經驗核對命盤傾向。'
+    : buildTopicOverview(topicId, answers));
   var fingerprint = natalChartFingerprint(chartData, unknownTime);
   return {
     topicId: topicId,
@@ -4889,7 +5151,7 @@ function analyzeNatalTopic(chartData, topicId, selectedQuestionIds, unknownTime)
     chartFingerprint:fingerprint,
     promptVersion:NATAL_TOPIC_PROMPT_VERSION,
     knowledgeVersion:NATAL_TOPIC_KNOWLEDGE_VERSION,
-    analysisKey:[fingerprint, topicId, NATAL_TOPIC_PROMPT_VERSION, NATAL_TOPIC_KNOWLEDGE_VERSION].join('|'),
+    analysisKey:[fingerprint, topicId, questions.map(function (q) { return q.id; }).sort().join(','), NATAL_TOPIC_PROMPT_VERSION, NATAL_TOPIC_KNOWLEDGE_VERSION].join('|'),
   };
 }
 
@@ -4990,6 +5252,7 @@ function natalSemanticSupportText(e) {
   return text.replace(/^支持「[^」]+」：/, '').replace(/^這項資料/, '這個線索');
 }
 function natalPlainEvidenceExplanation(a) {
+  if (a.careerProfile) return NatalCareerAnalysis.explanation(a.careerProfile, {id:a.questionId}).supportNote;
   var first = a.primaryEvidence || (a.ranked && a.ranked[0]);
   var second = (a.supportingEvidence && a.supportingEvidence[0]) || (a.ranked && a.ranked[1]);
   if (!first) return '目前可用資料不足，因此這題只保留低強度描述。';
@@ -5241,7 +5504,9 @@ function renderNatalTopicResult(result) {
   h += '<span class="md-kind md-kind--rule">綜合判斷</span>';
   h += '<span class="md-kind md-kind--reading">解讀文字</span>';
   h += '</div>';
-  h += '<p class="md-note md-prose" style="margin:6px 0 0">下方每張卡片的答案屬於<strong style="color:var(--success);font-weight:500">解讀文字</strong>——它由本站的規則整合你的排盤資料而成，描述的是本命傾向，不是計算出來的事件或近期預測。展開「為什麼這樣說？」可以往回追到<strong style="color:var(--brand);font-weight:500">綜合判斷</strong>與原始<strong style="color:var(--info);font-weight:500">排盤資料</strong>。</p>';
+  if (result.answers.length && result.answers.every(function (a) { return a.careerCoverage === 'exploration'; })) {
+    h += '<p class="md-note md-prose" style="margin:6px 0 0">下方先提供可以開始的工作探索方法。完成或重新讀取出生資料後，會接續整合命盤，幫你比較任務、環境與相對優勢。</p>';
+  } else h += '<p class="md-note md-prose" style="margin:6px 0 0">下方每張卡片的答案屬於<strong style="color:var(--success);font-weight:500">解讀文字</strong>——它由本站的規則整合你的排盤資料而成，描述的是本命傾向，不是計算出來的事件或近期預測。展開「為什麼這樣說？」可以往回追到<strong style="color:var(--brand);font-weight:500">綜合判斷</strong>與原始<strong style="color:var(--info);font-weight:500">排盤資料</strong>。</p>';
 
   h += '<h4 style="font:500 11px \'Noto Sans TC\',sans-serif;color:#c9a96e;letter-spacing:.05em;margin:14px 0 0">主題總覽</h4>';
   h += '<div class="md-prose" style="font:400 12.5px \'Noto Sans TC\',sans-serif;color:rgba(240,233,216,.82);line-height:1.85;margin-top:6px">' + esc(result.topicOverview) + '</div>';
